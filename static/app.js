@@ -88,6 +88,51 @@ function colabAvatarHtml(name, size = 32) {
   return initialsHtml;
 }
 
+async function cleanDuplicates() {
+  const seen = new Map();
+  const toRemove = [];
+  let kept = 0;
+
+  for (let i = rawRecords.length - 1; i >= 0; i--) {
+    const r = rawRecords[i];
+    if (!r || !r['Atendente'] || !r['Mês']) continue;
+    const key = `${r['Atendente']}|${r['Mês']}|${r['Finalizados']}|${r['Assumidos']}|${r['Transferidos']}|${r['SCORE']}`;
+    if (seen.has(key)) {
+      toRemove.push({ idx: i, id: r.id });
+    } else {
+      seen.set(key, true);
+      kept++;
+    }
+  }
+
+  if (!toRemove.length) {
+    showToast('Nenhuma duplicata encontrada.', 'ok');
+    return;
+  }
+
+  setLoading(true, `Removendo ${toRemove.length} duplicatas…`);
+  try {
+    let removed = 0;
+    for (const item of toRemove) {
+      if (item.id != null && sbClient) {
+        await dbDeleteRecord(item.id);
+      }
+      rawRecords.splice(item.idx, 1);
+      removed++;
+    }
+    if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
+    populateFilters(rawRecords);
+    updateFilterOptions();
+    updateView();
+    showToast(`${removed} duplicata(s) removida(s). ${kept} registro(s) mantido(s).`, 'success', 'Limpeza');
+  } catch (e) {
+    console.error('Erro ao limpar duplicatas:', e);
+    showToast('Erro ao limpar duplicatas.', 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
 const HISTORICO_KEY = 'sistema_historico_v1';
 
 function logHistorico(action, rec, extra = {}) {
@@ -2672,6 +2717,8 @@ if (!rawRecords || !rawRecords.length) {
   if (historicoBtn) historicoBtn.addEventListener('click', () => { openHistorico(); });
   const comentariosBtn = document.getElementById('comentariosBtn');
   if (comentariosBtn) comentariosBtn.addEventListener('click', () => { openComentarios(); });
+  const cleanDupBtn = document.getElementById('cleanDupBtn');
+  if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { cleanDuplicates(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');
