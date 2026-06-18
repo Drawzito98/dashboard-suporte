@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>Dashboard de Suporte | Relatório Executivo</title>
+  <meta name="description" content="Painel executivo para análise de indicadores de suporte e atendimento."/>
+  <link href="static/styles.css" rel="stylesheet"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    (function(){
+      try {
+        var t = localStorage.getItem('theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch(e) {}
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+
+<!-- ========== AUTH OVERLAY ========== -->
+<div id="authOverlay" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-title">
+      <h1>Dashboard de Suporte</h1>
+      <p>Faça login para acessar seus dados</p>
+    </div>
+    <div class="auth-form">
+      <div class="auth-toggle">
+        <button id="authLoginTab" class="auth-tab active" type="button">Entrar</button>
+        <button id="authRegisterTab" class="auth-tab" type="button">Criar conta</button>
+      </div>
+      <div id="authLoginForm">
+        <label class="field">
+          <span>Email</span>
+          <input id="loginEmail" type="email" placeholder="seu@email.com" autocomplete="email"/>
+        </label>
+        <label class="field">
+          <span>Senha</span>
+          <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password"/>
+        </label>
+        <button id="loginBtn" class="btn-primary" type="button" style="width:100%;justify-content:center;margin-top:var(--s-3)">Entrar</button>
+        <div id="loginError" class="auth-error hidden"></div>
+      </div>
+      <div id="authRegisterForm" style="display:none">
+        <label class="field">
+          <span>Email</span>
+          <input id="registerEmail" type="email" placeholder="seu@email.com" autocomplete="email"/>
+        </label>
+        <label class="field">
+          <span>Senha</span>
+          <input id="registerPassword" type="password" placeholder="mínimo 6 caracteres" autocomplete="new-password"/>
+        </label>
+        <button id="registerBtn" class="btn-primary" type="button" style="width:100%;justify-content:center;margin-top:var(--s-3)">Criar conta</button>
+        <div id="registerError" class="auth-error hidden"></div>
+        <div id="registerSuccess" class="auth-success hidden"></div>
+      </div>
+    </div>
+    <div class="auth-loading hidden" id="authLoading">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="loading-text">Aguarde...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== HOME SCREEN ========== -->
+<div id="homeScreen" class="home-screen">
+  <div class="home-card">
+    <div class="home-title">
+      <h1>Dashboard de Suporte</h1>
+      <p>Importe seus arquivos CSV para visualizar indicadores de desempenho, gerar relatórios executivos e acompanhar a evolução da equipe.</p>
+    </div>
+    <div class="home-actions">
+      <div class="fileButton">
+        <button class="btn-primary" id="startBtn" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Importar CSV e iniciar
+        </button>
+        <input id="homeFileInput" type="file" accept=".csv" multiple class="fileOverlayInput" />
+      </div>
+      <div id="importStatus" class="hint" aria-live="polite"></div>
+      <button class="btn-small hidden" id="openSavedBtn" type="button">Restaurar sessao anterior</button>
+      <button class="btn-small theme-toggle" id="themeToggleHome" type="button" aria-label="Alternar tema">
+        <span class="theme-icon">🌙</span>
+        <span class="theme-label">Modo escuro</span>
+      </button>
+    </div>
+    <p class="home-footnote" id="homeSavedInfo">Seus dados permanecem apenas no seu navegador.</p>
+  </div>
+</div>
+
+<!-- ========== APP SCREEN ========== -->
+<div id="appScreen" style="display:none;">
+  <main class="app">
+    
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="titleblock">
+        <h1>Dashboard de Suporte</h1>
+        <p>Indicadores de desempenho e analise da equipe</p>
+      </div>
+      <div class="topbar-right">
+        <div class="seg-toggles" role="group" aria-label="Modos de visualização">
+          <label class="presentation-toggle" title="Oculta nomes para apresentacao aos colaboradores">
+            <input id="presentationModeToggle" type="checkbox"/>
+            <span>Apresentação</span>
+          </label>
+          <label class="presentation-toggle meeting-toggle" title="Destaca KPIs e grafico para apresentar o setor">
+            <input id="meetingModeToggle" type="checkbox"/>
+            <span>Reunião</span>
+          </label>
+        </div>
+        <button class="btn-small" id="logoutBtn" type="button" style="color:var(--danger);font-weight:600;gap:4px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sair
+        </button>
+        <details class="menu-dd">
+          <summary aria-label="Mais opções" title="Mais opções">⋯</summary>
+          <div class="menu-dd-panel">
+            <button class="btn-small" id="homeBtn" type="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              Início
+            </button>
+    <button class="btn-small theme-toggle" id="themeToggle" type="button" aria-label="Alternar tema">
+      <span class="theme-icon">🌙</span>
+      <span class="theme-label">Alternar tema</span>
+    </button>
+    <span class="badge hidden" id="storageBadge"></span>
+    <button class="btn-small hidden" id="restoreSavedBtn" type="button">Restaurar sessão</button>
+    <button class="btn-small hidden" id="clearSavedBtn" type="button">Limpar dados salvos</button>
+  </div>
+        </details>
+        <div class="global-search">
+          <span class="search-icon">🔍</span>
+          <input id="globalSearchInput" type="text" placeholder="Buscar colaborador..." autocomplete="off"/>
+          <div class="global-search-results" id="globalSearchResults"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Global Filter Bar -->
+    <div id="globalFilterBar" class="global-filter-bar" style="margin-bottom:var(--s-4)"></div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-bar" id="tabBar">
+      <button class="tab-btn active" data-tab="dashboard">
+        <span class="tab-icon">📊</span> Dashboard
+      </button>
+      <button class="tab-btn" data-tab="gamificacao">
+        <span class="tab-icon">🏆</span> Gamificação
+      </button>
+      <button class="tab-btn" data-tab="metas">
+        <span class="tab-icon">🎯</span> Metas
+      </button>
+      <button class="tab-btn" data-tab="comparativos">
+        <span class="tab-icon">📈</span> Comparativos
+      </button>
+      <button class="tab-btn" data-tab="lider">
+        <span class="tab-icon">👔</span> Liderança
+      </button>
+      <button class="tab-btn" data-tab="insights">
+        <span class="tab-icon">💡</span> Insights
+      </button>
+      <button class="tab-btn" data-tab="config">
+        <span class="tab-icon">⚙️</span> Configuração
+      </button>
+      <button class="tab-btn" data-tab="usuarios">
+        <span class="tab-icon">👥</span> Usuários
+      </button>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="layout">
+      
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        
+        <!-- Data Panel -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Dados</h2>
+          </div>
+          <div class="form-stack">
+            <label class="field">
+              <span>Importar arquivos</span>
+              <input accept=".csv" id="fileInput" multiple type="file"/>
+            </label>
+            <label class="field">
+              <span>Fonte</span>
+              <select id="arquivoSelect">
+                <option value="all">Todos os arquivos</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Modo de analise</span>
+              <select id="viewSelect">
+                <option value="attendee">Por atendente (soma)</option>
+                <option value="timeline">Evolucao mensal</option>
+                <option value="detailed">Detalhada por mes</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Indicador</span>
+              <select id="metricSelect">
+                <option value="Finalizados">Finalizados</option>
+                <option value="Assumidos">Assumidos</option>
+                <option value="Transferidos">Transferidos</option>
+                <option value="Score">Score (media)</option>
+              </select>
+            </label>
+            <div class="btn-row">
+              <button class="btn-primary" id="generateReportBtn" type="button">
+                Gerar relatorio executivo
+              </button>
+            </div>
+          </div>
+        </section>
+
+
+
+        <!-- Ferramentas Panel (ferramentas e configurações, sem filtros duplicados) -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Ferramentas</h2>
+          </div>
+          <div class="form-stack">
+            <label class="field" id="compareLabel" style="display:none">
+              <span>Comparar atendentes</span>
+              <div class="compare-row">
+                <select id="compareSelect"></select>
+                <button class="btn-small" id="addCompareBtn" type="button">+</button>
+                <button class="btn-small" id="clearCompareBtn" type="button">Limpar</button>
+              </div>
+              <div class="chips" id="compareChips"></div>
+            </label>
+            <div class="btn-row">
+              <button class="btn-small" id="addRowTopBtn" type="button">+ Registro</button>
+              <button class="btn-small" id="clearFiltersBtn" type="button">Redefinir</button>
+            </div>
+            <div class="btn-row">
+              <button class="btn-small" id="restoreHiddenBtn" type="button">Restaurar series</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Elementos de filtro legados (ocultos, mantidos para compatibilidade do Dashboard) -->
+        <div id="legacySidebarFilters" style="display:none">
+          <select id="setorSelect"><option value="all">Todos os setores</option></select>
+          <select id="mesSelect"><option value="all">Todos os meses</option><option value="__multi__">Selecao multipla</option></select>
+          <div id="monthPicker" class="month-picker">
+            <div class="month-picker-actions">
+              <button class="btn-small" id="selectAllMonthsBtn" type="button">Marcar todos</button>
+              <button class="btn-small" id="clearMonthsBtn" type="button">Limpar</button>
+            </div>
+            <div id="monthChecklist" class="month-checklist"></div>
+            <div id="monthChips" class="chips"></div>
+          </div>
+          <select id="atendenteSelect"><option value="all">Todos</option></select>
+          <input id="searchAtendenteInput" type="text" placeholder="Digite um nome..."/>
+          <button id="applyFiltersBtn" type="button">Filtrar</button>
+        </div>
+      </aside>
+
+      <!-- Content Area -->
+      <section class="content">
+
+        <!-- ===== TAB: DASHBOARD ===== -->
+        <div class="tab-content active" id="tab-dashboard">
+          <!-- Global Empty State -->
+          <div id="globalEmptyState" class="empty-state global-empty">
+            <div class="empty-title">Importe um arquivo CSV para comecar</div>
+            <div class="empty-sub">Seus dados permanecem apenas no seu navegador. Use o painel ao lado para importar arquivos e aplicar filtros.</div>
+            <div class="empty-actions">
+              <button id="emptyImportBtn" type="button" class="btn-primary" style="max-width: 280px; margin: 0 auto;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Importar CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- KPIs / Summary -->
+          <section class="card summary" id="summaryCard" style="display:none">
+            <div id="summaryContent"></div>
+          </section>
+
+          <!-- Visualization Empty State -->
+          <section class="card empty-visuals-card hidden" id="visualizationEmptyState">
+            <div class="empty-state" style="border: none; background: transparent;">
+              <div class="empty-title">Selecione filtros para visualizar</div>
+              <div class="empty-sub">Escolha periodo, setor ou atendente para exibir os indicadores e graficos.</div>
+            </div>
+          </section>
+
+          <!-- Chart -->
+          <section class="card chart-card" id="chartCard">
+            <div class="card-header">
+              <div>
+                <h2>Grafico de Desempenho</h2>
+                <p>Clique na legenda para ocultar/mostrar series</p>
+              </div>
+              <div class="chart-toolbar">
+                <button id="exportChartPngBtn" type="button" class="btn-small">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Exportar PNG
+                </button>
+              </div>
+            </div>
+            <div class="chart-area">
+              <div id="chartEmpty" class="empty-state hidden" style="border: none;">
+                <div class="empty-title">Nenhum dado para exibir</div>
+                <div class="empty-sub">Ajuste os filtros ou importe novos arquivos.</div>
+              </div>
+              <div class="chart-scroll">
+              <div class="chart-inner" id="chartInner">
+                <canvas id="mainChart"></canvas>
+              </div>
+            </div>
+            </div>
+          </section>
+
+          <!-- Data Preview Table -->
+          <section class="card preview" id="previewCard">
+            <div class="card-header">
+              <div>
+                <h2>Dados Detalhados</h2>
+                <p>Visualize e edite os registros importados</p>
+              </div>
+            </div>
+            <div class="sortbar" id="previewSortControls" style="display:none">
+              <span class="sort-label">Ordenar por:</span>
+              <button class="btn-small" id="sortAssumidosBtn">Assumidos</button>
+              <button class="btn-small" id="sortTransferidosBtn">Transferidos</button>
+              <button class="btn-small" id="sortFinalizadosBtn">Finalizados</button>
+              <button class="btn-small" id="sortScoreBtn">Score</button>
+              <button class="btn-small" id="resetSortBtn">Resetar</button>
+              <span class="sort-spacer"></span>
+              <button class="btn-small" id="addRowBtn" type="button">+ Registro</button>
+              <button class="btn-small" id="exportCsvBtn" type="button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar CSV
+              </button>
+            </div>
+            <div id="previewTable"></div>
+          </section>
+        </div>
+
+        <!-- ===== TAB: GAMIFICAÇÃO ===== -->
+        <div class="tab-content" id="tab-gamificacao">
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <h2>🏆 Ranking & Gamificação</h2>
+                <p>Pontuação acumulada, medalhas e evolução dos colaboradores</p>
+              </div>
+              <div>
+                <button class="btn-small" id="refreshGamificacaoBtn" type="button">🔄 Atualizar</button>
+              </div>
+            </div>
+            <div id="gamificationContent"></div>
+          </section>
+        </div>
+
+        <!-- ===== TAB: METAS ===== -->
+        <div class="tab-content" id="tab-metas">
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <h2>🎯 Metas e Objetivos</h2>
+                <p>Defina metas semanais, mensais, por colaborador ou setor</p>
+              </div>
+              <button class="btn-small" id="addMetaBtn" type="button">+ Nova Meta</button>
+            </div>
+            <div id="metasContent"></div>
+          </section>
+        </div>
+
+        <!-- ===== TAB: COMPARATIVOS ===== -->
+        <div class="tab-content" id="tab-comparativos">
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <h2>📈 Comparativos Avançados</h2>
+                <p>Compare desempenhos entre colaboradores, setores e períodos</p>
+              </div>
+              <button class="btn-small" id="refreshComparativosBtn" type="button">🔄 Atualizar</button>
+            </div>
+            <div id="comparativosContent"></div>
+          </section>
+        </div>
+
+        <!-- ===== TAB: LIDERANÇA ===== -->
+        <div class="tab-content" id="tab-lider">
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <h2>👔 Painel do Líder</h2>
+                <p>Resumo executivo da equipe — desempenho, metas e pontos de atenção</p>
+              </div>
+              <button class="btn-small" id="refreshLiderBtn" type="button">🔄 Atualizar</button>
+            </div>
+            <div id="painelLiderContent"></div>
+          </section>
+        </div>
+
+        <!-- ===== TAB: INSIGHTS ===== -->
+        <div class="tab-content" id="tab-insights">
+          <section class="card" style="margin-bottom:var(--s-4)">
+            <div class="card-header">
+              <div>
+                <h2>💡 Central de Insights</h2>
+                <p>Análises automáticas, tendências e projeções</p>
+              </div>
+              <button class="btn-small" id="refreshInsightsBtn" type="button">🔄 Atualizar</button>
+            </div>
+            <div id="insightsContent"></div>
+          </section>
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <h2>🚨 Alertas</h2>
+                <p>Alertas configuráveis com base no desempenho</p>
+              </div>
+              <button class="btn-small" id="resetAlertasBtn" type="button">Resetar alertas</button>
+            </div>
+            <div id="alertasContent"></div>
+          </section>
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <h2>🏆 Conquistas</h2>
+                <p>Badges automáticas por desempenho</p>
+              </div>
+            </div>
+            <div id="conquistasContent"></div>
+          </section>
+        </div>
+
+        <!-- ===== TAB: CONFIGURAÇÃO ===== -->
+        <div class="tab-content" id="tab-config">
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <h2>⚙️ Configuração</h2>
+                <p>Regras de pontuação e preferências do sistema</p>
+              </div>
+              <button class="btn-small" id="resetScoringBtn" type="button">Resetar regras</button>
+            </div>
+            <div class="form-stack" id="scoringRulesContainer"></div>
+          </section>
+        </div>
+
+        <!-- ===== TAB: USUÁRIOS ===== -->
+        <div class="tab-content" id="tab-usuarios">
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <h2>👥 Gerenciar Usuários</h2>
+                <p>Crie e remova usuários com acesso ao sistema</p>
+              </div>
+              <button class="btn-small" id="refreshUsuariosBtn" type="button">🔄 Atualizar</button>
+            </div>
+            <div id="usuariosContent"></div>
+          </section>
+        </div>
+
+        <!-- ===== SEÇÃO: Inteligência / Relatório (aparece em qualquer aba quando gerado) ===== -->
+        <div id="intelReportContainer" class="intel-report" style="display:none"></div>
+
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- Colaborador Detail Overlay -->
+<div class="colab-detail-overlay" id="colabDetailOverlay">
+  <div class="colab-detail-panel">
+    <button class="colab-detail-close" id="colabDetailClose" type="button">✕</button>
+    <div id="colabDetailContent"></div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay hidden" role="status" aria-live="polite">
+  <div class="loading-card">
+    <div class="spinner" aria-hidden="true"></div>
+    <div class="loading-text">Processando...</div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="static/auth.js"></script>
+<script src="static/db.js"></script>
+<script src="static/perfis.js"></script>
+<script src="static/globalFilters.js"></script>
+<script src="static/scoring.js"></script>
+<script src="static/gamificacao.js"></script>
+<script src="static/metas.js"></script>
+<script src="static/comparativos.js"></script>
+<script src="static/colab-detail.js"></script>
+<script src="static/painelLider.js"></script>
+<script src="static/insights.js"></script>
+<script src="static/alertas.js"></script>
+<script src="static/tendencia.js"></script>
+<script src="static/conquistas.js"></script>
+<script src="static/usuarios.js"></script>
+<script src="static/app.js"></script>
+
+</body>
+</html>
