@@ -58,9 +58,9 @@ function getColabFoto(name) {
 
 function normalizeFotoUrl(url) {
   if (!url) return '';
-  // Google Drive: convert /file/d/XXXX/view → /uc?export=view&id=XXXX
+  // Google Drive: convert /file/d/XXXX/view → thumbnail format
   const gdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (gdMatch) return `https://drive.google.com/uc?export=view&id=${gdMatch[1]}`;
+  if (gdMatch) return `https://drive.google.com/thumbnail?id=${gdMatch[1]}&sz=w400`;
   return url;
 }
 
@@ -99,10 +99,21 @@ function migrateColabFotos() {
         changed = true;
       }
     }
-    if (changed) localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
-  } catch (e) {}
+    if (changed) {
+      localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
+      console.log('[Fotos] URLs migradas para formato thumbnail:', map);
+    }
+  } catch (e) {
+    console.warn('[Fotos] Erro na migração:', e);
+  }
 }
 migrateColabFotos();
+
+function getColabFotoDebug(name) {
+  const url = getColabFoto(name);
+  console.log(`[Fotos] getColabFoto("${name}") =`, url);
+  return url;
+}
 
 function openManageColabs() {
   const overlay = document.getElementById('manageColabsOverlay');
