@@ -2670,6 +2670,8 @@ if (!rawRecords || !rawRecords.length) {
   if (manageColabsBtn) manageColabsBtn.addEventListener('click', () => { openManageColabs(); });
   const historicoBtn = document.getElementById('historicoBtn');
   if (historicoBtn) historicoBtn.addEventListener('click', () => { openHistorico(); });
+  const comentariosBtn = document.getElementById('comentariosBtn');
+  if (comentariosBtn) comentariosBtn.addEventListener('click', () => { openComentarios(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');

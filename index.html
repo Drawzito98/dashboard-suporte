@@ -237,6 +237,7 @@
             </div>
             <div class="btn-row">
               <button class="btn-small" id="manageColabsBtn" type="button">👥 Gerenciar colaboradores</button>
+              <button class="btn-small" id="comentariosBtn" type="button">💬 Comentários</button>
               <button class="btn-small" id="historicoBtn" type="button">📝 Histórico</button>
             </div>
             <div class="btn-row">
@@ -509,6 +510,14 @@
   </div>
 </div>
 
+<!-- Comentários Overlay -->
+<div class="colab-detail-overlay" id="comentariosOverlay">
+  <div class="colab-detail-panel" style="max-width:800px">
+    <button class="colab-detail-close" id="comentariosClose" type="button">✕</button>
+    <div id="comentariosContent"></div>
+  </div>
+</div>
+
 <!-- Toast Container -->
 <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
@@ -537,6 +546,7 @@
 <script src="static/conquistas.js"></script>
 <script src="static/projecao.js"></script>
 <script src="static/historico.js"></script>
+<script src="static/comentarios.js"></script>
 <script src="static/usuarios.js"></script>
 <script src="static/app.js"></script>
 
