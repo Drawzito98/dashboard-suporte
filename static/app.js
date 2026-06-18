@@ -51,15 +51,24 @@ function getColabFoto(name) {
   try {
     const raw = localStorage.getItem(COLAB_FOTOS_KEY);
     const map = raw ? JSON.parse(raw) : {};
-    return map[name] || '';
+    const url = map[name] || '';
+    return normalizeFotoUrl(url);
   } catch (e) { return ''; }
+}
+
+function normalizeFotoUrl(url) {
+  if (!url) return '';
+  // Google Drive: convert /file/d/XXXX/view → /uc?export=view&id=XXXX
+  const gdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (gdMatch) return `https://drive.google.com/uc?export=view&id=${gdMatch[1]}`;
+  return url;
 }
 
 function setColabFoto(name, url) {
   try {
     const raw = localStorage.getItem(COLAB_FOTOS_KEY);
     const map = raw ? JSON.parse(raw) : {};
-    if (url) map[name] = url;
+    if (url) map[name] = normalizeFotoUrl(url);
     else delete map[name];
     localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
   } catch (e) {}
@@ -69,11 +78,31 @@ function colabAvatarHtml(name, size = 32) {
   if (!name) return '';
   const foto = getColabFoto(name);
   const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const initialsHtml = `<span style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:var(--bg-inset);color:var(--text-secondary);font-size:${size * 0.4}px;font-weight:600;vertical-align:middle;flex-shrink:0">${escapeHtml(initials)}</span>`;
   if (foto) {
-    return `<img src="${escapeHtml(foto)}" alt="${escapeHtml(name)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle" onerror="this.style.display='none'"/>`;
+    return `<span style="display:inline-flex;position:relative;vertical-align:middle">${initialsHtml}<img src="${escapeHtml(foto)}" alt="${escapeHtml(name)}" style="position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.style.display='none'"/></span>`;
   }
-  return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:var(--bg-inset);color:var(--text-secondary);font-size:${size * 0.4}px;font-weight:600;vertical-align:middle">${escapeHtml(initials)}</span>`;
+  return initialsHtml;
 }
+
+// Migrate old Google Drive URLs to direct format
+function migrateColabFotos() {
+  try {
+    const raw = localStorage.getItem(COLAB_FOTOS_KEY);
+    if (!raw) return;
+    const map = JSON.parse(raw);
+    let changed = false;
+    for (const name in map) {
+      const normalized = normalizeFotoUrl(map[name]);
+      if (normalized !== map[name]) {
+        map[name] = normalized;
+        changed = true;
+      }
+    }
+    if (changed) localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
+  } catch (e) {}
+}
+migrateColabFotos();
 
 function openManageColabs() {
   const overlay = document.getElementById('manageColabsOverlay');
