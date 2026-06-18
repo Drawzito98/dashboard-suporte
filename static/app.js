@@ -58,9 +58,12 @@ function getColabFoto(name) {
 
 function normalizeFotoUrl(url) {
   if (!url) return '';
-  // Google Drive: convert /file/d/XXXX/view → thumbnail format
-  const gdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (gdMatch) return `https://drive.google.com/thumbnail?id=${gdMatch[1]}&sz=w400`;
+  // Google Drive: /file/d/XXXX/view
+  let m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`;
+  // Google Drive: uc?export=view&id=XXXX (already converted)
+  m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`;
   return url;
 }
 
