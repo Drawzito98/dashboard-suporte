@@ -219,6 +219,7 @@ function renderProjecao() {
           }
         }
         rawRecords.push(rec);
+        if (typeof logHistorico === 'function') logHistorico('add', rec, { detalhes: 'Adicionado via projeção mensal' });
         savedCount++;
       }
 

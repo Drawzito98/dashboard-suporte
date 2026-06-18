@@ -88,6 +88,27 @@ function colabAvatarHtml(name, size = 32) {
   return initialsHtml;
 }
 
+const HISTORICO_KEY = 'sistema_historico_v1';
+
+function logHistorico(action, rec, extra = {}) {
+  try {
+    const raw = localStorage.getItem(HISTORICO_KEY);
+    const log = raw ? JSON.parse(raw) : [];
+    const user = (window.__sbUser && window.__sbUser.email) ? window.__sbUser.email : 'desconhecido';
+    log.push({
+      ts: new Date().toISOString(),
+      user,
+      action,
+      colaborador: rec ? rec['Atendente'] || '' : '',
+      mes: rec ? rec['Mês'] || '' : '',
+      ...extra
+    });
+    // Keep last 500 entries
+    if (log.length > 500) log.splice(0, log.length - 500);
+    localStorage.setItem(HISTORICO_KEY, JSON.stringify(log));
+  } catch (e) { console.warn('[Historico] Erro ao salvar:', e); }
+}
+
 // Migrate old Google Drive URLs to direct format
 function migrateColabFotos() {
   try {
@@ -1641,6 +1662,9 @@ function renderPreviewDisplay(rows) {
           if (!ok) showToast('Erro ao salvar alteração no banco.', 'error');
         });
       }
+      if (rec[key] !== oldVal) {
+        logHistorico('edit', rec, { campo: key, before: String(oldVal ?? ''), after: String(rec[key] ?? '') });
+      }
       if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
       updateFilterOptions();
       const filtered = rawRecords.filter(r => {
@@ -1673,6 +1697,7 @@ function renderPreviewDisplay(rows) {
         }
       }
       rawRecords.splice(idx, 1);
+      logHistorico('delete', rec);
       if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
       populateFilters(rawRecords);
       updateFilterOptions();
@@ -2643,6 +2668,8 @@ if (!rawRecords || !rawRecords.length) {
   if (addRowTopBtn) addRowTopBtn.addEventListener('click', () => { openProjecaoOverlay(); });
   const manageColabsBtn = document.getElementById('manageColabsBtn');
   if (manageColabsBtn) manageColabsBtn.addEventListener('click', () => { openManageColabs(); });
+  const historicoBtn = document.getElementById('historicoBtn');
+  if (historicoBtn) historicoBtn.addEventListener('click', () => { openHistorico(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');
