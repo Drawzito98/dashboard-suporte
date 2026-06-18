@@ -76,7 +76,7 @@ function renderColabDetail(name) {
 
   let html = `
     <div class="colab-detail-header">
-      <div class="colab-detail-avatar">${escapeHtml(initials)}</div>
+      ${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(name, 56) : `<div class="colab-detail-avatar">${escapeHtml(initials)}</div>`}
       <div class="colab-detail-name">
         <h2>${escapeHtml(displayName)}</h2>
         <p>${escapeHtml(setores.join(', '))} · ${meses.length} ${meses.length === 1 ? 'período' : 'períodos'} · #${rankPos} no ranking</p>

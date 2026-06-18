@@ -126,6 +126,7 @@ function renderGamification() {
         <div class="podium-medal">${medal}</div>
         <div class="podium-bar"></div>
         <div class="podium-rank">${label}</div>
+        <div style="margin:4px 0">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(item.name, 44) : ''}</div>
         <div class="podium-name" title="${escapeHtml(item.name)}">${escapeHtml(getDisplayName(item.name, aliasMap))}</div>
         <div class="podium-score">${score.toFixed(1)} pts</div>
       </div>`;
@@ -150,7 +151,7 @@ function renderGamification() {
 
     html += `<tr class="${isFav ? 'highlight-row' : ''}">
       <td><span class="rank-pos-badge ${posClass}">${i + 1}</span></td>
-      <td><strong>${escapeHtml(getDisplayName(item.name, aliasMap))}</strong></td>
+      <td style="display:flex;align-items:center;gap:8px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(item.name, 28) : ''}<strong>${escapeHtml(getDisplayName(item.name, aliasMap))}</strong></td>
       <td><strong>${item.score.total.toFixed(1)}</strong></td>
       <td style="font-size:11px;white-space:nowrap">
         ${posPts > 0 ? `<span style="color:var(--success);font-weight:600">+${posPts.toFixed(1)}</span>` : ''}
@@ -159,6 +160,7 @@ function renderGamification() {
       <td style="font-size:16px">${medalIcons || '—'}</td>
       <td>${streak.count > 0 ? `🔥 ${streak.count} ${streak.count === 1 ? 'mês' : 'meses'}` : '—'}</td>
       <td style="white-space:nowrap">
+        <button class="btn-small foto-btn" data-name="${escapeHtml(item.name)}" type="button" title="Adicionar foto">📷</button>
         <button class="btn-small breakdown-toggle-btn" data-target="bd-${i}" type="button">🔍 Detalhar</button>
         <button class="btn-small view-colab-btn" data-name="${escapeHtml(item.name)}" type="button">Ver perfil</button>
       </td>
@@ -299,6 +301,19 @@ function renderGamification() {
         row.style.display = isHidden ? 'table-row' : 'none';
         btn.textContent = isHidden ? '🔽 Ocultar' : '🔍 Detalhar';
       }
+    });
+  });
+
+  // Bind foto buttons
+  container.querySelectorAll('.foto-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.getAttribute('data-name');
+      if (!name) return;
+      const current = typeof getColabFoto === 'function' ? getColabFoto(name) : '';
+      const url = prompt(`URL da foto para ${name}${current ? '\n(Deixe vazio para remover)' : ''}`, current);
+      if (url === null) return;
+      if (typeof setColabFoto === 'function') setColabFoto(name, url.trim());
+      renderGamification();
     });
   });
 

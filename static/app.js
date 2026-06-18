@@ -43,6 +43,38 @@ function isColabActive(name) {
   return !getInactiveColabs().has(name);
 }
 
+// Foto do colaborador (URL-based, localStorage)
+const COLAB_FOTOS_KEY = 'sistema_colab_fotos_v1';
+
+function getColabFoto(name) {
+  if (!name) return '';
+  try {
+    const raw = localStorage.getItem(COLAB_FOTOS_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    return map[name] || '';
+  } catch (e) { return ''; }
+}
+
+function setColabFoto(name, url) {
+  try {
+    const raw = localStorage.getItem(COLAB_FOTOS_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    if (url) map[name] = url;
+    else delete map[name];
+    localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
+  } catch (e) {}
+}
+
+function colabAvatarHtml(name, size = 32) {
+  if (!name) return '';
+  const foto = getColabFoto(name);
+  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  if (foto) {
+    return `<img src="${escapeHtml(foto)}" alt="${escapeHtml(name)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle" onerror="this.style.display='none'"/>`;
+  }
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:var(--bg-inset);color:var(--text-secondary);font-size:${size * 0.4}px;font-weight:600;vertical-align:middle">${escapeHtml(initials)}</span>`;
+}
+
 function openManageColabs() {
   const overlay = document.getElementById('manageColabsOverlay');
   if (!overlay) return;
