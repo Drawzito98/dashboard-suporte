@@ -263,10 +263,20 @@ function renderGamification() {
     html += '</div></div></div></div>';
   }
 
-  // Individual evolution chart (top performer)
+  // Individual evolution chart with collaborator selector
   if (months.length && ranking.length) {
-    html += '<div style="margin-top:var(--s-6)"><h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📈 Evolução — Top 5</h3>';
-    html += `<div class="chart-area" style="margin-top:var(--s-2)"><div class="chart-scroll"><div class="chart-inner" style="height:320px"><canvas id="gamificationChart"></canvas></div></div></div>`;
+    const names = ranking.map(r => r.name);
+    const selectedName = window.__selectedEvolutionColab || ranking[0].name;
+    html += `<div style="margin-top:var(--s-6)">
+      <div style="display:flex;align-items:center;gap:var(--s-3);margin-bottom:var(--s-3);flex-wrap:wrap">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-strong);margin:0">📈 Evolução Individual</h3>
+        <select id="evolutionColabSelect" style="flex:1;max-width:260px;padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-size:13px">
+          ${names.map(n => `<option value="${escapeHtml(n)}" ${n === selectedName ? 'selected' : ''}>${escapeHtml(getDisplayName(n, aliasMap))}</option>`).join('')}
+        </select>
+        <span id="evolutionAvgBadge" style="font-size:13px;color:var(--text-secondary)"></span>
+      </div>
+      <div class="chart-area"><div class="chart-scroll"><div class="chart-inner" style="height:280px"><canvas id="individualEvolutionChart"></canvas></div></div></div>
+    </div>`;
   }
 
   container.innerHTML = html;
@@ -292,61 +302,95 @@ function renderGamification() {
     });
   });
 
-  // Render evolution chart if canvas exists
-  if (document.getElementById('gamificationChart') && typeof Chart !== 'undefined') {
-    renderEvolutionChart(ranking, months, monthlyScores, aliasMap);
+  // Render individual evolution chart & bind selector
+  const indivCanvas = document.getElementById('individualEvolutionChart');
+  if (indivCanvas && typeof Chart !== 'undefined') {
+    const selectedName = window.__selectedEvolutionColab || ranking[0].name;
+    renderIndividualScoreChart(selectedName, months, ranking, aliasMap);
+    const select = document.getElementById('evolutionColabSelect');
+    if (select) {
+      select.addEventListener('change', () => {
+        window.__selectedEvolutionColab = select.value;
+        renderIndividualScoreChart(select.value, months, ranking, aliasMap);
+      });
+    }
   }
 }
 
-function renderEvolutionChart(ranking, months, monthlyScores, aliasMap) {
-  const canvas = document.getElementById('gamificationChart');
+function renderIndividualScoreChart(name, months, ranking, aliasMap) {
+  const canvas = document.getElementById('individualEvolutionChart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const top5 = ranking.slice(0, 5);
 
-  const colors = ['rgba(37,99,235,0.85)', 'rgba(16,185,129,0.85)', 'rgba(249,115,22,0.85)', 'rgba(139,92,246,0.85)', 'rgba(236,72,153,0.85)'];
-  const datasets = top5.map((item, idx) => {
-    const data = months.map(m => {
-      const s = monthlyScores[item.name] && monthlyScores[item.name][m];
-      return s !== undefined ? s : null;
-    });
-    return {
-      label: getDisplayName(item.name, aliasMap),
-      data,
-      borderColor: colors[idx % colors.length],
-      backgroundColor: colors[idx % colors.length].replace('0.85', '0.1'),
-      tension: 0.3,
-      fill: true,
-      pointRadius: 4,
-      spanGaps: true
-    };
+  // Compute monthly SCORE averages for this collaborator
+  const data = _gfData();
+  const records = data.filter(r => r && String(r['Atendente']) === name);
+  const scores = months.map(m => {
+    const monthRows = records.filter(r => String(r['Mês']) === m);
+    const vals = monthRows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && !isNaN(Number(v)));
+    return vals.length ? vals.reduce((a, b) => a + Number(b), 0) / vals.length : null;
   });
 
-  if (window.__gamificationChart) {
-    try { window.__gamificationChart.destroy(); } catch(e) {}
+  // Update badge
+  const badge = document.getElementById('evolutionAvgBadge');
+  if (badge) {
+    const valid = scores.filter(s => s !== null);
+    const avg = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : 0;
+    const pos = ranking.findIndex(r => r.name === name) + 1;
+    badge.textContent = `Score médio: ${avg.toFixed(2)} · #${pos}º no ranking`;
   }
 
-  window.__gamificationChart = new Chart(ctx, {
+  // Determine color based on score trend
+  const lastVal = scores.filter(s => s !== null).slice(-1)[0] || 0;
+  const lineColor = lastVal >= 4 ? 'rgba(16,185,129,0.9)' : (lastVal >= 3 ? 'rgba(249,115,22,0.9)' : 'rgba(239,68,68,0.9)');
+
+  if (window.__individualEvolutionChart) {
+    try { window.__individualEvolutionChart.destroy(); } catch (e) {}
+  }
+
+  window.__individualEvolutionChart = new Chart(ctx, {
     type: 'line',
-    data: { labels: months, datasets },
+    data: {
+      labels: months,
+      datasets: [{
+        label: getDisplayName(name, aliasMap),
+        data: scores,
+        borderColor: lineColor,
+        backgroundColor: lineColor.replace('0.9', '0.1'),
+        tension: 0.3,
+        fill: true,
+        pointRadius: 5,
+        pointBackgroundColor: scores.map(s => s !== null ? lineColor : 'transparent'),
+        spanGaps: false
+      }]
+    },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          display: true,
-          position: 'bottom',
-          labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 } }
-        },
+        legend: { display: false },
         tooltip: {
           backgroundColor: 'rgba(15, 23, 42, 0.92)',
-          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
-          padding: 12, cornerRadius: 10
+          titleColor: '#f8fafc',
+          bodyColor: '#e2e8f0',
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: {
+            label: (ctx) => `Score: ${ctx.parsed.y !== null ? ctx.parsed.y.toFixed(2) : '—'}`
+          }
         }
       },
       scales: {
-        y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 } } },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 } } }
+        y: {
+          beginAtZero: true,
+          suggestedMax: 5,
+          grid: { color: 'rgba(148,163,184,0.14)' },
+          ticks: { font: { size: 11.5 }, stepSize: 1 }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11.5 } }
+        }
       }
     }
   });
