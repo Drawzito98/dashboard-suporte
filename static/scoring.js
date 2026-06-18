@@ -88,7 +88,7 @@ function computeScoreForCollaborator(name, records) {
 }
 
 function getOverallRanking(records) {
-  const names = [...new Set((records || []).filter(r => r && r['Atendente']).map(r => r['Atendente']))];
+  const names = [...new Set((records || []).filter(r => r && r['Atendente']).map(r => r['Atendente']))].filter(n => isColabActive(n));
   const scores = names.map(name => ({
     name,
     score: computeScoreForCollaborator(name, records)

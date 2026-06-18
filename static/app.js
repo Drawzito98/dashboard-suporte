@@ -5,6 +5,121 @@ function qa(sel, root = document) { return Array.from(root.querySelectorAll(sel)
 
 
 // Perfis (Google Docs) — loaded from static/perfis.js (works on file://)
+const INACTIVE_COLABS_KEY = 'sistema_inactive_colabs_v1';
+const DEFAULT_INACTIVE = ['Caio', 'Carina', 'Diogo', 'Gabriel', 'Jessé', 'Joyce', 'Maxsuel', 'Victor'];
+
+function getInactiveColabs() {
+  if (!window.__inactiveColabs) {
+    try {
+      const raw = localStorage.getItem(INACTIVE_COLABS_KEY);
+      if (raw) {
+        window.__inactiveColabs = new Set(JSON.parse(raw));
+      } else {
+        // First load — use defaults
+        window.__inactiveColabs = new Set(DEFAULT_INACTIVE);
+        saveInactiveColabs();
+      }
+    } catch (e) {
+      window.__inactiveColabs = new Set(DEFAULT_INACTIVE);
+    }
+  }
+  return window.__inactiveColabs;
+}
+
+function saveInactiveColabs() {
+  try {
+    localStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify([...getInactiveColabs()]));
+  } catch (e) {}
+}
+
+function setColabActive(name, active) {
+  const set = getInactiveColabs();
+  if (active) set.delete(name);
+  else set.add(name);
+  saveInactiveColabs();
+}
+
+function isColabActive(name) {
+  return !getInactiveColabs().has(name);
+}
+
+function openManageColabs() {
+  const overlay = document.getElementById('manageColabsOverlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  renderManageColabs();
+}
+
+function closeManageColabs() {
+  const overlay = document.getElementById('manageColabsOverlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function renderManageColabs() {
+  const container = document.getElementById('manageColabsContent');
+  if (!container) return;
+  const inactive = getInactiveColabs();
+  const allNames = [...new Set((rawRecords || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente'])).map(r => r['Atendente']))].sort();
+
+  let html = `
+    <div style="padding:var(--s-5)">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--s-1)">👥 Gerenciar Colaboradores</h2>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">Marque como inativos colaboradores que não fazem mais parte da equipe. Eles serão ocultados dos filtros, ranking e projeções.</p>
+      <div style="overflow-x:auto;max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md)">
+        <table class="ranking-table">
+          <thead><tr><th>Colaborador</th><th style="text-align:center">Ativo</th></tr></thead>
+          <tbody>
+            ${allNames.map(n => {
+              const ativo = !inactive.has(n);
+              return `<tr>
+                <td style="font-weight:500">${escapeHtml(n)}</td>
+                <td style="text-align:center">
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <input type="checkbox" class="colab-active-toggle" data-name="${escapeHtml(n)}" ${ativo ? 'checked' : ''} style="width:18px;height:18px"/>
+                    <span style="font-size:12px;color:${ativo ? 'var(--success)' : 'var(--text-muted)'}">${ativo ? 'Ativo' : 'Inativo'}</span>
+                  </label>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:var(--s-3);margin-top:var(--s-4);justify-content:flex-end">
+        <button class="btn-primary" id="manageColabsDoneBtn" type="button">✅ Concluído</button>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  document.getElementById('manageColabsClose').addEventListener('click', closeManageColabs);
+  document.getElementById('manageColabsDoneBtn').addEventListener('click', closeManageColabs);
+
+  container.querySelectorAll('.colab-active-toggle').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const name = cb.dataset.name;
+      const active = cb.checked;
+      setColabActive(name, active);
+      const label = cb.nextElementSibling;
+      if (label) {
+        label.textContent = active ? 'Ativo' : 'Inativo';
+        label.style.color = active ? 'var(--success)' : 'var(--text-muted)';
+      }
+    });
+  });
+}
+
+// Close on backdrop click
+document.addEventListener('click', (e) => {
+  const overlay = document.getElementById('manageColabsOverlay');
+  if (overlay && overlay.classList.contains('open') && e.target === overlay) {
+    closeManageColabs();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeManageColabs();
+});
 function _normName(s) {
   try {
     return (s || "")
@@ -901,7 +1016,7 @@ function updateFilterOptions() {
       if (arquivoVal !== 'all' && String(r['Arquivo']) !== arquivoVal) return false;
       return true;
     })
-    .map(r => r['Atendente']).filter(a => !isAggregateName(a));
+    .map(r => r['Atendente']).filter(a => !isAggregateName(a) && isColabActive(a));
   const uniq = uniqueSorted(atendentes);
   fillSelect(atendenteSelect, uniq);
   // populate compareSelect (multi-select) with the same list when present
@@ -2451,6 +2566,8 @@ if (!rawRecords || !rawRecords.length) {
   if (btnR) btnR.addEventListener('click', () => { currentSort.key = null; currentSort.desc = true; renderPreview(previewRows); });
   if (addRowBtn) addRowBtn.addEventListener('click', () => { addRow(); });
   if (addRowTopBtn) addRowTopBtn.addEventListener('click', () => { openProjecaoOverlay(); });
+  const manageColabsBtn = document.getElementById('manageColabsBtn');
+  if (manageColabsBtn) manageColabsBtn.addEventListener('click', () => { openManageColabs(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');
