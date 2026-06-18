@@ -2166,6 +2166,89 @@ function exportReportToPDF() {
   showToast('Abrindo exportação para PDF…', 'ok');
 }
 
+async function exportPDFcomGrafico() {
+  setLoading(true, 'Gerando PDF…');
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageW = 190;
+    let y = 15;
+
+    // Título
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Relatório Executivo - Dashboard de Suporte', pageW / 2, y, { align: 'center' });
+    y += 10;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageW / 2, y, { align: 'center' });
+    y += 12;
+
+    // Captura o texto do relatório
+    const ta = document.getElementById('reportText');
+    const text = (ta && ta.value) ? ta.value.trim() : '';
+    if (text) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Indicadores', pageW / 2, y, { align: 'center' });
+      y += 7;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const lines = doc.splitTextToSize(text, pageW);
+      for (const line of lines) {
+        if (y > 275) { doc.addPage(); y = 15; }
+        doc.text(line, 10, y);
+        y += 5;
+      }
+      y += 8;
+    }
+
+    // Captura o gráfico
+    const canvas = document.getElementById('mainChart');
+    const chartCard = document.getElementById('chartCard');
+    if (canvas && chartCard && chartCard.style.display !== 'none') {
+      if (y > 240) { doc.addPage(); y = 15; }
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Gráfico de Desempenho', pageW / 2, y, { align: 'center' });
+      y += 5;
+      const chartImg = canvas.toDataURL('image/png');
+      const imgW = 180;
+      const imgH = (canvas.height / canvas.width) * imgW;
+      doc.addImage(chartImg, 'PNG', 10, y, imgW, Math.min(imgH, 120));
+      y += Math.min(imgH, 120) + 10;
+    }
+
+    // Captura os cards de resumo (KPIs)
+    const summaryCard = document.getElementById('summaryCard');
+    if (summaryCard && summaryCard.style.display !== 'none') {
+      if (y > 250) { doc.addPage(); y = 15; }
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Resumo', pageW / 2, y, { align: 'center' });
+      y += 5;
+      try {
+        const summaryCanvas = await html2canvas(summaryCard, { scale: 2, useCORS: true });
+        const imgData = summaryCanvas.toDataURL('image/png');
+        const imgW2 = 180;
+        const imgH2 = (summaryCanvas.height / summaryCanvas.width) * imgW2;
+        doc.addImage(imgData, 'PNG', 10, y, imgW2, Math.min(imgH2, 80));
+        y += Math.min(imgH2, 80) + 5;
+      } catch (e) {}
+    }
+
+    // Salva
+    doc.save(`relatorio-${new Date().toISOString().slice(0, 10)}.pdf`);
+    showToast('PDF exportado com sucesso!', 'success', 'PDF');
+  } catch (e) {
+    console.error('Erro ao gerar PDF:', e);
+    showToast('Erro ao gerar PDF: ' + e.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
 function escapeHtml(str) {
   return String(str)
     .replaceAll('&', '&amp;')
@@ -2372,6 +2455,8 @@ if (!rawRecords || !rawRecords.length) {
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');
   if (exportChartPngBtn) exportChartPngBtn.addEventListener('click', () => { exportChartAsPNG(); });
+  const exportPdfBtn = document.getElementById('exportPdfBtn');
+  if (exportPdfBtn) exportPdfBtn.addEventListener('click', () => { exportPDFcomGrafico(); });
   updatePreviewSortControls();
 
   // ===== Tab System =====
