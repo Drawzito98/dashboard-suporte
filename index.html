@@ -232,7 +232,7 @@
               <div class="chips" id="compareChips"></div>
             </label>
             <div class="btn-row">
-              <button class="btn-small" id="addRowTopBtn" type="button">+ Registro</button>
+              <button class="btn-small" id="addRowTopBtn" type="button">📅 Projeção mensal</button>
               <button class="btn-small" id="clearFiltersBtn" type="button">Redefinir</button>
             </div>
             <div class="btn-row">
@@ -481,6 +481,14 @@
   </div>
 </div>
 
+<!-- Projeção Mensal Overlay -->
+<div class="colab-detail-overlay" id="projecaoOverlay">
+  <div class="colab-detail-panel" style="max-width:800px">
+    <button class="colab-detail-close" id="projecaoClose" type="button">✕</button>
+    <div id="projecaoContent"></div>
+  </div>
+</div>
+
 <!-- Toast Container -->
 <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
@@ -507,6 +515,7 @@
 <script src="static/alertas.js"></script>
 <script src="static/tendencia.js"></script>
 <script src="static/conquistas.js"></script>
+<script src="static/projecao.js"></script>
 <script src="static/usuarios.js"></script>
 <script src="static/app.js"></script>
 

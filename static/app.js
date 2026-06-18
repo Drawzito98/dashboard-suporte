@@ -2450,7 +2450,7 @@ if (!rawRecords || !rawRecords.length) {
   });
   if (btnR) btnR.addEventListener('click', () => { currentSort.key = null; currentSort.desc = true; renderPreview(previewRows); });
   if (addRowBtn) addRowBtn.addEventListener('click', () => { addRow(); });
-  if (addRowTopBtn) addRowTopBtn.addEventListener('click', () => { addRow(); });
+  if (addRowTopBtn) addRowTopBtn.addEventListener('click', () => { openProjecaoOverlay(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');
