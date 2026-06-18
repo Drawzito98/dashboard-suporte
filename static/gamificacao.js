@@ -106,7 +106,7 @@ function renderGamification() {
   html += `<div class="gamification-stats">
     <div class="kpi"><div class="label">Colaboradores</div><div class="value">${ranking.length}</div></div>
     <div class="kpi"><div class="label">Maior pontuação</div><div class="value">${Math.round(topScoreVal)}</div></div>
-    <div class="kpi"><div class="label">Média geral</div><div class="value">${mediaGeral.toFixed(1)}</div></div>
+    <div class="kpi"><div class="label">Média geral</div><div class="value">${mediaGeral.toFixed(2)}</div></div>
     <div class="kpi"><div class="label">Períodos</div><div class="value">${months.length}</div></div>
   </div>`;
 
