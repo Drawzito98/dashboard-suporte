@@ -92,13 +92,21 @@ function renderGamification() {
   const aliasMap = buildAliasMap(ranking.map(r => r.name));
   const topScoreVal = ranking.length > 0 ? ranking[0].score.total : 0;
 
+  // Média geral = média dos SCOREs reais (0-5), não dos pontos acumulados
+  let mediaGeral = 0;
+  const allRecords = _gfData();
+  const allScores = allRecords.filter(r => r && r['SCORE'] !== null && r['SCORE'] !== undefined).map(r => Number(r['SCORE']));
+  if (allScores.length) {
+    mediaGeral = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+  }
+
   let html = '';
 
   // Stats summary
   html += `<div class="gamification-stats">
     <div class="kpi"><div class="label">Colaboradores</div><div class="value">${ranking.length}</div></div>
-    <div class="kpi"><div class="label">Maior pontuação</div><div class="value">${topScoreVal.toFixed(1)}</div></div>
-    <div class="kpi"><div class="label">Média geral</div><div class="value">${(ranking.reduce((s, r) => s + r.score.total, 0) / ranking.length).toFixed(1)}</div></div>
+    <div class="kpi"><div class="label">Maior pontuação</div><div class="value">${Math.round(topScoreVal)}</div></div>
+    <div class="kpi"><div class="label">Média geral</div><div class="value">${mediaGeral.toFixed(1)}</div></div>
     <div class="kpi"><div class="label">Períodos</div><div class="value">${months.length}</div></div>
   </div>`;
 
