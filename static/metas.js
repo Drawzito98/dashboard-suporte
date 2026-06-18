@@ -132,7 +132,67 @@ function renderMetas() {
     });
   }
 
-  // Form to add new meta
+function suggestAutoMeta() {
+  const data = _gfData().filter(r => r && !isAggregateName(r['Atendente']));
+  if (!data.length) {
+    showToast('Sem dados para análise.', 'warn');
+    return;
+  }
+
+  const metric = document.getElementById('metaMetricSelect')?.value || 'finalizados';
+  const setor = document.getElementById('metaSetorSelect')?.value || 'all';
+  const collaborator = document.getElementById('metaColabSelect')?.value || '';
+
+  // Filter
+  let filtered = [...data];
+  if (setor && setor !== 'all') filtered = filtered.filter(r => String(r['Setor']) === setor);
+  if (collaborator) filtered = filtered.filter(r => String(r['Atendente']) === collaborator);
+
+  if (!filtered.length) {
+    showToast('Sem dados para os filtros selecionados.', 'warn');
+    return;
+  }
+
+  // Get months sorted
+  const months = [...new Set(filtered.map(r => r['Mês']))].sort();
+  // Use last 3 months (or all if less)
+  const recentMonths = months.slice(-3);
+  const recent = filtered.filter(r => recentMonths.includes(r['Mês']));
+
+  let suggestion = 0;
+  let title = '';
+
+  if (metric === 'finalizados') {
+    const vals = recent.map(r => parseInt(r['Finalizados']) || 0);
+    const total = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    // Round up to nearest 10 or 5
+    suggestion = Math.ceil(total / 10) * 10;
+    if (suggestion < 5) suggestion = Math.ceil(total);
+    title = `Meta mensal de finalizações (~${suggestion})`;
+  } else if (metric === 'score') {
+    const scores = recent.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && !isNaN(Number(v)));
+    const avg = scores.length ? scores.reduce((a, b) => a + Number(b), 0) / scores.length : 0;
+    suggestion = Math.round(avg * 10) / 10;
+    title = `Meta de score médio (${suggestion.toFixed(1)})`;
+  } else if (metric === 'produtividade') {
+    const ratios = recent.map(r => {
+      const ass = parseInt(r['Assumidos']) || 0;
+      const fin = parseInt(r['Finalizados']) || 0;
+      return ass > 0 ? fin / ass : 0;
+    }).filter(v => v > 0);
+    const avg = ratios.length ? (ratios.reduce((a, b) => a + b, 0) / ratios.length) * 100 : 0;
+    suggestion = Math.round(avg);
+    title = `Meta de produtividade (${suggestion}%)`;
+  }
+
+  // Fill the form
+  const titleInput = document.getElementById('metaTitleInput');
+  if (titleInput) titleInput.value = title;
+  const targetInput = document.getElementById('metaTargetInput');
+  if (targetInput) targetInput.value = suggestion;
+
+  showToast(`Sugestão automática: ${title}`, 'ok', 'Meta Automática');
+}
   html += `<div style="margin-top:var(--s-5);padding-top:var(--s-5);border-top:1px solid var(--border)">
     <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-4);color:var(--text-strong)">Nova Meta</h3>
     <div class="meta-form-grid">
@@ -172,7 +232,10 @@ function renderMetas() {
         </select>
       </label>
     </div>
-    <button class="btn-primary" id="saveMetaBtn" type="button" style="max-width:200px">Salvar Meta</button>
+    <div style="display:flex;gap:var(--s-3);margin-top:var(--s-3)">
+      <button class="btn-primary" id="saveMetaBtn" type="button" style="flex:1">Salvar Meta</button>
+      <button class="btn-small" id="suggestMetaBtn" type="button">💡 Sugerir automático</button>
+    </div>
   </div>`;
 
   container.innerHTML = html;
@@ -212,6 +275,10 @@ function renderMetas() {
       if (targetInput) targetInput.value = '';
     });
   }
+
+  // Bind suggest button
+  const suggestBtn = document.getElementById('suggestMetaBtn');
+  if (suggestBtn) suggestBtn.addEventListener('click', suggestAutoMeta);
 }
 
 // Tab activation hook
