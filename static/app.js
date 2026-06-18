@@ -2187,6 +2187,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Define papel do usuário (admin/viewer)
+  if (sbClient) {
+    const { data: { user } } = await sbClient.auth.getUser();
+    if (user) {
+      const role = user.user_metadata?.role;
+      if (!role || role === 'admin') {
+        // Admin: mostra tudo (padrão)
+        document.body.dataset.role = 'admin';
+      } else {
+        document.body.dataset.role = 'viewer';
+      }
+      // Se não tem papel definido, define como admin
+      if (!role) {
+        try {
+          await fetch('/api/users', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: user.id, role: 'admin' })
+          });
+        } catch (e) {}
+      }
+    }
+  }
+
   const btnF = document.getElementById('sortFinalizadosBtn');
   const btnS = document.getElementById('sortScoreBtn');
   const btnA = document.getElementById('sortAssumidosBtn');

@@ -3,7 +3,7 @@ const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -12,6 +12,7 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // GET: listar usuários
     if (req.method === 'GET') {
       const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
         headers: {
@@ -23,8 +24,9 @@ module.exports = async (req, res) => {
       return res.status(response.ok ? 200 : 400).json(data);
     }
 
+    // POST: criar usuário
     if (req.method === 'POST') {
-      const { email, password } = req.body || {};
+      const { email, password, role } = req.body || {};
       if (!email || !password) {
         return res.status(400).json({ error: 'Email e senha obrigatórios' });
       }
@@ -41,13 +43,42 @@ module.exports = async (req, res) => {
         body: JSON.stringify({
           email,
           password,
-          email_confirm: true
+          email_confirm: true,
+          user_metadata: { role: role || 'viewer' }
         })
       });
       const data = await response.json();
       return res.status(response.ok ? 200 : 400).json(data);
     }
 
+    // PUT/PATCH: atualizar senha e/ou cargo
+    if (req.method === 'PUT' || req.method === 'PATCH') {
+      const { id, password, role } = req.body || {};
+      if (!id) {
+        return res.status(400).json({ error: 'ID do usuário obrigatório' });
+      }
+      if (password && password.length < 6) {
+        return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
+      }
+
+      const body = {};
+      if (password) body.password = password;
+      if (role) body.user_metadata = { role };
+
+      const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SERVICE_ROLE_KEY,
+          'Authorization': `Bearer ${SERVICE_ROLE_KEY}`
+        },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json();
+      return res.status(response.ok ? 200 : 400).json(data);
+    }
+
+    // DELETE: remover usuário
     if (req.method === 'DELETE') {
       const { id } = req.body || {};
       if (!id) {

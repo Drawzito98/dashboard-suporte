@@ -1600,6 +1600,25 @@ html[data-theme="dark"] select option { background: var(--bg-surface); color: va
 .auth-loading { text-align: center; padding: var(--s-4); }
 .auth-loading .spinner { margin: 0 auto var(--s-2); }
 
+/* Role badges */
+.role-badge { display:inline-block; padding:2px 8px; border-radius:var(--r-sm); font-size:0.75rem; font-weight:600; }
+.role-admin { background:#dbeafe; color:#1e40af; }
+.role-viewer { background:#f3f4f6; color:#6b7280; }
+[data-theme="dark"] .role-admin { background:#1e3a5f; color:#93c5fd; }
+[data-theme="dark"] .role-viewer { background:#374151; color:#9ca3af; }
+
+/* Viewers: esconde ações de edição/admin */
+body[data-role="viewer"] .tab-btn[data-tab="usuarios"],
+body[data-role="viewer"] #addRowBtn,
+body[data-role="viewer"] #addRowTopBtn,
+body[data-role="viewer"] .btn-delete,
+body[data-role="viewer"] #homeBtn {
+  display: none !important;
+}
+body[data-role="viewer"] .cell-edit[contenteditable="true"] {
+  cursor: default;
+}
+
 /* Acessibilidade ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
