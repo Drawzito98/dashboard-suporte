@@ -477,5 +477,8 @@ function criarOverlay() {
 // ─── Hook ───────────────────────────────────────────────────────
 
 function onFeedbacksTabActivated() {
-  renderFeedbacks();
+  const container = document.getElementById('feedbacksContent');
+  if (!container) return;
+  container.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
+  setTimeout(() => renderFeedbacks(), 50);
 }

@@ -195,5 +195,8 @@ function criarAnotacaoOverlay() {
 }
 
 function onAnotacoesTabActivated() {
-  renderAnotacoes();
+  const container = document.getElementById('anotacoesContent');
+  if (!container) return;
+  container.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
+  setTimeout(() => renderAnotacoes(), 50);
 }

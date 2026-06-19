@@ -231,5 +231,8 @@ function bindTarefaEvents(saved) {
 }
 
 function onTarefasTabActivated() {
-  renderTarefas();
+  const container = document.getElementById('tarefasContent');
+  if (!container) return;
+  container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4)"><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title" style="width:30%"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div></div>';
+  setTimeout(() => renderTarefas(), 50);
 }

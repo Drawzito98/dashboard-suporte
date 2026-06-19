@@ -2650,9 +2650,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Carrega dados extras do Supabase (metas, comentários, scoring, fotos, etc.)
   if (typeof initDbExtra === 'function') {
+    setLoading(true, 'Carregando dados...');
     initDbExtra().then(() => {
+      setLoading(false);
       console.log('[App] db-extra carregado do Supabase');
-    });
+    }).catch(() => setLoading(false));
   }
 
   const btnF = document.getElementById('sortFinalizadosBtn');
