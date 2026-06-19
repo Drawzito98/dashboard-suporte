@@ -16,11 +16,10 @@ function renderBonus() {
 
   let html = '';
 
-  // ── Header do painel ──
-  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-4)">';
-  html += '<div><h3 style="font-size:15px;font-weight:600;margin-bottom:2px">🌟 Bônus & Penalidades</h3>';
-  html += '<p style="font-size:13px;color:var(--text-secondary)">Pontos extras por auxílio, projetos, ou descontos manuais.</p></div>';
-  html += '<button class="btn-small" id="bonusFecharBtn" type="button">✕ Fechar</button>';
+  // ── Header ──
+  html += '<div style="margin-bottom:var(--s-4)">';
+  html += '<h3 style="font-size:16px;font-weight:600;margin-bottom:2px">🌟 Bônus & Penalidades</h3>';
+  html += '<p style="font-size:13px;color:var(--text-secondary)">Pontos extras por auxílio, projetos, ou descontos manuais.</p>';
   html += '</div>';
 
   // ── Formulário ──
@@ -71,7 +70,7 @@ function renderBonus() {
   if (!saved.length) {
     html += '<div class="empty-state" style="padding:var(--s-4)"><div class="empty-title">Nenhum bônus ainda</div><div class="empty-sub">Conceda o primeiro bônus acima.</div></div>';
   } else {
-    html += '<div style="display:flex;flex-direction:column;gap:var(--s-2)">';
+    html += '<div style="display:flex;flex-direction:column;gap:var(--s-2);max-height:320px;overflow-y:auto">';
     for (const b of saved) {
       const pts = parseFloat(b.pontos) || 0;
       const isNeg = pts < 0;
@@ -99,14 +98,6 @@ function renderBonus() {
 function bindBonusEvents(saved) {
   const container = document.getElementById('bonusContent');
   if (!container) return;
-
-  const fecharBtn = document.getElementById('bonusFecharBtn');
-  if (fecharBtn) {
-    fecharBtn.addEventListener('click', () => {
-      document.getElementById('bonusPanel').style.display = 'none';
-      localStorage.removeItem(BONUS_EDITING_KEY);
-    });
-  }
 
   const salvarBtn = document.getElementById('bonusSalvarBtn');
   if (salvarBtn) {
@@ -168,14 +159,23 @@ function bindBonusEvents(saved) {
 }
 
 function toggleBonusPanel() {
-  const panel = document.getElementById('bonusPanel');
-  if (!panel) return;
-  const isOpen = panel.style.display !== 'none';
+  const overlay = document.getElementById('bonusOverlay');
+  if (!overlay) return;
+  const isOpen = overlay.style.display !== 'none';
   if (isOpen) {
-    panel.style.display = 'none';
+    overlay.style.display = 'none';
     localStorage.removeItem(BONUS_EDITING_KEY);
   } else {
-    panel.style.display = 'block';
+    overlay.style.display = 'flex';
     renderBonus();
   }
+}
+
+// Close button wiring
+const _bonusCloseBtn = document.getElementById('bonusOverlayClose');
+if (_bonusCloseBtn) {
+  _bonusCloseBtn.addEventListener('click', () => {
+    document.getElementById('bonusOverlay').style.display = 'none';
+    localStorage.removeItem(BONUS_EDITING_KEY);
+  });
 }
