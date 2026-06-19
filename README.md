@@ -13,7 +13,7 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 
 - **URL:** https://dashboard-suporte-iota.vercel.app
 - **Vercel project:** `andre-tavares/dashboard-suporte`
-- **Git remote:** `origin` → `https://github.com/andre-tavares/dashboard-suporte`
+- **Git remote:** `origin` → `https://github.com/Drawzito98/dashboard-suporte`
 - **Branch:** `main`
 - **Deploy manual:** `npx vercel deploy --prod --yes` (na raiz do projeto)
 
