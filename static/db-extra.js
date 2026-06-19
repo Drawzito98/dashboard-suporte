@@ -631,6 +631,73 @@ async function dbPontosExtrasDelete(id) {
   } catch {}
 }
 
+// ─── COLABORADORES INFO (Cadastro) ─────────────────────────────
+
+const COLAB_INFO_LOCAL_KEY = 'sistema_colaboradores_info_v1';
+
+async function dbColabInfoLoad() {
+  if (!sbClient) return _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
+  try {
+    const uid = await _getUserId();
+    if (!uid) return _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
+    const { data } = await sbClient.from('colaboradores_info').select('*').eq('user_id', uid);
+    if (data && Array.isArray(data) && data.length > 0) {
+      const map = {};
+      data.forEach(r => {
+        map[r.nome] = {
+          id: r.id,
+          data_aniversario: r.data_aniversario || '',
+          data_admissao: r.data_admissao || '',
+          email: r.email || '',
+          tarefas_desempenhadas: r.tarefas_desempenhadas || '',
+          objetivos_futuros: r.objetivos_futuros || '',
+          observacoes: r.observacoes || '',
+          updatedAt: r.updated_at
+        };
+      });
+      localStorage.setItem(COLAB_INFO_LOCAL_KEY, JSON.stringify(map));
+      return map;
+    }
+    return _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
+  } catch {
+    return _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
+  }
+}
+
+async function dbColabInfoSave(nome, data) {
+  const map = JSON.parse(localStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
+  map[nome] = { ...(map[nome] || {}), ...data, updatedAt: new Date().toISOString() };
+  localStorage.setItem(COLAB_INFO_LOCAL_KEY, JSON.stringify(map));
+  if (!sbClient) return;
+  try {
+    const uid = await _getUserId();
+    if (!uid) return;
+    const existing = await sbClient.from('colaboradores_info').select('id').eq('user_id', uid).eq('nome', nome).maybeSingle();
+    if (existing?.data?.id) {
+      await sbClient.from('colaboradores_info').update({
+        data_aniversario: data.data_aniversario || null,
+        data_admissao: data.data_admissao || null,
+        email: data.email || '',
+        tarefas_desempenhadas: data.tarefas_desempenhadas || '',
+        objetivos_futuros: data.objetivos_futuros || '',
+        observacoes: data.observacoes || '',
+        updated_at: new Date().toISOString()
+      }).eq('id', existing.data.id);
+    } else {
+      await sbClient.from('colaboradores_info').insert({
+        user_id: uid,
+        nome,
+        data_aniversario: data.data_aniversario || null,
+        data_admissao: data.data_admissao || null,
+        email: data.email || '',
+        tarefas_desempenhadas: data.tarefas_desempenhadas || '',
+        objetivos_futuros: data.objetivos_futuros || '',
+        observacoes: data.observacoes || ''
+      });
+    }
+  } catch {}
+}
+
 // ─── FALLBACK ────────────────────────────────────────────────────
 
 function _fallbackLoad(key, defaultVal) {
@@ -833,6 +900,29 @@ async function migrateLocalToSupabase() {
       }
     }
 
+    // Colaboradores Info
+    const ciRaw = localStorage.getItem(COLAB_INFO_LOCAL_KEY);
+    if (ciRaw) {
+      const ci = JSON.parse(ciRaw);
+      if (typeof ci === 'object' && Object.keys(ci).length > 0) {
+        const { data: existing } = await sbClient.from('colaboradores_info').select('id').eq('user_id', uid).limit(1);
+        if (!existing || existing.length === 0) {
+          for (const [nome, info] of Object.entries(ci)) {
+            await sbClient.from('colaboradores_info').insert({
+              user_id: uid,
+              nome,
+              data_aniversario: info.data_aniversario || null,
+              data_admissao: info.data_admissao || null,
+              email: info.email || '',
+              tarefas_desempenhadas: info.tarefas_desempenhadas || '',
+              objetivos_futuros: info.objetivos_futuros || '',
+              observacoes: info.observacoes || ''
+            });
+          }
+        }
+      }
+    }
+
     localStorage.setItem(MIGRATION_FLAG_KEY, '1');
   } catch (e) { console.warn('[db-extra] migrateLocalToSupabase error:', e); }
 }
@@ -854,7 +944,8 @@ async function initDbExtra() {
       dbFeedbacksLoad(),
       dbAnotacoesLoad(),
       dbTarefasLoad(),
-      dbPontosExtrasLoad()
+      dbPontosExtrasLoad(),
+      dbColabInfoLoad()
     ]);
   } catch {}
 }

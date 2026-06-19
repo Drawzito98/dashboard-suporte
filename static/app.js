@@ -2896,6 +2896,9 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'tarefas' && typeof onTarefasTabActivated === 'function') {
         onTarefasTabActivated();
       }
+      if (tab === 'colaboradores' && typeof onColaboradoresTabActivated === 'function') {
+        onColaboradoresTabActivated();
+      }
       if (tab === 'dashboard') {
         updateView();
       }
