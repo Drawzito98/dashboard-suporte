@@ -2820,6 +2820,8 @@ if (!rawRecords || !rawRecords.length) {
   if (historicoBtn) historicoBtn.addEventListener('click', () => { openHistorico(); });
   const comentariosBtn = document.getElementById('comentariosBtn');
   if (comentariosBtn) comentariosBtn.addEventListener('click', () => { openComentarios(); });
+  const bonusToggleBtn = document.getElementById('bonusToggleBtn');
+  if (bonusToggleBtn) bonusToggleBtn.addEventListener('click', () => { if (typeof toggleBonusPanel === 'function') toggleBonusPanel(); });
   const tendenciasBtn = document.getElementById('tendenciasBtn');
   if (tendenciasBtn) tendenciasBtn.addEventListener('click', () => { openTendencias(); });
   const cleanDupBtn = document.getElementById('cleanDupBtn');
@@ -2893,9 +2895,6 @@ if (!rawRecords || !rawRecords.length) {
       }
       if (tab === 'tarefas' && typeof onTarefasTabActivated === 'function') {
         onTarefasTabActivated();
-      }
-      if (tab === 'bonus' && typeof onBonusTabActivated === 'function') {
-        onBonusTabActivated();
       }
       if (tab === 'dashboard') {
         updateView();

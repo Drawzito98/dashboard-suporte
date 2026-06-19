@@ -184,9 +184,6 @@
       <button class="tab-btn" data-tab="tarefas">
         <span class="tab-icon">📅</span> Tarefas
       </button>
-      <button class="tab-btn" data-tab="bonus">
-        <span class="tab-icon">🌟</span> Bônus
-      </button>
     </div>
 
     <!-- Main Layout -->
@@ -372,11 +369,15 @@
                 <h2>🏆 Ranking & Gamificação</h2>
                 <p>Pontuação acumulada, medalhas e evolução dos colaboradores</p>
               </div>
-              <div>
+              <div style="display:flex;gap:var(--s-2);align-items:center">
+                <button class="btn-small" id="bonusToggleBtn" type="button" title="Conceder ou remover pontos extras por auxílio, projetos, etc">🌟 Bônus</button>
                 <button class="btn-small" id="refreshGamificacaoBtn" type="button">🔄 Atualizar</button>
               </div>
             </div>
             <div id="gamificationContent"></div>
+            <div id="bonusPanel" style="display:none;margin-top:var(--s-5);padding:0">
+              <div id="bonusContent"></div>
+            </div>
           </section>
         </div>
 
@@ -498,11 +499,6 @@
         <!-- ===== TAB: TAREFAS ===== -->
         <div class="tab-content" id="tab-tarefas">
           <div id="tarefasContent"></div>
-        </div>
-
-        <!-- ===== TAB: BÔNUS ===== -->
-        <div class="tab-content" id="tab-bonus">
-          <div id="bonusContent"></div>
         </div>
 
         <!-- ===== SEÇÃO: Inteligência / Relatório ===== -->
