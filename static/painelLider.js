@@ -64,7 +64,7 @@ function renderPainelLider() {
     if ((info.conduta_negativa === 'true' || info.conduta_negativa === true) && colaboradores.includes(nm))
       flaggedColabs.add(nm);
   });
-  const condutaBadge = (nm) => flaggedColabs.has(nm) ? ' 🚩' : '';
+  const condutaBadge = (nm) => flaggedColabs.has(nm) ? ` <span class="conduta-badge" title="${escapeHtml(colabInfo[nm]?.conduta_motivo || 'Conduta negativa')}">🚩</span>` : '';
 
   // Meta status
   const acimaMeta = [], abaixoMeta = [];
@@ -145,8 +145,8 @@ function renderPainelLider() {
 
   html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--accent-soft);text-align:center">
     <div style="font-size:15px;font-weight:600;color:var(--accent)">${maiorEvol.nome ? escapeHtml(getDisplayName(maiorEvol.nome, aliasMap)) + condutaBadge(maiorEvol.nome) : '—'}</div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Maior evolução</div>
-    ${maiorEvol.delta > -Infinity ? `<div style="font-size:20px;font-weight:700;color:var(--success);margin-top:4px">+${maiorEvol.delta}</div>` : ''}
+    <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Maior evolução em finalizações</div>
+    ${maiorEvol.delta > -Infinity ? `<div style="font-size:20px;font-weight:700;color:var(--success);margin-top:4px">+${maiorEvol.delta} finalizações</div>` : ''}
   </div>`;
 
   html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--warning-soft);text-align:center">
