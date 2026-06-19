@@ -727,15 +727,48 @@ body.meeting-mode .menu-dd { display: none !important; }
   main.app { padding: var(--s-4); }
   .topbar { flex-direction: column; align-items: flex-start; }
   .topbar-right { width: 100%; justify-content: flex-start; }
+  .topbar-right .global-search { max-width: 100%; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .home-card { padding: 28px; }
   .titleblock h1 { font-size: 20px; }
   body.meeting-mode .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Tab bar: permite quebra e reduz padding */
+  .tab-bar { flex-wrap: wrap; gap: 2px; padding: 3px; overflow-x: visible; }
+  .tab-btn { padding: 6px 10px; font-size: 12px; white-space: normal; }
+  .tab-btn .tab-icon { font-size: 14px; }
+
+  /* Sidebar: padding reduzido */
+  .panel { padding: var(--s-4); }
+
+  /* Cards: padding reduzido */
+  .card { padding: var(--s-4); }
+  .card-header { flex-direction: column; gap: var(--s-2); }
+
+  /* Overlays: padding reduzido */
+  .colab-detail-overlay { padding: var(--s-3); align-items: flex-start; padding-top: var(--s-5); }
+  .colab-detail-panel { padding: var(--s-4); }
+
+  /* Tarefas form grids empilham */
+  #tarefasContent > div > .card:first-child > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Toast mais compacto */
+  .toast-container { right: 10px; top: 10px; }
+  .toast { min-width: 200px; max-width: calc(100vw - 40px); }
+
+  /* Kebab menu panel evita overflow */
+  .menu-dd-panel { right: 0; left: auto; min-width: 160px; }
 }
 @media (max-width: 480px) {
   .kpi-grid, body.meeting-mode .kpi-grid { grid-template-columns: 1fr; }
   .chart-scroll .chart-inner { height: 340px; }
   canvas { max-height: 340px; }
+  .tab-btn { padding: 5px 8px; font-size: 11px; }
+  main.app { padding: var(--s-3); }
+  .card { padding: var(--s-3); }
+  .colab-detail-panel { padding: var(--s-3); }
 }
 
 /* ===== Print (relatórios — sempre claro) ===== */
