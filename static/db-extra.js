@@ -652,6 +652,8 @@ async function dbColabInfoLoad() {
           tarefas_desempenhadas: r.tarefas_desempenhadas || '',
           objetivos_futuros: r.objetivos_futuros || '',
           observacoes: r.observacoes || '',
+          conduta_negativa: r.conduta_negativa || '',
+          conduta_motivo: r.conduta_motivo || '',
           updatedAt: r.updated_at
         };
       });
@@ -681,6 +683,8 @@ async function dbColabInfoSave(nome, data) {
         tarefas_desempenhadas: data.tarefas_desempenhadas || '',
         objetivos_futuros: data.objetivos_futuros || '',
         observacoes: data.observacoes || '',
+        conduta_negativa: data.conduta_negativa || '',
+        conduta_motivo: data.conduta_motivo || '',
         updated_at: new Date().toISOString()
       }).eq('id', existing.data.id);
     } else {
@@ -692,7 +696,9 @@ async function dbColabInfoSave(nome, data) {
         email: data.email || '',
         tarefas_desempenhadas: data.tarefas_desempenhadas || '',
         objetivos_futuros: data.objetivos_futuros || '',
-        observacoes: data.observacoes || ''
+        observacoes: data.observacoes || '',
+        conduta_negativa: data.conduta_negativa || '',
+        conduta_motivo: data.conduta_motivo || ''
       });
     }
   } catch {}

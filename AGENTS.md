@@ -113,6 +113,8 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 - `migration_v4.sql` — tabela `anotacoes_diarias`
 - `migration_v5.sql` — tabela `tarefas`
 - `migration_v6.sql` — tabela `pontos_extras`
+- `migration_v7.sql` — tabela `colaboradores_info`
+- `migration_v8.sql` — colunas `conduta_negativa` e `conduta_motivo` em `colaboradores_info`
 
 ## Script Loading Order
 Aba Bônus (`bonus.js`) carregada entre `tarefas.js` e `usuarios.js`.
