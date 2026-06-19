@@ -36,11 +36,12 @@ function renderColaboradores() {
   for (const nome of colabs) {
     const info = colabInfo[nome] || {};
     const hasData = info.data_aniversario || info.data_admissao || info.email;
-    html += `<div class="card colab-card" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Clique para ver/editar">`;
+    const conduta = info.conduta_negativa === 'true' || info.conduta_negativa === true;
+    html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''}" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Clique para ver/editar">`;
     html += '<div style="display:flex;align-items:center;gap:var(--s-3)">';
     html += `<div style="font-size:28px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 36) : '👤'}</div>`;
     html += '<div style="flex:1;min-width:0">';
-    html += `<div style="font-weight:600;font-size:14px">${escapeHtml(nome)}</div>`;
+    html += `<div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:var(--s-2)">${escapeHtml(nome)}${conduta ? '<span class="conduta-badge" title="Conduta negativa">🚩</span>' : ''}</div>`;
     const setores = setorMap[nome];
     if (setores && setores.size) {
       html += `<div style="font-size:12px;color:var(--text-muted);margin-top:1px">🏢 ${escapeHtml([...setores].join(', '))}</div>`;
@@ -112,6 +113,26 @@ function openColabDetailOverlay(nome) {
   html += `<textarea id="ciObjetivos" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Ex: Assumir liderança, aprender ferramenta X...">${escapeHtml(info.objetivos_futuros || '')}</textarea>`;
   html += '</div>';
 
+  const condutaChecked = info.conduta_negativa === 'true' || info.conduta_negativa === true;
+
+  html += `<div class="field" style="grid-column:1/-1;display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);border:1px solid ${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:var(--r-md)">
+    <span style="font-size:18px">🚩</span>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:600;color:var(--text-strong)">Destacar por conduta negativa</div>
+      <div style="font-size:11px;color:var(--text-muted)">Ex: desrespeito, faltas, reclamações recorrentes</div>
+    </div>
+    <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0">
+      <input type="checkbox" id="ciCondutaToggle" ${condutaChecked ? 'checked' : ''} style="opacity:0;width:0;height:0">
+      <span style="position:absolute;cursor:pointer;inset:0;background:${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:12px;transition:.2s"></span>
+      <span style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:var(--bg-surface);border-radius:50%;transition:.2s;transform:${condutaChecked ? 'translateX(20px)' : 'translateX(0)'}"></span>
+    </label>
+  </div>`;
+
+  html += `<div class="field" style="grid-column:1/-1" id="ciCondutaMotivoField" ${condutaChecked ? '' : 'hidden'}>
+    <span>Motivo da conduta</span>
+    <textarea id="ciCondutaMotivo" style="width:100%;min-height:60px;font-size:13px;line-height:1.6;border-color:var(--danger)" placeholder="Descreva o motivo do destaque...">${escapeHtml(info.conduta_motivo || '')}</textarea>
+  </div>`;
+
   html += `<div class="field" style="grid-column:1/-1"><span>Observações</span>`;
   html += `<textarea id="ciObservacoes" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Qualquer observação adicional...">${escapeHtml(info.observacoes || '')}</textarea>`;
   html += '</div>';
@@ -133,7 +154,9 @@ function openColabDetailOverlay(nome) {
       email: document.getElementById('ciEmail').value.trim(),
       tarefas_desempenhadas: document.getElementById('ciTarefas').value.trim(),
       objetivos_futuros: document.getElementById('ciObjetivos').value.trim(),
-      observacoes: document.getElementById('ciObservacoes').value.trim()
+      observacoes: document.getElementById('ciObservacoes').value.trim(),
+      conduta_negativa: document.getElementById('ciCondutaToggle').checked ? 'true' : '',
+      conduta_motivo: document.getElementById('ciCondutaMotivo').value.trim()
     };
     await dbColabInfoSave(nome, data);
     showToast(`Dados de ${nome} salvos!`, 'success', 'Colaboradores');
@@ -141,11 +164,17 @@ function openColabDetailOverlay(nome) {
     if (typeof renderColaboradores === 'function') renderColaboradores();
   });
 
+  document.getElementById('ciCondutaToggle').addEventListener('change', () => {
+    const field = document.getElementById('ciCondutaMotivoField');
+    if (field) field.hidden = !document.getElementById('ciCondutaToggle').checked;
+  });
+
   document.getElementById('ciLimparBtn').addEventListener('click', async () => {
     if (!confirm(`Limpar todos os dados cadastrais de ${nome}?`)) return;
     const data = {
       data_aniversario: '', data_admissao: '', email: '',
-      tarefas_desempenhadas: '', objetivos_futuros: '', observacoes: ''
+      tarefas_desempenhadas: '', objetivos_futuros: '', observacoes: '',
+      conduta_negativa: '', conduta_motivo: ''
     };
     await dbColabInfoSave(nome, data);
     showToast(`Dados de ${nome} removidos!`, 'success', 'Colaboradores');

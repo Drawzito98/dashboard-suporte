@@ -522,6 +522,10 @@ td.score-cell.score-neutro    { color: #6b7280; }
 .text-muted { color: var(--text-muted); }
 .colab-info-btn { background: none; border: none; cursor: pointer; padding: 2px 6px; border-radius: var(--r-sm); font-size: 14px; line-height: 1; }
 .colab-info-btn:hover { background: var(--bg-subtle); }
+.colab-card-conduta { border-color: var(--danger) !important; background: linear-gradient(135deg, var(--danger-soft) 0%, var(--bg-surface) 4px); }
+.colab-card-conduta:hover { box-shadow: 0 0 0 2px var(--danger-ring, rgba(220,38,38,0.3)) !important; }
+.conduta-badge { font-size: 14px; line-height: 1; animation: conduta-pulse 2s infinite; }
+@keyframes conduta-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 .sparkline-cell { padding: 4px 8px; text-align: center; }
 .sparkline-cell svg { display: block; margin: 0 auto; }

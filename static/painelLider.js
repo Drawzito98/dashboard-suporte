@@ -79,8 +79,22 @@ function renderPainelLider() {
   // Melhor desempenho
   const melhorDesempenho = Object.entries(byColab).sort((a, b) => b[1].fin - a[1].fin)[0];
 
-  // ── Pontos de atenção inteligentes ──
+  // ── Pontos de atenção ──
   const atencao = [];
+
+  // Conduta negativa (manual)
+  const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+  Object.entries(colabInfo).forEach(([name, info]) => {
+    const flagged = info.conduta_negativa === 'true' || info.conduta_negativa === true;
+    if (flagged && colaboradores.includes(name)) {
+      atencao.push({
+        name,
+        motivo: info.conduta_motivo || 'Conduta negativa (sem detalhes)',
+        icon: '🚩'
+      });
+    }
+  });
+
   Object.entries(byColab).forEach(([name, d]) => {
     if (d.avgSc > 0 && d.avgSc < 4.5)
       atencao.push({ name, motivo: `Score ${d.avgSc.toFixed(2)} (abaixo de 4.5)`, icon: '⚠️' });
