@@ -26,7 +26,7 @@ function renderBonus() {
   html += '<div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--s-4);margin-bottom:var(--s-4)">';
   const formTitle = editing?.id ? '✏️ Editar' : '➕ Novo';
   html += `<div style="font-size:13px;font-weight:600;margin-bottom:var(--s-3)">${formTitle}</div>`;
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--s-3);margin-bottom:var(--s-3)">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3);margin-bottom:var(--s-3)">';
   html += '<div class="field"><span>Colaborador</span>';
   html += `<select id="bonusColaboradorInput">`;
   html += `<option value="">Selecione...</option>`;
@@ -36,19 +36,23 @@ function renderBonus() {
   }
   html += '</select></div>';
   html += '<div class="field"><span>Pontos</span>';
-  html += `<input type="number" id="bonusPontosInput" step="0.5" min="-999" max="999" placeholder="Positivo ou negativo" value="${editing ? editing.pontos : 1}">`;
+  html += `<input type="number" id="bonusPontosInput" step="0.5" min="0.5" max="999" placeholder="Ex: 3" value="${editing ? Math.abs(parseFloat(editing.pontos) || 1) : 1}">`;
+  html += '</div></div>';
+  html += '<div class="field" style="margin-bottom:var(--s-3)"><span>Descrição</span>';
+  html += `<textarea id="bonusDescricaoInput" style="width:100%;min-height:50px;font-size:13px;line-height:1.6" placeholder="Ex: Auxiliou a equipe no projeto X...">${editing ? escapeHtml(editing.descricao || '') : ''}</textarea>`;
   html += '</div>';
-  html += '<div class="field" style="display:flex;align-items:flex-end;gap:var(--s-2)">';
   if (editing && editing.id) {
+    html += '<div style="display:flex;gap:var(--s-2)">';
     html += `<button class="btn-primary" id="bonusSalvarBtn" type="button" style="flex:1">💾 Atualizar</button>`;
     html += `<button class="btn-small" id="bonusCancelarBtn" type="button">Cancelar</button>`;
+    html += '</div>';
   } else {
-    html += `<button class="btn-primary" id="bonusSalvarBtn" type="button" style="flex:1">💾 Salvar</button>`;
+    html += '<div style="display:flex;gap:var(--s-2)">';
+    html += `<button class="btn-primary" id="bonusAdicionarBtn" type="button" style="flex:1;background:var(--success)">➕ Adicionar</button>`;
+    html += `<button class="btn-primary" id="bonusRemoverBtn" type="button" style="flex:1;background:var(--danger)">➖ Remover</button>`;
+    html += '</div>';
   }
-  html += '</div></div>';
-  html += '<div class="field"><span>Descrição</span>';
-  html += `<textarea id="bonusDescricaoInput" style="width:100%;min-height:50px;font-size:13px;line-height:1.6" placeholder="Ex: Auxiliou a equipe no projeto X...">${editing ? escapeHtml(editing.descricao || '') : ''}</textarea>`;
-  html += '</div></div>';
+  html += '</div>';
 
   // ── Resumo ──
   const acumulo = {};
@@ -99,32 +103,68 @@ function bindBonusEvents(saved) {
   const container = document.getElementById('bonusContent');
   if (!container) return;
 
+  async function salvarBonus(sinal) {
+    const colaborador = document.getElementById('bonusColaboradorInput').value;
+    const absPts = parseFloat(document.getElementById('bonusPontosInput').value) || 0;
+    const descricao = document.getElementById('bonusDescricaoInput').value;
+    if (!colaborador) {
+      showToast('Selecione um colaborador.', 'error', 'Bônus');
+      return;
+    }
+    if (absPts <= 0) {
+      showToast('A quantidade de pontos deve ser positiva.', 'error', 'Bônus');
+      return;
+    }
+    const editingRaw = localStorage.getItem(BONUS_EDITING_KEY);
+    const editing = editingRaw ? JSON.parse(editingRaw) : null;
+    const bonus = {
+      id: editing?.id || Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+      colaborador: colaborador,
+      descricao: descricao.trim(),
+      pontos: absPts * sinal,
+      createdAt: editing?.createdAt || new Date().toISOString()
+    };
+    await dbPontosExtrasSave(bonus);
+    localStorage.removeItem(BONUS_EDITING_KEY);
+    const label = sinal > 0 ? 'Adicionado' : 'Removido';
+    showToast(`${label} ${absPts.toFixed(1)} pts ${sinal > 0 ? 'para' : 'de'} ${colaborador}!`, 'success', 'Bônus');
+    renderBonus();
+    if (typeof renderGamification === 'function') renderGamification();
+  }
+
+  const addBtn = document.getElementById('bonusAdicionarBtn');
+  if (addBtn) addBtn.addEventListener('click', () => salvarBonus(1));
+
+  const remBtn = document.getElementById('bonusRemoverBtn');
+  if (remBtn) remBtn.addEventListener('click', () => salvarBonus(-1));
+
+  // Editing mode
   const salvarBtn = document.getElementById('bonusSalvarBtn');
   if (salvarBtn) {
     salvarBtn.addEventListener('click', async () => {
       const colaborador = document.getElementById('bonusColaboradorInput').value;
-      const pontos = parseFloat(document.getElementById('bonusPontosInput').value) || 0;
+      const absPts = parseFloat(document.getElementById('bonusPontosInput').value) || 0;
       const descricao = document.getElementById('bonusDescricaoInput').value;
       if (!colaborador) {
         showToast('Selecione um colaborador.', 'error', 'Bônus');
         return;
       }
-      if (pontos === 0) {
-        showToast('Defina uma quantidade de pontos (positivo ou negativo).', 'error', 'Bônus');
+      if (absPts <= 0) {
+        showToast('A quantidade de pontos deve ser positiva.', 'error', 'Bônus');
         return;
       }
       const editingRaw = localStorage.getItem(BONUS_EDITING_KEY);
       const editing = editingRaw ? JSON.parse(editingRaw) : null;
+      if (!editing) return;
+      const originalSinal = (parseFloat(editing.pontos) || 0) >= 0 ? 1 : -1;
       const bonus = {
-        id: editing?.id || Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-        colaborador: colaborador,
+        ...editing,
         descricao: descricao.trim(),
-        pontos: pontos,
-        createdAt: editing?.createdAt || new Date().toISOString()
+        pontos: absPts * originalSinal
       };
       await dbPontosExtrasSave(bonus);
       localStorage.removeItem(BONUS_EDITING_KEY);
-      showToast(`Bônus de ${pontos > 0 ? '+' : ''}${pontos.toFixed(1)} pts para ${colaborador}!`, 'success', 'Bônus');
+      showToast(`Bônus atualizado!`, 'success', 'Bônus');
       renderBonus();
       if (typeof renderGamification === 'function') renderGamification();
     });
