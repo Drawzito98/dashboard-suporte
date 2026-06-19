@@ -67,12 +67,6 @@ function _rating(valor, type) {
     if (valor >= 2.5) return { stars: 1, label: 'Regular' };
     return { stars: 0, label: 'Atenção' };
   }
-  if (type === 'transferidos') {
-    if (valor <= 5) return { stars: 3, label: 'Baixo (bom)' };
-    if (valor <= 15) return { stars: 2, label: 'Moderado' };
-    if (valor <= 30) return { stars: 1, label: 'Elevado' };
-    return { stars: 0, label: 'Muito elevado' };
-  }
   return { stars: 1, label: '' };
 }
 
@@ -101,8 +95,6 @@ function gerarSugestaoFeedback(colaborador, mes) {
 
   const teamRecords = mes && mes !== 'all' ? data.filter(r => r['Mês'] === mes) : data;
   const teamFin = _avg(teamRecords, 'Finalizados');
-  const teamAss = _avg(teamRecords, 'Assumidos');
-  const teamTrans = _avg(teamRecords, 'Transferidos');
   const teamScores = teamRecords.map(r => parseFloat(r['SCORE'])).filter(s => s != null && !isNaN(s));
   const teamAvgScore = teamScores.length ? teamScores.reduce((a, b) => a + b, 0) / teamScores.length : 0;
 
@@ -112,7 +104,6 @@ function gerarSugestaoFeedback(colaborador, mes) {
 
   const ratingFin = _rating(totalFin, 'finalizados');
   const ratingScore = _rating(avgScore, 'score');
-  const ratingTrans = _rating(totalTrans, 'transferidos');
 
   let lines = [];
   lines.push('**📋 SUGESTÃO DE FEEDBACK**\n');
@@ -125,7 +116,7 @@ function gerarSugestaoFeedback(colaborador, mes) {
   lines.push('**📊 DESEMPENHO QUANTITATIVO**');
   lines.push(`Finalizações: **${totalFin}** ${_starsHtml(ratingFin.stars)} (${ratingFin.label})`);
   lines.push(`Assumidos: **${totalAss}**`);
-  lines.push(`Transferidos: **${totalTrans}** ${_starsHtml(ratingTrans.stars)} (${ratingTrans.label})`);
+  lines.push(`Transferidos: **${totalTrans}**`);
   if (scores.length) {
     lines.push(`Score médio: **${avgScore.toFixed(2)}** ${_starsHtml(ratingScore.stars)} (${ratingScore.label})`);
   }
@@ -134,7 +125,6 @@ function gerarSugestaoFeedback(colaborador, mes) {
   lines.push('**📈 COMPARATIVO COM A EQUIPE**');
   lines.push(`Finalizações: ${totalFin} vs média da equipe ${teamFin.toFixed(1)} (${totalFin >= teamFin ? '✅ Acima' : '📈 Abaixo'})`);
   lines.push(`Score: ${avgScore.toFixed(2)} vs média ${teamAvgScore.toFixed(2)} (${avgScore >= teamAvgScore ? '✅ Acima' : '📈 Abaixo'})`);
-  lines.push(`Transferidos: ${totalTrans} vs média ${teamTrans.toFixed(1)} (${totalTrans <= teamTrans ? '✅ Menor' : '⚠️ Maior'})`);
   lines.push('');
 
   lines.push('**📉 TENDÊNCIA**');
@@ -146,7 +136,6 @@ function gerarSugestaoFeedback(colaborador, mes) {
   const fortes = [];
   if (ratingFin.stars >= 2) fortes.push('✅ Bom volume de finalizações');
   if (ratingScore.stars >= 2) fortes.push('✅ Score acima da média');
-  if (ratingTrans.stars >= 2) fortes.push('✅ Baixo índice de transferências');
   if (trendFin === 'crescendo') fortes.push('✅ Evolução positiva nas finalizações');
   if (trendScore === 'crescendo') fortes.push('✅ Evolução positiva no score');
   lines.push(fortes.length ? fortes.join('\n') : '—');
@@ -156,7 +145,6 @@ function gerarSugestaoFeedback(colaborador, mes) {
   const oportunidades = [];
   if (ratingFin.stars < 2) oportunidades.push('📌 Buscar aumentar o volume de finalizações');
   if (ratingScore.stars < 2) oportunidades.push('📌 Focar na qualidade do atendimento para elevar o score');
-  if (ratingTrans.stars < 2) oportunidades.push('📌 Reduzir a taxa de transferência de chamados');
   if (trendFin === 'caindo') oportunidades.push('📌 Reverter a tendência de queda nas finalizações');
   if (trendScore === 'caindo') oportunidades.push('📌 Reverter a tendência de queda no score');
   lines.push(oportunidades.length ? oportunidades.join('\n') : '✅ Mantenha o bom trabalho!');

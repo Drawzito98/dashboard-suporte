@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://agvkmfusyetkicmuvumz.supabase.co';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFndmttZnVzeWV0a2ljbXV2dW16Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTc1OTE2NSwiZXhwIjoyMDk3MzM1MTY1fQ.UkpdoFGobxXsFl_L9CjfpdXgkU_Wm-MibuuAY_CT-fk';
+const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');

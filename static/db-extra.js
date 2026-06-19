@@ -427,6 +427,70 @@ async function dbFeedbacksDelete(id) {
   } catch {}
 }
 
+// ─── ANOTAÇÕES DIÁRIAS ──────────────────────────────────────────
+
+const ANOTACOES_LOCAL_KEY = 'sistema_anotacoes_diarias_v1';
+
+async function dbAnotacoesLoad() {
+  if (!sbClient) return _fallbackLoad(ANOTACOES_LOCAL_KEY, []);
+  try {
+    const uid = await _getUserId();
+    if (!uid) return _fallbackLoad(ANOTACOES_LOCAL_KEY, []);
+    const { data } = await sbClient.from('anotacoes_diarias').select('*').eq('user_id', uid).order('data', { ascending: false });
+    if (data && Array.isArray(data) && data.length > 0) {
+      const list = data.map(r => ({
+        id: r.id,
+        data: r.data,
+        conteudo: r.conteudo || '',
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+      }));
+      localStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(list));
+      return list;
+    }
+    return _fallbackLoad(ANOTACOES_LOCAL_KEY, []);
+  } catch {
+    return _fallbackLoad(ANOTACOES_LOCAL_KEY, []);
+  }
+}
+
+async function dbAnotacoesSave(anotacao) {
+  const list = JSON.parse(localStorage.getItem(ANOTACOES_LOCAL_KEY) || '[]');
+  const idx = list.findIndex(a => a.id === anotacao.id);
+  if (idx >= 0) list[idx] = anotacao;
+  else list.unshift(anotacao);
+  localStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(list));
+  if (!sbClient) return;
+  try {
+    const uid = await _getUserId();
+    if (!uid) return;
+    const existing = await sbClient.from('anotacoes_diarias').select('id').eq('id', anotacao.id).maybeSingle();
+    if (existing?.data?.id) {
+      await sbClient.from('anotacoes_diarias').update({
+        data: anotacao.data,
+        conteudo: anotacao.conteudo || '',
+        updated_at: new Date().toISOString()
+      }).eq('id', anotacao.id);
+    } else {
+      await sbClient.from('anotacoes_diarias').insert({
+        user_id: uid,
+        data: anotacao.data,
+        conteudo: anotacao.conteudo || ''
+      });
+    }
+  } catch {}
+}
+
+async function dbAnotacoesDelete(id) {
+  const list = JSON.parse(localStorage.getItem(ANOTACOES_LOCAL_KEY) || '[]');
+  const filtered = list.filter(a => a.id !== id);
+  localStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(filtered));
+  if (!sbClient) return;
+  try {
+    await sbClient.from('anotacoes_diarias').delete().eq('id', id);
+  } catch {}
+}
+
 // ─── FALLBACK ────────────────────────────────────────────────────
 
 function _fallbackLoad(key, defaultVal) {
@@ -571,6 +635,24 @@ async function migrateLocalToSupabase() {
       }
     }
 
+    // Anotações diárias
+    const anotRaw = localStorage.getItem(ANOTACOES_LOCAL_KEY);
+    if (anotRaw) {
+      const anot = JSON.parse(anotRaw);
+      if (Array.isArray(anot) && anot.length > 0) {
+        const { data: existing } = await sbClient.from('anotacoes_diarias').select('id').eq('user_id', uid).limit(1);
+        if (!existing || existing.length === 0) {
+          for (const a of anot) {
+            await sbClient.from('anotacoes_diarias').insert({
+              user_id: uid,
+              data: a.data || '',
+              conteudo: a.conteudo || ''
+            });
+          }
+        }
+      }
+    }
+
     localStorage.setItem(MIGRATION_FLAG_KEY, '1');
   } catch (e) { console.warn('[db-extra] migrateLocalToSupabase error:', e); }
 }
@@ -589,7 +671,8 @@ async function initDbExtra() {
       dbAlertasLoad(),
       dbFotosLoad(),
       dbInativosLoad(),
-      dbFeedbacksLoad()
+      dbFeedbacksLoad(),
+      dbAnotacoesLoad()
     ]);
   } catch {}
 }

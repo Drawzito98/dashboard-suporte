@@ -2786,6 +2786,9 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'feedbacks' && typeof onFeedbacksTabActivated === 'function') {
         onFeedbacksTabActivated();
       }
+      if (tab === 'anotacoes' && typeof onAnotacoesTabActivated === 'function') {
+        onAnotacoesTabActivated();
+      }
       if (tab === 'dashboard') {
         updateView();
       }

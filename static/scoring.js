@@ -6,7 +6,7 @@ const DEFAULT_SCORING_RULES = [
   { id: 'meta_atingida', name: 'Meta atingida', desc: 'Objetivo do mês cumprido', icon: '🎯', defaultValue: 5, key: 'Objetivo' },
   { id: 'nota_baixa', name: 'Nota baixa', desc: 'Score abaixo de 3.0', icon: '⚠️', defaultValue: -3, key: 'SCORE', threshold: 3.0, negative: true },
   { id: 'assumido', name: 'Chamado assumido', desc: 'Por cada chamado assumido', icon: '📞', defaultValue: 0.5, key: 'Assumidos' },
-  { id: 'transferido', name: 'Transferido', desc: 'Por cada chamado transferido (penalidade)', icon: '🔄', defaultValue: -1, key: 'Transferidos', negative: true },
+  { id: 'transferido', name: 'Transferido', desc: 'Por cada chamado transferido (neutro)', icon: '🔄', defaultValue: 0, key: 'Transferidos' },
 ];
 
 let scoringRules = [];
@@ -22,7 +22,9 @@ function loadScoringRules() {
         DEFAULT_SCORING_RULES.forEach(d => { defaultMap[d.id] = d; });
         scoringRules = parsed.map(r => {
           if (defaultMap[r.id]) {
-            return { ...defaultMap[r.id], defaultValue: r.defaultValue };
+            const merged = { ...defaultMap[r.id], defaultValue: r.defaultValue };
+            if (r.id === 'transferido') merged.defaultValue = 0;
+            return merged;
           }
           return r;
         });
