@@ -11,12 +11,18 @@ function closeHistorico() {
   if (overlay) overlay.classList.remove('open');
 }
 
+function loadHistoricoFromStorage() {
+  try {
+    const raw = localStorage.getItem('sistema_historico_v1');
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
 function renderHistorico() {
   const container = document.getElementById('historicoContent');
   if (!container) return;
   try {
-    const raw = localStorage.getItem('sistema_historico_v1');
-    const log = raw ? JSON.parse(raw) : [];
+    const log = loadHistoricoFromStorage();
 
     if (!log.length) {
       container.innerHTML = `<div style="padding:var(--s-5);text-align:center;color:var(--text-muted)">

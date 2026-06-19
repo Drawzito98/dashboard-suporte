@@ -23,6 +23,9 @@ function addComentario(mes, texto) {
     ts: new Date().toISOString()
   });
   saveComentarios(map);
+  if (typeof dbComentarioAdd === 'function') {
+    dbComentarioAdd(mes, texto);
+  }
 }
 
 function delComentario(mes, id) {
@@ -31,6 +34,9 @@ function delComentario(mes, id) {
     map[mes] = map[mes].filter(c => c.id !== id);
     if (!map[mes].length) delete map[mes];
     saveComentarios(map);
+  }
+  if (typeof dbComentarioDel === 'function') {
+    dbComentarioDel(mes, id);
   }
 }
 

@@ -38,6 +38,9 @@ function saveScoringRules() {
   try {
     localStorage.setItem(SCORING_STORAGE_KEY, JSON.stringify(scoringRules));
   } catch (e) {}
+  if (typeof dbScoringSave === 'function') {
+    dbScoringSave(scoringRules);
+  }
 }
 
 function resetScoringRules() {

@@ -11,10 +11,22 @@ function loadMetas() {
     }
   } catch (e) {}
   goals = [];
+  if (typeof dbMetasLoad === 'function') {
+    dbMetasLoad().then(loaded => {
+      if (loaded && Array.isArray(loaded)) {
+        goals = loaded;
+        saveMetas();
+        if (document.querySelector('#tab-metas.active')) renderMetas();
+      }
+    });
+  }
 }
 
 function saveMetas() {
   try { localStorage.setItem(METAS_STORAGE_KEY, JSON.stringify(goals)); } catch (e) {}
+  if (typeof dbMetasSave === 'function') {
+    dbMetasSave(goals);
+  }
 }
 
 function addMeta(meta) {

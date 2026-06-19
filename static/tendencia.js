@@ -123,3 +123,8 @@ function renderProjecoes() {
 
   return html;
 }
+
+function openTendencias() {
+  const btn = document.querySelector('.tab-btn[data-tab="insights"]');
+  if (btn) btn.click();
+}

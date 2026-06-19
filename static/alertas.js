@@ -26,10 +26,21 @@ function loadAlertasConfig() {
     }
   } catch (e) {}
   alertasConfig = JSON.parse(JSON.stringify(DEFAULT_ALERTAS));
+  if (typeof dbAlertasLoad === 'function') {
+    dbAlertasLoad().then(loaded => {
+      if (loaded && Array.isArray(loaded) && loaded.length) {
+        alertasConfig = loaded;
+        saveAlertasConfig();
+      }
+    });
+  }
 }
 
 function saveAlertasConfig() {
   try { localStorage.setItem(ALERTAS_STORAGE_KEY, JSON.stringify(alertasConfig)); } catch (e) {}
+  if (typeof dbAlertasSave === 'function') {
+    dbAlertasSave(alertasConfig);
+  }
 }
 
 function resetAlertasConfig() {

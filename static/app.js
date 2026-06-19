@@ -15,9 +15,8 @@ function getInactiveColabs() {
       if (raw) {
         window.__inactiveColabs = new Set(JSON.parse(raw));
       } else {
-        // First load — use defaults
         window.__inactiveColabs = new Set(DEFAULT_INACTIVE);
-        saveInactiveColabs();
+        localStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify(DEFAULT_INACTIVE));
       }
     } catch (e) {
       window.__inactiveColabs = new Set(DEFAULT_INACTIVE);
@@ -30,6 +29,9 @@ function saveInactiveColabs() {
   try {
     localStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify([...getInactiveColabs()]));
   } catch (e) {}
+  if (typeof dbInativosSave === 'function') {
+    dbInativosSave(getInactiveColabs());
+  }
 }
 
 function setColabActive(name, active) {
@@ -75,6 +77,10 @@ function setColabFoto(name, url) {
     else delete map[name];
     localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
   } catch (e) {}
+  if (typeof dbFotoSave === 'function') {
+    const finalUrl = url ? normalizeFotoUrl(url) : '';
+    dbFotoSave(name, finalUrl);
+  }
 }
 
 function colabAvatarHtml(name, size = 32) {
@@ -140,17 +146,21 @@ function logHistorico(action, rec, extra = {}) {
     const raw = localStorage.getItem(HISTORICO_KEY);
     const log = raw ? JSON.parse(raw) : [];
     const user = (window.__sbUser && window.__sbUser.email) ? window.__sbUser.email : 'desconhecido';
-    log.push({
+    const entry = {
       ts: new Date().toISOString(),
       user,
       action,
       colaborador: rec ? rec['Atendente'] || '' : '',
       mes: rec ? rec['Mês'] || '' : '',
       ...extra
-    });
+    };
+    log.push(entry);
     // Keep last 500 entries
     if (log.length > 500) log.splice(0, log.length - 500);
     localStorage.setItem(HISTORICO_KEY, JSON.stringify(log));
+    if (typeof dbHistoricoAdd === 'function') {
+      dbHistoricoAdd(entry);
+    }
   } catch (e) { console.warn('[Historico] Erro ao salvar:', e); }
 }
 
@@ -2554,6 +2564,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Carrega dados extras do Supabase (metas, comentários, scoring, fotos, etc.)
+  if (typeof initDbExtra === 'function') {
+    initDbExtra().then(() => {
+      console.log('[App] db-extra carregado do Supabase');
+    });
+  }
+
   const btnF = document.getElementById('sortFinalizadosBtn');
   const btnS = document.getElementById('sortScoreBtn');
   const btnA = document.getElementById('sortAssumidosBtn');
@@ -2717,6 +2734,8 @@ if (!rawRecords || !rawRecords.length) {
   if (historicoBtn) historicoBtn.addEventListener('click', () => { openHistorico(); });
   const comentariosBtn = document.getElementById('comentariosBtn');
   if (comentariosBtn) comentariosBtn.addEventListener('click', () => { openComentarios(); });
+  const tendenciasBtn = document.getElementById('tendenciasBtn');
+  if (tendenciasBtn) tendenciasBtn.addEventListener('click', () => { openTendencias(); });
   const cleanDupBtn = document.getElementById('cleanDupBtn');
   if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { cleanDuplicates(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
