@@ -50,8 +50,8 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 2. **Gamificação** — ranking, medalhas, scoring rules
 3. **Metas** — gestão de metas por colaborador
 4. **Comparativos** — comparar colaboradores
-5. **Painel do Líder** — visão do líder
-6. **Insights** — análises automáticas
+5. **Painel do Líder** — visão do líder com Δ colunas, alertas inteligentes (score <4.5, quedas consecutivas, produtividade abaixo da média), atalho 👤 para abrir cadastro do colaborador
+6. **Insights** — análises automáticas com cruzamento de métricas (quantidade vs qualidade), destaques do período (melhor em finalizações/score/prod), mini tabela de evolução do time mês a mês com setas ↑↓
 7. **Alertas** — notificações configuráveis
 8. **Tendências** — projeções
 9. **Conquistas** — badges
@@ -89,6 +89,15 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 - Botão "📏 Visão compacta" na sidebar
 - Reduz padding e fonte das tabelas
 - Persiste em localStorage
+
+### Melhorias Liderança & Insights (commit atual)
+- **Tabela Liderança:** colunas Δ Fin e Δ Score comparando último mês vs anterior, com setas ↑↓ e cores verde/vermelho
+- **Alertas inteligentes:** score < 4.5, queda >30% nas finalizações, score caindo >0.3 no último mês, produtividade abaixo de 70% da média do time, deduplicação de alertas por colaborador+motivo
+- **Atalho 👤:** botão na tabela que abre `openColabDetailOverlay(nome)` direto do painel do líder
+- **Cards de destaque:** melhores do período (mais finalizações, maior score, maior produtividade) exibidos na aba Insights
+- **Mini tabela evolução:** tabela mês a mês com Δ% em Finalizados, Score e Transferências com setas visuais
+- **Cruzamento de métricas:** insights combinados (ex: "finalizações subiram mas score caiu", "transferências impactando score", "cenário ideal")
+- **CSS novas classes:** `.text-muted` para valores nulos, `.colab-info-btn` para o botão 👤 na tabela
 
 ## Regras de Negócio
 - **Nota baixa:** penalidade aplicada para score < 4.5 (alterado de 3.0 para 4.5 no commit `13657b0`)
