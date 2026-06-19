@@ -1623,6 +1623,52 @@ function renderSummary(filtered) {
   }
 }
 
+// ─── VISUAL IMPROVEMENTS: variação % + sparklines ────────────
+
+function getPreviousRecord(colaborador, currentMonth) {
+  if (!rawRecords || !currentMonth) return null;
+  const parts = currentMonth.split('-');
+  if (parts.length !== 2) return null;
+  let y = parseInt(parts[0]), m = parseInt(parts[1]);
+  m--; if (m < 1) { m = 12; y--; }
+  const prevMonth = `${y}-${String(m).padStart(2, '0')}`;
+  return rawRecords.find(r => r['Atendente'] === colaborador && r['Mês'] === prevMonth);
+}
+
+function computeVariation(current, previous) {
+  if (current == null || previous == null || Number(previous) === 0) return null;
+  return ((Number(current) - Number(previous)) / Number(previous)) * 100;
+}
+
+function variationHTML(variation, suffix = '') {
+  if (variation === null) return '<span class="variation-neutro">—</span>';
+  const arrow = variation >= 0 ? '↑' : '↓';
+  const cls = variation >= 0 ? 'variation-pos' : 'variation-neg';
+  return `<span class="${cls}">${arrow} ${Math.abs(variation).toFixed(1)}%${suffix}</span>`;
+}
+
+function colabSparkline(colaborador) {
+  const records = rawRecords.filter(r => r['Atendente'] === colaborador && r['Mês']);
+  const meses = [...new Set(records.map(r => r['Mês']))].filter(Boolean).sort();
+  const values = meses.map(m => {
+    const r = records.find(x => x['Mês'] === m);
+    return r ? Number(r['Finalizados'] || 0) : null;
+  }).filter(v => v !== null);
+  if (values.length < 2) return '<span class="variation-neutro">—</span>';
+  const last6 = values.slice(-6);
+  const min = Math.min(...last6), max = Math.max(...last6);
+  const range = max - min || 1;
+  const w = 60, h = 24, pad = 2;
+  const points = last6.map((v, i) => {
+    const x = pad + (i / (last6.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((v - min) / range) * (h - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const up = last6[last6.length - 1] >= last6[0];
+  const color = up ? '#16a34a' : '#dc2626';
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" points="${points}"/></svg>`;
+}
+
 function renderPreview(rows) {
   previewRows = rows || [];
   // apply current sort if set
@@ -1645,7 +1691,19 @@ function renderPreviewDisplay(rows) {
   let keys = Object.keys(rows[0]);
   // exclude internal/metadata columns
   keys = keys.filter(k => !['foto', 'id', 'user_id', 'created_at'].includes(k.toLowerCase()));
-  const html = [`<div class="table-wrap"><table><thead><tr>${keys.map(k=>`<th>${escapeHtml(k)}</th>`).join('')}<th>Status</th></tr></thead><tbody>`];
+  // Build headers with extra columns
+  let headerHtml = '';
+  keys.forEach(k => {
+    headerHtml += `<th>${escapeHtml(k)}</th>`;
+    if (k === 'Finalizados') {
+      headerHtml += '<th>Var.%</th><th>📈</th>';
+    }
+    if (k === 'SCORE') {
+      headerHtml += '<th>Var.%</th>';
+    }
+  });
+  headerHtml += '<th>Status</th>';
+  const html = [`<div class="table-wrap"><table><thead><tr>${headerHtml}</tr></thead><tbody>`];
   rows.forEach(r => {
     const ridx = rawRecords.indexOf(r);
     const scNum = (r && r['SCORE'] !== undefined && r['SCORE'] !== null && String(r['SCORE']).trim()!=='') ? Number(String(r['SCORE']).replace(',','.')) : null;
@@ -1654,16 +1712,40 @@ function renderPreviewDisplay(rows) {
     let statusText = 'OK';
     if (classeScore === 'score-critico') { statusClass = 'status-bad'; statusText = 'Crítico'; }
     else if (classeScore === 'score-atencao') { statusClass = 'status-warn'; statusText = 'Atenção'; }
-    const rowHtml = keys.map(k => {
+
+    // Pre-compute previous record for variations
+    const prevRec = getPreviousRecord(r['Atendente'], r['Mês']);
+    const prevFinal = prevRec ? Number(prevRec['Finalizados'] || 0) : null;
+    const prevScore = prevRec ? Number(prevRec['SCORE'] || 0) : null;
+    const curFinal = Number(r['Finalizados'] || 0);
+    const curScoreVal = scNum;
+
+    let rowHtml = '';
+    keys.forEach(k => {
       const raw = r[k];
       if (k === 'SCORE') {
         const display = (raw === null || raw === undefined || String(raw).trim() === '') ? '' : Number(raw).toFixed(2);
         const cls = classeScore ? ' ' + classeScore : '';
-        return `<td contenteditable="true" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit score-cell${cls}">${escapeHtml(display)}</td>`;
+        rowHtml += `<td contenteditable="true" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit score-cell${cls}">${escapeHtml(display)}</td>`;
+        // Variation for SCORE
+        const varScore = (curScoreVal !== null && prevScore !== null) ? computeVariation(curScoreVal, prevScore) : null;
+        rowHtml += `<td class="cell-edit" style="text-align:center">${variationHTML(varScore)}</td>`;
+        return;
       }
-      if (k === 'Finalizados' || k === 'Assumidos' || k === 'Transferidos') {
+      if (k === 'Finalizados') {
         const num = raw === null || raw === undefined || raw === '' ? '' : String(Math.round(Number(String(raw).replace(/[^0-9.-]/g, ''))));
-        return `<td contenteditable="true" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(num)}</td>`;
+        rowHtml += `<td contenteditable="true" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(num)}</td>`;
+        // Variation for Finalizados
+        const varFinal = prevFinal !== null ? computeVariation(curFinal, prevFinal) : null;
+        rowHtml += `<td class="cell-edit" style="text-align:center">${variationHTML(varFinal)}</td>`;
+        // Sparkline
+        rowHtml += `<td class="sparkline-cell">${colabSparkline(r['Atendente'])}</td>`;
+        return;
+      }
+      if (k === 'Assumidos' || k === 'Transferidos') {
+        const num = raw === null || raw === undefined || raw === '' ? '' : String(Math.round(Number(String(raw).replace(/[^0-9.-]/g, ''))));
+        rowHtml += `<td contenteditable="true" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(num)}</td>`;
+        return;
       }
       const txt = raw === null || raw === undefined ? '' : String(raw);
       const shown = (k === 'Atendente') ? getDisplayName(txt, aliasMap) : txt;
@@ -1672,14 +1754,16 @@ function renderPreviewDisplay(rows) {
         const atName = String(r['Atendente']||'').trim();
         const isMulti = __multiMap.has(atName);
         const badges = `${isFer ? '<span class="row-badge badge-ferias" title="Esteve de férias neste mês">🏖️ Férias</span>' : ''}${isMulti ? `<span class="row-badge badge-multi" title="Atuou em mais de um setor: ${escapeHtml(__multiMap.get(atName).join(', '))}">🔁 Multi-setor</span>` : ''}`;
-        return `<td contenteditable="${presentationMode ? 'false' : 'true'}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit cell-atendente">${escapeHtml(shown)}${badges}</td>`;
+        rowHtml += `<td contenteditable="${presentationMode ? 'false' : 'true'}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit cell-atendente">${escapeHtml(shown)}${badges}</td>`;
+        return;
       }
       if (k === 'Observações') {
         const isFer = isFeriasObs(raw);
-        return `<td contenteditable="true" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit ${isFer ? 'cell-ferias' : ''}">${escapeHtml(shown)}</td>`;
+        rowHtml += `<td contenteditable="true" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit ${isFer ? 'cell-ferias' : ''}">${escapeHtml(shown)}</td>`;
+        return;
       }
-      return `<td contenteditable="${k === 'Atendente' && presentationMode ? 'false' : 'true'}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(shown)}</td>`;
-    }).join('');
+      rowHtml += `<td contenteditable="${k === 'Atendente' && presentationMode ? 'false' : 'true'}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(shown)}</td>`;
+    });
     html.push('<tr>' + rowHtml + `<td><span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span> <button class="btn-small btn-delete" data-idx="${ridx}" title="Remover" aria-label="Remover">🗑️</button></td>` + '</tr>');
   });
   html.push('</tbody></table></div>');
