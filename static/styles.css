@@ -474,6 +474,18 @@ th, td {
   padding: 12px 14px; text-align: left; vertical-align: middle;
   white-space: nowrap; border-bottom: 1px solid var(--border);
 }
+body.table-compact th,
+body.table-compact td {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+body.table-compact thead th {
+  font-size: 10px;
+  padding: 5px 10px;
+}
+body.table-compact .ranking-table td {
+  padding: 5px 10px;
+}
 thead th {
   background: var(--bg-subtle);
   color: var(--text-secondary);

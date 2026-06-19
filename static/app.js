@@ -2830,6 +2830,22 @@ if (!rawRecords || !rawRecords.length) {
   if (exportChartPngBtn) exportChartPngBtn.addEventListener('click', () => { exportChartAsPNG(); });
   const exportPdfBtn = document.getElementById('exportPdfBtn');
   if (exportPdfBtn) exportPdfBtn.addEventListener('click', () => { exportPDFcomGrafico(); });
+
+  // ── Compact table toggle ──
+  const COMPACT_KEY = 'sistema_table_compact';
+  function applyCompact(enabled) {
+    document.body.classList.toggle('table-compact', enabled);
+    localStorage.setItem(COMPACT_KEY, enabled ? '1' : '');
+    const btn = document.getElementById('compactTableBtn');
+    if (btn) btn.innerHTML = enabled ? '📏 Visão normal' : '📏 Visão compacta';
+  }
+  applyCompact(localStorage.getItem(COMPACT_KEY) === '1');
+  const compactBtn = document.getElementById('compactTableBtn');
+  if (compactBtn) {
+    compactBtn.addEventListener('click', () => {
+      applyCompact(!document.body.classList.contains('table-compact'));
+    });
+  }
   updatePreviewSortControls();
 
   // ===== Tab System =====
