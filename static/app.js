@@ -2894,6 +2894,9 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'tarefas' && typeof onTarefasTabActivated === 'function') {
         onTarefasTabActivated();
       }
+      if (tab === 'bonus' && typeof onBonusTabActivated === 'function') {
+        onBonusTabActivated();
+      }
       if (tab === 'dashboard') {
         updateView();
       }

@@ -564,6 +564,73 @@ async function dbTarefasDelete(id) {
   } catch {}
 }
 
+// ─── PONTOS EXTRAS (Bônus Manuais) ──────────────────────────────
+
+const PONTOS_EXTRAS_LOCAL_KEY = 'sistema_pontos_extras_v1';
+
+async function dbPontosExtrasLoad() {
+  if (!sbClient) return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
+  try {
+    const uid = await _getUserId();
+    if (!uid) return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
+    const { data } = await sbClient.from('pontos_extras').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+    if (data && Array.isArray(data) && data.length > 0) {
+      const list = data.map(r => ({
+        id: r.id,
+        colaborador: r.colaborador,
+        descricao: r.descricao || '',
+        pontos: parseFloat(r.pontos) || 0,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+      }));
+      localStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(list));
+      return list;
+    }
+    return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
+  } catch {
+    return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
+  }
+}
+
+async function dbPontosExtrasSave(bonus) {
+  const list = JSON.parse(localStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
+  const idx = list.findIndex(b => b.id === bonus.id);
+  if (idx >= 0) list[idx] = bonus;
+  else list.unshift(bonus);
+  localStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(list));
+  if (!sbClient) return;
+  try {
+    const uid = await _getUserId();
+    if (!uid) return;
+    const existing = await sbClient.from('pontos_extras').select('id').eq('id', bonus.id).maybeSingle();
+    if (existing?.data?.id) {
+      await sbClient.from('pontos_extras').update({
+        colaborador: bonus.colaborador,
+        descricao: bonus.descricao || '',
+        pontos: parseFloat(bonus.pontos) || 0,
+        updated_at: new Date().toISOString()
+      }).eq('id', bonus.id);
+    } else {
+      await sbClient.from('pontos_extras').insert({
+        user_id: uid,
+        colaborador: bonus.colaborador,
+        descricao: bonus.descricao || '',
+        pontos: parseFloat(bonus.pontos) || 0
+      });
+    }
+  } catch {}
+}
+
+async function dbPontosExtrasDelete(id) {
+  const list = JSON.parse(localStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
+  const filtered = list.filter(b => b.id !== id);
+  localStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(filtered));
+  if (!sbClient) return;
+  try {
+    await sbClient.from('pontos_extras').delete().eq('id', id);
+  } catch {}
+}
+
 // ─── FALLBACK ────────────────────────────────────────────────────
 
 function _fallbackLoad(key, defaultVal) {
@@ -747,6 +814,25 @@ async function migrateLocalToSupabase() {
       }
     }
 
+    // Pontos Extras
+    const peRaw = localStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY);
+    if (peRaw) {
+      const pe = JSON.parse(peRaw);
+      if (Array.isArray(pe) && pe.length > 0) {
+        const { data: existing } = await sbClient.from('pontos_extras').select('id').eq('user_id', uid).limit(1);
+        if (!existing || existing.length === 0) {
+          for (const b of pe) {
+            await sbClient.from('pontos_extras').insert({
+              user_id: uid,
+              colaborador: b.colaborador || '',
+              descricao: b.descricao || '',
+              pontos: parseFloat(b.pontos) || 0
+            });
+          }
+        }
+      }
+    }
+
     localStorage.setItem(MIGRATION_FLAG_KEY, '1');
   } catch (e) { console.warn('[db-extra] migrateLocalToSupabase error:', e); }
 }
@@ -767,7 +853,8 @@ async function initDbExtra() {
       dbInativosLoad(),
       dbFeedbacksLoad(),
       dbAnotacoesLoad(),
-      dbTarefasLoad()
+      dbTarefasLoad(),
+      dbPontosExtrasLoad()
     ]);
   } catch {}
 }
