@@ -183,94 +183,102 @@ function renderFeedbacks() {
 
   let html = '';
 
-  // ── Formulário ──
-  html += '<div class="card" style="margin-bottom:var(--s-5)">';
+  // ── Split layout: form (left) + saved list (right) ──
+  const filtroColab = sessionStorage.getItem('fb_filtro_colab') || '';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-5);align-items:start">';
+
+  // ── LEFT: Formulário ──
+  html += '<div class="card">';
   html += '<div style="margin-bottom:var(--s-4)">';
-  html += '<h3 style="font-size:15px;font-weight:600;margin-bottom:4px">✏️ Novo Feedback</h3>';
+  html += '<h3 style="font-size:15px;font-weight:600;margin-bottom:4px">✏️ Feedback</h3>';
   html += '<p style="font-size:13px;color:var(--text-secondary)">Selecione colaborador e período, gere uma sugestão e personalize.</p>';
   html += '</div>';
 
   html += '<div style="display:flex;gap:var(--s-3);flex-wrap:wrap;margin-bottom:var(--s-4)">';
-  html += '<label class="field" style="flex:1;min-width:180px">';
+  html += '<label class="field" style="flex:1;min-width:140px">';
   html += '<span>Colaborador</span>';
   html += `<select id="fbColabSelect"><option value="">Selecionar...</option>`;
   html += colabs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
   html += '</select></label>';
 
-  html += '<label class="field" style="flex:1;min-width:160px">';
+  html += '<label class="field" style="flex:1;min-width:130px">';
   html += '<span>Período</span>';
-  html += `<select id="fbMesSelect"><option value="all">Todos os meses</option>`;
+  html += `<select id="fbMesSelect"><option value="all">Todos</option>`;
   html += meses.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
   html += '</select></label>';
 
   html += '<div style="display:flex;align-items:flex-end">';
-  html += '<button class="btn-primary" id="fbGerarBtn" type="button" disabled>✨ Gerar Sugestão</button>';
+  html += '<button class="btn-primary" id="fbGerarBtn" type="button" disabled>✨ Gerar</button>';
   html += '</div></div>';
 
   // Sugestão gerada
   html += '<div id="fbSugestaoArea" style="margin-bottom:var(--s-3)">';
   if (editing && editing.sugestao_automatica) {
-    html += '<div class="field"><span>Sugestão Automática</span>';
-    html += `<textarea id="fbSugestaoTexto" style="width:100%;min-height:180px;font-size:13px;line-height:1.6;white-space:pre-wrap">${escapeHtml(editing.sugestao_automatica)}</textarea></div>`;
+    html += '<div class="field"><span>Sugestão</span>';
+    html += `<textarea id="fbSugestaoTexto" style="width:100%;min-height:160px;font-size:12px;line-height:1.5;white-space:pre-wrap">${escapeHtml(editing.sugestao_automatica)}</textarea></div>`;
   } else {
-    html += '<div class="empty-state" style="padding:var(--s-4);font-size:13px">Selecione um colaborador e clique em "Gerar Sugestão".</div>';
+    html += '<div class="empty-state" style="padding:var(--s-3);font-size:12px">Selecione um colaborador e gere a sugestão.</div>';
   }
   html += '</div>';
 
   // Anotações
-  html += '<div class="field" style="margin-bottom:var(--s-3)">';
-  html += '<span>Suas Anotações</span>';
-  html += `<textarea id="fbAnotacoesTexto" style="width:100%;min-height:100px;font-size:13px;line-height:1.6" placeholder="Adicione suas observações, pontos discutidos, plano de ação...">${editing ? escapeHtml(editing.anotacoes || '') : ''}</textarea>`;
+  html += '<div class="field" style="margin-bottom:var(--s-2)">';
+  html += '<span>Anotações</span>';
+  html += `<textarea id="fbAnotacoesTexto" style="width:100%;min-height:70px;font-size:12px;line-height:1.5" placeholder="Observações, pontos discutidos...">${editing ? escapeHtml(editing.anotacoes || '') : ''}</textarea>`;
   html += '</div>';
 
   // Feedback final
   html += '<div class="field" style="margin-bottom:var(--s-3)">';
-  html += '<span>Feedback Final (editável)</span>';
-  html += `<textarea id="fbFinalTexto" style="width:100%;min-height:120px;font-size:13px;line-height:1.6" placeholder="O feedback final que será registrado. Edite a sugestão automática ou escreva do zero.">${editing ? escapeHtml(editing.feedback_final || editing.sugestao_automatica || '') : ''}</textarea>`;
+  html += '<span>Feedback Final</span>';
+  html += `<textarea id="fbFinalTexto" style="width:100%;min-height:100px;font-size:12px;line-height:1.5" placeholder="Feedback final registrado.">${editing ? escapeHtml(editing.feedback_final || editing.sugestao_automatica || '') : ''}</textarea>`;
   html += '</div>';
 
   html += '<div style="display:flex;gap:var(--s-3)">';
   if (editing && editing.id) {
-    html += `<button class="btn-primary" id="fbSalvarBtn" type="button">💾 Atualizar Feedback</button>`;
+    html += `<button class="btn-primary" id="fbSalvarBtn" type="button">💾 Atualizar</button>`;
     html += `<button class="btn-small" id="fbCancelarBtn" type="button">Cancelar</button>`;
   } else {
-    html += `<button class="btn-primary" id="fbSalvarBtn" type="button" disabled>💾 Salvar Feedback</button>`;
+    html += `<button class="btn-primary" id="fbSalvarBtn" type="button" disabled>💾 Salvar</button>`;
   }
   html += '</div>';
   html += '</div>';
 
-  // ── Feedbacks Salvos ──
+  // ── RIGHT: Feedbacks Salvos ──
   html += '<div class="card">';
   html += '<div class="card-header">';
-  html += '<div><h3 style="font-size:15px;font-weight:600">📋 Feedbacks Registrados</h3>';
-  html += `<p style="font-size:13px;color:var(--text-secondary)">${saved.length} feedback(s) salvo(s)</p></div>`;
-  if (saved.length > 0) {
-    html += '<button class="btn-small" id="fbRefreshBtn" type="button">🔄 Atualizar</button>';
-  }
-  html += '</div>';
+  html += '<div><h3 style="font-size:15px;font-weight:600">📋 Feedbacks Salvos</h3>';
+  html += `<p style="font-size:13px;color:var(--text-secondary)">${saved.length} registro(s)</p></div>`;
+  html += '<div style="display:flex;gap:var(--s-2);align-items:center">';
+  html += `<input type="text" id="fbFiltroColab" placeholder="Filtrar por colaborador..." value="${escapeHtml(filtroColab)}" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-card);color:var(--text);width:140px">`;
+  html += '<button class="btn-small" id="fbRefreshBtn" type="button">🔄</button>';
+  html += '</div></div>';
 
-  if (!saved.length) {
-    html += '<div class="empty-state" style="padding:var(--s-5)"><div class="empty-title">Nenhum feedback registrado</div><div class="empty-sub">Crie e salve seu primeiro feedback acima.</div></div>';
+  const filtered = filtroColab ? saved.filter(fb => fb.colaborador.toLowerCase().includes(filtroColab.toLowerCase())) : saved;
+
+  if (!filtered.length) {
+    html += '<div class="empty-state" style="padding:var(--s-4)"><div class="empty-title">Nenhum feedback</div><div class="empty-sub">Crie e salve ao lado.</div></div>';
   } else {
-    html += '<div style="display:flex;flex-direction:column;gap:var(--s-3)">';
-    for (const fb of saved) {
-      const preview = (fb.feedback_final || fb.sugestao_automatica || '').split('\n').slice(0, 4).join('\n');
+    html += '<div style="display:flex;flex-direction:column;gap:var(--s-2);max-height:65vh;overflow-y:auto">';
+    for (const fb of filtered) {
+      const preview = (fb.feedback_final || fb.sugestao_automatica || '').split('\n').slice(0, 3).join('\n');
       const dateStr = fb.createdAt ? new Date(fb.createdAt).toLocaleDateString('pt-BR') : '';
-      html += '<div style="border:1px solid var(--border);border-radius:var(--r-md);padding:var(--s-4)">';
-      html += `<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:var(--s-2)">`;
-      html += `<div><strong>${escapeHtml(fb.colaborador)}</strong> <span style="color:var(--text-muted)">· ${escapeHtml(fb.mes)}</span></div>`;
-      html += `<span style="font-size:12px;color:var(--text-muted)">${dateStr}</span>`;
+      html += '<div style="border:1px solid var(--border);border-radius:var(--r-md);padding:var(--s-3)">';
+      html += `<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:var(--s-1)">`;
+      html += `<div style="font-size:13px"><strong>${escapeHtml(fb.colaborador)}</strong> <span style="color:var(--text-muted)">· ${escapeHtml(fb.mes)}</span></div>`;
+      html += `<span style="font-size:11px;color:var(--text-muted)">${dateStr}</span>`;
       html += '</div>';
-      html += `<pre style="font-size:12px;color:var(--text-secondary);white-space:pre-wrap;margin:var(--s-2) 0;max-height:100px;overflow-y:auto">${escapeHtml(preview)}</pre>`;
-      html += '<div style="display:flex;gap:var(--s-2);margin-top:var(--s-2)">';
-      html += `<button class="btn-small fb-ver-btn" data-id="${fb.id}" type="button">👁️ Ver</button>`;
-      html += `<button class="btn-small fb-editar-btn" data-id="${fb.id}" type="button">✏️ Editar</button>`;
-      html += `<button class="btn-small btn-delete fb-excluir-btn" data-id="${fb.id}" type="button">🗑️ Excluir</button>`;
+      html += `<pre style="font-size:11px;color:var(--text-secondary);white-space:pre-wrap;margin:var(--s-1) 0;max-height:60px;overflow-y:auto">${escapeHtml(preview)}</pre>`;
+      html += '<div style="display:flex;gap:var(--s-1);margin-top:var(--s-1)">';
+      html += `<button class="btn-small fb-ver-btn" data-id="${fb.id}" type="button">👁️</button>`;
+      html += `<button class="btn-small fb-editar-btn" data-id="${fb.id}" type="button">✏️</button>`;
+      html += `<button class="btn-small btn-delete fb-excluir-btn" data-id="${fb.id}" type="button">🗑️</button>`;
       html += '</div></div>';
     }
     html += '</div>';
   }
   html += '</div>';
+
+  html += '</div>'; // fecha grid
 
   container.innerHTML = html;
   bindFbEvents(colabs, meses, saved);
@@ -279,6 +287,7 @@ function renderFeedbacks() {
 // ─── Event Bindings ─────────────────────────────────────────────
 
 function bindFbEvents(colabs, meses, saved) {
+  const container = document.getElementById('feedbacksContent');
   const colabSel = document.getElementById('fbColabSelect');
   const mesSel = document.getElementById('fbMesSelect');
   const gerarBtn = document.getElementById('fbGerarBtn');
@@ -372,6 +381,15 @@ function bindFbEvents(colabs, meses, saved) {
   if (cancelarBtn) {
     cancelarBtn.addEventListener('click', () => {
       localStorage.removeItem(FB_EDITING_KEY);
+      renderFeedbacks();
+    });
+  }
+
+  // Filter saved feedbacks
+  const filtroInput = document.getElementById('fbFiltroColab');
+  if (filtroInput) {
+    filtroInput.addEventListener('input', () => {
+      sessionStorage.setItem('fb_filtro_colab', filtroInput.value);
       renderFeedbacks();
     });
   }

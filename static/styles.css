@@ -1629,6 +1629,13 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   cursor: default;
 }
 
+/* Responsivo: split layout feedbacks empilha em tela estreita */
+@media (max-width: 900px) {
+  #tab-feedbacks > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* Acessibilidade ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
