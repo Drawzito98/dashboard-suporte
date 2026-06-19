@@ -36,6 +36,7 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 | `feedbacks` | Feedbacks salvos | `db-extra.js` + `feedbacks.js` |
 | `anotacoes_diarias` | Anotações diárias | `db-extra.js` + `anotacoes.js` |
 | `tarefas` | Tarefas/agenda | `db-extra.js` + `tarefas.js` |
+| `pontos_extras` | Bônus manuais | `db-extra.js` + `bonus.js` |
 
 ## Arquitetura de Dados
 - **Leitura:** localStorage primeiro (síncrono), Supabase atualiza em background
@@ -60,7 +61,8 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 13. **Feedbacks** — geração de sugestão + CRUD
 14. **Anotações** — notas diárias
 15. **Tarefas** — agenda com prioridades e status
-16. **Usuários** — gestão de acesso
+16. **Bônus** — pontos extras manuais por auxílio, projetos, etc (integra gamificação)
+17. **Usuários** — gestão de acesso
 
 ### Melhorias Visuais (commit `49de789`)
 - **Zebrado:** `:nth-child(even)` em todas as tabelas
@@ -89,6 +91,8 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 - Persiste em localStorage
 
 ## Regras de Negócio
+- **Nota baixa:** penalidade aplicada para score < 4.5 (alterado de 3.0 para 4.5 no commit `13657b0`)
+- **Bônus manuais:** regra `pontos_extras` no scoring — soma manual × defaultValue da config
 - **Transferências:** neutras na gamificação (defaultValue: 0) e feedbacks (dado informativo sem rating) — pois são frequentemente legítimas (redirecionamento ao setor correto)
 - **Feedbacks privados:** RLS com `auth.uid() = user_id`
 - **Anotações e Tarefas:** também privadas por `user_id`
@@ -99,6 +103,15 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 - `migration_v3.sql` — tabela `feedbacks`
 - `migration_v4.sql` — tabela `anotacoes_diarias`
 - `migration_v5.sql` — tabela `tarefas`
+- `migration_v6.sql` — tabela `pontos_extras`
+
+## Script Loading Order
+Aba Bônus (`bonus.js`) carregada entre `tarefas.js` e `usuarios.js`.
+
+## Observações
+- **Migration v6 (bonus):** executar no SQL Editor do Supabase antes de usar a aba Bônus
+- **Regra de scoring `pontos_extras`:** lê do localStorage `sistema_pontos_extras_v1`; defaultValue na config (padrão 1x) multiplica os pontos lançados
+- **Integração gamificação:** ao salvar/excluir bônus, `renderGamification()` é chamado automaticamente
 
 ## Comandos Úteis
 ```bash
