@@ -143,11 +143,13 @@ function renderPainelLider() {
     ${abaixoMeta.length ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${abaixoMeta.map(n => escapeHtml(getDisplayName(n, aliasMap)) + condutaBadge(n)).join(', ')}</div>` : ''}
   </div>`;
 
-  html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--accent-soft);text-align:center">
-    <div style="font-size:15px;font-weight:600;color:var(--accent)">${maiorEvol.nome ? escapeHtml(getDisplayName(maiorEvol.nome, aliasMap)) + condutaBadge(maiorEvol.nome) : '—'}</div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Maior evolução em finalizações</div>
-    ${maiorEvol.delta > -Infinity ? `<div style="font-size:20px;font-weight:700;color:var(--success);margin-top:4px">+${maiorEvol.delta} finalizações</div>` : ''}
-  </div>`;
+  if (maiorEvol.nome && globalFilters.periodo !== 'all') {
+    html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--accent-soft);text-align:center">
+      <div style="font-size:15px;font-weight:600;color:var(--accent)">${escapeHtml(getDisplayName(maiorEvol.nome, aliasMap))}${condutaBadge(maiorEvol.nome)}</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Maior evolução em finalizações</div>
+      <div style="font-size:20px;font-weight:700;color:var(--success);margin-top:4px">+${maiorEvol.delta} finalizações</div>
+    </div>`;
+  }
 
   html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--warning-soft);text-align:center">
     <div style="font-size:15px;font-weight:600;color:var(--warning)">${melhorDesempenho ? escapeHtml(getDisplayName(melhorDesempenho[0], aliasMap)) + condutaBadge(melhorDesempenho[0]) : '—'}</div>
