@@ -57,6 +57,15 @@ function renderPainelLider() {
   const prodGeral = totalAss > 0 ? totalFin / totalAss : 0;
   const aliasMap = buildAliasMap(colaboradores);
 
+  // Colaboradores com conduta negativa
+  const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+  const flaggedColabs = new Set();
+  Object.entries(colabInfo).forEach(([nm, info]) => {
+    if ((info.conduta_negativa === 'true' || info.conduta_negativa === true) && colaboradores.includes(nm))
+      flaggedColabs.add(nm);
+  });
+  const condutaBadge = (nm) => flaggedColabs.has(nm) ? ' 🚩' : '';
+
   // Meta status
   const acimaMeta = [], abaixoMeta = [];
   Object.entries(byColab).forEach(([name, d]) => {
@@ -82,17 +91,13 @@ function renderPainelLider() {
   // ── Pontos de atenção ──
   const atencao = [];
 
-  // Conduta negativa (manual)
-  const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
-  Object.entries(colabInfo).forEach(([name, info]) => {
-    const flagged = info.conduta_negativa === 'true' || info.conduta_negativa === true;
-    if (flagged && colaboradores.includes(name)) {
-      atencao.push({
-        name,
-        motivo: info.conduta_motivo || 'Conduta negativa (sem detalhes)',
-        icon: '🚩'
-      });
-    }
+  flaggedColabs.forEach(name => {
+    const info = colabInfo[name] || {};
+    atencao.push({
+      name,
+      motivo: info.conduta_motivo || 'Conduta negativa (sem detalhes)',
+      icon: '🚩'
+    });
   });
 
   Object.entries(byColab).forEach(([name, d]) => {
@@ -129,23 +134,23 @@ function renderPainelLider() {
   html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--success-soft);text-align:center">
     <div style="font-size:26px;font-weight:700;color:var(--success)">${acimaMeta.length}</div>
     <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Acima da meta</div>
-    ${acimaMeta.length ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${acimaMeta.map(n => escapeHtml(getDisplayName(n, aliasMap))).join(', ')}</div>` : ''}
+    ${acimaMeta.length ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${acimaMeta.map(n => escapeHtml(getDisplayName(n, aliasMap)) + condutaBadge(n)).join(', ')}</div>` : ''}
   </div>`;
 
   html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:${abaixoMeta.length ? 'var(--danger-soft)' : 'var(--bg-surface)'};text-align:center">
     <div style="font-size:26px;font-weight:700;color:${abaixoMeta.length ? 'var(--danger)' : 'var(--text-muted)'}">${abaixoMeta.length}</div>
     <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Abaixo da meta</div>
-    ${abaixoMeta.length ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${abaixoMeta.map(n => escapeHtml(getDisplayName(n, aliasMap))).join(', ')}</div>` : ''}
+    ${abaixoMeta.length ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${abaixoMeta.map(n => escapeHtml(getDisplayName(n, aliasMap)) + condutaBadge(n)).join(', ')}</div>` : ''}
   </div>`;
 
   html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--accent-soft);text-align:center">
-    <div style="font-size:15px;font-weight:600;color:var(--accent)">${maiorEvol.nome ? escapeHtml(getDisplayName(maiorEvol.nome, aliasMap)) : '—'}</div>
+    <div style="font-size:15px;font-weight:600;color:var(--accent)">${maiorEvol.nome ? escapeHtml(getDisplayName(maiorEvol.nome, aliasMap)) + condutaBadge(maiorEvol.nome) : '—'}</div>
     <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Maior evolução</div>
     ${maiorEvol.delta > -Infinity ? `<div style="font-size:20px;font-weight:700;color:var(--success);margin-top:4px">+${maiorEvol.delta}</div>` : ''}
   </div>`;
 
   html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--warning-soft);text-align:center">
-    <div style="font-size:15px;font-weight:600;color:var(--warning)">${melhorDesempenho ? escapeHtml(getDisplayName(melhorDesempenho[0], aliasMap)) : '—'}</div>
+    <div style="font-size:15px;font-weight:600;color:var(--warning)">${melhorDesempenho ? escapeHtml(getDisplayName(melhorDesempenho[0], aliasMap)) + condutaBadge(melhorDesempenho[0]) : '—'}</div>
     <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Melhor desempenho</div>
     <div style="font-size:20px;font-weight:700;color:var(--text-strong);margin-top:4px">${melhorDesempenho ? melhorDesempenho[1].fin.toLocaleString('pt-BR') : '0'} finalizações</div>
   </div>`;
@@ -163,7 +168,7 @@ function renderPainelLider() {
     }).forEach(item => {
       html += `<div style="display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);border:1px solid var(--border);border-radius:var(--r-md);background:var(--danger-soft)">
         <span style="font-size:14px">${item.icon}</span>
-        <span style="font-weight:600;color:var(--text-strong);font-size:13px">${escapeHtml(getDisplayName(item.name, aliasMap))}</span>
+        <span style="font-weight:600;color:var(--text-strong);font-size:13px">${escapeHtml(getDisplayName(item.name, aliasMap))}${condutaBadge(item.name)}</span>
         <span style="color:var(--text-secondary);font-size:12px">${escapeHtml(item.motivo)}</span>
       </div>`;
     });
@@ -183,8 +188,8 @@ function renderPainelLider() {
       const deltaSc = d.scAnterior > 0 ? (d.scUltimo - d.scAnterior) : null;
       const finClass = deltaFin !== null ? (deltaFin >= 0 ? 'variation-pos' : 'variation-neg') : '';
       const scClass = deltaSc !== null ? (deltaSc >= 0 ? 'variation-pos' : 'variation-neg') : '';
-      return `<tr>
-        <td><strong>${escapeHtml(getDisplayName(name, aliasMap))}</strong></td>
+      return `<tr${flaggedColabs.has(name) ? ' style="background:var(--danger-soft)"' : ''}>
+        <td><strong>${escapeHtml(getDisplayName(name, aliasMap))}${condutaBadge(name)}</strong></td>
         <td>${d.fin.toLocaleString('pt-BR')}</td>
         <td class="${finClass}" style="font-size:12px">${deltaFin !== null ? (deltaFin >= 0 ? '↑ +' : '↓ ') + deltaFin : '—'}</td>
         <td class="score-cell ${d.avgSc > 0 ? getClasseScore(d.avgSc) : 'score-neutro'}">${d.avgSc > 0 ? d.avgSc.toFixed(2) : '—'}</td>
