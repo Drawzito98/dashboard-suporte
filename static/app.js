@@ -2789,6 +2789,9 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'anotacoes' && typeof onAnotacoesTabActivated === 'function') {
         onAnotacoesTabActivated();
       }
+      if (tab === 'tarefas' && typeof onTarefasTabActivated === 'function') {
+        onTarefasTabActivated();
+      }
       if (tab === 'dashboard') {
         updateView();
       }

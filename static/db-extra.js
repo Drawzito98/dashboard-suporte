@@ -491,6 +491,79 @@ async function dbAnotacoesDelete(id) {
   } catch {}
 }
 
+// ─── TAREFAS / AGENDA ───────────────────────────────────────────
+
+const TAREFAS_LOCAL_KEY = 'sistema_tarefas_v1';
+
+async function dbTarefasLoad() {
+  if (!sbClient) return _fallbackLoad(TAREFAS_LOCAL_KEY, []);
+  try {
+    const uid = await _getUserId();
+    if (!uid) return _fallbackLoad(TAREFAS_LOCAL_KEY, []);
+    const { data } = await sbClient.from('tarefas').select('*').eq('user_id', uid).order('data', { ascending: false });
+    if (data && Array.isArray(data) && data.length > 0) {
+      const list = data.map(r => ({
+        id: r.id,
+        titulo: r.titulo,
+        descricao: r.descricao || '',
+        data: r.data,
+        prioridade: r.prioridade,
+        status: r.status,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+      }));
+      localStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(list));
+      return list;
+    }
+    return _fallbackLoad(TAREFAS_LOCAL_KEY, []);
+  } catch {
+    return _fallbackLoad(TAREFAS_LOCAL_KEY, []);
+  }
+}
+
+async function dbTarefasSave(tarefa) {
+  const list = JSON.parse(localStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
+  const idx = list.findIndex(t => t.id === tarefa.id);
+  if (idx >= 0) list[idx] = tarefa;
+  else list.unshift(tarefa);
+  localStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(list));
+  if (!sbClient) return;
+  try {
+    const uid = await _getUserId();
+    if (!uid) return;
+    const existing = await sbClient.from('tarefas').select('id').eq('id', tarefa.id).maybeSingle();
+    if (existing?.data?.id) {
+      await sbClient.from('tarefas').update({
+        titulo: tarefa.titulo,
+        descricao: tarefa.descricao || '',
+        data: tarefa.data,
+        prioridade: tarefa.prioridade,
+        status: tarefa.status,
+        updated_at: new Date().toISOString()
+      }).eq('id', tarefa.id);
+    } else {
+      await sbClient.from('tarefas').insert({
+        user_id: uid,
+        titulo: tarefa.titulo,
+        descricao: tarefa.descricao || '',
+        data: tarefa.data,
+        prioridade: tarefa.prioridade,
+        status: tarefa.status || 'pendente'
+      });
+    }
+  } catch {}
+}
+
+async function dbTarefasDelete(id) {
+  const list = JSON.parse(localStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
+  const filtered = list.filter(t => t.id !== id);
+  localStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(filtered));
+  if (!sbClient) return;
+  try {
+    await sbClient.from('tarefas').delete().eq('id', id);
+  } catch {}
+}
+
 // ─── FALLBACK ────────────────────────────────────────────────────
 
 function _fallbackLoad(key, defaultVal) {
@@ -653,6 +726,27 @@ async function migrateLocalToSupabase() {
       }
     }
 
+    // Tarefas
+    const tarefasRaw = localStorage.getItem(TAREFAS_LOCAL_KEY);
+    if (tarefasRaw) {
+      const tarefas = JSON.parse(tarefasRaw);
+      if (Array.isArray(tarefas) && tarefas.length > 0) {
+        const { data: existing } = await sbClient.from('tarefas').select('id').eq('user_id', uid).limit(1);
+        if (!existing || existing.length === 0) {
+          for (const t of tarefas) {
+            await sbClient.from('tarefas').insert({
+              user_id: uid,
+              titulo: t.titulo || '',
+              descricao: t.descricao || '',
+              data: t.data || '',
+              prioridade: t.prioridade || 'media',
+              status: t.status || 'pendente'
+            });
+          }
+        }
+      }
+    }
+
     localStorage.setItem(MIGRATION_FLAG_KEY, '1');
   } catch (e) { console.warn('[db-extra] migrateLocalToSupabase error:', e); }
 }
@@ -672,7 +766,8 @@ async function initDbExtra() {
       dbFotosLoad(),
       dbInativosLoad(),
       dbFeedbacksLoad(),
-      dbAnotacoesLoad()
+      dbAnotacoesLoad(),
+      dbTarefasLoad()
     ]);
   } catch {}
 }
