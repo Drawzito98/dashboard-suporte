@@ -9,6 +9,16 @@ function renderColaboradores() {
     .filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']))
     .map(r => r['Atendente']))].sort();
 
+  // Mapa setor por colaborador
+  const setorMap = {};
+  (rawRecords || []).forEach(r => {
+    if (r && r['Atendente'] && r['Setor']) {
+      const nome = r['Atendente'];
+      if (!setorMap[nome]) setorMap[nome] = new Set();
+      setorMap[nome].add(String(r['Setor']).trim());
+    }
+  });
+
   let html = '';
 
   html += '<div style="margin-bottom:var(--s-4)">';
@@ -31,6 +41,10 @@ function renderColaboradores() {
     html += `<div style="font-size:28px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 36) : '👤'}</div>`;
     html += '<div style="flex:1;min-width:0">';
     html += `<div style="font-weight:600;font-size:14px">${escapeHtml(nome)}</div>`;
+    const setores = setorMap[nome];
+    if (setores && setores.size) {
+      html += `<div style="font-size:12px;color:var(--text-muted);margin-top:1px">🏢 ${escapeHtml([...setores].join(', '))}</div>`;
+    }
     if (info.data_aniversario) {
       const [a,m,d] = info.data_aniversario.split('-');
       html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">🎂 ${d}/${m}</div>`;
@@ -71,8 +85,9 @@ function openColabDetailOverlay(nome) {
   const info = colabInfo[nome] || {};
 
   let html = '';
+  const setores = [...new Set((rawRecords || []).filter(r => r && r['Atendente'] === nome && r['Setor']).map(r => String(r['Setor']).trim()))];
   html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-4)">`;
-  html += `<div style="display:flex;align-items:center;gap:var(--s-3)"><div style="font-size:32px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 40) : '👤'}</div><div><h3 style="font-size:18px;font-weight:600;margin:0">${escapeHtml(nome)}</h3><p style="font-size:13px;color:var(--text-secondary);margin:0">Informações do colaborador</p></div></div>`;
+  html += `<div style="display:flex;align-items:center;gap:var(--s-3)"><div style="font-size:32px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 40) : '👤'}</div><div><h3 style="font-size:18px;font-weight:600;margin:0">${escapeHtml(nome)}</h3><p style="font-size:13px;color:var(--text-secondary);margin:0">${setores.length ? '🏢 '+escapeHtml(setores.join(', ')) : 'Informações do colaborador'}</p></div></div>`;
   html += '</div>';
 
   html += '<form id="colabInfoForm" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3)">';
@@ -109,7 +124,7 @@ function openColabDetailOverlay(nome) {
   html += '</form>';
 
   content.innerHTML = html;
-  overlay.style.display = 'flex';
+  overlay.classList.add('open');
 
   document.getElementById('ciSalvarBtn').addEventListener('click', async () => {
     const data = {
@@ -122,7 +137,7 @@ function openColabDetailOverlay(nome) {
     };
     await dbColabInfoSave(nome, data);
     showToast(`Dados de ${nome} salvos!`, 'success', 'Colaboradores');
-    overlay.style.display = 'none';
+    overlay.classList.remove('open');
     if (typeof renderColaboradores === 'function') renderColaboradores();
   });
 
@@ -134,7 +149,7 @@ function openColabDetailOverlay(nome) {
     };
     await dbColabInfoSave(nome, data);
     showToast(`Dados de ${nome} removidos!`, 'success', 'Colaboradores');
-    overlay.style.display = 'none';
+    overlay.classList.remove('open');
     if (typeof renderColaboradores === 'function') renderColaboradores();
   });
 }
