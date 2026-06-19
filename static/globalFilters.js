@@ -178,6 +178,7 @@ const globalFilters = {
           </div>
         </div>
         <div id="gfMonthMulti" class="global-filter-multi" style="display:none">
+          <div class="multi-label">Selecione os meses desejados:</div>
           <div class="multi-actions">
             <button type="button" class="btn-small" id="gfSelectAllMonths">Selecionar tudo</button>
             <button type="button" class="btn-small" id="gfClearMonths">Limpar</button>

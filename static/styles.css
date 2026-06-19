@@ -328,7 +328,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .btn-small:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
 
 .btn-row { display: flex; flex-direction: column; gap: var(--s-2); }
-.btn-row .btn-small { width: 100%; text-align: left; }
+.btn-row .btn-small { width: 100%; text-align: left; justify-content: flex-start; }
 
 .btn-delete {
   padding: 6px 10px;
@@ -555,7 +555,7 @@ td.score-cell.score-neutro    { color: #6b7280; }
 .month-picker-actions { display: flex; gap: var(--s-2); margin-bottom: var(--s-3); }
 .month-checklist {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 6px; max-height: 160px; overflow-y: auto; padding-right: 4px;
+  gap: 6px; max-height: 200px; overflow-y: auto; padding-right: 4px;
 }
 .month-option {
   display: flex; align-items: center; gap: var(--s-2);
@@ -565,8 +565,14 @@ td.score-cell.score-neutro    { color: #6b7280; }
   background: var(--bg-surface);
   font-size: 12px; cursor: pointer;
   transition: border-color var(--t-fast), background-color var(--t-fast);
+  user-select: none;
 }
 .month-option:hover { border-color: var(--accent); background: var(--accent-soft); }
+.month-option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
 .month-option input { margin: 0; accent-color: var(--accent); }
 
 /* ===== Toggles (segmented) ===== */
@@ -838,15 +844,22 @@ body.meeting-mode .menu-dd { display: none !important; }
   padding: 2px 8px;
 }
 .global-filter-multi {
-  padding: var(--s-3);
-  border: 1px solid var(--border);
+  padding: var(--s-4);
+  border: 1px solid var(--accent);
   border-radius: var(--r-md);
-  background: var(--bg-inset);
+  background: var(--accent-soft);
+  margin-top: var(--s-2);
 }
 .global-filter-multi .multi-actions {
   display: flex;
   gap: var(--s-2);
   margin-bottom: var(--s-3);
+}
+.global-filter-multi .multi-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--s-2);
 }
 
 /* =====================================================
