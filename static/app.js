@@ -2783,6 +2783,9 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'config' && typeof renderScoringRules === 'function') {
         renderScoringRules();
       }
+      if (tab === 'feedbacks' && typeof onFeedbacksTabActivated === 'function') {
+        onFeedbacksTabActivated();
+      }
       if (tab === 'dashboard') {
         updateView();
       }

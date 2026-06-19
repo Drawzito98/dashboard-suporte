@@ -37,11 +37,13 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 | `alertas_config` | Configuração de alertas (1 row/user) | Por `user_id` |
 | `colaborador_fotos` | URLs de fotos dos colaboradores | Authenticated |
 | `colab_inativos` | Colaboradores inativos por usuário | Por `user_id` |
+| `feedbacks` | Feedbacks e avaliações por colaborador | Por `user_id` |
 
 ### Migrations
 
 - `migration.sql` — tabela `registros` + RLS
 - `migration_v2.sql` — 7 tabelas extras + RLS (executado em 19/06/2026)
+- `migration_v3.sql` — tabela `feedbacks` + RLS (executado em 19/06/2026)
 
 ### RLS Policies (`migration_v2.sql`)
 
@@ -60,6 +62,7 @@ Tabelas compartilhadas (comentarios, historico, colaborador_fotos): acesso a tod
 - **📸 Fotos** — URL do colaborador com fallback para iniciais
 - **📝 Histórico** — audit log de edições/adições/exclusões
 - **💬 Comentários** — anotações mensais
+- **💬 Feedbacks** — geração de sugestão automática e registro de feedbacks por colaborador
 - **📅 Novo registro mensal** — adicionar dados para meses futuros
 - **🔮 Tendências** — médias móveis + projeção linear
 - **🧹 Limpar duplicatas** — remove registros duplicados no Supabase
@@ -98,6 +101,7 @@ Tabelas compartilhadas (comentarios, historico, colaborador_fotos): acesso a tod
 │   ├── alertas.js          → Sistema de alertas
 │   ├── tendencia.js        → Projeções e tendências
 │   ├── conquistas.js       → Badges/conquistas
+│   ├── feedbacks.js        → Geração e registro de feedbacks
 │   ├── usuarios.js         → Gestão de usuários (admin)
 │   ├── historico.js        → Audit log overlay
 │   ├── comentarios.js      → Anotações mensais overlay

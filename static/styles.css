@@ -328,7 +328,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .btn-small:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
 
 .btn-row { display: flex; flex-direction: column; gap: var(--s-2); }
-.btn-row .btn-small { width: 100%; }
+.btn-row .btn-small { width: 100%; text-align: left; }
 
 .btn-delete {
   padding: 6px 10px;

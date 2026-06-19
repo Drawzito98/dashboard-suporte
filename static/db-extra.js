@@ -354,6 +354,79 @@ async function dbInativosSave(names) {
   } catch {}
 }
 
+// ─── FEEDBACKS ──────────────────────────────────────────────────
+
+const FEEDBACKS_LOCAL_KEY = 'sistema_feedbacks_v1';
+
+async function dbFeedbacksLoad() {
+  if (!sbClient) return _fallbackLoad(FEEDBACKS_LOCAL_KEY, []);
+  try {
+    const uid = await _getUserId();
+    if (!uid) return _fallbackLoad(FEEDBACKS_LOCAL_KEY, []);
+    const { data } = await sbClient.from('feedbacks').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+    if (data && Array.isArray(data) && data.length > 0) {
+      const list = data.map(r => ({
+        id: r.id,
+        colaborador: r.colaborador,
+        mes: r.mes,
+        sugestao_automatica: r.sugestao_automatica || '',
+        anotacoes: r.anotacoes || '',
+        feedback_final: r.feedback_final || '',
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+      }));
+      localStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(list));
+      return list;
+    }
+    return _fallbackLoad(FEEDBACKS_LOCAL_KEY, []);
+  } catch {
+    return _fallbackLoad(FEEDBACKS_LOCAL_KEY, []);
+  }
+}
+
+async function dbFeedbacksSave(feedback) {
+  const list = JSON.parse(localStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
+  const idx = list.findIndex(f => f.id === feedback.id);
+  if (idx >= 0) list[idx] = feedback;
+  else list.unshift(feedback);
+  localStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(list));
+  if (!sbClient) return;
+  try {
+    const uid = await _getUserId();
+    if (!uid) return;
+    const existing = await sbClient.from('feedbacks').select('id').eq('id', feedback.id).maybeSingle();
+    if (existing?.data?.id) {
+      await sbClient.from('feedbacks').update({
+        colaborador: feedback.colaborador,
+        mes: feedback.mes,
+        sugestao_automatica: feedback.sugestao_automatica || '',
+        anotacoes: feedback.anotacoes || '',
+        feedback_final: feedback.feedback_final || '',
+        updated_at: new Date().toISOString()
+      }).eq('id', feedback.id);
+    } else {
+      await sbClient.from('feedbacks').insert({
+        user_id: uid,
+        colaborador: feedback.colaborador,
+        mes: feedback.mes,
+        sugestao_automatica: feedback.sugestao_automatica || '',
+        anotacoes: feedback.anotacoes || '',
+        feedback_final: feedback.feedback_final || ''
+      });
+    }
+  } catch {}
+}
+
+async function dbFeedbacksDelete(id) {
+  const list = JSON.parse(localStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
+  const filtered = list.filter(f => f.id !== id);
+  localStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(filtered));
+  if (!sbClient) return;
+  try {
+    await sbClient.from('feedbacks').delete().eq('id', id);
+  } catch {}
+}
+
 // ─── FALLBACK ────────────────────────────────────────────────────
 
 function _fallbackLoad(key, defaultVal) {
@@ -477,6 +550,27 @@ async function migrateLocalToSupabase() {
       }
     }
 
+    // Feedbacks
+    const fbRaw = localStorage.getItem(FEEDBACKS_LOCAL_KEY);
+    if (fbRaw) {
+      const fb = JSON.parse(fbRaw);
+      if (Array.isArray(fb) && fb.length > 0) {
+        const { data: existing } = await sbClient.from('feedbacks').select('id').eq('user_id', uid).limit(1);
+        if (!existing || existing.length === 0) {
+          for (const f of fb) {
+            await sbClient.from('feedbacks').insert({
+              user_id: uid,
+              colaborador: f.colaborador || '',
+              mes: f.mes || '',
+              sugestao_automatica: f.sugestao_automatica || '',
+              anotacoes: f.anotacoes || '',
+              feedback_final: f.feedback_final || ''
+            });
+          }
+        }
+      }
+    }
+
     localStorage.setItem(MIGRATION_FLAG_KEY, '1');
   } catch (e) { console.warn('[db-extra] migrateLocalToSupabase error:', e); }
 }
@@ -494,7 +588,8 @@ async function initDbExtra() {
       dbScoringLoad(),
       dbAlertasLoad(),
       dbFotosLoad(),
-      dbInativosLoad()
+      dbInativosLoad(),
+      dbFeedbacksLoad()
     ]);
   } catch {}
 }
