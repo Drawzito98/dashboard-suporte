@@ -167,7 +167,8 @@ function renderPainelLider() {
     html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-md);background:var(--success-soft);color:var(--success);font-weight:600;font-size:13px;margin-bottom:var(--s-5)">✅ Nenhum ponto de atenção identificado.</div>`;
   }
 
-  // 💡 Sugestões automáticas
+  // 💡 Sugestões automáticas (só com período filtrado)
+  if (typeof globalFilters !== 'undefined' && globalFilters.periodo !== 'all') {
   const sugestoes = [];
   const META_SCORE = 4.70;
 
@@ -256,7 +257,7 @@ function renderPainelLider() {
     html += `</div>`;
   }
 
-  html += `</div>`;
+  html += `</div>`; }
   html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📋 Resumo por Colaborador</h3>`;
   html += `<div style="overflow-x:auto;margin-bottom:var(--s-2)"><table class="ranking-table">
     <thead><tr><th>Colaborador</th><th>Finalizados</th><th>Δ Fin</th><th>Score</th><th>Δ Score</th><th>Prod.</th><th>Meta</th><th>Status</th><th></th></tr></thead>
