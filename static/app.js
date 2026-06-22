@@ -1480,15 +1480,13 @@ function getMultiSetorMap(rows) {
   });
   const out = new Map();
   m.forEach((set, a) => { if (set.size > 1) out.set(a, Array.from(set).sort()); });
-  // Inclui também nomes que vieram explicitamente marcados como "Multisetor"
-  // no CSV, mesmo que apareçam em apenas um setor neste recorte filtrado.
-  // Só força multisetor explícito quando filtro por setor ou colaborador está ativo
+  // Quando filtro por setor ou colaborador, marca como multisetor quem veio
+  // com tag "Multisetor" no CSV, desde que tenha dados no recorte atual.
   const filterOn = setorSelect.value !== 'all' || atendenteSelect.value !== 'all';
   if (filterOn && explicitMultiSetorNames && explicitMultiSetorNames.size) {
     explicitMultiSetorNames.forEach(name => {
-      if (!out.has(name)) {
-        const setores = m.has(name) ? Array.from(m.get(name)).sort() : [];
-        out.set(name, setores);
+      if (!out.has(name) && m.has(name)) {
+        out.set(name, Array.from(m.get(name)).sort());
       }
     });
   }
