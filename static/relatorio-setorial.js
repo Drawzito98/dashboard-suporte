@@ -1,12 +1,20 @@
 // Relatório Setorial — visão completa por setor, mês a mês
 
 function _rsData() {
-  return typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
+  if (typeof getCurrentFilteredRows === 'function') return getCurrentFilteredRows();
+  if (typeof globalFilters !== 'undefined' && globalFilters) return globalFilters.aplicar(rawRecords || []);
+  return rawRecords || [];
 }
 
-function getLastNMonths(data, n) {
-  const meses = [...new Set((data || []).filter(r => r && r['Mês']).map(r => r['Mês']))].filter(Boolean).sort();
-  return meses.slice(-n);
+function getFilteredMeses(rows) {
+  // Se getActiveMonths existir (app.js carregado), usa o filtro período ativo
+  if (typeof getActiveMonths === 'function') {
+    const ativos = getActiveMonths();
+    if (ativos.length) return ativos;
+  }
+  // Fallback: últimos 6 meses dos dados
+  const meses = [...new Set((rows || []).filter(r => r && r['Mês']).map(r => r['Mês']))].filter(Boolean).sort();
+  return meses.slice(-6);
 }
 
 function renderRelatorioSetorial() {
@@ -19,9 +27,9 @@ function renderRelatorioSetorial() {
   }
 
   const rows = data.filter(r => r && !isAggregateName(r['Atendente']));
-  const meses = getLastNMonths(rows, 6);
+  const meses = getFilteredMeses(rows);
   if (!meses.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-title">Sem períodos</div><div class="empty-sub">Não há meses registrados.</div></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-title">Sem períodos</div><div class="empty-sub">Nenhum mês encontrado no filtro atual.</div></div>';
     return;
   }
 
@@ -34,7 +42,7 @@ function renderRelatorioSetorial() {
   });
   const setores = Object.keys(bySetor).sort();
 
-  // Totais gerais (últimos 6 meses)
+  // Totais gerais
   const totalFin = rows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
   const totalAss = rows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
   const totalTra = rows.reduce((s, r) => s + (parseInt(r['Transferidos']) || 0), 0);
