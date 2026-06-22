@@ -1482,7 +1482,9 @@ function getMultiSetorMap(rows) {
   m.forEach((set, a) => { if (set.size > 1) out.set(a, Array.from(set).sort()); });
   // Inclui também nomes que vieram explicitamente marcados como "Multisetor"
   // no CSV, mesmo que apareçam em apenas um setor neste recorte filtrado.
-  if (explicitMultiSetorNames && explicitMultiSetorNames.size) {
+  // Só força multisetor explícito quando filtro por setor ou colaborador está ativo
+  const filterOn = setorSelect.value !== 'all' || atendenteSelect.value !== 'all';
+  if (filterOn && explicitMultiSetorNames && explicitMultiSetorNames.size) {
     explicitMultiSetorNames.forEach(name => {
       if (!out.has(name)) {
         const setores = m.has(name) ? Array.from(m.get(name)).sort() : [];
@@ -1739,7 +1741,7 @@ function updateReportBar(rows) {
 }
 
 function renderPreviewDisplay(rows) {
-  const __multiMap = (typeof getMultiSetorMap === 'function') ? getMultiSetorMap(rawRecords) : new Map();
+  const __multiMap = (typeof getMultiSetorMap === 'function') ? getMultiSetorMap(rows) : new Map();
   if (!rows || rows.length === 0) {
     previewTable.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado carregado</div><div class="empty-sub">Importe arquivos para iniciar a análise.</div></div>';
     return;
