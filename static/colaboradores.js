@@ -390,7 +390,19 @@ document.getElementById('colabReportClose')?.addEventListener('click', () => {
   document.getElementById('colabReportOverlay')?.classList.remove('open');
 });
 document.getElementById('colabReportPrint')?.addEventListener('click', () => {
-  window.print();
+  const content = document.getElementById('colabReportContent');
+  if (!content) return;
+  const innerHTML = content.innerHTML;
+  const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+  const styleHref = document.querySelector('link[rel=stylesheet]')?.getAttribute('href') || '';
+  const styleTag = styleHref ? `<link rel="stylesheet" href="${styleHref}">` : '';
+  const html = `<!DOCTYPE html><html data-theme="${theme}"><head><meta charset="utf-8"><title>Relatório do Colaborador</title>${styleTag}<style>body{background:var(--bg-body);color:var(--text);padding:24px;margin:0;font-family:system-ui,sans-serif}.colab-detail-close,.colab-detail-print{display:none!important}.colab-detail-panel{max-width:100%!important;box-shadow:none!important;border:none!important;padding:0!important;overflow:visible!important;max-height:none!important}.colab-detail-overlay{position:static!important;display:block!important;background:none!important;padding:0!important;align-items:stretch!important}@media print{body{padding:16px!important}@page{margin:12mm}}</style></head><body>${innerHTML}<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script></body></html>`;
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Bloqueador de pop-ups impediu a abertura. Permita pop-ups e tente novamente.', 'error'); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  showToast('Abrindo visualização para impressão…', 'ok');
 });
 
 function onColaboradoresTabActivated() {
