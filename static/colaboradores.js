@@ -64,8 +64,10 @@ function renderColaboradores() {
       html += `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">Clique para cadastrar</div>`;
     }
     html += '</div>';
+    html += `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">`;
     html += `<div style="font-size:18px;color:var(--text-muted)">${hasData ? '✅' : '➕'}</div>`;
-    html += '</div></div>';
+    html += `<button class="btn-small btn-report" data-nome="${escapeHtml(nome)}" type="button" title="Relatório de desempenho" style="font-size:13px;padding:2px 6px">📊</button>`;
+    html += '</div></div></div>';
   }
   html += '</div>';
 
@@ -73,11 +75,188 @@ function renderColaboradores() {
 
   // Click to open overlay
   container.querySelectorAll('.colab-card').forEach(card => {
-    card.addEventListener('click', () => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-report')) return;
       const nome = card.dataset.nome;
       openColabDetailOverlay(nome);
     });
   });
+  container.querySelectorAll('.btn-report').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openColabReport(btn.dataset.nome);
+    });
+  });
+}
+
+function openColabReport(nome) {
+  const overlay = document.getElementById('colabReportOverlay');
+  const content = document.getElementById('colabReportContent');
+  if (!overlay || !content) return;
+
+  // Get filtered data from current filters
+  const filteredData = typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords || []) : (rawRecords || []);
+  const colabRows = filteredData.filter(r => r && String(r['Atendente']) === nome);
+  const allRows = filteredData.filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']));
+
+  // Get period description
+  const meses = [...new Set(colabRows.filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
+  const periodLabel = meses.length ? meses.join(', ') : 'Todo período';
+
+  // Compute metrics
+  const fin = colabRows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
+  const ass = colabRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
+  const trans = colabRows.reduce((s, r) => s + (parseInt(r['Transferidos']) || 0), 0);
+  const scores = colabRows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && v !== '');
+  const scoreAvg = scores.length ? scores.reduce((a, b) => a + Number(b), 0) / scores.length : null;
+  const metaOk = colabRows.filter(r => { const o = parseInt(r['Objetivo']) || 0; const f = parseInt(r['Finalizados']) || 0; return o > 0 && f >= o; }).length;
+
+  // Team averages
+  const teamFin = allRows.length ? allRows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0) / allRows.length : 0;
+  const teamScore = allRows.length ? allRows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && v !== '').reduce((a, b) => a + Number(b), 0) / allRows.filter(r => r['SCORE'] !== null && r['SCORE'] !== undefined && r['SCORE'] !== '').length : 0;
+  const teamTrans = allRows.length ? allRows.reduce((s, r) => s + (parseInt(r['Transferidos']) || 0), 0) / allRows.length : 0;
+
+  // Previous period comparison (if filtering by a single month)
+  let prevFin = null, prevScore = null;
+  if (meses.length === 1) {
+    const allMeses = [...new Set((rawRecords || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
+    const idx = allMeses.indexOf(meses[0]);
+    if (idx > 0) {
+      const prevMes = allMeses[idx - 1];
+      const prevRows = (rawRecords || []).filter(r => r && String(r['Atendente']) === nome && String(r['Mês']) === prevMes);
+      prevFin = prevRows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
+      const prevScores = prevRows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && v !== '');
+      prevScore = prevScores.length ? prevScores.reduce((a, b) => a + Number(b), 0) / prevScores.length : null;
+    }
+  }
+
+  // Gamification score
+  let totalScore = null, breakdown = null;
+  if (typeof computeScoreForCollaborator === 'function') {
+    const sc = computeScoreForCollaborator(nome, colabRows);
+    totalScore = sc.total;
+    breakdown = sc.breakdown;
+  }
+
+  // Helpers
+  const fmtPct = (v) => v !== null && v !== undefined && v !== 0 ? (v > 0 ? '+' : '') + v.toFixed(1) + '%' : '';
+  const fmtNum = (v) => v !== null && v !== undefined ? Number(v).toFixed(2).replace('.', ',') : '—';
+  const fmtInt = (v) => v !== null && v !== undefined ? Math.round(v) : '—';
+
+  // Build report
+  let html = '';
+  html += '<div class="report-header">';
+  html += `<div style="display:flex;align-items:center;gap:var(--s-3)"><div style="font-size:40px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 48) : '👤'}</div><div><h2 style="font-size:22px;font-weight:700;margin:0">${escapeHtml(nome)}</h2><p style="font-size:14px;color:var(--text-secondary);margin:2px 0 0">📅 ${escapeHtml(periodLabel)}</p></div></div>`;
+  html += '</div>';
+
+  // ── Metric cards ──
+  html += '<div class="report-metrics">';
+  const finVar = prevFin !== null ? computeVariation(fin, prevFin) : null;
+  const scVar = prevScore !== null && scoreAvg !== null ? computeVariation(scoreAvg, prevScore) : null;
+  const metrics = [
+    { label: 'Finalizados', value: fmtInt(fin), var: finVar, good: finVar === null || finVar >= 0, team: fmtInt(teamFin) },
+    { label: 'Score', value: scoreAvg !== null ? scoreAvg.toFixed(2).replace('.', ',') : '—', var: scVar, good: scoreAvg !== null && scoreAvg >= 4.5, team: teamScore ? teamScore.toFixed(2).replace('.', ',') : '—' },
+    { label: 'Assumidos', value: fmtInt(ass), var: null, good: true, team: fmtInt(allRows.length ? allRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0) / allRows.length : 0) },
+    { label: 'Transferidos', value: fmtInt(trans), var: null, good: trans <= teamTrans * 1.5, team: fmtInt(teamTrans) }
+  ];
+  for (const m of metrics) {
+    const borderColor = m.good ? 'var(--success)' : 'var(--danger)';
+    html += `<div class="report-metric-card" style="border-top:3px solid ${borderColor}">`;
+    html += `<div class="report-metric-value" style="color:${m.good ? 'var(--success)' : 'var(--danger)'}">${m.value}</div>`;
+    html += `<div class="report-metric-label">${m.label}</div>`;
+    if (m.var !== null) {
+      const varColor = m.var >= 0 ? 'var(--success)' : 'var(--danger)';
+      html += `<div class="report-metric-var" style="color:${varColor}">${m.var >= 0 ? '▲' : '▼'} ${Math.abs(m.var).toFixed(1)}%</div>`;
+    }
+    html += '</div>';
+  }
+
+  // Gamification score card
+  if (totalScore !== null) {
+    html += `<div class="report-metric-card" style="border-top:3px solid var(--accent);background:linear-gradient(135deg,var(--bg-subtle),var(--bg-surface))">`;
+    html += `<div class="report-metric-value" style="color:var(--accent);font-size:28px">${totalScore}</div>`;
+    html += `<div class="report-metric-label">Pontuação total</div>`;
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // ── Highlights & Lowlights ──
+  const highlights = [];
+  const lowlights = [];
+
+  if (scoreAvg !== null && scoreAvg >= 4.5) highlights.push(`Score alto (${scoreAvg.toFixed(2).replace('.',',')}) — acima da meta de 4,5 ⭐`);
+  else if (scoreAvg !== null) lowlights.push(`Score (${scoreAvg.toFixed(2).replace('.',',')}) — abaixo da meta de 4,5 ⚠️`);
+
+  if (fin > teamFin) highlights.push(`Finalizações acima da média do time (${fmtInt(fin)} vs ${fmtInt(teamFin)}) 📈`);
+  else if (fin < teamFin && fin > 0) lowlights.push(`Finalizações abaixo da média do time (${fmtInt(fin)} vs ${fmtInt(teamFin)}) 📉`);
+
+  if (metaOk > 0) highlights.push(`Meta atingida em ${metaOk} mês(es) 🎯`);
+  else { const hasMeta = colabRows.some(r => parseInt(r['Objetivo']) > 0); if (hasMeta) lowlights.push(`Meta não atingida 🎯`); }
+
+  if (trans > teamTrans * 1.5) lowlights.push(`Transferências acima do ideal (${fmtInt(trans)} vs ${fmtInt(teamTrans)} média) 🔄`);
+
+  if (finVar !== null && finVar > 5) highlights.push(`Finalizações cresceram ${finVar.toFixed(0)}% em relação ao mês anterior 📈`);
+  else if (finVar !== null && finVar < -5) lowlights.push(`Finalizações caíram ${Math.abs(finVar).toFixed(0)}% em relação ao mês anterior 📉`);
+
+  if (scVar !== null && scVar > 0) highlights.push(`Score melhorou em relação ao mês anterior 📈`);
+  else if (scVar !== null && scVar < 0) lowlights.push(`Score caiu em relação ao mês anterior 📉`);
+
+  html += '<div class="report-section"><h3 class="report-section-title">✅ Destaques</h3>';
+  if (highlights.length) {
+    html += '<div class="report-list">';
+    for (const h of highlights) html += `<div class="report-item report-item-good">${h}</div>`;
+    html += '</div>';
+  } else {
+    html += '<div style="font-size:13px;color:var(--text-muted);padding:var(--s-2) 0">Nenhum destaque neste período.</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="report-section"><h3 class="report-section-title">⚠️ Pontos de Atenção</h3>';
+  if (lowlights.length) {
+    html += '<div class="report-list">';
+    for (const l of lowlights) html += `<div class="report-item report-item-bad">${l}</div>`;
+    html += '</div>';
+  } else {
+    html += '<div style="font-size:13px;color:var(--text-muted);padding:var(--s-2) 0">Nenhum ponto de atenção neste período. 🎉</div>';
+  }
+  html += '</div>';
+
+  // ── Detailed table ──
+  html += '<div class="report-section"><h3 class="report-section-title">📋 Métricas Detalhadas</h3>';
+  html += '<div class="report-grid">';
+  const detRows = [
+    { label: 'Finalizados', value: fmtInt(fin), team: fmtInt(teamFin), var: finVar },
+    { label: 'Score médio', value: scoreAvg !== null ? scoreAvg.toFixed(2).replace('.',',') : '—', team: teamScore ? teamScore.toFixed(2).replace('.',',') : '—', var: scVar },
+    { label: 'Assumidos', value: fmtInt(ass), team: fmtInt(allRows.length ? allRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0) / allRows.length : 0), var: null },
+    { label: 'Transferidos', value: fmtInt(trans), team: fmtInt(teamTrans), var: null },
+  ];
+  for (const d of detRows) {
+    html += '<div class="report-grid-row">';
+    html += `<span class="report-grid-label">${d.label}</span>`;
+    html += `<span class="report-grid-value">${d.value}</span>`;
+    html += `<span class="report-grid-team">média: ${d.team}</span>`;
+    if (d.var !== null) {
+      const vc = d.var >= 0 ? 'var(--success)' : 'var(--danger)';
+      html += `<span class="report-grid-var" style="color:${vc}">${d.var >= 0 ? '▲' : '▼'} ${Math.abs(d.var).toFixed(1)}%</span>`;
+    } else {
+      html += '<span class="report-grid-var"></span>';
+    }
+    html += '</div>';
+  }
+  html += '</div></div>';
+
+  // ── Bonus/Penalties summary ──
+  const allBonus = JSON.parse(localStorage.getItem('sistema_pontos_extras_v1') || '[]');
+  const colabBonus = allBonus.filter(b => String(b.colaborador) === nome);
+  if (colabBonus.length) {
+    const totalPts = colabBonus.reduce((s, b) => s + (parseFloat(b.pontos) || 0), 0);
+    html += '<div class="report-section"><h3 class="report-section-title">💰 Bônus & Penalidades</h3>';
+    html += `<div style="font-size:13px;color:var(--text-secondary)">Total: <strong style="color:${totalPts >= 0 ? 'var(--success)' : 'var(--danger)'}">${totalPts > 0 ? '+' : ''}${totalPts.toFixed(1)}</strong> pts</div>`;
+    html += '</div>';
+  }
+
+  content.innerHTML = html;
+  overlay.classList.add('open');
 }
 
 function openColabDetailOverlay(nome) {
@@ -212,6 +391,11 @@ function openColabDetailOverlay(nome) {
     if (typeof renderColaboradores === 'function') renderColaboradores();
   });
 }
+
+// Report overlay close button
+document.getElementById('colabReportClose')?.addEventListener('click', () => {
+  document.getElementById('colabReportOverlay')?.classList.remove('open');
+});
 
 function onColaboradoresTabActivated() {
   const container = document.getElementById('colaboradoresContent');
