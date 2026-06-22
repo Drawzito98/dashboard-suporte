@@ -68,15 +68,6 @@ function renderPainelLider() {
   });
   const condutaBadge = (nm) => flaggedColabs.has(nm) ? ` <span class="conduta-badge" title="${escapeHtml(colabInfo[nm]?.conduta_motivo || 'Conduta negativa')}">🚩</span>` : '';
 
-  // Meta status
-  const acimaMeta = [], abaixoMeta = [];
-  Object.entries(byColab).forEach(([name, d]) => {
-    if (d.obj > 0) {
-      if (d.fin >= d.obj) acimaMeta.push(name);
-      else abaixoMeta.push(name);
-    }
-  });
-
   // Melhor evolução (finalizados último vs anterior)
   let maiorEvol = { nome: '', delta: -Infinity };
   colaboradores.forEach(name => {
@@ -89,6 +80,7 @@ function renderPainelLider() {
 
   // Melhor desempenho
   const melhorDesempenho = Object.entries(byColab).sort((a, b) => b[1].fin - a[1].fin)[0];
+  const melhorScore = Object.entries(byColab).filter(e => e[1].avgSc > 0).sort((a, b) => b[1].avgSc - a[1].avgSc)[0];
 
   // ── Pontos de atenção ──
   const atencao = [];
@@ -133,20 +125,6 @@ function renderPainelLider() {
   // Cards
   html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--s-4);margin-bottom:var(--s-5)">`;
 
-  if (globalFilters.periodo !== 'all') {
-    html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--success-soft);text-align:center">
-      <div style="font-size:26px;font-weight:700;color:var(--success)">${acimaMeta.length}</div>
-      <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Acima da meta</div>
-      ${acimaMeta.length ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${acimaMeta.map(n => escapeHtml(getDisplayName(n, aliasMap)) + condutaBadge(n)).join(', ')}</div>` : ''}
-    </div>`;
-
-    html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:${abaixoMeta.length ? 'var(--danger-soft)' : 'var(--bg-surface)'};text-align:center">
-      <div style="font-size:26px;font-weight:700;color:${abaixoMeta.length ? 'var(--danger)' : 'var(--text-muted)'}">${abaixoMeta.length}</div>
-      <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Abaixo da meta</div>
-      ${abaixoMeta.length ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${abaixoMeta.map(n => escapeHtml(getDisplayName(n, aliasMap)) + condutaBadge(n)).join(', ')}</div>` : ''}
-    </div>`;
-  }
-
   if (maiorEvol.nome && globalFilters.periodo !== 'all') {
     html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--accent-soft);text-align:center">
       <div style="font-size:15px;font-weight:600;color:var(--accent)">${escapeHtml(getDisplayName(maiorEvol.nome, aliasMap))}${condutaBadge(maiorEvol.nome)}</div>
@@ -157,8 +135,14 @@ function renderPainelLider() {
 
   html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--warning-soft);text-align:center">
     <div style="font-size:15px;font-weight:600;color:var(--warning)">${melhorDesempenho ? escapeHtml(getDisplayName(melhorDesempenho[0], aliasMap)) + condutaBadge(melhorDesempenho[0]) : '—'}</div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Melhor desempenho</div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Mais finalizações</div>
     <div style="font-size:20px;font-weight:700;color:var(--text-strong);margin-top:4px">${melhorDesempenho ? melhorDesempenho[1].fin.toLocaleString('pt-BR') : '0'} finalizações</div>
+  </div>`;
+
+  html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--accent-soft);text-align:center">
+    <div style="font-size:15px;font-weight:600;color:var(--accent)">${melhorScore ? escapeHtml(getDisplayName(melhorScore[0], aliasMap)) + condutaBadge(melhorScore[0]) : '—'}</div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Maior score médio</div>
+    <div style="font-size:20px;font-weight:700;color:var(--text-strong);margin-top:4px">${melhorScore ? melhorScore[1].avgSc.toFixed(2) : '—'}</div>
   </div>`;
 
   html += `</div>`;
