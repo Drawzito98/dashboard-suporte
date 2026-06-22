@@ -177,6 +177,10 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-6) var(--s-6) var
   display: flex; align-items: center; gap: var(--s-2);
   flex-wrap: wrap; justify-content: flex-end;
 }
+.current-user { overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+@media (max-width: 768px) {
+  .current-user { display: none !important; }
+}
 
 /* Kebab menu (details/summary) */
 .menu-dd { position: relative; }

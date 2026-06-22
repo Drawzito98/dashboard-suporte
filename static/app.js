@@ -2649,6 +2649,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           });
         } catch (e) {}
       }
+      // Mostra usuário logado na topbar
+      const display = document.getElementById('currentUserDisplay');
+      if (display) {
+        const roleLabel = role === 'admin' ? 'Admin' : 'Visualizador';
+        display.innerHTML = `<span style="font-weight:500">${user.email}</span> <span class="role-badge role-${role || 'admin'}">${roleLabel}</span>`;
+      }
     }
   }
 
