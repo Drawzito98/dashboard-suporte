@@ -14,7 +14,9 @@ function renderPainelLider() {
   }
 
   const rows = data.filter(r => r && !isAggregateName(r['Atendente']));
-  const colaboradores = [...new Set(rows.map(r => r['Atendente']))].filter(Boolean).sort();
+  // Filtra inativos (guarda para função ainda não carregada)
+  const activeRows = typeof isColabActive === 'function' ? rows.filter(r => isColabActive(r['Atendente'])) : rows;
+  const colaboradores = [...new Set(activeRows.map(r => r['Atendente']))].filter(Boolean).sort();
   const meses = [...new Set(rows.map(r => r['Mês']))].filter(Boolean).sort();
   const ultimoMes = meses.length >= 2 ? meses[meses.length - 1] : null;
   const mesAnterior = meses.length >= 2 ? meses[meses.length - 2] : null;
