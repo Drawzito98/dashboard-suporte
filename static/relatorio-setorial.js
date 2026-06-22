@@ -162,6 +162,27 @@ function renderRelatorioSetorial() {
     html += `</div>`;
   }
 
+  // ── Gráfico de pizza — distribuição de finalizados por setor ──
+  html += `<div style="display:flex;gap:var(--s-5);align-items:stretch;margin-bottom:var(--s-5);flex-wrap:wrap">
+    <div class="card" style="flex:1;min-width:280px;padding:var(--s-4)">
+      <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83C\uDF7E Distribuição por Setor</h3>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:var(--s-3)">Participação de cada setor no total de finalizados</p>
+      <div style="height:240px"><canvas id="rsPieChart"></canvas></div>
+    </div>
+    <div class="card" style="flex:1;min-width:200px;padding:var(--s-4);display:flex;flex-direction:column;justify-content:center;gap:var(--s-2)">
+      ${setorMetrics.slice().sort((a, b) => b.fin - a.fin).map(s => {
+        const pct = totalFin > 0 ? ((s.fin / totalFin) * 100).toFixed(1) : 0;
+        const cor = totalFin > 0 ? `hsl(${Math.round(setorMetrics.indexOf(s) * 360 / setorMetrics.length)}, 60%, 55%)` : '#888';
+        return `<div style="display:flex;align-items:center;gap:var(--s-3);font-size:13px">
+          <span style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0"></span>
+          <span style="flex:1;font-weight:500;color:var(--text-primary)">${escapeHtml(s.nome)}</span>
+          <span style="color:var(--text-secondary)">${fmtNum(s.fin)}</span>
+          <span style="font-weight:600;color:var(--text-strong);min-width:40px;text-align:right">${pct}%</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+
   // ── Tabela comparativa entre setores ──
   html += `<h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83D\uDD01 Comparativo entre Setores</h3>`;
   html += `<div style="overflow-x:auto;margin-bottom:var(--s-5)"><table class="ranking-table">
@@ -254,6 +275,46 @@ function renderRelatorioSetorial() {
     if (!window.__rsCharts) window.__rsCharts = {};
     Object.values(window.__rsCharts).forEach(c => { try { c.destroy(); } catch (e) {} });
     window.__rsCharts = {};
+
+    // Pie chart — distribuição por setor
+    const pieCanvas = document.getElementById('rsPieChart');
+    if (pieCanvas) {
+      const cores = [
+        '#2563eb', '#16a34a', '#d97706', '#dc2626', '#8b5cf6',
+        '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#6366f1',
+        '#e11d48', '#65a30d', '#0ea5e9', '#a855f7', '#84cc16'
+      ];
+      const sorted = setorMetrics.slice().sort((a, b) => b.fin - a.fin);
+      window.__rsCharts.pieChart = new Chart(pieCanvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: sorted.map(s => s.nome),
+          datasets: [{
+            data: sorted.map(s => s.fin),
+            backgroundColor: sorted.map((_, i) => cores[i % cores.length]),
+            borderColor: '#1e293b',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '55%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                  return ` ${ctx.label}: ${ctx.parsed.toLocaleString('pt-BR')} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
 
     setores.forEach((s, setorIdx) => {
       const canvas = document.getElementById(`rsChart_${setorIdx}`);
