@@ -1047,6 +1047,10 @@ function uniqueSorted(arr) {
   return Array.from(new Set(arr.filter(Boolean))).sort();
 }
 
+function normalizeNameForDedup(n) {
+  return String(n || '').trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+}
+
 
 function getActiveMonths() {
   if (mesSelect && mesSelect.value === '__multi__') {
@@ -1171,7 +1175,13 @@ function updateFilterOptions() {
       return true;
     })
     .map(r => r['Atendente']).filter(a => !isAggregateName(a) && isColabActive(a));
-  const uniq = uniqueSorted(atendentes);
+  // Dedup ignorando acentos/caixa/espacos
+  const dedupMap = new Map();
+  atendentes.forEach(a => {
+    const key = normalizeNameForDedup(a);
+    if (!dedupMap.has(key)) dedupMap.set(key, a);
+  });
+  const uniq = Array.from(dedupMap.values()).sort();
   fillSelect(atendenteSelect, uniq);
   // populate compareSelect (multi-select) with the same list when present
   if (compareSelect && compareLabel) {

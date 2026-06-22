@@ -4,6 +4,11 @@
 
 const GLOBAL_FILTERS_KEY = 'sistema_global_filters_v1';
 
+// Normaliza nome para deduplicação: trim + lowercase + remove acentos
+function _normalizeName(n) {
+  return String(n || '').trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+}
+
 const globalFilters = {
   periodo: 'all',
   colaborador: 'all',
@@ -342,17 +347,17 @@ const globalFilters = {
       activeMonths = this.mesesSelecionados;
     }
 
-    let cols;
-    if ((setorVal === 'all' || !rawRecords || !rawRecords.length) && !activeMonths) {
-      cols = [...new Set((rawRecords || []).filter(r => r && r['Atendente']).map(r => r['Atendente']))].sort();
-    } else {
-      cols = [...new Set((rawRecords || []).filter(r => {
-        if (!r || !r['Atendente']) return false;
-        if (setorVal !== 'all' && String(r['Setor']) !== setorVal) return false;
-        if (activeMonths && !activeMonths.includes(String(r['Mês']))) return false;
-        return true;
-      }).map(r => r['Atendente']))].sort();
+    let nameMap = new Map();
+    const raw = rawRecords || [];
+    for (const r of raw) {
+      if (!r || !r['Atendente']) continue;
+      if (setorVal !== 'all' && String(r['Setor']) !== setorVal) continue;
+      if (activeMonths && !activeMonths.includes(String(r['Mês']))) continue;
+      const orig = String(r['Atendente']).trim();
+      const key = _normalizeName(orig);
+      if (!nameMap.has(key)) nameMap.set(key, orig);
     }
+    let cols = Array.from(nameMap.values()).sort();
     if (typeof isColabActive === 'function') {
       cols = cols.filter(c => isColabActive(c));
     }
