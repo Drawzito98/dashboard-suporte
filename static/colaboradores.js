@@ -165,6 +165,7 @@ function openColabReport(nome) {
     }
     html += '</div>';
   }
+  html += '</div>';
 
   // ── Highlights & Lowlights ──
   const highlights = [];
