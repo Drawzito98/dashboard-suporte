@@ -1598,7 +1598,7 @@ function renderSummary(filtered) {
   const refreshBtn = document.getElementById('refreshReportBtn');
   const intelBtn = document.getElementById('intelReportBtn');
   if (copyBtn) copyBtn.addEventListener('click', () => copyReportToClipboard());
-  // exportPdfBtn é vinculado no init.js com exportPDFcomGrafico() — não duplicar aqui
+  if (exportPdfBtn) exportPdfBtn.addEventListener('click', () => exportReportToPDF());
   if (intelBtn) intelBtn.addEventListener('click', () => generateIntelReport());
   // Perfil (Docs) button: visible only when a single atendente is selected and a link exists
   if (openPerfilDocsBtn) {
@@ -2953,8 +2953,7 @@ if (!rawRecords || !rawRecords.length) {
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');
   if (exportChartPngBtn) exportChartPngBtn.addEventListener('click', () => { exportChartAsPNG(); });
-  const exportPdfBtn = document.getElementById('exportPdfBtn');
-  if (exportPdfBtn) exportPdfBtn.addEventListener('click', () => { exportPDFcomGrafico(); });
+  // Exportar PDF é vinculado em renderSummary() — abre HTML bonito em nova aba
 
   // ── Compact table toggle ──
   const COMPACT_KEY = 'sistema_table_compact';
