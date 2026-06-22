@@ -35,7 +35,7 @@ function renderColaboradores() {
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s-3)">';
   for (const nome of colabs) {
     const info = colabInfo[nome] || {};
-    const hasData = info.data_aniversario || info.data_admissao || info.email;
+    const hasData = info.data_aniversario || info.data_admissao || info.email || info.observacoes;
     const conduta = info.conduta_negativa === 'true' || info.conduta_negativa === true;
     html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''}" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Clique para ver/editar">`;
     html += '<div style="display:flex;align-items:center;gap:var(--s-3)">';
@@ -56,6 +56,9 @@ function renderColaboradores() {
     }
     if (info.email) {
       html += `<div style="font-size:12px;color:var(--text-secondary)">✉️ ${escapeHtml(info.email)}</div>`;
+    }
+    if (info.observacoes) {
+      html += `<div style="font-size:12px;color:var(--danger);margin-top:2px;padding:2px 6px;background:color-mix(in srgb, var(--danger) 10%, transparent);border-radius:var(--r-sm)">📝 ${escapeHtml(info.observacoes)}</div>`;
     }
     if (!hasData) {
       html += `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">Clique para cadastrar</div>`;
