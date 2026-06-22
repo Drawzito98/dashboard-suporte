@@ -359,6 +359,43 @@ async function dbInativosSave(names) {
   } catch {}
 }
 
+// ─── SETORES INATIVOS ─────────────────────────────────────────
+
+const INATIVOS_SETORES_LOCAL_KEY = 'sistema_inactive_setores_v1';
+
+async function dbSetorInativosLoad() {
+  if (!sbClient) return null;
+  try {
+    const uid = await _getUserId();
+    if (!uid) return null;
+    const { data } = await sbClient.from('setor_inativos').select('nome').eq('user_id', uid);
+    if (data && Array.isArray(data) && data.length > 0) {
+      const names = data.map(r => r.nome);
+      localStorage.setItem(INATIVOS_SETORES_LOCAL_KEY, JSON.stringify(names));
+      if (typeof window.__inactiveSetores !== 'undefined') {
+        window.__inactiveSetores = new Set(names);
+      }
+      return new Set(names);
+    }
+    return null;
+  } catch { return null; }
+}
+
+async function dbSetorInativosSave(names) {
+  if (!requireAdmin()) return;
+  const arr = [...names];
+  localStorage.setItem(INATIVOS_SETORES_LOCAL_KEY, JSON.stringify(arr));
+  if (!sbClient) return;
+  try {
+    const uid = await _getUserId();
+    if (!uid) return;
+    await sbClient.from('setor_inativos').delete().eq('user_id', uid);
+    if (arr.length) {
+      await sbClient.from('setor_inativos').insert(arr.map(nome => ({ user_id: uid, nome })));
+    }
+  } catch {}
+}
+
 // ─── FEEDBACKS ──────────────────────────────────────────────────
 
 const FEEDBACKS_LOCAL_KEY = 'sistema_feedbacks_v1';
@@ -841,6 +878,18 @@ async function migrateLocalToSupabase() {
       }
     }
 
+    // Setores inativos
+    const setorInatRaw = localStorage.getItem(INATIVOS_SETORES_LOCAL_KEY);
+    if (setorInatRaw) {
+      const names = JSON.parse(setorInatRaw);
+      if (Array.isArray(names) && names.length > 0) {
+        const { data: existing } = await sbClient.from('setor_inativos').select('id').eq('user_id', uid).limit(1);
+        if (!existing || existing.length === 0) {
+          await dbSetorInativosSave(new Set(names));
+        }
+      }
+    }
+
     // Feedbacks
     const fbRaw = localStorage.getItem(FEEDBACKS_LOCAL_KEY);
     if (fbRaw) {
@@ -961,6 +1010,7 @@ async function initDbExtra() {
       dbAlertasLoad(),
       dbFotosLoad(),
       dbInativosLoad(),
+      dbSetorInativosLoad(),
       dbFeedbacksLoad(),
       dbAnotacoesLoad(),
       dbTarefasLoad(),

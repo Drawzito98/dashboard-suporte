@@ -56,6 +56,8 @@ const globalFilters = {
 
     if (this.setor && this.setor !== 'all') {
       data = data.filter(r => String(r['Setor']) === this.setor);
+    } else if (typeof isSetorActive === 'function') {
+      data = data.filter(r => isSetorActive(String(r['Setor'])));
     }
 
     if (this.colaborador && this.colaborador !== 'all') {
@@ -382,6 +384,7 @@ const globalFilters = {
     if (!rawRecords || !rawRecords.length) return;
     const meses = [...new Set(rawRecords.filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
     const setores = [...new Set(rawRecords.filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
+    const filteredSetores = typeof isSetorActive === 'function' ? setores.filter(s => isSetorActive(s)) : setores;
 
     const fill = (id, vals, opts) => {
       const sel = document.getElementById(id);
@@ -395,7 +398,7 @@ const globalFilters = {
     };
 
     fill('gfPeriodo', meses, { includeMulti: true });
-    fill('gfSetor', setores);
+    fill('gfSetor', filteredSetores);
     this._updateColaboradorOptions();
 
     const checkList = document.getElementById('gfMonthChecklist');

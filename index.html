@@ -250,6 +250,7 @@
             <div class="btn-row">
               <button class="btn-small" id="addRowTopBtn" type="button" title="Adicionar um novo registro mensal manualmente">➕ Novo registro mensal</button>
               <button class="btn-small" id="manageColabsBtn" type="button" title="Ativar/desativar colaboradores exibidos no dashboard">👥 Gerenciar colaboradores</button>
+              <button class="btn-small" id="manageSetoresBtn" type="button" title="Ativar/desativar setores exibidos no dashboard">🏢 Gerenciar setores</button>
               <button class="btn-small" id="comentariosBtn" type="button" title="Ver e gerenciar comentários por período">💬 Comentários</button>
               <button class="btn-small" id="historicoBtn" type="button" title="Histórico de alterações feitas nos dados">📝 Histórico</button>
               <button class="btn-small" id="cleanDupBtn" type="button" title="Remove registros duplicados da base">🧹 Limpar duplicatas</button>
@@ -522,6 +523,14 @@
   <div class="colab-detail-panel" style="max-width:600px">
     <button class="colab-detail-close" id="manageColabsClose" type="button">✕</button>
     <div id="manageColabsContent"></div>
+  </div>
+</div>
+
+<!-- Gerenciar Setores Overlay -->
+<div class="colab-detail-overlay" id="manageSetoresOverlay">
+  <div class="colab-detail-panel" style="max-width:600px">
+    <button class="colab-detail-close" id="manageSetoresClose" type="button">✕</button>
+    <div id="manageSetoresContent"></div>
   </div>
 </div>
 

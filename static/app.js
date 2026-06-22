@@ -46,6 +46,48 @@ function isColabActive(name) {
   return !getInactiveColabs().has(name);
 }
 
+// ─── SETORES INATIVOS ─────────────────────────────────────
+
+const INACTIVE_SETORES_KEY = 'sistema_inactive_setores_v1';
+
+function getInactiveSetores() {
+  if (!window.__inactiveSetores) {
+    try {
+      const raw = localStorage.getItem(INACTIVE_SETORES_KEY);
+      if (raw) {
+        window.__inactiveSetores = new Set(JSON.parse(raw));
+      } else {
+        window.__inactiveSetores = new Set();
+        localStorage.setItem(INACTIVE_SETORES_KEY, JSON.stringify([]));
+      }
+    } catch (e) {
+      window.__inactiveSetores = new Set();
+    }
+  }
+  return window.__inactiveSetores;
+}
+
+function saveInactiveSetores() {
+  try {
+    localStorage.setItem(INACTIVE_SETORES_KEY, JSON.stringify([...getInactiveSetores()]));
+  } catch (e) {}
+  if (typeof dbSetorInativosSave === 'function') {
+    dbSetorInativosSave(getInactiveSetores());
+  }
+}
+
+function setSetorActive(name, active) {
+  if (!requireAdmin()) return;
+  const set = getInactiveSetores();
+  if (active) set.delete(name);
+  else set.add(name);
+  saveInactiveSetores();
+}
+
+function isSetorActive(name) {
+  return !getInactiveSetores().has(name);
+}
+
 // Foto do colaborador (URL-based, localStorage)
 const COLAB_FOTOS_KEY = 'sistema_colab_fotos_v1';
 
@@ -261,16 +303,88 @@ function renderManageColabs() {
   });
 }
 
+// ─── GERENCIAR SETORES INATIVOS ────────────────────────────────
+
+function openManageSetores() {
+  const overlay = document.getElementById('manageSetoresOverlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  renderManageSetores();
+}
+
+function closeManageSetores() {
+  const overlay = document.getElementById('manageSetoresOverlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function renderManageSetores() {
+  const container = document.getElementById('manageSetoresContent');
+  if (!container) return;
+  const inactive = getInactiveSetores();
+  const allSetores = [...new Set((rawRecords || []).filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
+
+  let html = `
+    <div style="padding:var(--s-5)">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--s-1)">🏢 Gerenciar Setores</h2>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">Marque como inativos setores que não são mais relevantes. Eles serão ocultados dos filtros, relatórios e análises.</p>
+      <div style="overflow-x:auto;max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md)">
+        <table class="ranking-table">
+          <thead><tr><th>Setor</th><th style="text-align:center">Ativo</th></tr></thead>
+          <tbody>
+            ${allSetores.map(s => {
+              const ativo = !inactive.has(s);
+              return `<tr>
+                <td style="font-weight:500">${escapeHtml(s)}</td>
+                <td style="text-align:center">
+                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                    <input type="checkbox" class="setor-active-toggle" data-name="${escapeHtml(s)}" ${ativo ? 'checked' : ''} style="width:18px;height:18px"/>
+                    <span style="font-size:12px;color:${ativo ? 'var(--success)' : 'var(--text-muted)'}">${ativo ? 'Ativo' : 'Inativo'}</span>
+                  </label>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:var(--s-3);margin-top:var(--s-4);justify-content:flex-end">
+        <button class="btn-primary" id="manageSetoresDoneBtn" type="button">✅ Concluído</button>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  document.getElementById('manageSetoresClose').addEventListener('click', closeManageSetores);
+  document.getElementById('manageSetoresDoneBtn').addEventListener('click', closeManageSetores);
+
+  container.querySelectorAll('.setor-active-toggle').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const name = cb.dataset.name;
+      const active = cb.checked;
+      setSetorActive(name, active);
+      const label = cb.nextElementSibling;
+      if (label) {
+        label.textContent = active ? 'Ativo' : 'Inativo';
+        label.style.color = active ? 'var(--success)' : 'var(--text-muted)';
+      }
+    });
+  });
+}
+
 // Close on backdrop click
 document.addEventListener('click', (e) => {
   const overlay = document.getElementById('manageColabsOverlay');
   if (overlay && overlay.classList.contains('open') && e.target === overlay) {
     closeManageColabs();
   }
+  const overlaySetores = document.getElementById('manageSetoresOverlay');
+  if (overlaySetores && overlaySetores.classList.contains('open') && e.target === overlaySetores) {
+    closeManageSetores();
+  }
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeManageColabs();
+  if (e.key === 'Escape') { closeManageColabs(); closeManageSetores(); }
 });
 function _normName(s) {
   try {
@@ -2374,6 +2488,7 @@ function getCurrentFilteredRows() {
   return rawRecords.filter(r => {
     if (!r) return false;
     if (setorVal !== 'all' && String(r['Setor']) !== setorVal) return false;
+    if (setorVal === 'all' && typeof isSetorActive === 'function' && !isSetorActive(String(r['Setor']))) return false;
     if (mesVal.length && !mesVal.includes(String(r['Mês']))) return false;
     if (arquivoVal !== 'all' && String(r['Arquivo']) !== arquivoVal) return false;
     if (selectedAt && selectedAt.length && !selectedAt.includes('all')) {
@@ -3215,6 +3330,12 @@ if (!rawRecords || !rawRecords.length) {
       showToast('Comparativos atualizados!', 'success');
     });
   }
+
+  // ===== Manage Colabs / Setores buttons =====
+  const manageColabsBtn = document.getElementById('manageColabsBtn');
+  if (manageColabsBtn) manageColabsBtn.addEventListener('click', openManageColabs);
+  const manageSetoresBtn = document.getElementById('manageSetoresBtn');
+  if (manageSetoresBtn) manageSetoresBtn.addEventListener('click', openManageSetores);
 
   // ===== Init Metas on load =====
   if (typeof loadMetas === 'function') loadMetas();
