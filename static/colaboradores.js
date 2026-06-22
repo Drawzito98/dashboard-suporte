@@ -395,7 +395,8 @@ document.getElementById('colabReportPrint')?.addEventListener('click', async () 
   const nome = content.querySelector('.report-header h2')?.textContent || 'colaborador';
   showToast('Capturando relatório…', 'ok');
   try {
-    const canvas = await html2canvas(content, { scale: 2, useCORS: true, backgroundColor: null });
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-surface').trim() || '#1e293b';
+    const canvas = await html2canvas(content, { scale: 2, useCORS: true, backgroundColor: bg });
     const link = document.createElement('a');
     link.download = `relatorio_${nome.replace(/\s+/g, '_').normalize('NFD').replace(/\p{Diacritic}/gu, '')}.png`;
     link.href = canvas.toDataURL('image/png');
