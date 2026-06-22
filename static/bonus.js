@@ -41,6 +41,16 @@ function renderBonus() {
   html += '<div class="field" style="margin-bottom:var(--s-3)"><span>Descrição</span>';
   html += `<textarea id="bonusDescricaoInput" style="width:100%;min-height:50px;font-size:13px;line-height:1.6" placeholder="Ex: Auxiliou a equipe no projeto X...">${editing ? escapeHtml(editing.descricao || '') : ''}</textarea>`;
   html += '</div>';
+  html += '<div class="field" style="margin-bottom:var(--s-3)"><span>Mês de referência (opcional)</span>';
+  html += '<select id="bonusMesInput">';
+  html += '<option value="">-- Sem mês --</option>';
+  const _availMeses = [...new Set((rawRecords || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
+  const _editingMes = editing?.mes || '';
+  for (const m of _availMeses) {
+    const sel = _editingMes === m ? ' selected' : '';
+    html += `<option value="${escapeHtml(m)}"${sel}>${escapeHtml(m)}</option>`;
+  }
+  html += '</select></div>';
   if (editing && editing.id) {
     html += '<div style="display:flex;gap:var(--s-2)">';
     html += `<button class="btn-primary" id="bonusSalvarBtn" type="button" style="flex:1">💾 Atualizar</button>`;
@@ -85,7 +95,8 @@ function renderBonus() {
       if (b.descricao) {
         html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:1px">${escapeHtml(b.descricao)}</div>`;
       }
-      html += `<div style="font-size:11px;color:var(--text-muted);margin-top:1px">${b.createdAt ? new Date(b.createdAt).toLocaleString('pt-BR') : ''}</div>`;
+      const mesInfo = b.mes ? `📅 ${escapeHtml(b.mes)}` : '';
+      html += `<div style="font-size:11px;color:var(--text-muted);margin-top:1px">${mesInfo}${mesInfo ? ' · ' : ''}${b.createdAt ? new Date(b.createdAt).toLocaleString('pt-BR') : ''}</div>`;
       html += '</div>';
       html += '<div style="display:flex;gap:var(--s-1)">';
       html += `<button class="btn-small bonus-editar-btn" data-id="${b.id}" type="button">✏️</button>`;
@@ -117,9 +128,11 @@ function bindBonusEvents(saved) {
     }
     const editingRaw = localStorage.getItem(BONUS_EDITING_KEY);
     const editing = editingRaw ? JSON.parse(editingRaw) : null;
+    const mes = document.getElementById('bonusMesInput').value || '';
     const bonus = {
       id: editing?.id || Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
       colaborador: colaborador,
+      mes: mes,
       descricao: descricao.trim(),
       pontos: absPts * sinal,
       createdAt: editing?.createdAt || new Date().toISOString()
@@ -158,8 +171,10 @@ function bindBonusEvents(saved) {
       const editing = editingRaw ? JSON.parse(editingRaw) : null;
       if (!editing) return;
       const originalSinal = (parseFloat(editing.pontos) || 0) >= 0 ? 1 : -1;
+      const mes = document.getElementById('bonusMesInput').value || '';
       const bonus = {
         ...editing,
+        mes: mes,
         descricao: descricao.trim(),
         pontos: absPts * originalSinal
       };

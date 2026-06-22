@@ -618,6 +618,7 @@ async function dbPontosExtrasSave(bonus) {
         colaborador: bonus.colaborador,
         descricao: bonus.descricao || '',
         pontos: parseFloat(bonus.pontos) || 0,
+        mes: bonus.mes || '',
         updated_at: new Date().toISOString()
       }).eq('id', bonus.id);
     } else {
@@ -625,7 +626,8 @@ async function dbPontosExtrasSave(bonus) {
         user_id: uid,
         colaborador: bonus.colaborador,
         descricao: bonus.descricao || '',
-        pontos: parseFloat(bonus.pontos) || 0
+        pontos: parseFloat(bonus.pontos) || 0,
+        mes: bonus.mes || ''
       });
     }
   } catch {}
@@ -687,6 +689,12 @@ async function dbColabInfoSave(nome, data) {
     const uid = await _getUserId();
     if (!uid) return;
     const existing = await sbClient.from('colaboradores_info').select('id').eq('user_id', uid).eq('nome', nome).maybeSingle();
+    const extraFields = {
+      conduta_mes: data.conduta_mes || '',
+      conduta_pontos: parseFloat(data.conduta_pontos) || 15,
+      conduta_bonus_id: data.conduta_bonus_id || '',
+      conduta_bonus_createdAt: data.conduta_bonus_createdAt || ''
+    };
     if (existing?.data?.id) {
       await sbClient.from('colaboradores_info').update({
         data_aniversario: data.data_aniversario || null,
@@ -697,6 +705,7 @@ async function dbColabInfoSave(nome, data) {
         observacoes: data.observacoes || '',
         conduta_negativa: data.conduta_negativa || '',
         conduta_motivo: data.conduta_motivo || '',
+        ...extraFields,
         updated_at: new Date().toISOString()
       }).eq('id', existing.data.id);
     } else {
@@ -710,7 +719,8 @@ async function dbColabInfoSave(nome, data) {
         objetivos_futuros: data.objetivos_futuros || '',
         observacoes: data.observacoes || '',
         conduta_negativa: data.conduta_negativa || '',
-        conduta_motivo: data.conduta_motivo || ''
+        conduta_motivo: data.conduta_motivo || '',
+        ...extraFields
       });
     }
   } catch {}

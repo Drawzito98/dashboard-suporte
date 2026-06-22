@@ -88,9 +88,12 @@ function computeScoreForCollaborator(name, records) {
     } else if (rule.id === 'pontos_extras') {
       try {
         const bonusList = JSON.parse(localStorage.getItem('sistema_pontos_extras_v1') || '[]');
-        const sum = bonusList
-          .filter(b => String(b.colaborador) === name)
-          .reduce((s, b) => s + (parseFloat(b.pontos) || 0), 0);
+        const meses = [...new Set(rows.filter(r => r && r['Mês']).map(r => r['Mês']))];
+        let filteredBonus = bonusList.filter(b => String(b.colaborador) === name);
+        if (meses.length > 0) {
+          filteredBonus = filteredBonus.filter(b => b.mes && meses.includes(b.mes));
+        }
+        const sum = filteredBonus.reduce((s, b) => s + (parseFloat(b.pontos) || 0), 0);
         points = sum * (rule.defaultValue || 0);
       } catch { points = 0; }
     }
