@@ -376,6 +376,9 @@ function normalizeAtendenteOnRecords(records) {
     const { base, tagged } = stripMultiSetorTag(r['Atendente']);
     if (base !== r['Atendente']) r['Atendente'] = base;
     if (tagged && base) explicitMultiSetorNames.add(base);
+    // Remove símbolos não-alfanuméricos (★, bullets, etc) que ficaram no nome
+    const cleaned = r['Atendente'].replace(/[^\w\s]/g, '').trim();
+    if (cleaned && cleaned !== r['Atendente']) r['Atendente'] = cleaned;
   });
   return records;
 }
