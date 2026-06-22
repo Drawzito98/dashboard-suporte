@@ -241,6 +241,10 @@ const globalFilters = {
       });
     }
 
+    const periodoEl = document.getElementById('gfPeriodo');
+    if (periodoEl) {
+      periodoEl.addEventListener('change', () => this._updateColaboradorOptions());
+    }
     const setor = document.getElementById('gfSetor');
     if (setor) {
       setor.addEventListener('change', () => this._updateColaboradorOptions());
@@ -329,11 +333,25 @@ const globalFilters = {
     const setorEl = document.getElementById('gfSetor');
     if (!colab || !setorEl) return;
     const setorVal = setorEl.value;
+
+    // Determina meses ativos para refinar a lista de colaboradores
+    let activeMonths = null;
+    if (this.periodo && this.periodo !== 'all' && this.periodo !== '__multi__') {
+      activeMonths = [this.periodo];
+    } else if (this.periodo === '__multi__' && Array.isArray(this.mesesSelecionados) && this.mesesSelecionados.length) {
+      activeMonths = this.mesesSelecionados;
+    }
+
     let cols;
-    if (setorVal === 'all' || !rawRecords || !rawRecords.length) {
+    if ((setorVal === 'all' || !rawRecords || !rawRecords.length) && !activeMonths) {
       cols = [...new Set((rawRecords || []).filter(r => r && r['Atendente']).map(r => r['Atendente']))].sort();
     } else {
-      cols = [...new Set(rawRecords.filter(r => r && r['Atendente'] && String(r['Setor']) === setorVal).map(r => r['Atendente']))].sort();
+      cols = [...new Set((rawRecords || []).filter(r => {
+        if (!r || !r['Atendente']) return false;
+        if (setorVal !== 'all' && String(r['Setor']) !== setorVal) return false;
+        if (activeMonths && !activeMonths.includes(String(r['Mês']))) return false;
+        return true;
+      }).map(r => r['Atendente']))].sort();
     }
     if (typeof isColabActive === 'function') {
       cols = cols.filter(c => isColabActive(c));
