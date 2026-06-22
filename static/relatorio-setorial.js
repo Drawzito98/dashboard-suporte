@@ -98,7 +98,7 @@ function renderRelatorioSetorial() {
     <div class="kpi"><div class="label">Score médio</div><div class="value ${avgScore > 0 ? getClasseScore(avgScore) : ''}">${fmtScore(avgScore)}</div></div>
     <div class="kpi"><div class="label">Produtividade</div><div class="value">${fmtPct(prodGeral)}</div></div>
     <div class="kpi"><div class="label">Setores</div><div class="value">${setores.length}</div></div>
-    <div class="kpi"><div class="label">Atendentes</div><div class="value">${totalAtendentes}</div></div>
+    <div class="kpi" id="rsAtendentesKpi" style="cursor:pointer" title="Clique para ver a lista de atendentes"><div class="label">Atendentes</div><div class="value">${totalAtendentes}</div></div>
   </div>`;
 
   // ── Destaques e Pontos de Atenção ──
@@ -377,6 +377,13 @@ function renderRelatorioSetorial() {
     });
   }
 
+  // ── Modal de atendentes ──
+  const kpiEl = document.getElementById('rsAtendentesKpi');
+  const atendentesLista = [...new Set(rows.map(r => r['Atendente']))].filter(Boolean).sort();
+  if (kpiEl) {
+    kpiEl.addEventListener('click', () => _showModalAtendentes(atendentesLista));
+  }
+
   // ── Exportar PNG ──
   const printBtn = document.getElementById('rsPrintBtn');
   if (printBtn && typeof html2canvas !== 'undefined') {
@@ -397,6 +404,29 @@ function renderRelatorioSetorial() {
       });
     });
   }
+}
+
+function _showModalAtendentes(nomes) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--bg-surface,#1e293b);border-radius:8px;padding:var(--s-5,24px);max-width:420px;width:90%;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 4px 24px rgba(0,0,0,0.4)';
+
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-4,16px)">
+      <h3 style="margin:0;font-size:15px;font-weight:600;color:var(--text-strong,#f1f5f9)">Atendentes (${nomes.length})</h3>
+      <button type="button" style="background:none;border:none;color:var(--text-secondary,#94a3b8);font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>
+    </div>
+    <div style="overflow-y:auto;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2,8px)">
+      ${nomes.map(n => `<div style="font-size:13px;color:var(--text-primary,#e2e8f0);padding:var(--s-1,4px) 0">${escapeHtml ? escapeHtml(n) : n}</div>`).join('')}
+    </div>
+  `;
+
+  box.querySelector('button').addEventListener('click', () => overlay.remove());
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
 }
 
 function onRelatorioSetorialTabActivated() {
