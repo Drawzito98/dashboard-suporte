@@ -1391,10 +1391,31 @@ function updateView() {
   const visible = anyFilterActive ? filtered : filtered.filter(r => !isAggregateName(r['Atendente']));
 
   renderPreview(visible.slice(0, 50));
+
+  // Remove inativos do gráfico (colaboradores desligados/transferidos)
+  const chartRows = visible.filter(r => isColabActive(r['Atendente']));
+
+  // Auto-detecção da visão do gráfico:
+  //   colaborador único → evolução mensal (timeline)
+  //   setor ou múltiplos → ranking por colaborador (attendee)
+  // Salva a escolha manual do usuário para restaurar quando limpar o filtro de colaborador
+  const singleColab = atendenteSelect && atendenteSelect.value !== 'all';
+  const lastViewKey = 'sistema_last_chart_view';
+  if (viewSelect) {
+    if (singleColab) {
+      if (viewSelect.value !== 'timeline') {
+        try { localStorage.setItem(lastViewKey, viewSelect.value); } catch (e) {}
+        viewSelect.value = 'timeline';
+      }
+    } else {
+      const saved = localStorage.getItem(lastViewKey);
+      if (saved && ['attendee','timeline','detailed'].includes(saved)) viewSelect.value = saved;
+    }
+  }
   const _vw = viewSelect ? viewSelect.value : 'attendee';
-  if (_vw === 'timeline') renderTimelineChart(visible);
-  else if (_vw === 'detailed') renderDetailedByMonthChart(visible);
-  else renderChart(visible);
+  if (_vw === 'timeline') renderTimelineChart(chartRows);
+  else if (_vw === 'detailed') renderDetailedByMonthChart(chartRows);
+  else renderChart(chartRows);
   renderSummary(filtered);
   updatePreviewSortControls(); // update controls after filtering
 }
