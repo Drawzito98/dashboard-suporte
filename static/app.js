@@ -936,8 +936,19 @@ if (emptyImportBtn) {
 
 
 // When setor or mês change we must refresh the atendente list to show only relevant names
-setorSelect.addEventListener('change', () => { updateFilterOptions(); });
-mesSelect.addEventListener('change', () => { syncMonthPickerVisibility(); updateFilterOptions(); });
+function _rerenderActiveNonDashboardTab() {
+  const active = document.querySelector('.tab-btn.active');
+  if (!active) return;
+  const tab = active.getAttribute('data-tab');
+  if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
+  else if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') onGamificationTabActivated();
+  else if (tab === 'metas' && typeof onMetasTabActivated === 'function') onMetasTabActivated();
+  else if (tab === 'comparativos' && typeof onComparativosTabActivated === 'function') onComparativosTabActivated();
+  else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();
+  else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
+}
+setorSelect.addEventListener('change', () => { updateFilterOptions(); _rerenderActiveNonDashboardTab(); });
+mesSelect.addEventListener('change', () => { syncMonthPickerVisibility(); updateFilterOptions(); _rerenderActiveNonDashboardTab(); });
 atendenteSelect.addEventListener('change', () => {});
 const applyFiltersBtn = document.getElementById('applyFiltersBtn');
 if (applyFiltersBtn) applyFiltersBtn.addEventListener('click', () => { updateView(); });
@@ -3222,6 +3233,7 @@ if (!rawRecords || !rawRecords.length) {
         else if (tab === 'comparativos' && typeof onComparativosTabActivated === 'function') onComparativosTabActivated();
         else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();
         else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
+        else if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
       }
     });
   }
