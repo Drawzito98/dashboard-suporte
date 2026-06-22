@@ -1,13 +1,15 @@
 # Dashboard de Suporte
 
-App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer) e deploy no Vercel.
+App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer), gamificação, relatórios inteligentes, e deploy no Vercel.
 
 ## Stack
 
-- **Frontend:** HTML/CSS/JS vanilla (SPA, sem build step)
+- **Frontend:** HTML/CSS/JS vanilla (SPA, ~25 modules, sem build step)
 - **Backend:** Supabase (Auth, PostgreSQL, RLS, REST API)
 - **Deploy:** Vercel (static + serverless functions)
+- **Charts:** Chart.js (CDN)
 - **CSV parse:** PapaParse (CDN) + fallback nativo
+- **PDF:** jsPDF + html2canvas (CDN)
 
 ## Deploy
 
@@ -15,7 +17,7 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 - **Vercel project:** `andre-tavares/dashboard-suporte`
 - **Git remote:** `origin` → `https://github.com/Drawzito98/dashboard-suporte`
 - **Branch:** `main`
-- **Deploy manual:** `npx vercel deploy --prod --yes` (na raiz do projeto)
+- **Deploy manual:** `git push origin main && npx vercel deploy --prod --yes`
 
 ## Supabase
 
@@ -29,7 +31,7 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 
 | Tabela | Finalidade | RLS |
 |---|---|---|
-| `registros` | Dados CSV importados (~654 registros) | Por `user_id` |
+| `registros` (importacoes) | Dados CSV importados | Por `user_id` |
 | `metas` | Metas manuais/configuradas | Por `user_id` |
 | `comentarios` | Anotações mensais | Authenticated |
 | `historico` | Audit log de alterações | Authenticated |
@@ -38,39 +40,77 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 | `colaborador_fotos` | URLs de fotos dos colaboradores | Authenticated |
 | `colab_inativos` | Colaboradores inativos por usuário | Por `user_id` |
 | `feedbacks` | Feedbacks e avaliações por colaborador | Por `user_id` |
+| `anotacoes_diarias` | Anotações diárias privadas | Por `user_id` |
+| `tarefas` | Tarefas/agenda com prioridades | Por `user_id` |
+| `pontos_extras` | Bônus/penalidades manuais | Por `user_id` |
+| `colaboradores_info` | Dados cadastrais (aniversário, admissão, observações, conduta) | Por `user_id` |
 
-### Migrations
+### Migrations (executar no SQL Editor do Supabase)
 
-- `migration.sql` — tabela `registros` + RLS
-- `migration_v2.sql` — 7 tabelas extras + RLS (executado em 19/06/2026)
-- `migration_v3.sql` — tabela `feedbacks` + RLS (executado em 19/06/2026)
+| Migration | Conteúdo |
+|---|---|
+| `migration.sql` | Tabela `registros` + RLS |
+| `migration_v2.sql` | 7 tabelas extras + RLS (19/06) |
+| `migration_v3.sql` | Tabela `feedbacks` + RLS |
+| `migration_v4.sql` | Tabela `anotacoes_diarias` + RLS |
+| `migration_v5.sql` | Tabela `tarefas` + RLS |
+| `migration_v6.sql` | Tabela `pontos_extras` + RLS |
+| `migration_v7.sql` | Tabela `colaboradores_info` + RLS |
+| `migration_v8.sql` | Colunas `conduta_negativa` / `conduta_motivo` em `colaboradores_info` |
+| `migration_v9.sql` | Coluna `mes` em `pontos_extras` |
 
-### RLS Policies (`migration_v2.sql`)
+### RLS Policies
 
-Tabelas com `user_id`: SELECT/INSERT/UPDATE/DDELETE restritos ao próprio `auth.uid()`.
+Tabelas com `user_id`: SELECT/INSERT/UPDATE/DELETE restritos ao próprio `auth.uid()`.
 Tabelas compartilhadas (comentarios, historico, colaborador_fotos): acesso a todo `auth.role() = 'authenticated'`.
 
 ## Recursos
 
-- **📊 Dashboard** — indicadores, gráficos, KPIs por período
-- **🏆 Gamificação** — ranking, pódio, evolução individual, heatmap, medalhas
-- **📋 Regras** — configuração de scoring e critérios
-- **🎯 Metas** — metas manuais com sugestão automática (últimos 3 meses)
-- **💡 Insights** — análises automáticas e projeções
-- **👥 Usuários** (admin) — criar, remover, redefinir senha, alterar cargo
-- **📄 Exportar PDF** — relatório com gráfico + KPIs
-- **📸 Fotos** — URL do colaborador com fallback para iniciais
-- **📝 Histórico** — audit log de edições/adições/exclusões
-- **💬 Comentários** — anotações mensais
-- **💬 Feedbacks** — geração de sugestão automática e registro de feedbacks por colaborador
-- **📅 Novo registro mensal** — adicionar dados para meses futuros
-- **🔮 Tendências** — médias móveis + projeção linear
-- **🧹 Limpar duplicatas** — remove registros duplicados no Supabase
+### Abas (ordem da tab-bar)
 
-## Papéis
+1. **📊 Dashboard** — gráfico de desempenho (ranking por colaborador ou evolução mensal), tabela detalhada com edição inline, filtros por setor/mês/colaborador/arquivo, busca textual, relatório executivo com ✅ destaques e ⚠️ pontos de atenção, exportação para PDF (HTML + gráfico + KPIs)
+2. **🏆 Gamificação** — ranking com pontuação total, pódio, evolução individual por mês, heatmap de desempenho, medalhas por conquistas, scoring rules configuráveis
+3. **🎯 Metas** — gestão de metas por colaborador com sugestão automática (média dos últimos 3 meses)
+4. **📊 Comparativos** — comparar colaboradores lado a lado com gráficos
+5. **👥 Painel do Líder** — visão gerencial com Δ colunas (finalizações, score), alertas inteligentes (score <4.5, quedas consecutivas, produtividade abaixo da média), atalho 👤 para perfil do colaborador
+6. **💡 Insights** — análises automáticas com cruzamento de métricas (quantidade vs qualidade), cards de destaque do período, mini tabela de evolução do time mês a mês com setas ↑↓
+7. **🔔 Alertas** — notificações configuráveis por critérios
+8. **📈 Tendências** — médias móveis + projeção linear
+9. **🏅 Conquistas** — badges e medalhas por desempenho
+10. **📅 Nova Projeção** — registro manual de dados para meses futuros
+11. **📝 Histórico** — audit log de todas as alterações (adição/edição/exclusão)
+12. **💬 Comentários** — anotações mensais por setor
+13. **💬 Feedbacks** — geração automática de sugestão + CRUD de feedbacks por colaborador
+14. **📓 Anotações** — notas diárias privadas
+15. **✅ Tarefas** — agenda com prioridades (alta/média/baixa) e status (pendente/andamento/concluído)
+16. **🎁 Bônus** — pontos extras (bônus/penalidades) manuais com mês de referência, integração com gamificação
+17. **👤 Colaboradores** — gestão de cadastro (foto, aniversário, admissão, email, tarefas, objetivos, observações, conduta), relatório de desempenho individual com métricas e variação vs mês anterior
+18. **👥 Usuários** (admin) — criar, remover, redefinir senha, alterar cargo (admin/viewer)
 
-- **admin** — acesso total (ver/editar/remover registros, gerenciar usuários)
-- **viewer** — visualização apenas (sem botões de ação, sem aba Usuários)
+### Funcionalidades Transversais
+
+- **Filtros Globais Inteligentes** — período (único ou múltiplo), setor, colaborador, score mínimo, meta atingida, favoritos, pesquisa textual. Dropdown de colaborador respeita setor + mês + colaboradores ativos.
+- **Relatório Executivo** — texto gerado automaticamente com seções: resumo do período, dados por setor, ✅ destaques (melhores desempenhos), ⚠️ pontos de atenção (score baixo, transferências altas, produtividade baixa), top 5 finalizações/score, menores scores, resumo por colaborador com variação vs média do time.
+- **Relatório por Colaborador** — overlay na dashboard (botão 📊 por linha ou dropdown) com avatar, métricas com variação, pontuação da gamificação, destaques, pontos de atenção, bônus/penalidades.
+- **Exportar PDF** — abre em nova aba com HTML formatado (cards, cores, destaques). Use Ctrl+P → "Salvar como PDF" para baixar.
+- **Gráfico adaptativo** — colaborador único → evolução mensal (timeline); setor/múltiplos → ranking por colaborador. Filtra inativos automaticamente.
+- **Tema escuro/claro** — toggle na sidebar, persiste em localStorage.
+- **Visão compacta** — toggle na sidebar para reduzir padding/fontes das tabelas.
+- **Modo reunião** — oculta nomes para apresentação.
+- **Edição inline** — células editáveis na tabela de preview com Enter/Tab para navegação.
+- **Importar CSV** — arrastar/colar/selecionar arquivo, parse com PapaParse, normalização de cabeçalhos.
+- **Limpar duplicatas** — remove registros duplicados no Supabase.
+- **Favoritos** — ⭐ colaboradores favoritos, filtrável nos filtros globais.
+
+## Scripts (ordem de carregamento)
+
+```
+auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring.js →
+gamificacao.js → metas.js → comparativos.js → colab-detail.js → painelLider.js →
+insights.js → alertas.js → tendencia.js → conquistas.js → projecao.js →
+historico.js → comentarios.js → feedbacks.js → anotacoes.js → tarefas.js →
+bonus.js → colaboradores.js → usuarios.js → app.js
+```
 
 ## Estrutura de arquivos
 
@@ -78,36 +118,40 @@ Tabelas compartilhadas (comentarios, historico, colaborador_fotos): acesso a tod
 /
 ├── index.html              → Página principal (SPA)
 ├── vercel.json             → Config Vercel
-├── migration.sql           → Script SQL tabela `registros`
-├── migration_v2.sql        → Script SQL 7 tabelas extras (19/06)
+├── AGENTS.md               → Contexto do projeto para IA
 ├── README.md               → Este arquivo
+├── migration_v2-9.sql      → Scripts SQL para Supabase
 ├── api/
 │   └── users.js            → API serverless (CRUD usuários, alterar senha/cargo)
 ├── static/
 │   ├── auth.js             → Login, cadastro, logout (Supabase Auth)
-│   ├── db.js               → Conexão Supabase + CRUD `registros`
-│   ├── db-extra.js         → CRUD 7 tabelas extras + migração única localStorage→Supabase
-│   ├── app.js              → Lógica principal do dashboard (~3570 linhas)
+│   ├── db.js               → Conexão Supabase + CRUD registros
+│   ├── db-extra.js         → CRUD tabelas extras + migração localStorage→Supabase
+│   ├── perfis.js           → Aliases de colaboradores (apelidos)
 │   ├── globalFilters.js    → Filtros globais (Período, Setor, Colaborador)
-│   ├── styles.css          → Estilos com variáveis CSS, tema escuro, role badges
 │   ├── scoring.js          → Regras de pontuação e ranking
-│   ├── perfis.js           → Aliases de colaboradores
-│   ├── gamificacao.js      → Ranking, pódio, evolução, heatmap
+│   ├── gamificacao.js      → Ranking, pódio, evolução, heatmap, medalhas
 │   ├── metas.js            → Metas manuais e sugestão automática
 │   ├── comparativos.js     → Comparativos avançados
-│   ├── colab-detail.js     → Perfil do colaborador
-│   ├── painelLider.js      → Painel do líder
-│   ├── insights.js         → Central de insights
-│   ├── alertas.js          → Sistema de alertas
+│   ├── colab-detail.js     → Perfil do colaborador (overlay)
+│   ├── painelLider.js      → Painel do líder com Δ colunas e alertas
+│   ├── insights.js         → Central de insights automáticos
+│   ├── alertas.js          → Sistema de alertas configuráveis
 │   ├── tendencia.js        → Projeções e tendências
 │   ├── conquistas.js       → Badges/conquistas
-│   ├── feedbacks.js        → Geração e registro de feedbacks
-│   ├── usuarios.js         → Gestão de usuários (admin)
+│   ├── projecao.js         → Overlay de novo registro mensal
 │   ├── historico.js        → Audit log overlay
 │   ├── comentarios.js      → Anotações mensais overlay
-│   └── projecao.js         → Overlay de novo registro mensal
-└── scripts/
-    └── validate_csv.py     → Validador de CSV
+│   ├── feedbacks.js        → Geração e registro de feedbacks
+│   ├── anotacoes.js        → Anotações diárias privadas
+│   ├── tarefas.js          → Tarefas/agenda com prioridades
+│   ├── bonus.js            → Bônus/penalidades manuais com mês de referência
+│   ├── colaboradores.js    → Gestão de cadastro + relatório de desempenho
+│   ├── usuarios.js         → Gestão de usuários (admin)
+│   ├── app.js              → Lógica principal (~3850 linhas)
+│   └── styles.css          → Estilos com variáveis CSS, tema escuro, responsividade
+├── scripts/
+│   └── validate_csv.py     → Validador de CSV
 ```
 
 ## Fluxo de autenticação
@@ -123,47 +167,34 @@ Tabelas compartilhadas (comentarios, historico, colaborador_fotos): acesso a tod
 
 1. **DOMContentLoaded** em `app.js`:
    - `initAuth()` → verifica sessão
-   - `initDbExtra()` (em background) → migra localStorage → Supabase, depois carrega do Supabase para localStorage (metas, comentários, histórico, scoring, alertas, fotos, inativos)
-   - `dbLoadRecords()` → carrega registros do Supabase (`registros`)
+   - `initDbExtra()` (background) → migra localStorage → Supabase, carrega dados extras
+   - `dbLoadRecords()` → carrega registros do Supabase (`importacoes`)
 2. Dados de CSV passam por RLS (filtrados por `user_id` ou nulos)
 3. Dados extras (metas, fotos, etc.) usam **localStorage como fallback** se Supabase offline
 4. Escrita é **síncrona no localStorage** + **assíncrona no Supabase**
 
-## Persistência (Migration v2 — 19/06/2026)
+## Papéis
 
-**Estratégia:** localStorage como fallback primário, Supabase como storage principal.
-
-- Todas as funções de leitura lêem do localStorage primeiro (síncrono)
-- Todas as funções de escrita salvam em ambos (localStorage + Supabase)
-- `initDbExtra()` no DOMContentLoaded carrega dados do Supabase e popula localStorage
-- `migrateLocalToSupabase()` roda **uma única vez** (flag `sistema_migrated_to_supabase_v1`) para migrar dados antigos do localStorage para o Supabase
-
-**Arquivos modificados na migration v2:**
-- `static/db-extra.js` (novo) — CRUD centralizado para as 7 novas tabelas
-- `static/app.js` — `initDbExtra()`, `logHistorico()`, `setColabFoto()`, `saveInactiveColabs()`, `setColabActive()`
-- `static/metas.js` — `loadMetas()` assíncrono, `saveMetas()` com Supabase
-- `static/comentarios.js` — `addComentario()` e `delComentario()` com Supabase
-- `static/historico.js` — helper `loadHistoricoFromStorage()` extraído
-- `static/alertas.js` — `loadAlertasConfig()` e `saveAlertasConfig()` com Supabase
-- `static/scoring.js` — `saveScoringRules()` com Supabase
-- `index.html` — script tag `db-extra.js` adicionada
+- **admin** — acesso total (ver/editar/remover registros, gerenciar usuários)
+- **viewer** — visualização apenas (sem botões de ação, sem aba Usuários)
 
 ## Riscos conhecidos
 
 1. **Service Role Key exposta** em `api/users.js` — permite bypass total de RLS
-2. **Anon key exposta** em `static/db.js` — risco baixo (RLS bloqueia), mas idealmente ambas deveriam ser variáveis de ambiente do Vercel
+2. **Anon key exposta** em `static/db.js` — risco baixo (RLS bloqueia)
 3. **Sem build step** — sem typecheck, sem linter, sem testes automatizados
-4. **`app.js` ~3570 linhas** — monolítico, difícil de manter
+4. **`app.js` ~3850 linhas** — monolítico, difícil de manter
 
 ## Comandos úteis
 
 ```bash
-# Deploy
+# Deploy completo
+git add -A && git commit -m "mensagem" && git push origin main && npx vercel deploy --prod --yes
+
+# Apenas deploy (se já commitado)
 npx vercel deploy --prod --yes
 
 # Git
 git status
-git add -A
-git commit -m "mensagem"
-git push origin main
+git log --oneline -10
 ```
