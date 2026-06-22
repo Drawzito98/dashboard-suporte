@@ -6,27 +6,12 @@ const sbClient = (typeof supabase !== 'undefined' && supabase.createClient)
   ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
-let _adminCache = null;
-
-async function _fetchRoleFromSupabase() {
-  try {
-    if (!sbClient) return null;
-    const { data: { user } } = await sbClient.auth.getUser();
-    return user?.user_metadata?.role || null;
-  } catch {
-    return null;
-  }
+function isAdmin() {
+  return document.body.dataset.role === 'admin';
 }
 
-async function isAdmin() {
-  if (document.body.dataset.role === 'admin') return true;
-  const role = await _fetchRoleFromSupabase();
-  return role === 'admin';
-}
-
-async function requireAdmin() {
-  const ok = await isAdmin();
-  if (!ok) {
+function requireAdmin() {
+  if (!isAdmin()) {
     console.warn('[Permissão] Apenas administradores podem realizar esta ação.');
     return false;
   }

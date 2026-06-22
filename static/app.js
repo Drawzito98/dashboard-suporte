@@ -2633,19 +2633,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user } } = await sbClient.auth.getUser();
     if (user) {
       const role = user.user_metadata?.role;
-      if (!role || role === 'admin') {
-        // Admin: mostra tudo (padrão)
+      if (role === 'admin') {
         document.body.dataset.role = 'admin';
       } else {
         document.body.dataset.role = 'viewer';
       }
-      // Se não tem papel definido, define como admin
       if (!role) {
         try {
           await fetch('/api/users', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: user.id, role: 'admin' })
+            body: JSON.stringify({ id: user.id, role: 'viewer' })
           });
         } catch (e) {}
       }
