@@ -1376,6 +1376,9 @@ function updateView() {
       const name = String(r['Atendente'] || '').toLowerCase();
       if (!name.includes(qLower)) return false;
     }
+    if (atendenteSelect && atendenteSelect.value !== 'all') {
+      if (String(r['Atendente']) !== atendenteSelect.value) return false;
+    }
     const selectedAt = getSelectedAtendentes();
     if (selectedAt && !(selectedAt.length === 0 || selectedAt.includes('all'))) {
       if (!selectedAt.includes(String(r['Atendente']))) return false;
