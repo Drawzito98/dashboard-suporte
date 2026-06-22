@@ -115,7 +115,7 @@ function renderTarefas() {
       html += '<div style="display:flex;gap:var(--s-1)">';
       html += `<button class="btn-small tarefa-editar-btn" data-id="${t.id}" type="button">✏️</button>`;
       html += `<button class="btn-small btn-delete tarefa-excluir-btn" data-id="${t.id}" type="button">🗑️</button>`;
-      html += '</div></div>';
+      html += '</div>';
     }
     html += '</div>';
   }
