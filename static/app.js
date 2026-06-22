@@ -1533,6 +1533,7 @@ function renderSummary(filtered) {
   }
 
   let deltaFinalizados = null;
+  let deltaAssumidos = null;
   let deltaScore = null;
   if (mesSel.length === 1) {
     const prev = prevMonthKey(mesSel[0]);
@@ -1552,10 +1553,12 @@ function renderSummary(filtered) {
         });
 
       const prevFinal = prevRows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
+      const prevAssumidos = prevRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
       const prevScores = prevRows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && !Number.isNaN(Number(v)));
       const prevAvgScore = prevScores.length ? (prevScores.reduce((a,b)=>a+Number(b),0)/prevScores.length) : null;
 
       if (prevFinal > 0) deltaFinalizados = ((totalFinalizados - prevFinal) / prevFinal) * 100;
+      if (prevAssumidos > 0) deltaAssumidos = ((totalAssumidos - prevAssumidos) / prevAssumidos) * 100;
       if (prevAvgScore !== null && avgScoreNum !== null) deltaScore = avgScoreNum - prevAvgScore;
     }
   }
@@ -1601,7 +1604,7 @@ function renderSummary(filtered) {
     </div>
 
     <div class="kpi-grid" style="margin-top:12px">
-      <div class="kpi"><div class="label">Assumidos</div><div class="value">${fmtInt(totalAssumidos)}</div></div>
+      <div class="kpi"><div class="label">Assumidos</div><div class="value">${fmtInt(totalAssumidos)}</div><div class="sub">${deltaAssumidos===null?'':`Δ mês ant.: ${fmtPct(deltaAssumidos)}`}</div></div>
       <div class="kpi"><div class="label">Finalizados</div><div class="value">${fmtInt(totalFinalizados)}</div><div class="sub">${deltaFinalizados===null?'':`Δ mês ant.: ${fmtPct(deltaFinalizados)}`}</div></div>
       <div class="kpi"><div class="label">Transferidos</div><div class="value">${fmtInt(totalTransferidos)}</div><div class="sub">${taxaTransfer===null?'':`Taxa: ${(taxaTransfer*100).toFixed(1)}%`}</div></div>
       <div class="kpi"><div class="label">Score médio</div><div class="value${avgScoreNum!==null ? ' ' + getClasseScore(avgScoreNum) : ''}">${fmtScore(avgScoreNum)}</div><div class="sub">${deltaScore===null?'':`Δ mês ant.: ${deltaScore>=0?'+':''}${deltaScore.toFixed(2)}`}</div></div>
