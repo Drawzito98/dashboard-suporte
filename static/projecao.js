@@ -83,18 +83,17 @@ function renderProjecao() {
           </thead>
           <tbody>
             ${names.map((n, i) => {
-              const prev = lastMonthData[n] || {};
               const setor = colabSetor[n] || '';
               return `<tr>
                 <td style="font-weight:500">${escapeHtml(n)}</td>
                 <td><select class="proj-setor" data-idx="${i}" style="width:100%;padding:3px 6px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-size:12px">
                   ${setores.map(s => `<option value="${escapeHtml(s)}" ${s === setor ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
                 </select></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Assumidos" value="${prev.Assumidos || 0}" min="0" style="width:70px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Finalizados" value="${prev.Finalizados || 0}" min="0" style="width:70px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Transferidos" value="${prev.Transferidos || 0}" min="0" style="width:70px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="SCORE" value="${prev.SCORE !== undefined && prev.SCORE !== '' ? prev.SCORE : ''}" min="0" max="5" step="0.1" style="width:65px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Objetivo" value="${prev.Objetivo || 0}" min="0" style="width:70px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Assumidos" value="0" min="0" style="width:70px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Finalizados" value="0" min="0" style="width:70px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Transferidos" value="0" min="0" style="width:70px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="SCORE" value="" min="0" max="5" step="0.1" style="width:65px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Objetivo" value="0" min="0" style="width:70px"/></td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -103,7 +102,7 @@ function renderProjecao() {
 
       <div style="display:flex;gap:var(--s-3);margin-top:var(--s-4);justify-content:flex-end">
         <button class="btn-small" id="projecaoCancelBtn" type="button">Cancelar</button>
-        <button class="btn-primary" id="projecaoSaveBtn" type="button">💾 Salvar projeção (${names.length} colaboradores)</button>
+        <button class="btn-primary" id="projecaoSaveBtn" type="button">💾 Salvar registros (${names.length} colaboradores)</button>
       </div>
     </div>
   `;
