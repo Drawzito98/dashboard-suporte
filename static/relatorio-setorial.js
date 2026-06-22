@@ -279,11 +279,6 @@ function renderRelatorioSetorial() {
     // Pie chart — distribuição por setor
     const pieCanvas = document.getElementById('rsPieChart');
     if (pieCanvas) {
-      const cores = [
-        '#2563eb', '#16a34a', '#d97706', '#dc2626', '#8b5cf6',
-        '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#6366f1',
-        '#e11d48', '#65a30d', '#0ea5e9', '#a855f7', '#84cc16'
-      ];
       const sorted = setorMetrics.slice().sort((a, b) => b.fin - a.fin);
       window.__rsCharts.pieChart = new Chart(pieCanvas.getContext('2d'), {
         type: 'doughnut',
@@ -291,7 +286,7 @@ function renderRelatorioSetorial() {
           labels: sorted.map(s => s.nome),
           datasets: [{
             data: sorted.map(s => s.fin),
-            backgroundColor: sorted.map((_, i) => cores[i % cores.length]),
+            backgroundColor: sorted.map(s => `hsl(${Math.round(setorMetrics.indexOf(s) * 360 / setorMetrics.length)}, 60%, 55%)`),
             borderColor: '#1e293b',
             borderWidth: 2
           }]
