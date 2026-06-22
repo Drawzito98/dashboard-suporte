@@ -158,6 +158,31 @@ function openColabDetailOverlay(nome) {
 
   html += '</form>';
 
+  // ── Histórico de penalidades ──
+  const allBonus = JSON.parse(localStorage.getItem('sistema_pontos_extras_v1') || '[]');
+  const penalties = allBonus.filter(b => String(b.colaborador) === nome && (parseFloat(b.pontos) || 0) < 0);
+  if (penalties.length) {
+    html += '<div style="grid-column:1/-1;margin-top:var(--s-4)">';
+    html += '<h4 style="font-size:14px;font-weight:600;margin:0 0 var(--s-3) 0">📋 Histórico de penalidades</h4>';
+    html += '<div style="display:flex;flex-direction:column;gap:var(--s-2)">';
+    for (const p of penalties) {
+      const pts = Math.abs(parseFloat(p.pontos) || 0);
+      html += '<div style="display:flex;align-items:flex-start;gap:var(--s-3);padding:var(--s-2) var(--s-3);border:1px solid var(--border);border-radius:var(--r-sm)">';
+      html += `<div style="font-size:16px;font-weight:700;color:var(--danger);min-width:48px;text-align:center">-${pts.toFixed(1)}</div>`;
+      html += '<div style="flex:1;min-width:0">';
+      if (p.descricao) {
+        html += `<div style="font-size:13px">${escapeHtml(p.descricao)}</div>`;
+      }
+      html += '<div style="font-size:11px;color:var(--text-muted);margin-top:1px">';
+      const parts = [];
+      if (p.mes) parts.push(`📅 ${escapeHtml(p.mes)}`);
+      if (p.createdAt) parts.push(new Date(p.createdAt).toLocaleString('pt-BR'));
+      html += parts.join(' · ');
+      html += '</div></div></div>';
+    }
+    html += '</div></div>';
+  }
+
   content.innerHTML = html;
   overlay.classList.add('open');
 
