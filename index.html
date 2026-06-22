@@ -361,6 +361,13 @@
                 Exportar CSV
               </button>
             </div>
+            <div id="previewReportBar" style="display:none;padding:var(--s-2) var(--s-3);margin-bottom:var(--s-3);background:var(--bg-subtle);border-radius:var(--r-md);align-items:center;gap:var(--s-3)">
+              <span style="font-size:13px;font-weight:600;white-space:nowrap">📊 Relatório:</span>
+              <select id="reportColabSelect" style="flex:1;min-width:120px">
+                <option value="">Selecione um colaborador...</option>
+              </select>
+              <button class="btn-primary" id="gerarRelatorioBtn" type="button" style="white-space:nowrap;font-size:13px">📊 Gerar</button>
+            </div>
             <div id="previewTable"></div>
           </section>
         </div>

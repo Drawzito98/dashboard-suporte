@@ -1680,6 +1680,19 @@ function renderPreview(rows) {
   }
   renderPreviewDisplay(toRender);
   saveState();
+  updateReportBar(toRender);
+}
+
+function updateReportBar(rows) {
+  const bar = document.getElementById('previewReportBar');
+  const sel = document.getElementById('reportColabSelect');
+  if (!bar || !sel) return;
+  const colabs = [...new Set((rows || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
+  if (colabs.length < 1) { bar.style.display = 'none'; return; }
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Selecione um colaborador...</option>' + colabs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  if (current && colabs.includes(current)) sel.value = current;
+  bar.style.display = 'flex';
 }
 
 function renderPreviewDisplay(rows) {
@@ -1766,7 +1779,7 @@ function renderPreviewDisplay(rows) {
       }
       rowHtml += `<td contenteditable="${isAdmin() && !(k === 'Atendente' && presentationMode)}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(shown)}</td>`;
     });
-    html.push('<tr>' + rowHtml + `<td><span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span> <button class="btn-small btn-delete" data-idx="${ridx}" title="Remover" aria-label="Remover">🗑️</button></td>` + '</tr>');
+    html.push('<tr>' + rowHtml + `<td style="white-space:nowrap"><span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span> <button class="btn-small btn-report-row" data-idx="${ridx}" title="Relatório de desempenho" aria-label="Relatório">📊</button> <button class="btn-small btn-delete" data-idx="${ridx}" title="Remover" aria-label="Remover">🗑️</button></td>` + '</tr>');
   });
   html.push('</tbody></table></div>');
   previewTable.innerHTML = html.join('');
@@ -1848,6 +1861,19 @@ function renderPreviewDisplay(rows) {
       window.scrollTo(scrollX, scrollY);
     });
   });
+
+  previewTable.querySelectorAll('.btn-report-row').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = Number(e.target.getAttribute('data-idx'));
+      if (isNaN(idx)) return;
+      const row = previewRows[idx];
+      if (!row) return;
+      const nome = String(row['Atendente'] || '').trim();
+      if (nome && typeof openColabReport === 'function') openColabReport(nome);
+    });
+  });
+
   syncScrollbar();
 }
 
@@ -2835,6 +2861,11 @@ if (!rawRecords || !rawRecords.length) {
   const cleanDupBtn = document.getElementById('cleanDupBtn');
   if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { if (!requireAdmin()) return; cleanDuplicates(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
+  document.getElementById('gerarRelatorioBtn')?.addEventListener('click', () => {
+    const sel = document.getElementById('reportColabSelect');
+    if (!sel || !sel.value) { showToast('Selecione um colaborador.', 'error', 'Relatório'); return; }
+    if (typeof openColabReport === 'function') openColabReport(sel.value);
+  });
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');
   if (exportChartPngBtn) exportChartPngBtn.addEventListener('click', () => { exportChartAsPNG(); });

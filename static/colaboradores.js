@@ -64,10 +64,8 @@ function renderColaboradores() {
       html += `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">Clique para cadastrar</div>`;
     }
     html += '</div>';
-    html += `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">`;
     html += `<div style="font-size:18px;color:var(--text-muted)">${hasData ? '✅' : '➕'}</div>`;
-    html += `<button class="btn-small btn-report" data-nome="${escapeHtml(nome)}" type="button" title="Relatório de desempenho" style="font-size:13px;padding:2px 6px">📊</button>`;
-    html += '</div></div></div>';
+    html += '</div></div>';
   }
   html += '</div>';
 
@@ -75,16 +73,9 @@ function renderColaboradores() {
 
   // Click to open overlay
   container.querySelectorAll('.colab-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.btn-report')) return;
+    card.addEventListener('click', () => {
       const nome = card.dataset.nome;
       openColabDetailOverlay(nome);
-    });
-  });
-  container.querySelectorAll('.btn-report').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openColabReport(btn.dataset.nome);
     });
   });
 }
