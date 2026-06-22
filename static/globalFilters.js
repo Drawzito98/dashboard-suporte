@@ -4,9 +4,15 @@
 
 const GLOBAL_FILTERS_KEY = 'sistema_global_filters_v1';
 
-// Normaliza nome para deduplicação: trim + lowercase + remove acentos
+// Normaliza nome para deduplicação: trim + lowercase + remove acentos + remove tags/símbolos
 function _normalizeName(n) {
-  return String(n || '').trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  return String(n || '').trim()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/\s*[^\w\s]\s*(?:multi[\s\-]?setor)?\s*$/i, '') // remove sufixo com símbolo + multisetor (ex: ★ Multisetor)
+    .replace(/\s*(?:multi[\s\-]?setor)\s*$/i, '')             // remove só multisetor se ainda estiver
+    .replace(/[^\w\s]/g, '')                                   // remove qualquer símbolo remanescente
+    .trim()
+    .toLowerCase();
 }
 
 const globalFilters = {

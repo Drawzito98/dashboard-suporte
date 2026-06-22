@@ -357,13 +357,12 @@ let chart = null;
 // que vieram explicitamente marcados para destacá-los na exibição.
 function stripMultiSetorTag(name) {
   const original = String(name == null ? '' : name);
-  const re = /\s*[-–—(\[]?\s*multi[\s\-]?setor\s*[)\]]?\s*$/i;
+  const re = /\s*[^\w\s]?\s*multi[\s\-]?setor\s*[^\w\s]?\s*$/i;
   const stripped = original
     .normalize('NFD').replace(/\p{Diacritic}/gu, '')
     .replace(re, '');
   if (stripped !== original.normalize('NFD').replace(/\p{Diacritic}/gu, '')) {
-    // Reaplica os acentos da parte preservada usando o original
-    const base = original.replace(/\s*[-–—(\[]?\s*[Mm][Uu][Ll][Tt][Ii][\s\-]?[Ss][Ee][Tt][Oo][Rr]\s*[)\]]?\s*$/, '').trim();
+    const base = original.replace(/\s*[^\w\s]?\s*[Mm][Uu][Ll][Tt][Ii][\s\-]?[Ss][Ee][Tt][Oo][Rr]\s*[^\w\s]?\s*$/, '').trim();
     return { base: base || original.trim(), tagged: true };
   }
   return { base: original.trim(), tagged: false };
@@ -1048,7 +1047,13 @@ function uniqueSorted(arr) {
 }
 
 function normalizeNameForDedup(n) {
-  return String(n || '').trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  return String(n || '').trim()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/\s*[^\w\s]\s*(?:multi[\s\-]?setor)?\s*$/i, '')
+    .replace(/\s*(?:multi[\s\-]?setor)\s*$/i, '')
+    .replace(/[^\w\s]/g, '')
+    .trim()
+    .toLowerCase();
 }
 
 
