@@ -167,7 +167,96 @@ function renderPainelLider() {
     html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-md);background:var(--success-soft);color:var(--success);font-weight:600;font-size:13px;margin-bottom:var(--s-5)">✅ Nenhum ponto de atenção identificado.</div>`;
   }
 
-  // Tabela com Δ
+  // 💡 Sugestões automáticas
+  const sugestoes = [];
+  const META_SCORE = 4.70;
+
+  colaboradores.forEach(name => {
+    const d = byColab[name];
+    const s = [];
+
+    // Score abaixo da meta
+    if (d.avgSc > 0 && d.avgSc < META_SCORE) {
+      const diff = META_SCORE - d.avgSc;
+      s.push({ icon: '📚', texto: `Score ${d.avgSc.toFixed(2)} — abaixo da meta (${META_SCORE}). Foco em qualidade.` });
+    } else if (d.avgSc >= META_SCORE) {
+      s.push({ icon: '✅', texto: `Score ${d.avgSc.toFixed(2)} dentro da meta. Estável.` });
+    }
+
+    // Transferências altas
+    if (d.ass > 0) {
+      const taxaTra = d.tra / d.ass;
+      if (taxaTra > 0.30) {
+        s.push({ icon: '🔄', texto: `${(taxaTra * 100).toFixed(0)}% dos atendimentos são transferidos. Revisar triagem.` });
+      } else if (taxaTra < 0.15 && d.ass > 5) {
+        s.push({ icon: '✅', texto: `Taxa de transferências controlada (${(taxaTra * 100).toFixed(0)}%).` });
+      }
+    }
+
+    // Variação de finalizações
+    if (d.finAnterior > 0) {
+      const varFin = ((d.finUltimo - d.finAnterior) / d.finAnterior) * 100;
+      if (varFin > 20) {
+        s.push({ icon: '📈', texto: `Finalizações subiram ${varFin.toFixed(0)}% em relação ao mês anterior. Bom ritmo.` });
+      } else if (varFin < -20) {
+        s.push({ icon: '📉', texto: `Finalizações caíram ${Math.abs(varFin).toFixed(0)}%. Verificar se houve afastamento ou mudança.` });
+      }
+    }
+
+    // Variação de score
+    if (d.scAnterior > 0 && d.scUltimo > 0) {
+      const varSc = d.scUltimo - d.scAnterior;
+      if (varSc < -0.3) {
+        s.push({ icon: '⚠️', texto: `Score caiu ${Math.abs(varSc).toFixed(2)} em relação ao mês anterior. Acompanhar.` });
+      }
+    }
+
+    // Produtividade baixa (comparada à média)
+    if (d.prod > 0 && prodGeral > 0 && d.prod < prodGeral * 0.7) {
+      s.push({ icon: '⚡', texto: `Produtividade ${(d.prod * 100).toFixed(0)}% abaixo da média do time (${(prodGeral * 100).toFixed(0)}%).` });
+    }
+
+    // Cenário ideal
+    if (d.avgSc >= META_SCORE && d.finAnterior > 0 && d.finUltimo >= d.finAnterior && d.tra / Math.max(1, d.ass) < 0.20) {
+      s.push({ icon: '🏆', texto: `Colaborador estável: score ok, finalizações mantidas, transferências controladas.` });
+    }
+
+    if (s.length > 0) {
+      sugestoes.push({ name, sugestoes: s });
+    }
+  });
+
+  // Ordenar: quem tem mais sugestões primeiro, depois por nome
+  sugestoes.sort((a, b) => b.sugestoes.length - a.sugestoes.length || a.name.localeCompare(b.name));
+
+  html += `<div style="margin-top:var(--s-5);margin-bottom:var(--s-5)">
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">💡 Sugestões por Colaborador</h3>`;
+
+  if (sugestoes.length === 0) {
+    html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-md);background:var(--success-soft);color:var(--success);font-weight:600;font-size:13px">✅ Nenhuma sugestão no momento — time estável.</div>`;
+  } else {
+    html += `<div style="display:flex;flex-direction:column;gap:var(--s-2)">`;
+    sugestoes.forEach(({ name, sugestoes: sugs }) => {
+      const d = byColab[name];
+      const hasConduta = flaggedColabs.has(name);
+      html += `<div style="border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-surface);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);background:var(--bg-subtle);border-bottom:1px solid var(--border)">
+          <span style="font-size:14px">${sugs[0].icon}</span>
+          <strong style="font-size:14px;color:var(--text-strong)">${escapeHtml(getDisplayName(name, aliasMap))}${condutaBadge(name)}</strong>
+          <span style="font-size:12px;color:var(--text-secondary)">${d.fin.toLocaleString('pt-BR')} fin · Score ${d.avgSc > 0 ? d.avgSc.toFixed(2) : '—'} · ${(d.prod * 100).toFixed(0)}% prod</span>
+        </div>
+        <div style="padding:var(--s-3);display:flex;flex-direction:column;gap:var(--s-1)">${sugs.map(sg =>
+          `<div style="display:flex;align-items:flex-start;gap:var(--s-2);font-size:13px;color:var(--text-secondary);line-height:1.5">
+            <span style="flex-shrink:0">${sg.icon}</span>
+            <span>${escapeHtml(sg.texto)}</span>
+          </div>`
+        ).join('')}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
   html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📋 Resumo por Colaborador</h3>`;
   html += `<div style="overflow-x:auto;margin-bottom:var(--s-2)"><table class="ranking-table">
     <thead><tr><th>Colaborador</th><th>Finalizados</th><th>Δ Fin</th><th>Score</th><th>Δ Score</th><th>Prod.</th><th>Meta</th><th>Status</th><th></th></tr></thead>
