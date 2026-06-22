@@ -252,9 +252,6 @@ function renderInsights() {
     }).join('');
   }
 
-  // Projeções
-  html += `<div style="margin-top:var(--s-5)">${typeof renderProjecoes === 'function' ? renderProjecoes() : ''}</div>`;
-
   container.innerHTML = html;
 }
 

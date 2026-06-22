@@ -75,6 +75,20 @@ function computeStreak(name) {
 function renderGamification() {
   const container = document.getElementById('gamificationContent');
   if (!container) return;
+
+  // Conquistas
+  let conquistasHtml = '';
+  if (typeof renderConquistasHtml === 'function') {
+    conquistasHtml = renderConquistasHtml();
+  }
+
+  // Regras (collapsible)
+  const regrasHtml = typeof renderScoringRules === 'function'
+    ? `<details style="margin-top:var(--s-5)">
+        <summary style="cursor:pointer;font-size:14px;font-weight:600;color:var(--text-strong);padding:var(--s-2) var(--s-3);border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-surface)">⚙️ Regras de Pontuação</summary>
+        <div style="padding:var(--s-4);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r-md) var(--r-md);background:var(--bg-card)" id="scoringRulesContainer"></div>
+      </details>`
+    : '';
   const gf = _gfData();
   if (!gf || !gf.length) {
     container.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado carregado</div><div class="empty-sub">Importe um CSV para visualizar a gamificação.</div></div>';
@@ -229,6 +243,11 @@ function renderGamification() {
   });
   html += '</div></div>';
 
+  // Conquistas section
+  if (conquistasHtml) {
+    html += `<div style="margin-top:var(--s-6)"><h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">🏆 Conquistas</h3>${conquistasHtml}</div>`;
+  }
+
   // Heatmap section
   if (months.length) {
     html += '<div style="margin-top:var(--s-6)"><h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">🗓️ Heatmap Mensal — Pontuação</h3>';
@@ -281,7 +300,22 @@ function renderGamification() {
     </div>`;
   }
 
+  html += regrasHtml;
+
   container.innerHTML = html;
+
+  // Regras: render when details opened
+  const regrasDetails = container.querySelector('details');
+  if (regrasDetails) {
+    regrasDetails.addEventListener('toggle', () => {
+      if (regrasDetails.open && typeof renderScoringRules === 'function') {
+        const rulesContainer = document.getElementById('scoringRulesContainer');
+        if (rulesContainer && !rulesContainer.innerHTML) {
+          renderScoringRules();
+        }
+      }
+    });
+  }
 
   // Bind view-colab buttons
   container.querySelectorAll('.view-colab-btn').forEach(btn => {

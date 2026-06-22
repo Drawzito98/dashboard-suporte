@@ -48,8 +48,8 @@ function renderProjecao() {
 
   let html = `
     <div style="padding:var(--s-5)">
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--s-1)">📅 Projeção Mensal</h2>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">Adicione resultados previstos para colaboradores em um novo mês.</p>
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--s-1)">📅 Novo Registro Mensal</h2>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">Adicione registros de resultados para colaboradores em um novo mês.</p>
 
       <div style="display:flex;gap:var(--s-3);margin-bottom:var(--s-4);flex-wrap:wrap;align-items:end">
         <label class="field" style="flex:1;min-width:180px">

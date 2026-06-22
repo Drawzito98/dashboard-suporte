@@ -5,19 +5,15 @@ function _gfData() {
   return typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
 }
 
-function renderConquistas() {
-  const container = document.getElementById('conquistasContent');
-  if (!container) return;
+function _buildConquistasHtml() {
   const data = _gfData();
   if (!data || !data.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado carregado</div><div class="empty-sub">Importe um CSV para desbloquear conquistas.</div></div>';
-    return;
+    return '<div class="empty-state"><div class="empty-title">Nenhum dado carregado</div></div>';
   }
 
   const rows = (data).filter(r => r && !isAggregateName(r['Atendente']));
   const cols = [...new Set(rows.map(r => r['Atendente']))].filter(Boolean);
 
-  // Calcular dados
   const byColab = {};
   cols.forEach(name => {
     const recs = rows.filter(r => String(r['Atendente']) === name);
@@ -35,33 +31,16 @@ function renderConquistas() {
 
   const conquistas = [];
 
-  // 🥇 Top Performer — top 1 em finalizações
   if (ranking.length) {
-    conquistas.push({
-      icone: '🥇',
-      nome: 'Top Performer',
-      desc: `Maior número de finalizações do período`,
-      detentor: ranking[0][0],
-      valor: ranking[0][1].fin,
-      obter: 'Ser o colaborador com mais finalizações.'
-    });
+    conquistas.push({ icone: '🥇', nome: 'Top Performer', desc: `Maior número de finalizações do período`, detentor: ranking[0][0], valor: ranking[0][1].fin, obter: 'Ser o colaborador com mais finalizações.' });
   }
 
-  // 🔥 Constância — presente em todos os meses
   const totalMeses = [...new Set(rows.map(r => r['Mês']))].length;
   const constantes = Object.entries(byColab).filter(([, v]) => v.qtdMeses === totalMeses).map(([k]) => k);
   if (constantes.length) {
-    conquistas.push({
-      icone: '🔥',
-      nome: 'Constância',
-      desc: `Presente em todos os ${totalMeses} períodos`,
-      detentor: constantes.join(', '),
-      valor: totalMeses,
-      obter: 'Ter registros em todos os meses do período.'
-    });
+    conquistas.push({ icone: '🔥', nome: 'Constância', desc: `Presente em todos os ${totalMeses} períodos`, detentor: constantes.join(', '), valor: totalMeses, obter: 'Ter registros em todos os meses do período.' });
   }
 
-  // 🚀 Maior Evolução — maior delta de finalizações entre último e penúltimo mês
   const meses = [...new Set(rows.map(r => r['Mês']))].filter(Boolean).sort();
   if (meses.length >= 2) {
     const ult = meses[meses.length - 1];
@@ -76,65 +55,37 @@ function renderConquistas() {
       if (delta > maiorDelta.delta) maiorDelta = { nome: name, delta };
     });
     if (maiorDelta.delta > 0) {
-      conquistas.push({
-        icone: '🚀',
-        nome: 'Maior Evolução',
-        desc: `Maior crescimento entre períodos`,
-        detentor: maiorDelta.nome,
-        valor: maiorDelta.delta,
-        obter: 'Ter o maior aumento de finalizações entre dois períodos consecutivos.'
-      });
+      conquistas.push({ icone: '🚀', nome: 'Maior Evolução', desc: `Maior crescimento entre períodos`, detentor: maiorDelta.nome, valor: maiorDelta.delta, obter: 'Ter o maior aumento de finalizações entre dois períodos consecutivos.' });
     }
   }
 
-  // 🎯 Meta Atingida — quem atingiu a meta
   const acimaMeta = Object.entries(byColab).filter(([name, data]) => {
     const recs = rows.filter(r => String(r['Atendente']) === name);
     const obj = recs.reduce((s, r) => s + (parseInt(r['Objetivo']) || 0), 0);
     return obj > 0 && data.fin >= obj;
   }).map(([k]) => k);
   if (acimaMeta.length) {
-    conquistas.push({
-      icone: '🎯',
-      nome: 'Meta Atingida',
-      desc: `${acimaMeta.length} colaborador(es) atingiram o objetivo`,
-      detentor: acimaMeta.join(', '),
-      valor: acimaMeta.length,
-      obter: 'Cumprir o objetivo mensal de finalizações.'
-    });
+    conquistas.push({ icone: '🎯', nome: 'Meta Atingida', desc: `${acimaMeta.length} colaborador(es) atingiram o objetivo`, detentor: acimaMeta.join(', '), valor: acimaMeta.length, obter: 'Cumprir o objetivo mensal de finalizações.' });
   }
 
-  // ⚡ Destaque do Período — melhor score médio
   const melhorScore = Object.entries(byColab).filter(([, v]) => v.avgSc > 0).sort((a, b) => b[1].avgSc - a[1].avgSc);
   if (melhorScore.length) {
-    conquistas.push({
-      icone: '⚡',
-      nome: 'Destaque do Período',
-      desc: `Melhor score médio: ${melhorScore[0][1].avgSc.toFixed(2)}`,
-      detentor: melhorScore[0][0],
-      valor: melhorScore[0][1].avgSc,
-      obter: 'Ter o maior score médio do período.'
-    });
+    conquistas.push({ icone: '⚡', nome: 'Destaque do Período', desc: `Melhor score médio: ${melhorScore[0][1].avgSc.toFixed(2)}`, detentor: melhorScore[0][0], valor: melhorScore[0][1].avgSc, obter: 'Ter o maior score médio do período.' });
   }
 
-  // 🛡️ Produtividade Máxima — maior produtividade
   const melhorProd = Object.entries(byColab).filter(([, v]) => v.prod > 0 && v.ass >= 5).sort((a, b) => b[1].prod - a[1].prod);
   if (melhorProd.length) {
-    conquistas.push({
-      icone: '🛡️',
-      nome: 'Produtividade Máxima',
-      desc: `Maior produtividade: ${(melhorProd[0][1].prod * 100).toFixed(0)}%`,
-      detentor: melhorProd[0][0],
-      valor: melhorProd[0][1].prod,
-      obter: 'Ter a maior taxa de finalizados por assumidos.'
-    });
+    conquistas.push({ icone: '🛡️', nome: 'Produtividade Máxima', desc: `Maior produtividade: ${(melhorProd[0][1].prod * 100).toFixed(0)}%`, detentor: melhorProd[0][0], valor: melhorProd[0][1].prod, obter: 'Ter a maior taxa de finalizados por assumidos.' });
+  }
+
+  if (!conquistas.length) {
+    return '<div class="empty-state"><div class="empty-title">Nenhuma conquista disponível</div><div class="empty-sub">Os dados atuais não geraram conquistas.</div></div>';
   }
 
   let html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s-4)">`;
-
   conquistas.forEach(c => {
     const detentores = c.detentor.split(', ').map(n => escapeHtml(getDisplayName(n.trim(), aliasMap))).join(', ');
-    html += `<div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:var(--s-5);background:var(--bg-surface);transition:box-shadow var(--t-base);position:relative;overflow:hidden">
+    html += `<div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:var(--s-5);background:var(--bg-surface);position:relative;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--success))"></div>
       <div style="display:flex;align-items:center;gap:var(--s-3);margin-bottom:var(--s-3)">
         <span style="font-size:36px">${c.icone}</span>
@@ -152,14 +103,18 @@ function renderConquistas() {
       </div>
     </div>`;
   });
-
   html += `</div>`;
+  return html;
+}
 
-  if (!conquistas.length) {
-    html = '<div class="empty-state"><div class="empty-title">Nenhuma conquista disponível</div><div class="empty-sub">Os dados atuais não geraram conquistas.</div></div>';
-  }
+function renderConquistasHtml() {
+  return _buildConquistasHtml();
+}
 
-  container.innerHTML = html;
+function renderConquistas() {
+  const container = document.getElementById('conquistasContent');
+  if (!container) return;
+  container.innerHTML = _buildConquistasHtml();
 }
 
 function onConquistasTabActivated() {

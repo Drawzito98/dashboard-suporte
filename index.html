@@ -164,8 +164,8 @@
       <button class="tab-btn" data-tab="comparativos">
         <span class="tab-icon">📈</span> Comparativos
       </button>
-      <button class="tab-btn" data-tab="config">
-        <span class="tab-icon">📋</span> Regras
+      <button class="tab-btn" data-tab="tarefas">
+        <span class="tab-icon">📅</span> Tarefas
       </button>
       <button class="tab-btn" data-tab="feedbacks">
         <span class="tab-icon">💬</span> Feedbacks
@@ -249,7 +249,6 @@
               <button class="btn-small" id="manageColabsBtn" type="button" title="Ativar/desativar colaboradores exibidos no dashboard">👥 Gerenciar colaboradores</button>
               <button class="btn-small" id="comentariosBtn" type="button" title="Ver e gerenciar comentários por período">💬 Comentários</button>
               <button class="btn-small" id="historicoBtn" type="button" title="Histórico de alterações feitas nos dados">📝 Histórico</button>
-              <button class="btn-small" id="tendenciasBtn" type="button" title="Projeção de tendências com base no desempenho">🔮 Tendências</button>
               <button class="btn-small" id="cleanDupBtn" type="button" title="Remove registros duplicados da base">🧹 Limpar duplicatas</button>
               <button class="btn-small" id="compactTableBtn" type="button" title="Alternar entre visual compacta e normal das tabelas">📏 Visão compacta</button>
             </div>
@@ -449,43 +448,6 @@
             </div>
             <div id="alertasContent"></div>
           </section>
-          <section class="card">
-            <div class="card-header">
-              <div>
-                <h2>🏆 Conquistas</h2>
-                <p>Badges automáticas por desempenho</p>
-              </div>
-            </div>
-            <div id="conquistasContent"></div>
-          </section>
-        </div>
-
-        <!-- ===== TAB: CONFIGURAÇÃO ===== -->
-        <div class="tab-content" id="tab-config">
-          <section class="card">
-            <div class="card-header">
-              <div>
-                <h2>⚙️ Configuração</h2>
-                <p>Regras de pontuação e preferências do sistema</p>
-              </div>
-              <button class="btn-small" id="resetScoringBtn" type="button">Resetar regras</button>
-            </div>
-            <div class="form-stack" id="scoringRulesContainer"></div>
-          </section>
-        </div>
-
-        <!-- ===== TAB: USUÁRIOS ===== -->
-        <div class="tab-content" id="tab-usuarios">
-          <section class="card">
-            <div class="card-header">
-              <div>
-                <h2>👥 Gerenciar Usuários</h2>
-                <p>Crie e remova usuários com acesso ao sistema</p>
-              </div>
-              <button class="btn-small" id="refreshUsuariosBtn" type="button">🔄 Atualizar</button>
-            </div>
-            <div id="usuariosContent"></div>
-          </section>
         </div>
 
         <!-- ===== TAB: FEEDBACKS ===== -->
@@ -602,7 +564,6 @@
 <script src="static/painelLider.js"></script>
 <script src="static/insights.js"></script>
 <script src="static/alertas.js"></script>
-<script src="static/tendencia.js"></script>
 <script src="static/conquistas.js"></script>
 <script src="static/projecao.js"></script>
 <script src="static/historico.js"></script>

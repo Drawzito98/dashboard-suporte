@@ -2978,16 +2978,6 @@ if (!rawRecords || !rawRecords.length) {
   if (btnR) btnR.addEventListener('click', () => { currentSort.key = null; currentSort.desc = true; renderPreview(previewRows); });
   if (addRowBtn) addRowBtn.addEventListener('click', () => { if (!requireAdmin()) return; addRow(); });
   if (addRowTopBtn) addRowTopBtn.addEventListener('click', () => { if (!requireAdmin()) return; openProjecaoOverlay(); });
-  const manageColabsBtn = document.getElementById('manageColabsBtn');
-  if (manageColabsBtn) manageColabsBtn.addEventListener('click', () => { openManageColabs(); });
-  const historicoBtn = document.getElementById('historicoBtn');
-  if (historicoBtn) historicoBtn.addEventListener('click', () => { openHistorico(); });
-  const comentariosBtn = document.getElementById('comentariosBtn');
-  if (comentariosBtn) comentariosBtn.addEventListener('click', () => { openComentarios(); });
-  const bonusToggleBtn = document.getElementById('bonusToggleBtn');
-  if (bonusToggleBtn) bonusToggleBtn.addEventListener('click', () => { if (typeof toggleBonusPanel === 'function') toggleBonusPanel(); });
-  const tendenciasBtn = document.getElementById('tendenciasBtn');
-  if (tendenciasBtn) tendenciasBtn.addEventListener('click', () => { openTendencias(); });
   const cleanDupBtn = document.getElementById('cleanDupBtn');
   if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { if (!requireAdmin()) return; cleanDuplicates(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
@@ -3051,9 +3041,6 @@ if (!rawRecords || !rawRecords.length) {
       }
       if (tab === 'insights' && typeof onInsightsTabActivated === 'function') {
         onInsightsTabActivated();
-      }
-      if (tab === 'config' && typeof renderScoringRules === 'function') {
-        renderScoringRules();
       }
       if (tab === 'feedbacks' && typeof onFeedbacksTabActivated === 'function') {
         onFeedbacksTabActivated();
@@ -3155,17 +3142,6 @@ if (!rawRecords || !rawRecords.length) {
   if (typeof renderScoringRules === 'function') {
     renderScoringRules();
   }
-
-  // Reset scoring rules (using delegation since button is in a tab)
-  document.addEventListener('click', (e) => {
-    if (e.target.id === 'resetScoringBtn' && typeof resetScoringRules === 'function') {
-      if (!requireAdmin()) return;
-      if (confirm('Resetar regras de pontuação para os valores padrão?')) {
-        resetScoringRules();
-        showToast('Regras de pontuação resetadas.', 'success', 'Configuração');
-      }
-    }
-  });
 
   // ===== Refresh Gamification =====
   const refreshGamBtn = document.getElementById('refreshGamificacaoBtn');
