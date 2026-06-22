@@ -147,7 +147,7 @@ function renderProjecao() {
 
   // Save
   document.getElementById('projecaoSaveBtn').addEventListener('click', async () => {
-    if (!requireAdmin()) { showToast('Apenas administradores podem adicionar registros.', 'error'); return; }
+    if (!requireAdmin()) return;
     const mesInput = document.getElementById('projecaoMes');
     const mes = mesInput ? mesInput.value : '';
     if (!mes) {

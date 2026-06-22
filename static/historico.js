@@ -91,7 +91,7 @@ function renderHistorico() {
     const clearBtn = document.getElementById('clearHistoricoBtn');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
-        if (!requireAdmin()) { showToast('Apenas administradores podem limpar o histórico.', 'error'); return; }
+        if (!requireAdmin()) return;
         if (confirm('Tem certeza? Isso vai apagar todo o histórico.')) {
           localStorage.removeItem('sistema_historico_v1');
           renderHistorico();

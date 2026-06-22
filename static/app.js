@@ -892,7 +892,7 @@ async function importCsvFiles(fileList) {
 
 
 async function onFileInputChange(e) {
-  if (!requireAdmin()) { showToast('Apenas administradores podem importar dados.', 'error'); return; }
+  if (!requireAdmin()) return;
   const input = e && e.target ? e.target : null;
   const files = input && input.files ? Array.from(input.files) : [];
   if (!files.length) return;
@@ -1728,7 +1728,7 @@ function renderPreviewDisplay(rows) {
       if (k === 'SCORE') {
         const display = (raw === null || raw === undefined || String(raw).trim() === '') ? '' : Number(raw).toFixed(2);
         const cls = classeScore ? ' ' + classeScore : '';
-        rowHtml += `<td contenteditable="true" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit score-cell${cls}">${escapeHtml(display)}</td>`;
+        rowHtml += `<td contenteditable="${isAdmin()}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit score-cell${cls}">${escapeHtml(display)}</td>`;
         // Variation for SCORE
         const varScore = (curScoreVal !== null && prevScore !== null) ? computeVariation(curScoreVal, prevScore) : null;
         rowHtml += `<td class="cell-edit" style="text-align:center">${variationHTML(varScore)}</td>`;
@@ -1736,7 +1736,7 @@ function renderPreviewDisplay(rows) {
       }
       if (k === 'Finalizados') {
         const num = raw === null || raw === undefined || raw === '' ? '' : String(Math.round(Number(String(raw).replace(/[^0-9.-]/g, ''))));
-        rowHtml += `<td contenteditable="true" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(num)}</td>`;
+        rowHtml += `<td contenteditable="${isAdmin()}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(num)}</td>`;
         // Variation for Finalizados
         const varFinal = prevFinal !== null ? computeVariation(curFinal, prevFinal) : null;
         rowHtml += `<td class="cell-edit" style="text-align:center">${variationHTML(varFinal)}</td>`;
@@ -1746,7 +1746,7 @@ function renderPreviewDisplay(rows) {
       }
       if (k === 'Assumidos' || k === 'Transferidos') {
         const num = raw === null || raw === undefined || raw === '' ? '' : String(Math.round(Number(String(raw).replace(/[^0-9.-]/g, ''))));
-        rowHtml += `<td contenteditable="true" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(num)}</td>`;
+        rowHtml += `<td contenteditable="${isAdmin()}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(num)}</td>`;
         return;
       }
       const txt = raw === null || raw === undefined ? '' : String(raw);
@@ -1756,15 +1756,15 @@ function renderPreviewDisplay(rows) {
         const atName = String(r['Atendente']||'').trim();
         const isMulti = __multiMap.has(atName);
         const badges = `${isFer ? '<span class="row-badge badge-ferias" title="Esteve de férias neste mês">🏖️ Férias</span>' : ''}${isMulti ? `<span class="row-badge badge-multi" title="Atuou em mais de um setor: ${escapeHtml(__multiMap.get(atName).join(', '))}">🔁 Multi-setor</span>` : ''}`;
-        rowHtml += `<td contenteditable="${presentationMode ? 'false' : 'true'}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit cell-atendente">${escapeHtml(shown)}${badges}</td>`;
+        rowHtml += `<td contenteditable="${presentationMode || !isAdmin() ? 'false' : 'true'}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit cell-atendente">${escapeHtml(shown)}${badges}</td>`;
         return;
       }
       if (k === 'Observações') {
         const isFer = isFeriasObs(raw);
-        rowHtml += `<td contenteditable="true" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit ${isFer ? 'cell-ferias' : ''}">${escapeHtml(shown)}</td>`;
+        rowHtml += `<td contenteditable="${isAdmin()}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit ${isFer ? 'cell-ferias' : ''}">${escapeHtml(shown)}</td>`;
         return;
       }
-      rowHtml += `<td contenteditable="${k === 'Atendente' && presentationMode ? 'false' : 'true'}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(shown)}</td>`;
+      rowHtml += `<td contenteditable="${isAdmin() && !(k === 'Atendente' && presentationMode)}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(shown)}</td>`;
     });
     html.push('<tr>' + rowHtml + `<td><span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span> <button class="btn-small btn-delete" data-idx="${ridx}" title="Remover" aria-label="Remover">🗑️</button></td>` + '</tr>');
   });
@@ -1777,7 +1777,7 @@ function renderPreviewDisplay(rows) {
       if (ev.key === 'Enter') { ev.preventDefault(); td.blur(); }
     });
     td.addEventListener('blur', (e) => {
-      if (!requireAdmin()) { showToast('Apenas administradores podem editar dados.', 'error'); return; }
+      if (!requireAdmin()) return;
       const scrollX = window.scrollX || 0;
       const scrollY = window.scrollY || 0;
       const el = e.target;
@@ -1824,7 +1824,7 @@ function renderPreviewDisplay(rows) {
 
   previewTable.querySelectorAll('.btn-delete').forEach(b => {
     b.addEventListener('click', async (e) => {
-      if (!requireAdmin()) { showToast('Apenas administradores podem excluir registros.', 'error'); return; }
+      if (!requireAdmin()) return;
       const scrollX = window.scrollX || 0;
       const scrollY = window.scrollY || 0;
       const idx = Number(e.target.getAttribute('data-idx'));
@@ -2797,7 +2797,7 @@ if (!rawRecords || !rawRecords.length) {
   });
 
   if (clearSavedBtn) clearSavedBtn.addEventListener('click', () => {
-    if (!requireAdmin()) { showToast('Apenas administradores podem limpar dados.', 'error'); return; }
+    if (!requireAdmin()) return;
     if (confirm('Remover os dados salvos deste app no navegador?')) {
       clearSavedState();
     }
@@ -2820,8 +2820,8 @@ if (!rawRecords || !rawRecords.length) {
     renderPreview(previewRows);
   });
   if (btnR) btnR.addEventListener('click', () => { currentSort.key = null; currentSort.desc = true; renderPreview(previewRows); });
-  if (addRowBtn) addRowBtn.addEventListener('click', () => { if (!requireAdmin()) { showToast('Apenas administradores podem adicionar registros.', 'error'); return; } addRow(); });
-  if (addRowTopBtn) addRowTopBtn.addEventListener('click', () => { if (!requireAdmin()) { showToast('Apenas administradores podem adicionar registros.', 'error'); return; } openProjecaoOverlay(); });
+  if (addRowBtn) addRowBtn.addEventListener('click', () => { if (!requireAdmin()) return; addRow(); });
+  if (addRowTopBtn) addRowTopBtn.addEventListener('click', () => { if (!requireAdmin()) return; openProjecaoOverlay(); });
   const manageColabsBtn = document.getElementById('manageColabsBtn');
   if (manageColabsBtn) manageColabsBtn.addEventListener('click', () => { openManageColabs(); });
   const historicoBtn = document.getElementById('historicoBtn');
@@ -2833,7 +2833,7 @@ if (!rawRecords || !rawRecords.length) {
   const tendenciasBtn = document.getElementById('tendenciasBtn');
   if (tendenciasBtn) tendenciasBtn.addEventListener('click', () => { openTendencias(); });
   const cleanDupBtn = document.getElementById('cleanDupBtn');
-  if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { if (!requireAdmin()) { showToast('Apenas administradores podem limpar duplicatas.', 'error'); return; } cleanDuplicates(); });
+  if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { if (!requireAdmin()) return; cleanDuplicates(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');
@@ -2999,7 +2999,7 @@ if (!rawRecords || !rawRecords.length) {
   // Reset scoring rules (using delegation since button is in a tab)
   document.addEventListener('click', (e) => {
     if (e.target.id === 'resetScoringBtn' && typeof resetScoringRules === 'function') {
-      if (!requireAdmin()) { showToast('Apenas administradores podem resetar regras.', 'error'); return; }
+      if (!requireAdmin()) return;
       if (confirm('Resetar regras de pontuação para os valores padrão?')) {
         resetScoringRules();
         showToast('Regras de pontuação resetadas.', 'success', 'Configuração');
@@ -3049,7 +3049,7 @@ if (!rawRecords || !rawRecords.length) {
   const resetAlertasBtn = document.getElementById('resetAlertasBtn');
   if (resetAlertasBtn && typeof resetAlertasConfig === 'function') {
     resetAlertasBtn.addEventListener('click', () => {
-      if (!requireAdmin()) { showToast('Apenas administradores podem resetar alertas.', 'error'); return; }
+      if (!requireAdmin()) return;
       if (confirm('Resetar configuração de alertas para os valores padrão?')) {
         resetAlertasConfig();
         showToast('Alertas resetados.', 'success');

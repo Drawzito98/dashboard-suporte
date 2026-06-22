@@ -21,7 +21,7 @@ async function _authHeaders() {
 async function carregarUsuarios() {
   const container = document.getElementById('listaUsuarios');
   if (!container) return;
-  if (!requireAdmin()) { container.innerHTML = '<p style="text-align:center;padding:var(--s-4);color:var(--text-muted)">Apenas administradores podem gerenciar usuários.</p>'; return; }
+  if (!requireAdmin()) { container.innerHTML = '<p style="text-align:center;padding:var(--s-4);color:var(--text-muted)">Sem permissão.</p>'; return; }
   container.innerHTML = '<p style="text-align:center;padding:var(--s-4);color:var(--text-muted)">Carregando...</p>';
 
   try {
