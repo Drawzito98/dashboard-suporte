@@ -166,15 +166,6 @@ function openColabReport(nome) {
     html += '</div>';
   }
 
-  // Gamification score card
-  if (totalScore !== null) {
-    html += `<div class="report-metric-card" style="border-top:3px solid var(--accent);background:linear-gradient(135deg,var(--bg-subtle),var(--bg-surface))">`;
-    html += `<div class="report-metric-value" style="color:var(--accent);font-size:28px">${totalScore}</div>`;
-    html += `<div class="report-metric-label">Pontuação total</div>`;
-    html += '</div>';
-  }
-  html += '</div>';
-
   // ── Highlights & Lowlights ──
   const highlights = [];
   const lowlights = [];
