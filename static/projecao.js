@@ -40,7 +40,12 @@ function renderProjecao() {
         Finalizados: parseInt(r['Finalizados']) || 0,
         Transferidos: parseInt(r['Transferidos']) || 0,
         SCORE: r['SCORE'] !== null && r['SCORE'] !== undefined ? Number(r['SCORE']) : '',
+        Nota1: parseInt(r['Nota1']) || 0,
+        Nota2: parseInt(r['Nota2']) || 0,
+        Nota3: parseInt(r['Nota3']) || 0,
+        Total: parseInt(r['Total']) || 0,
         Objetivo: parseInt(r['Objetivo']) || 0,
+        Observacao: r['Observacao'] || '',
         Setor: r['Setor'] || ''
       };
     });
@@ -69,7 +74,7 @@ function renderProjecao() {
       </div>
 
       <div style="overflow-x:auto;max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md)">
-        <table class="ranking-table" style="min-width:700px">
+        <table class="ranking-table" style="min-width:1100px">
           <thead>
             <tr>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Colaborador</th>
@@ -78,23 +83,34 @@ function renderProjecao() {
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Finalizados</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Transferidos</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Score</th>
+              <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Nota1</th>
+              <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Nota2</th>
+              <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Nota3</th>
+              <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Total</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Objetivo</th>
+              <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Observação</th>
             </tr>
           </thead>
           <tbody>
             ${names.map((n, i) => {
               const setor = colabSetor[n] || '';
               return `<tr>
-                <td style="font-weight:500">${escapeHtml(n)}</td>
+                <td style="font-weight:500;white-space:nowrap">${escapeHtml(n)}</td>
                 <td><select class="proj-setor" data-idx="${i}" style="width:100%;padding:3px 6px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-size:12px">
                   ${setores.map(s => `<option value="${escapeHtml(s)}" ${s === setor ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
                 </select></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Assumidos" value="0" min="0" style="width:70px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Finalizados" value="0" min="0" style="width:70px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Transferidos" value="0" min="0" style="width:70px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="SCORE" value="" min="0" max="5" step="0.1" style="width:65px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Objetivo" value="0" min="0" style="width:70px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Assumidos" value="0" min="0" style="width:55px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Finalizados" value="0" min="0" style="width:55px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Transferidos" value="0" min="0" style="width:55px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="SCORE" value="" min="0" max="5" step="0.1" style="width:55px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Nota1" value="0" min="0" max="5" step="0.1" style="width:55px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Nota2" value="0" min="0" max="5" step="0.1" style="width:55px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Nota3" value="0" min="0" max="5" step="0.1" style="width:55px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Total" value="0" min="0" style="width:55px"/></td>
+                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Objetivo" value="0" min="0" style="width:55px"/></td>
+                <td><input type="text" class="proj-input" data-idx="${i}" data-field="Observacao" value="" placeholder="Férias/ausente..." style="width:100px;font-size:11px"/></td>
               </tr>`;
+            }).join('')}
             }).join('')}
           </tbody>
         </table>
@@ -181,7 +197,8 @@ function renderProjecao() {
           Nota2: 0,
           Nota3: 0,
           Total: 0,
-          Objetivo: 0
+          Objetivo: 0,
+          Observacao: ''
         };
 
         // Collect all values for this name
@@ -191,8 +208,12 @@ function renderProjecao() {
           const val = ni.value.trim();
           if (f === 'SCORE') {
             rec.SCORE = val !== '' ? parseFloat(val) : null;
-          } else if (f === 'Assumidos' || f === 'Finalizados' || f === 'Transferidos' || f === 'Objetivo') {
+          } else if (f === 'Nota1' || f === 'Nota2' || f === 'Nota3') {
+            rec[f] = val !== '' ? parseFloat(val) : 0;
+          } else if (f === 'Assumidos' || f === 'Finalizados' || f === 'Transferidos' || f === 'Total' || f === 'Objetivo') {
             rec[f] = parseInt(val) || 0;
+          } else if (f === 'Observacao') {
+            rec[f] = val;
           }
         });
 
@@ -207,7 +228,7 @@ function renderProjecao() {
       return;
     }
 
-    setLoading(true, 'Salvando projeção…');
+    setLoading(true, 'Salvando registros…');
     try {
       // Save each to Supabase
       let savedCount = 0;
@@ -219,7 +240,7 @@ function renderProjecao() {
           }
         }
         rawRecords.push(rec);
-        if (typeof logHistorico === 'function') logHistorico('add', rec, { detalhes: 'Adicionado via projeção mensal' });
+        if (typeof logHistorico === 'function') logHistorico('add', rec, { detalhes: 'Adicionado via novo registro mensal' });
         savedCount++;
       }
 
@@ -231,7 +252,7 @@ function renderProjecao() {
       renderSummary(filtered);
       saveState();
 
-      showToast(`${savedCount} registro(s) adicionados para ${mes}.`, 'success', 'Projeção');
+      showToast(`${savedCount} registro(s) adicionados para ${mes}.`, 'success', 'Registro Mensal');
       closeProjecao();
     } catch (e) {
       console.error('Erro ao salvar projeção:', e);
