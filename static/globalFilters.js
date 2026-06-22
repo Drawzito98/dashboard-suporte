@@ -8,9 +8,9 @@ const GLOBAL_FILTERS_KEY = 'sistema_global_filters_v1';
 function _normalizeName(n) {
   return String(n || '').trim()
     .normalize('NFD').replace(/\p{Diacritic}/gu, '')
-    .replace(/\s*[^\w\s]\s*(?:multi[\s\-]?setor)?\s*$/i, '') // remove sufixo com símbolo + multisetor (ex: ★ Multisetor)
-    .replace(/\s*(?:multi[\s\-]?setor)\s*$/i, '')             // remove só multisetor se ainda estiver
-    .replace(/[^\w\s]/g, '')                                   // remove qualquer símbolo remanescente
+    .replace(/\s*[^\p{L}\p{N}\s]\s*(?:multi[\s\-]?setor)?\s*$/ui, '')
+    .replace(/\s*(?:multi[\s\-]?setor)\s*$/i, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
     .trim()
     .toLowerCase();
 }

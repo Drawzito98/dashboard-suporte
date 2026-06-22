@@ -357,12 +357,12 @@ let chart = null;
 // que vieram explicitamente marcados para destacá-los na exibição.
 function stripMultiSetorTag(name) {
   const original = String(name == null ? '' : name);
-  const re = /\s*[^\w\s]?\s*multi[\s\-]?setor\s*[^\w\s]?\s*$/i;
+  const re = /\s*[^\p{L}\p{N}\s]?\s*multi[\s\-]?setor\s*[^\p{L}\p{N}\s]?\s*$/ui;
   const stripped = original
     .normalize('NFD').replace(/\p{Diacritic}/gu, '')
     .replace(re, '');
   if (stripped !== original.normalize('NFD').replace(/\p{Diacritic}/gu, '')) {
-    const base = original.replace(/\s*[^\w\s]?\s*[Mm][Uu][Ll][Tt][Ii][\s\-]?[Ss][Ee][Tt][Oo][Rr]\s*[^\w\s]?\s*$/, '').trim();
+    const base = original.replace(/\s*[^\p{L}\p{N}\s]?\s*[Mm][Uu][Ll][Tt][Ii][\s\-]?[Ss][Ee][Tt][Oo][Rr]\s*[^\p{L}\p{N}\s]?\s*$/u, '').trim();
     return { base: base || original.trim(), tagged: true };
   }
   return { base: original.trim(), tagged: false };
@@ -376,8 +376,8 @@ function normalizeAtendenteOnRecords(records) {
     const { base, tagged } = stripMultiSetorTag(r['Atendente']);
     if (base !== r['Atendente']) r['Atendente'] = base;
     if (tagged && base) explicitMultiSetorNames.add(base);
-    // Remove símbolos não-alfanuméricos (★, bullets, etc) que ficaram no nome
-    const cleaned = r['Atendente'].replace(/[^\w\s]/g, '').trim();
+    // Remove apenas símbolos (★, bullets, etc) — mantém letras acentuadas
+    const cleaned = r['Atendente'].replace(/[^\p{L}\p{N}\s]/gu, '').trim();
     if (cleaned && cleaned !== r['Atendente']) r['Atendente'] = cleaned;
   });
   return records;
@@ -1052,9 +1052,9 @@ function uniqueSorted(arr) {
 function normalizeNameForDedup(n) {
   return String(n || '').trim()
     .normalize('NFD').replace(/\p{Diacritic}/gu, '')
-    .replace(/\s*[^\w\s]\s*(?:multi[\s\-]?setor)?\s*$/i, '')
+    .replace(/\s*[^\p{L}\p{N}\s]\s*(?:multi[\s\-]?setor)?\s*$/ui, '')
     .replace(/\s*(?:multi[\s\-]?setor)\s*$/i, '')
-    .replace(/[^\w\s]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
     .trim()
     .toLowerCase();
 }
