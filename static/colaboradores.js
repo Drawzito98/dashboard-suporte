@@ -132,20 +132,6 @@ function openColabDetailOverlay(nome) {
     <span>Motivo da conduta</span>
     <textarea id="ciCondutaMotivo" style="width:100%;min-height:60px;font-size:13px;line-height:1.6;border-color:var(--danger)" placeholder="Descreva o motivo do destaque...">${escapeHtml(info.conduta_motivo || '')}</textarea>
   </div>`;
-  const _availMeses = [...new Set((rawRecords || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
-  const _condutaMes = info.conduta_mes || (_availMeses.length ? _availMeses[_availMeses.length-1] : '');
-  const _condutaPts = info.conduta_pontos || 15;
-  html += `<div class="field" style="grid-column:1/-1" id="ciCondutaMesField" ${condutaChecked ? '' : 'hidden'}>
-    <span>Mês da penalidade</span>
-    <select id="ciCondutaMes"><option value="">-- Selecione --</option>`;
-  for (const m of _availMeses) {
-    html += `<option value="${escapeHtml(m)}"${_condutaMes === m ? ' selected' : ''}>${escapeHtml(m)}</option>`;
-  }
-  html += `</select></div>`;
-  html += `<div class="field" style="grid-column:1/-1" id="ciCondutaPontosField" ${condutaChecked ? '' : 'hidden'}>
-    <span>Pontos a deduzir</span>
-    <input type="number" id="ciCondutaPontos" step="0.5" min="0.5" max="999" value="${_condutaPts}">
-  </div>`;
 
   html += `<div class="field" style="grid-column:1/-1"><span>Observações</span>`;
   html += `<textarea id="ciObservacoes" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Qualquer observação adicional...">${escapeHtml(info.observacoes || '')}</textarea>`;
@@ -188,8 +174,6 @@ function openColabDetailOverlay(nome) {
 
   document.getElementById('ciSalvarBtn').addEventListener('click', async () => {
     if (!requireAdmin()) return;
-    const condutaChecked = document.getElementById('ciCondutaToggle').checked;
-    const condutaMotivo = document.getElementById('ciCondutaMotivo').value.trim();
     const data = {
       data_aniversario: document.getElementById('ciAniversario').value || '',
       data_admissao: document.getElementById('ciAdmissao').value || '',
@@ -197,78 +181,32 @@ function openColabDetailOverlay(nome) {
       tarefas_desempenhadas: document.getElementById('ciTarefas').value.trim(),
       objetivos_futuros: document.getElementById('ciObjetivos').value.trim(),
       observacoes: document.getElementById('ciObservacoes').value.trim(),
-      conduta_negativa: condutaChecked ? 'true' : '',
-      conduta_motivo: condutaMotivo,
-      conduta_mes: document.getElementById('ciCondutaMes').value || '',
-      conduta_pontos: parseFloat(document.getElementById('ciCondutaPontos').value) || 15
+      conduta_negativa: document.getElementById('ciCondutaToggle').checked ? 'true' : '',
+      conduta_motivo: document.getElementById('ciCondutaMotivo').value.trim()
     };
-    if (condutaChecked) {
-      const mes = data.conduta_mes;
-      const pts = data.conduta_pontos;
-      if (info.conduta_bonus_id) {
-        await dbPontosExtrasSave({
-          id: info.conduta_bonus_id,
-          colaborador: nome,
-          mes: mes,
-          descricao: condutaMotivo || 'Conduta negativa',
-          pontos: -Math.abs(pts),
-          createdAt: info.conduta_bonus_createdAt || new Date().toISOString()
-        });
-        data.conduta_bonus_id = info.conduta_bonus_id;
-      } else {
-        const bonusId = Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
-        await dbPontosExtrasSave({
-          id: bonusId,
-          colaborador: nome,
-          mes: mes,
-          descricao: condutaMotivo || 'Conduta negativa',
-          pontos: -Math.abs(pts),
-          createdAt: new Date().toISOString()
-        });
-        data.conduta_bonus_id = bonusId;
-        data.conduta_bonus_createdAt = new Date().toISOString();
-      }
-    } else {
-      if (info.conduta_bonus_id) {
-        await dbPontosExtrasDelete(info.conduta_bonus_id);
-      }
-      data.conduta_bonus_id = '';
-      data.conduta_bonus_createdAt = '';
-    }
     await dbColabInfoSave(nome, data);
     showToast(`Dados de ${nome} salvos!`, 'success', 'Colaboradores');
     overlay.classList.remove('open');
     if (typeof renderColaboradores === 'function') renderColaboradores();
-    if (typeof renderGamification === 'function') renderGamification();
-    if (typeof renderBonus === 'function') renderBonus();
   });
 
   document.getElementById('ciCondutaToggle').addEventListener('change', () => {
-    const checked = document.getElementById('ciCondutaToggle').checked;
-    ['ciCondutaMotivoField','ciCondutaMesField','ciCondutaPontosField'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.hidden = !checked;
-    });
+    const field = document.getElementById('ciCondutaMotivoField');
+    if (field) field.hidden = !document.getElementById('ciCondutaToggle').checked;
   });
 
   document.getElementById('ciLimparBtn').addEventListener('click', async () => {
     if (!requireAdmin()) return;
     if (!confirm(`Limpar todos os dados cadastrais de ${nome}?`)) return;
-    if (info.conduta_bonus_id) {
-      await dbPontosExtrasDelete(info.conduta_bonus_id);
-    }
     const data = {
       data_aniversario: '', data_admissao: '', email: '',
       tarefas_desempenhadas: '', objetivos_futuros: '', observacoes: '',
-      conduta_negativa: '', conduta_motivo: '', conduta_bonus_id: '',
-      conduta_bonus_createdAt: '', conduta_mes: '', conduta_pontos: ''
+      conduta_negativa: '', conduta_motivo: ''
     };
     await dbColabInfoSave(nome, data);
     showToast(`Dados de ${nome} removidos!`, 'success', 'Colaboradores');
     overlay.classList.remove('open');
     if (typeof renderColaboradores === 'function') renderColaboradores();
-    if (typeof renderGamification === 'function') renderGamification();
-    if (typeof renderBonus === 'function') renderBonus();
   });
 }
 
