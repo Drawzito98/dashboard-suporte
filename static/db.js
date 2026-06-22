@@ -6,6 +6,33 @@ const sbClient = (typeof supabase !== 'undefined' && supabase.createClient)
   ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
+let _adminCache = null;
+
+async function _fetchRoleFromSupabase() {
+  try {
+    if (!sbClient) return null;
+    const { data: { user } } = await sbClient.auth.getUser();
+    return user?.user_metadata?.role || null;
+  } catch {
+    return null;
+  }
+}
+
+async function isAdmin() {
+  if (document.body.dataset.role === 'admin') return true;
+  const role = await _fetchRoleFromSupabase();
+  return role === 'admin';
+}
+
+async function requireAdmin() {
+  const ok = await isAdmin();
+  if (!ok) {
+    console.warn('[Permissão] Apenas administradores podem realizar esta ação.');
+    return false;
+  }
+  return true;
+}
+
 if (!sbClient) {
   console.warn('Supabase client não disponível');
 }
@@ -71,6 +98,7 @@ async function dbLoadRecords() {
 }
 
 async function dbSaveRecords(records) {
+  if (!requireAdmin()) return false;
   if (!sbClient || !records || !records.length) return false;
   try {
     const clean = filterRecordsFields(records);
@@ -93,6 +121,7 @@ async function dbSaveRecords(records) {
 }
 
 async function dbDeleteAll() {
+  if (!requireAdmin()) return false;
   if (!sbClient) return false;
   try {
     const { error } = await sbClient.from('registros').delete().neq('id', -1);
@@ -111,6 +140,7 @@ async function dbDeleteAll() {
 }
 
 async function dbReplaceAll(records) {
+  if (!requireAdmin()) return false;
   if (!sbClient) return false;
   try {
     return await dbSaveRecords(records);
@@ -121,6 +151,7 @@ async function dbReplaceAll(records) {
 }
 
 async function dbInsertRow(row) {
+  if (!requireAdmin()) return null;
   if (!sbClient) return null;
   try {
     const clean = filterRecordFields(row);
@@ -139,6 +170,7 @@ async function dbInsertRow(row) {
 }
 
 async function dbUpdateRecord(id, changes) {
+  if (!requireAdmin()) return false;
   if (!sbClient || id == null) return false;
   try {
     const clean = filterRecordFields(changes);
@@ -155,6 +187,7 @@ async function dbUpdateRecord(id, changes) {
 }
 
 async function dbDeleteRecord(id) {
+  if (!requireAdmin()) return false;
   if (!sbClient || id == null) return false;
   try {
     const { error } = await sbClient.from('registros').delete().eq('id', id);

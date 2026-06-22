@@ -10,13 +10,23 @@ async function getCurrentUserRole() {
   }
 }
 
+async function _authHeaders() {
+  try {
+    const { data } = await sbClient.auth.getSession();
+    const token = data?.session?.access_token;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  } catch { return {}; }
+}
+
 async function carregarUsuarios() {
   const container = document.getElementById('listaUsuarios');
   if (!container) return;
+  if (!requireAdmin()) { container.innerHTML = '<p style="text-align:center;padding:var(--s-4);color:var(--text-muted)">Apenas administradores podem gerenciar usuários.</p>'; return; }
   container.innerHTML = '<p style="text-align:center;padding:var(--s-4);color:var(--text-muted)">Carregando...</p>';
 
   try {
-    const res = await fetch('/api/users');
+    const headers = { ...(await _authHeaders()) };
+    const res = await fetch('/api/users', { headers });
     const data = await res.json();
 
     if (!res.ok || data.error) {
@@ -77,13 +87,14 @@ async function carregarUsuarios() {
     // Toggle role
     container.querySelectorAll('.btn-toggle-role').forEach(btn => {
       btn.addEventListener('click', async () => {
+        if (!requireAdmin()) return;
         const id = btn.dataset.id;
         const newRole = btn.dataset.role === 'admin' ? 'viewer' : 'admin';
         if (!confirm(`Alterar ${btn.dataset.email} para "${newRole === 'admin' ? 'Admin' : 'Visualizador'}"?`)) return;
         btn.disabled = true;
         const res = await fetch('/api/users', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
           body: JSON.stringify({ id, role: newRole })
         });
         if (res.ok) {
@@ -99,6 +110,7 @@ async function carregarUsuarios() {
     // Delete
     container.querySelectorAll('.btn-delete-user').forEach(btn => {
       btn.addEventListener('click', async () => {
+        if (!requireAdmin()) return;
         const id = btn.dataset.id;
         const email = btn.dataset.email;
         if (!confirm(`Remover usuário "${email}"? Esta ação não pode ser desfeita.`)) return;
@@ -106,7 +118,7 @@ async function carregarUsuarios() {
         btn.textContent = '...';
         const res = await fetch('/api/users', {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
           body: JSON.stringify({ id })
         });
         if (res.ok) {
@@ -183,6 +195,7 @@ function renderUsuariosAba() {
   });
 
   document.getElementById('criarUsuarioBtn')?.addEventListener('click', async () => {
+    if (!requireAdmin()) return;
     const email = document.getElementById('novoUserEmail').value.trim();
     const password = document.getElementById('novoUserPassword').value;
     const role = document.getElementById('novoUserRole')?.value || 'viewer';
@@ -201,7 +214,7 @@ function renderUsuariosAba() {
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
         body: JSON.stringify({ email, password, role })
       });
       const data = await res.json();
@@ -225,6 +238,7 @@ function renderUsuariosAba() {
 
   // Password reset overlay
   document.getElementById('resetPwdConfirmBtn')?.addEventListener('click', async () => {
+    if (!requireAdmin()) return;
     const pwd = document.getElementById('resetPwdNewPassword').value;
     const errEl = document.getElementById('resetPwdError');
     const okEl = document.getElementById('resetPwdSuccess');
@@ -240,7 +254,7 @@ function renderUsuariosAba() {
     try {
       const res = await fetch('/api/users', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
         body: JSON.stringify({ id: editingUserId, password: pwd })
       });
       if (res.ok) {

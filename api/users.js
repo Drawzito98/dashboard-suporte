@@ -1,15 +1,39 @@
 const SUPABASE_URL = 'https://agvkmfusyetkicmuvumz.supabase.co';
 const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
 
+function getCallerRole(req) {
+  try {
+    const auth = req.headers['authorization'] || req.headers['x-supabase-auth'] || '';
+    const token = auth.replace('Bearer ', '');
+    if (!token) return null;
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+    return payload?.user_metadata?.role || null;
+  } catch {
+    return null;
+  }
+}
+
+function requireAdminApi(req, res) {
+  const role = getCallerRole(req);
+  if (role !== 'admin') {
+    res.status(403).json({ error: 'Apenas administradores podem gerenciar usuários.' });
+    return false;
+  }
+  return true;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-supabase-auth');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
+
+  if (!requireAdminApi(req, res)) return;
 
   try {
     // GET: listar usuários

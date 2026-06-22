@@ -307,6 +307,7 @@ function renderGamification() {
   // Bind foto buttons
   container.querySelectorAll('.foto-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (!requireAdmin()) return;
       const name = btn.getAttribute('data-name');
       if (!name) return;
       const current = typeof getColabFoto === 'function' ? getColabFoto(name) : '';

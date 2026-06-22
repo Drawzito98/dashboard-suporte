@@ -148,6 +148,7 @@ function openColabDetailOverlay(nome) {
   overlay.classList.add('open');
 
   document.getElementById('ciSalvarBtn').addEventListener('click', async () => {
+    if (!requireAdmin()) return;
     const data = {
       data_aniversario: document.getElementById('ciAniversario').value || '',
       data_admissao: document.getElementById('ciAdmissao').value || '',
@@ -170,6 +171,7 @@ function openColabDetailOverlay(nome) {
   });
 
   document.getElementById('ciLimparBtn').addEventListener('click', async () => {
+    if (!requireAdmin()) return;
     if (!confirm(`Limpar todos os dados cadastrais de ${nome}?`)) return;
     const data = {
       data_aniversario: '', data_admissao: '', email: '',

@@ -228,6 +228,7 @@ function renderAlertas() {
   // Bind toggles
   container.querySelectorAll('.alerta-toggle').forEach(chk => {
     chk.addEventListener('change', (e) => {
+      if (!requireAdmin()) return;
       const id = e.target.getAttribute('data-id');
       const alerta = alertasConfig.find(a => a.id === id);
       if (alerta) {

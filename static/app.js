@@ -35,6 +35,7 @@ function saveInactiveColabs() {
 }
 
 function setColabActive(name, active) {
+  if (!requireAdmin()) return;
   const set = getInactiveColabs();
   if (active) set.delete(name);
   else set.add(name);
@@ -891,6 +892,7 @@ async function importCsvFiles(fileList) {
 
 
 async function onFileInputChange(e) {
+  if (!requireAdmin()) { showToast('Apenas administradores podem importar dados.', 'error'); return; }
   const input = e && e.target ? e.target : null;
   const files = input && input.files ? Array.from(input.files) : [];
   if (!files.length) return;
@@ -1775,6 +1777,7 @@ function renderPreviewDisplay(rows) {
       if (ev.key === 'Enter') { ev.preventDefault(); td.blur(); }
     });
     td.addEventListener('blur', (e) => {
+      if (!requireAdmin()) { showToast('Apenas administradores podem editar dados.', 'error'); return; }
       const scrollX = window.scrollX || 0;
       const scrollY = window.scrollY || 0;
       const el = e.target;
@@ -1821,6 +1824,7 @@ function renderPreviewDisplay(rows) {
 
   previewTable.querySelectorAll('.btn-delete').forEach(b => {
     b.addEventListener('click', async (e) => {
+      if (!requireAdmin()) { showToast('Apenas administradores podem excluir registros.', 'error'); return; }
       const scrollX = window.scrollX || 0;
       const scrollY = window.scrollY || 0;
       const idx = Number(e.target.getAttribute('data-idx'));
@@ -2790,6 +2794,7 @@ if (!rawRecords || !rawRecords.length) {
   });
 
   if (clearSavedBtn) clearSavedBtn.addEventListener('click', () => {
+    if (!requireAdmin()) { showToast('Apenas administradores podem limpar dados.', 'error'); return; }
     if (confirm('Remover os dados salvos deste app no navegador?')) {
       clearSavedState();
     }
@@ -2812,8 +2817,8 @@ if (!rawRecords || !rawRecords.length) {
     renderPreview(previewRows);
   });
   if (btnR) btnR.addEventListener('click', () => { currentSort.key = null; currentSort.desc = true; renderPreview(previewRows); });
-  if (addRowBtn) addRowBtn.addEventListener('click', () => { addRow(); });
-  if (addRowTopBtn) addRowTopBtn.addEventListener('click', () => { openProjecaoOverlay(); });
+  if (addRowBtn) addRowBtn.addEventListener('click', () => { if (!requireAdmin()) { showToast('Apenas administradores podem adicionar registros.', 'error'); return; } addRow(); });
+  if (addRowTopBtn) addRowTopBtn.addEventListener('click', () => { if (!requireAdmin()) { showToast('Apenas administradores podem adicionar registros.', 'error'); return; } openProjecaoOverlay(); });
   const manageColabsBtn = document.getElementById('manageColabsBtn');
   if (manageColabsBtn) manageColabsBtn.addEventListener('click', () => { openManageColabs(); });
   const historicoBtn = document.getElementById('historicoBtn');
@@ -2825,7 +2830,7 @@ if (!rawRecords || !rawRecords.length) {
   const tendenciasBtn = document.getElementById('tendenciasBtn');
   if (tendenciasBtn) tendenciasBtn.addEventListener('click', () => { openTendencias(); });
   const cleanDupBtn = document.getElementById('cleanDupBtn');
-  if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { cleanDuplicates(); });
+  if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { if (!requireAdmin()) { showToast('Apenas administradores podem limpar duplicatas.', 'error'); return; } cleanDuplicates(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');
@@ -2991,6 +2996,7 @@ if (!rawRecords || !rawRecords.length) {
   // Reset scoring rules (using delegation since button is in a tab)
   document.addEventListener('click', (e) => {
     if (e.target.id === 'resetScoringBtn' && typeof resetScoringRules === 'function') {
+      if (!requireAdmin()) { showToast('Apenas administradores podem resetar regras.', 'error'); return; }
       if (confirm('Resetar regras de pontuação para os valores padrão?')) {
         resetScoringRules();
         showToast('Regras de pontuação resetadas.', 'success', 'Configuração');
@@ -3040,6 +3046,7 @@ if (!rawRecords || !rawRecords.length) {
   const resetAlertasBtn = document.getElementById('resetAlertasBtn');
   if (resetAlertasBtn && typeof resetAlertasConfig === 'function') {
     resetAlertasBtn.addEventListener('click', () => {
+      if (!requireAdmin()) { showToast('Apenas administradores podem resetar alertas.', 'error'); return; }
       if (confirm('Resetar configuração de alertas para os valores padrão?')) {
         resetAlertasConfig();
         showToast('Alertas resetados.', 'success');

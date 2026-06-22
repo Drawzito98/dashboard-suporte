@@ -58,6 +58,7 @@ async function dbMetasLoad() {
 }
 
 async function dbMetasSave(goals) {
+  if (!requireAdmin()) return;
   localStorage.setItem(METAS_LOCAL_KEY, JSON.stringify(goals));
   if (!sbClient) return;
   try {
@@ -231,6 +232,7 @@ async function dbScoringLoad() {
 }
 
 async function dbScoringSave(rules) {
+  if (!requireAdmin()) return;
   localStorage.setItem(SCORING_LOCAL_KEY, JSON.stringify(rules));
   if (!sbClient) return;
   try {
@@ -264,6 +266,7 @@ async function dbAlertasLoad() {
 }
 
 async function dbAlertasSave(config) {
+  if (!requireAdmin()) return;
   localStorage.setItem(ALERTAS_LOCAL_KEY, JSON.stringify(config));
   if (!sbClient) return;
   try {
@@ -299,6 +302,7 @@ async function dbFotosLoad() {
 }
 
 async function dbFotoSave(nome, url) {
+  if (!requireAdmin()) return;
   const map = JSON.parse(localStorage.getItem(FOTOS_LOCAL_KEY) || '{}');
   if (url) map[nome] = url;
   else delete map[nome];
@@ -341,6 +345,7 @@ async function dbInativosLoad() {
 }
 
 async function dbInativosSave(names) {
+  if (!requireAdmin()) return;
   const arr = [...names];
   localStorage.setItem(INATIVOS_LOCAL_KEY, JSON.stringify(arr));
   if (!sbClient) return;
@@ -385,6 +390,7 @@ async function dbFeedbacksLoad() {
 }
 
 async function dbFeedbacksSave(feedback) {
+  if (!requireAdmin()) return;
   const list = JSON.parse(localStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
   const idx = list.findIndex(f => f.id === feedback.id);
   if (idx >= 0) list[idx] = feedback;
@@ -418,6 +424,7 @@ async function dbFeedbacksSave(feedback) {
 }
 
 async function dbFeedbacksDelete(id) {
+  if (!requireAdmin()) return;
   const list = JSON.parse(localStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
   const filtered = list.filter(f => f.id !== id);
   localStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(filtered));
@@ -522,6 +529,7 @@ async function dbTarefasLoad() {
 }
 
 async function dbTarefasSave(tarefa) {
+  if (!requireAdmin()) return;
   const list = JSON.parse(localStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
   const idx = list.findIndex(t => t.id === tarefa.id);
   if (idx >= 0) list[idx] = tarefa;
@@ -555,6 +563,7 @@ async function dbTarefasSave(tarefa) {
 }
 
 async function dbTarefasDelete(id) {
+  if (!requireAdmin()) return;
   const list = JSON.parse(localStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
   const filtered = list.filter(t => t.id !== id);
   localStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(filtered));
@@ -593,6 +602,7 @@ async function dbPontosExtrasLoad() {
 }
 
 async function dbPontosExtrasSave(bonus) {
+  if (!requireAdmin()) return;
   const list = JSON.parse(localStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
   const idx = list.findIndex(b => b.id === bonus.id);
   if (idx >= 0) list[idx] = bonus;
@@ -622,6 +632,7 @@ async function dbPontosExtrasSave(bonus) {
 }
 
 async function dbPontosExtrasDelete(id) {
+  if (!requireAdmin()) return;
   const list = JSON.parse(localStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
   const filtered = list.filter(b => b.id !== id);
   localStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(filtered));
@@ -667,6 +678,7 @@ async function dbColabInfoLoad() {
 }
 
 async function dbColabInfoSave(nome, data) {
+  if (!requireAdmin()) return;
   const map = JSON.parse(localStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
   map[nome] = { ...(map[nome] || {}), ...data, updatedAt: new Date().toISOString() };
   localStorage.setItem(COLAB_INFO_LOCAL_KEY, JSON.stringify(map));

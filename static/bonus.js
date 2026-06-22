@@ -133,15 +133,16 @@ function bindBonusEvents(saved) {
   }
 
   const addBtn = document.getElementById('bonusAdicionarBtn');
-  if (addBtn) addBtn.addEventListener('click', () => salvarBonus(1));
+  if (addBtn) addBtn.addEventListener('click', () => { if (!requireAdmin()) return; salvarBonus(1); });
 
   const remBtn = document.getElementById('bonusRemoverBtn');
-  if (remBtn) remBtn.addEventListener('click', () => salvarBonus(-1));
+  if (remBtn) remBtn.addEventListener('click', () => { if (!requireAdmin()) return; salvarBonus(-1); });
 
   // Editing mode
   const salvarBtn = document.getElementById('bonusSalvarBtn');
   if (salvarBtn) {
     salvarBtn.addEventListener('click', async () => {
+      if (!requireAdmin()) return;
       const colaborador = document.getElementById('bonusColaboradorInput').value;
       const absPts = parseFloat(document.getElementById('bonusPontosInput').value) || 0;
       const descricao = document.getElementById('bonusDescricaoInput').value;
@@ -189,6 +190,7 @@ function bindBonusEvents(saved) {
 
   container.querySelectorAll('.bonus-excluir-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
+      if (!requireAdmin()) return;
       const b = saved.find(x => x.id === btn.dataset.id);
       if (!b || !confirm(`Excluir bônus de ${parseFloat(b.pontos).toFixed(1)} pts para ${b.colaborador}?`)) return;
       await dbPontosExtrasDelete(b.id);

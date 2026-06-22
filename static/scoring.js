@@ -129,6 +129,7 @@ function renderScoringRules() {
 
   container.querySelectorAll('.config-rule-input').forEach(input => {
     input.addEventListener('change', (e) => {
+      if (!requireAdmin()) return;
       const id = e.target.getAttribute('data-rule-id');
       const val = parseFloat(e.target.value) || 0;
       const rule = scoringRules.find(r => r.id === id);

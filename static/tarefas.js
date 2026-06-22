@@ -141,6 +141,7 @@ function bindTarefaEvents(saved) {
   const salvarBtn = document.getElementById('tarefaSalvarBtn');
   if (salvarBtn) {
     salvarBtn.addEventListener('click', async () => {
+      if (!requireAdmin()) return;
       const titulo = document.getElementById('tarefaTituloInput').value;
       const data = document.getElementById('tarefaDataInput').value;
       const prioridade = document.getElementById('tarefaPrioridadeInput').value;
@@ -188,6 +189,7 @@ function bindTarefaEvents(saved) {
   // Toggle concluir/reabrir
   container.querySelectorAll('.tarefa-toggle-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
+      if (!requireAdmin()) return;
       const t = saved.find(x => x.id === btn.dataset.id);
       if (!t) return;
       const newStatus = t.status === 'concluida' ? 'pendente' : 'concluida';
@@ -210,6 +212,7 @@ function bindTarefaEvents(saved) {
   // Excluir
   container.querySelectorAll('.tarefa-excluir-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
+      if (!requireAdmin()) return;
       const t = saved.find(x => x.id === btn.dataset.id);
       if (!t || !confirm(`Excluir tarefa "${t.titulo}"?`)) return;
       await dbTarefasDelete(t.id);
