@@ -1598,7 +1598,7 @@ function renderSummary(filtered) {
   const refreshBtn = document.getElementById('refreshReportBtn');
   const intelBtn = document.getElementById('intelReportBtn');
   if (copyBtn) copyBtn.addEventListener('click', () => copyReportToClipboard());
-  if (exportPdfBtn) exportPdfBtn.addEventListener('click', () => exportReportToPDF());
+  // exportPdfBtn é vinculado no init.js com exportPDFcomGrafico() — não duplicar aqui
   if (intelBtn) intelBtn.addEventListener('click', () => generateIntelReport());
   // Perfil (Docs) button: visible only when a single atendente is selected and a link exists
   if (openPerfilDocsBtn) {
@@ -2704,9 +2704,11 @@ async function exportPDFcomGrafico() {
       } catch (e) {}
     }
 
-    // Salva
-    doc.save(`relatorio-${new Date().toISOString().slice(0, 10)}.pdf`);
-    showToast('PDF exportado com sucesso!', 'success', 'PDF');
+    // Abre em nova aba para preview (não baixa automaticamente)
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    showToast('PDF aberto em nova aba. Use o botão de download do visualizador.', 'success', 'PDF');
   } catch (e) {
     console.error('Erro ao gerar PDF:', e);
     showToast('Erro ao gerar PDF: ' + e.message, 'error');
