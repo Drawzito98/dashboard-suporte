@@ -44,7 +44,6 @@ function renderProjecao() {
         Nota2: parseInt(r['Nota2']) || 0,
         Nota3: parseInt(r['Nota3']) || 0,
         Total: parseInt(r['Total']) || 0,
-        Objetivo: parseInt(r['Objetivo']) || 0,
         Observacao: r['Observacao'] || '',
         Setor: r['Setor'] || ''
       };
@@ -87,7 +86,6 @@ function renderProjecao() {
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Nota2</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Nota3</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Total</th>
-              <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Objetivo</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Observação</th>
             </tr>
           </thead>
@@ -107,7 +105,6 @@ function renderProjecao() {
                 <td><input type="number" class="proj-input" data-idx="${i}" data-field="Nota2" value="0" min="0" max="5" step="0.1" style="width:55px"/></td>
                 <td><input type="number" class="proj-input" data-idx="${i}" data-field="Nota3" value="0" min="0" max="5" step="0.1" style="width:55px"/></td>
                 <td><input type="number" class="proj-input" data-idx="${i}" data-field="Total" value="0" min="0" style="width:55px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Objetivo" value="0" min="0" style="width:55px"/></td>
                 <td><input type="text" class="proj-input" data-idx="${i}" data-field="Observacao" value="" placeholder="Férias/ausente..." style="width:100px;font-size:11px"/></td>
               </tr>`;
             }).join('')}
@@ -197,7 +194,6 @@ function renderProjecao() {
           Nota2: 0,
           Nota3: 0,
           Total: 0,
-          Objetivo: 0,
           Observacao: ''
         };
 
@@ -210,7 +206,7 @@ function renderProjecao() {
             rec.SCORE = val !== '' ? parseFloat(val) : null;
           } else if (f === 'Nota1' || f === 'Nota2' || f === 'Nota3') {
             rec[f] = val !== '' ? parseFloat(val) : 0;
-          } else if (f === 'Assumidos' || f === 'Finalizados' || f === 'Transferidos' || f === 'Total' || f === 'Objetivo') {
+          } else if (f === 'Assumidos' || f === 'Finalizados' || f === 'Transferidos' || f === 'Total') {
             rec[f] = parseInt(val) || 0;
           } else if (f === 'Observacao') {
             rec[f] = val;
