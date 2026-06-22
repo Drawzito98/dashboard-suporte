@@ -727,7 +727,7 @@ html[data-theme="dark"] .loading-overlay { background: rgba(15, 23, 42, 0.7); }
 }
 .badge-ferias { background: var(--info-soft);    color: var(--info); }
 .badge-multi  { background: var(--warning-soft); color: var(--warning); }
-.cell-ferias  { background: color-mix(in srgb, var(--info) 6%, transparent) !important; }
+.cell-ferias  { background: var(--info-soft) !important; }
 
 /* ===== Meeting mode ===== */
 body.meeting-mode main.app { max-width: 1600px; padding-top: var(--s-4); }
@@ -1815,13 +1815,13 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 }
 
 .report-item-good {
-  background: color-mix(in srgb, var(--success) 8%, transparent);
+  background: var(--success-soft);
   color: var(--success);
   border-left: 3px solid var(--success);
 }
 
 .report-item-bad {
-  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  background: var(--danger-soft);
   color: var(--danger);
   border-left: 3px solid var(--danger);
 }

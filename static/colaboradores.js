@@ -58,7 +58,7 @@ function renderColaboradores() {
       html += `<div style="font-size:12px;color:var(--text-secondary)">✉️ ${escapeHtml(info.email)}</div>`;
     }
     if (info.observacoes) {
-      html += `<div style="font-size:12px;color:var(--danger);margin-top:2px;padding:2px 6px;background:color-mix(in srgb, var(--danger) 10%, transparent);border-radius:var(--r-sm)">📝 ${escapeHtml(info.observacoes)}</div>`;
+      html += `<div style="font-size:12px;color:var(--danger);margin-top:2px;padding:2px 6px;background:var(--danger-soft);border-radius:var(--r-sm)">📝 ${escapeHtml(info.observacoes)}</div>`;
     }
     if (!hasData) {
       html += `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">Clique para cadastrar</div>`;
