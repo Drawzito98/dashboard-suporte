@@ -120,6 +120,7 @@ function renderTarefas() {
     html += '</div>';
   }
   html += '</div>';
+  }
 
   container.innerHTML = html;
   bindTarefaEvents(saved);
