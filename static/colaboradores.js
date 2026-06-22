@@ -108,7 +108,7 @@ function openColabReport(nome) {
   const teamTrans = allRows.length ? allRows.reduce((s, r) => s + (parseInt(r['Transferidos']) || 0), 0) / allRows.length : 0;
 
   // Previous period comparison (if filtering by a single month)
-  let prevFin = null, prevScore = null;
+  let prevFin = null, prevScore = null, prevAss = null, prevTrans = null;
   if (meses.length === 1) {
     const allMeses = [...new Set((rawRecords || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
     const idx = allMeses.indexOf(meses[0]);
@@ -116,6 +116,8 @@ function openColabReport(nome) {
       const prevMes = allMeses[idx - 1];
       const prevRows = (rawRecords || []).filter(r => r && String(r['Atendente']) === nome && String(r['Mês']) === prevMes);
       prevFin = prevRows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
+      prevAss = prevRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
+      prevTrans = prevRows.reduce((s, r) => s + (parseInt(r['Transferidos']) || 0), 0);
       const prevScores = prevRows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && v !== '');
       prevScore = prevScores.length ? prevScores.reduce((a, b) => a + Number(b), 0) / prevScores.length : null;
     }
@@ -144,11 +146,13 @@ function openColabReport(nome) {
   html += '<div class="report-metrics">';
   const finVar = prevFin !== null ? computeVariation(fin, prevFin) : null;
   const scVar = prevScore !== null && scoreAvg !== null ? computeVariation(scoreAvg, prevScore) : null;
+  const assVar = prevAss !== null ? computeVariation(ass, prevAss) : null;
+  const transVar = prevTrans !== null ? computeVariation(trans, prevTrans) : null;
   const metrics = [
     { label: 'Finalizados', value: fmtInt(fin), var: finVar, good: finVar === null || finVar >= 0, team: fmtInt(teamFin) },
     { label: 'Score', value: scoreAvg !== null ? scoreAvg.toFixed(2).replace('.', ',') : '—', var: scVar, good: scoreAvg !== null && scoreAvg >= 4.70, team: teamScore ? teamScore.toFixed(2).replace('.', ',') : '—' },
-    { label: 'Assumidos', value: fmtInt(ass), var: null, good: true, team: fmtInt(allRows.length ? allRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0) / allRows.length : 0) },
-    { label: 'Transferidos', value: fmtInt(trans), var: null, good: trans <= teamTrans * 1.5, team: fmtInt(teamTrans) }
+    { label: 'Assumidos', value: fmtInt(ass), var: assVar, good: assVar === null || assVar >= 0, team: fmtInt(allRows.length ? allRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0) / allRows.length : 0) },
+    { label: 'Transferidos', value: fmtInt(trans), var: transVar, good: transVar === null || transVar <= 0, team: fmtInt(teamTrans) }
   ];
   for (const m of metrics) {
     const borderColor = m.good ? 'var(--success)' : 'var(--danger)';
@@ -192,6 +196,12 @@ function openColabReport(nome) {
   if (scVar !== null && scVar > 0) highlights.push(`Score melhorou em relação ao mês anterior 📈`);
   else if (scVar !== null && scVar < 0) lowlights.push(`Score caiu em relação ao mês anterior 📉`);
 
+  if (assVar !== null && assVar > 5) highlights.push(`Assumidos cresceram ${assVar.toFixed(0)}% em relação ao mês anterior 📈`);
+  else if (assVar !== null && assVar < -5) lowlights.push(`Assumidos caíram ${Math.abs(assVar).toFixed(0)}% em relação ao mês anterior 📉`);
+
+  if (transVar !== null && transVar > 5) lowlights.push(`Transferências subiram ${transVar.toFixed(0)}% em relação ao mês anterior ⚠️`);
+  else if (transVar !== null && transVar < -5) highlights.push(`Transferências caíram ${Math.abs(transVar).toFixed(0)}% em relação ao mês anterior ✅`);
+
   html += '<div class="report-section"><h3 class="report-section-title">✅ Destaques</h3>';
   if (highlights.length) {
     html += '<div class="report-list">';
@@ -218,8 +228,8 @@ function openColabReport(nome) {
   const detRows = [
     { label: 'Finalizados', value: fmtInt(fin), team: fmtInt(teamFin), var: finVar },
     { label: 'Score médio', value: scoreAvg !== null ? scoreAvg.toFixed(2).replace('.',',') : '—', team: teamScore ? teamScore.toFixed(2).replace('.',',') : '—', var: scVar },
-    { label: 'Assumidos', value: fmtInt(ass), team: fmtInt(allRows.length ? allRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0) / allRows.length : 0), var: null },
-    { label: 'Transferidos', value: fmtInt(trans), team: fmtInt(teamTrans), var: null },
+    { label: 'Assumidos', value: fmtInt(ass), team: fmtInt(allRows.length ? allRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0) / allRows.length : 0), var: assVar },
+    { label: 'Transferidos', value: fmtInt(trans), team: fmtInt(teamTrans), var: transVar },
   ];
   for (const d of detRows) {
     html += '<div class="report-grid-row">';
