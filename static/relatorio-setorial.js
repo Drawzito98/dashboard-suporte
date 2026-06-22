@@ -59,6 +59,7 @@ function renderRelatorioSetorial() {
   const avgScore = scores.length ? scores.reduce((a, b) => a + Number(b), 0) / scores.length : 0;
   const prodGeral = totalAss > 0 ? totalFin / totalAss : 0;
   const traGeral = totalAss > 0 ? totalTra / totalAss : 0;
+  const totalAtendentes = [...new Set(rows.map(r => r['Atendente']))].filter(Boolean).length;
 
   const fmtNum = n => (Number(n) || 0).toLocaleString('pt-BR');
   const fmtScore = n => n > 0 ? n.toFixed(2) : '\u2014';
@@ -84,7 +85,7 @@ function renderRelatorioSetorial() {
   html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-5);flex-wrap:wrap;gap:var(--s-3)">
     <div>
       <h2 style="font-size:18px;font-weight:700;color:var(--text-strong);margin:0">\uD83D\uDCCA Relatório Setorial</h2>
-      <p style="font-size:13px;color:var(--text-secondary);margin-top:2px">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${meses[0]} a ${meses[meses.length - 1]}</p>
+      <p style="font-size:13px;color:var(--text-secondary);margin-top:2px">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]}</p>
     </div>
     <button class="btn-primary" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
   </div>`;
@@ -97,6 +98,7 @@ function renderRelatorioSetorial() {
     <div class="kpi"><div class="label">Score médio</div><div class="value ${avgScore > 0 ? getClasseScore(avgScore) : ''}">${fmtScore(avgScore)}</div></div>
     <div class="kpi"><div class="label">Produtividade</div><div class="value">${fmtPct(prodGeral)}</div></div>
     <div class="kpi"><div class="label">Setores</div><div class="value">${setores.length}</div></div>
+    <div class="kpi"><div class="label">Atendentes</div><div class="value">${totalAtendentes}</div></div>
   </div>`;
 
   // ── Destaques e Pontos de Atenção ──
