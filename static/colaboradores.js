@@ -146,7 +146,7 @@ function openColabReport(nome) {
   const scVar = prevScore !== null && scoreAvg !== null ? computeVariation(scoreAvg, prevScore) : null;
   const metrics = [
     { label: 'Finalizados', value: fmtInt(fin), var: finVar, good: finVar === null || finVar >= 0, team: fmtInt(teamFin) },
-    { label: 'Score', value: scoreAvg !== null ? scoreAvg.toFixed(2).replace('.', ',') : '—', var: scVar, good: scoreAvg !== null && scoreAvg >= 4.5, team: teamScore ? teamScore.toFixed(2).replace('.', ',') : '—' },
+    { label: 'Score', value: scoreAvg !== null ? scoreAvg.toFixed(2).replace('.', ',') : '—', var: scVar, good: scoreAvg !== null && scoreAvg >= 4.70, team: teamScore ? teamScore.toFixed(2).replace('.', ',') : '—' },
     { label: 'Assumidos', value: fmtInt(ass), var: null, good: true, team: fmtInt(allRows.length ? allRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0) / allRows.length : 0) },
     { label: 'Transferidos', value: fmtInt(trans), var: null, good: trans <= teamTrans * 1.5, team: fmtInt(teamTrans) }
   ];
@@ -175,8 +175,8 @@ function openColabReport(nome) {
   const highlights = [];
   const lowlights = [];
 
-  if (scoreAvg !== null && scoreAvg >= 4.5) highlights.push(`Score alto (${scoreAvg.toFixed(2).replace('.',',')}) — acima da meta de 4,5 ⭐`);
-  else if (scoreAvg !== null) lowlights.push(`Score (${scoreAvg.toFixed(2).replace('.',',')}) — abaixo da meta de 4,5 ⚠️`);
+  if (scoreAvg !== null && scoreAvg >= 4.70) highlights.push(`Score alto (${scoreAvg.toFixed(2).replace('.',',')}) — acima da meta de 4,70 ⭐`);
+  else if (scoreAvg !== null) lowlights.push(`Score (${scoreAvg.toFixed(2).replace('.',',')}) — abaixo da meta de 4,70 ⚠️`);
 
   if (fin > teamFin) highlights.push(`Finalizações acima da média do time (${fmtInt(fin)} vs ${fmtInt(teamFin)}) 📈`);
   else if (fin < teamFin && fin > 0) lowlights.push(`Finalizações abaixo da média do time (${fmtInt(fin)} vs ${fmtInt(teamFin)}) 📉`);

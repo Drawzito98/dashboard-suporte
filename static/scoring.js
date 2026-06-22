@@ -2,9 +2,9 @@
 const SCORING_STORAGE_KEY = 'sistema_scoring_rules_v1';
 const DEFAULT_SCORING_RULES = [
   { id: 'finalizado', name: 'Finalizado', desc: 'Por cada chamado finalizado', icon: '✅', defaultValue: 1, key: 'Finalizados' },
-  { id: 'score_alto', name: 'Score alto (>= 4.5)', desc: 'Score >= 4.5 pontos', icon: '⭐', defaultValue: 2, key: 'SCORE', threshold: 4.5 },
+  { id: 'score_alto', name: 'Score alto (>= 4.70)', desc: 'Score >= 4.70 pontos', icon: '⭐', defaultValue: 2, key: 'SCORE', threshold: 4.70 },
   { id: 'meta_atingida', name: 'Meta atingida', desc: 'Objetivo do mês cumprido', icon: '🎯', defaultValue: 5, key: 'Objetivo' },
-  { id: 'nota_baixa', name: 'Nota baixa', desc: 'Score abaixo de 4.5', icon: '⚠️', defaultValue: -3, key: 'SCORE', threshold: 4.5, negative: true },
+  { id: 'nota_baixa', name: 'Nota baixa', desc: 'Score abaixo de 4.70', icon: '⚠️', defaultValue: -3, key: 'SCORE', threshold: 4.70, negative: true },
   { id: 'assumido', name: 'Chamado assumido', desc: 'Por cada chamado assumido', icon: '📞', defaultValue: 0.5, key: 'Assumidos' },
   { id: 'transferido', name: 'Transferido', desc: 'Por cada chamado transferido (neutro)', icon: '🔄', defaultValue: 0, key: 'Transferidos' },
   { id: 'pontos_extras', name: 'Bônus manual', desc: 'Pontos extras atribuídos manualmente (auxílio, projetos, etc)', icon: '🌟', defaultValue: 1, key: 'Bonus' },

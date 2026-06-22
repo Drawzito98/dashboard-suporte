@@ -417,14 +417,14 @@ const globalFilters = {
 };
 
 // ===== Função global de classificação de score =====
-// 🟢 >= 4.75 Excelente | 🟡 4.70–4.74 Atenção | 🔴 < 4.70 Crítico
+// 🟢 >= 4.70 Excelente (meta) | 🟡 4.50–4.69 Atenção | 🔴 < 4.50 Crítico
 function getClasseScore(score) {
   if (score === null || score === undefined || isNaN(Number(score))) {
     return 'score-neutro';
   }
   const n = Number(score);
-  if (n < 4.70) return 'score-critico';
-  if (n < 4.75) return 'score-atencao';
+  if (n < 4.50) return 'score-critico';
+  if (n < 4.70) return 'score-atencao';
   return 'score-excelente';
 }
 

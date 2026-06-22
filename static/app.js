@@ -2496,8 +2496,8 @@ function buildReportText() {
     const nomes = highProd.slice(0, 3).map(x => x.displayName).join(', ');
     destaques.push(`  ✅ Produtividade alta (≥85%): ${nomes}.`);
   }
-  if (ranking.filter(x => x.avgScore !== null && x.avgScore >= 4.5).length >= 3) {
-    destaques.push(`  ✅ ${ranking.filter(x => x.avgScore >= 4.5).length} colaboradores com score ≥ 4,5 — qualidade consistente.`);
+  if (ranking.filter(x => x.avgScore !== null && x.avgScore >= 4.70).length >= 3) {
+    destaques.push(`  ✅ ${ranking.filter(x => x.avgScore >= 4.70).length} colaboradores com score ≥ 4,70 — qualidade consistente.`);
   }
   if (avgScore !== null && avgScore >= 4.2) {
     destaques.push(`  ✅ Score médio da equipe em ${fmtScore(avgScore)} — acima do ideal.`);
@@ -2532,9 +2532,9 @@ function buildReportText() {
     atencoes.push(`  ⚠️  Produtividade baixa: ${lowProdList.slice(0, 3).map(x => x.displayName).join(', ')}${lowProdList.length > 3 ? ` e mais ${lowProdList.length - 3}` : ''}.`);
   }
   if (lowScore.length) {
-    const abaixo45 = lowScore.filter(x => x.avgScore < 4.5);
-    if (abaixo45.length) {
-      atencoes.push(`  ⚠️  Score abaixo de 4,5: ${abaixo45.slice(0, 3).map(x => `${x.displayName} (${fmtScore(x.avgScore)})`).join(', ')}${abaixo45.length > 3 ? ` e mais ${abaixo45.length - 3}` : ''}.`);
+    const abaixo70 = lowScore.filter(x => x.avgScore < 4.70);
+    if (abaixo70.length) {
+      atencoes.push(`  ⚠️  Score abaixo da meta (4,70): ${abaixo70.slice(0, 3).map(x => `${x.displayName} (${fmtScore(x.avgScore)})`).join(', ')}${abaixo70.length > 3 ? ` e mais ${abaixo70.length - 3}` : ''}.`);
     }
   }
   if (!atencoes.length) atencoes.push('  ✅  Nenhum ponto crítico identificado neste período.');
