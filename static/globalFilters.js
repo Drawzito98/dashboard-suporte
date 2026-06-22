@@ -335,6 +335,9 @@ const globalFilters = {
     } else {
       cols = [...new Set(rawRecords.filter(r => r && r['Atendente'] && String(r['Setor']) === setorVal).map(r => r['Atendente']))].sort();
     }
+    if (typeof isColabActive === 'function') {
+      cols = cols.filter(c => isColabActive(c));
+    }
     const current = colab.value;
     colab.innerHTML = '<option value="all">Todos</option>' + cols.map(v =>
       `<option value="${String(v).replace(/"/g, '&quot;')}">${String(v).replace(/"/g, '&quot;')}</option>`
