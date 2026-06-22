@@ -373,6 +373,7 @@ function normalizeAtendenteOnRecords(records) {
   explicitMultiSetorNames = new Set();
   (records || []).forEach(r => {
     if (!r) return;
+    if (typeof r['Atendente'] === 'string') r['Atendente'] = r['Atendente'].trim();
     const { base, tagged } = stripMultiSetorTag(r['Atendente']);
     if (base !== r['Atendente']) r['Atendente'] = base;
     if (tagged && base) explicitMultiSetorNames.add(base);
