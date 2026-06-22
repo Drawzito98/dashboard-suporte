@@ -88,7 +88,11 @@ function renderTarefas() {
     for (const t of filtered) {
       const concluida = t.status === 'concluida';
       html += `<div style="display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3) var(--s-4);border:1px solid var(--border);border-radius:var(--r-md);${concluida ? 'opacity:.6' : ''}">`;
-      html += `<button class="tarefa-toggle-btn" data-id="${t.id}" style="background:none;border:none;cursor:pointer;font-size:18px;padding:0" title="${concluida ? 'Reabrir' : 'Concluir'}">${concluida ? '✅' : '⬜'}</button>`;
+      html += `<select class="tarefa-status-select" data-id="${t.id}" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-card);color:var(--text);cursor:pointer">`;
+      for (const [val, label] of Object.entries(STATUS_LABEL)) {
+        html += `<option value="${val}"${val === t.status ? ' selected' : ''}>${label}</option>`;
+      }
+      html += '</select>';
       html += `<div style="flex:1;min-width:0">`;
       html += `<div style="display:flex;align-items:center;gap:var(--s-2)">`;
       html += `<strong style="font-size:14px;${concluida ? 'text-decoration:line-through' : ''}">${escapeHtml(t.titulo)}</strong>`;
@@ -186,14 +190,13 @@ function bindTarefaEvents(saved) {
     });
   }
 
-  // Toggle concluir/reabrir
-  container.querySelectorAll('.tarefa-toggle-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
+  // Status selector
+  container.querySelectorAll('.tarefa-status-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
       if (!requireAdmin()) return;
-      const t = saved.find(x => x.id === btn.dataset.id);
+      const t = saved.find(x => x.id === sel.dataset.id);
       if (!t) return;
-      const newStatus = t.status === 'concluida' ? 'pendente' : 'concluida';
-      t.status = newStatus;
+      t.status = sel.value;
       await dbTarefasSave(t);
       renderTarefas();
     });
