@@ -3054,6 +3054,9 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'colaboradores' && typeof onColaboradoresTabActivated === 'function') {
         onColaboradoresTabActivated();
       }
+      if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') {
+        onRelatorioSetorialTabActivated();
+      }
       if (tab === 'dashboard') {
         updateView();
       }
