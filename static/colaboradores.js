@@ -389,6 +389,9 @@ function openColabDetailOverlay(nome) {
 document.getElementById('colabReportClose')?.addEventListener('click', () => {
   document.getElementById('colabReportOverlay')?.classList.remove('open');
 });
+document.getElementById('colabReportPrint')?.addEventListener('click', () => {
+  window.print();
+});
 
 function onColaboradoresTabActivated() {
   const container = document.getElementById('colaboradoresContent');

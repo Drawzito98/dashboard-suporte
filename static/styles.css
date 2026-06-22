@@ -820,6 +820,10 @@ body.meeting-mode .menu-dd { display: none !important; }
   .layout { grid-template-columns: 1fr; }
   .card, .panel, .kpi { box-shadow: none; border: 1px solid #e5e9f0; background: #fff !important; color: #0f172a !important; }
   .kpi .value { color: #0f172a !important; }
+  .colab-detail-overlay { position: static !important; display: block !important; background: none !important; padding: 0 !important; }
+  .colab-detail-panel { max-width: 100% !important; box-shadow: none !important; border: none !important; padding: 0 !important; overflow: visible !important; max-height: none !important; }
+  .colab-detail-close, .colab-detail-print { display: none !important; }
+  .report-header { padding: 0 !important; }
 }
 
 /* =====================================================
@@ -1325,6 +1329,24 @@ body.meeting-mode .menu-dd { display: none !important; }
   transition: all var(--t-fast);
 }
 .colab-detail-close:hover { background: var(--bg-subtle); color: var(--text-primary); }
+.colab-detail-print {
+  position: absolute;
+  top: var(--s-4);
+  right: calc(var(--s-4) + 40px);
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-surface);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all var(--t-fast);
+}
+.colab-detail-print:hover { background: var(--bg-subtle); color: var(--text-primary); }
 .colab-detail-header {
   display: flex;
   align-items: center;
