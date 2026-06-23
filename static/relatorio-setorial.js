@@ -460,7 +460,7 @@ function renderRelatorioSetorial() {
           },
           scales: {
             y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(148,163,184,0.12)' }, ticks: { font: { size: 10 } } },
-            y1: { beginAtZero: true, suggestedMax: 5, position: 'right', grid: { display: false }, ticks: { font: { size: 10 } } },
+            y1: { beginAtZero: true, suggestedMax: 5, grace: 0.8, position: 'right', grid: { display: false }, ticks: { font: { size: 10 } } },
             x: { grid: { display: false }, ticks: { font: { size: 10 } } }
           }
         }
