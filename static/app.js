@@ -2124,7 +2124,7 @@ function renderChart(rows) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      layout: { padding: { top: 32, right: 12, bottom: 4, left: 4 } },
+      layout: { padding: { top: 48, right: 12, bottom: 4, left: 4 } },
       plugins: {
         valueLabels: { integer: false },
         legend: { display: true, position: 'bottom', align: 'center', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 } } },
@@ -2143,8 +2143,8 @@ function renderChart(rows) {
         }
       },
       scales: {
-        y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 } } },
-        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5, ticks: { font: { size: 11.5 }, callback: v => Number(v).toFixed(2) } },
+        y: { beginAtZero: true, grace: '25%', position: 'left', grid: { color: 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 } } },
+          y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, callback: v => Number(v).toFixed(2) } },
         x: { grid: { display: false }, ticks: { font: { size: 11.5 } } }
       }
     }
