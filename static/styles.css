@@ -1807,16 +1807,18 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 }
 :root:not([data-theme="dark"]) .rs-container .rs-list {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 :root:not([data-theme="dark"]) .rs-container .rs-list-item {
-  font-size: 13px;
-  line-height: 1.6;
-  padding: 10px 14px;
-  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 6px 12px;
+  border-radius: 6px;
   border: 1px solid #e2e8f0;
   background: #ffffff;
+  display: inline-block;
+  width: auto;
 }
 :root:not([data-theme="dark"]) .rs-container .rs-list-success .rs-list-item {
   border-left: 3px solid #16a34a;
