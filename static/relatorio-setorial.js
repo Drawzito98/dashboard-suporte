@@ -432,20 +432,31 @@ function renderRelatorioSetorial() {
           plugins: {
             legend: { display: false },
             datalabels: {
-              display: (ctx) => {
-                const i = ctx.dataIndex;
-                return monthData[i]?.sc > 0;
-              },
-              color: '#6366f1',
-              font: { weight: 'bold', size: 9.5 },
-              formatter: (value, ctx) => {
-                const i = ctx.dataIndex;
-                const sc = monthData[i]?.sc;
-                return sc > 0 ? '☆ ' + Number(sc).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
-              },
-              anchor: 'end',
-              align: 'end',
-              offset: 2
+              labels: {
+                value: {
+                  anchor: 'center',
+                  align: 'center',
+                  color: '#fff',
+                  font: { weight: 'bold', size: 10 },
+                  formatter: value => value.toLocaleString('pt-BR')
+                },
+                score: {
+                  display: ctx => {
+                    const i = ctx.dataIndex;
+                    return monthData[i]?.sc > 0;
+                  },
+                  anchor: 'end',
+                  align: 'end',
+                  color: '#6366f1',
+                  font: { weight: 'bold', size: 9.5 },
+                  formatter: (value, ctx) => {
+                    const i = ctx.dataIndex;
+                    const sc = monthData[i]?.sc;
+                    return sc > 0 ? '☆ ' + Number(sc).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+                  },
+                  offset: 2
+                }
+              }
             },
             tooltip: {
               callbacks: {
@@ -458,7 +469,7 @@ function renderRelatorioSetorial() {
             }
           },
           scales: {
-            y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(148,163,184,0.12)' }, ticks: { font: { size: 10 } } },
+            y: { beginAtZero: true, grace: '20%', position: 'left', grid: { color: 'rgba(148,163,184,0.12)' }, ticks: { font: { size: 10 } } },
             x: { grid: { display: false }, ticks: { font: { size: 10 } } }
           }
         }
