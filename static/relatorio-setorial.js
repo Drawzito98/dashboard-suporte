@@ -353,6 +353,10 @@ function renderRelatorioSetorial() {
     const pieCanvas = document.getElementById('rsPieChart');
     if (pieCanvas) {
       const sorted = setorMetrics.slice().sort((a, b) => b.fin - a.fin);
+      const totalPie = sorted.reduce((s, x) => s + x.fin, 0);
+      if (typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+      }
       window.__rsCharts.pieChart = new Chart(pieCanvas.getContext('2d'), {
         type: 'doughnut',
         data: {
@@ -367,7 +371,7 @@ function renderRelatorioSetorial() {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '55%',
+          cutout: '58%',
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -377,6 +381,19 @@ function renderRelatorioSetorial() {
                   const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
                   return ` ${ctx.label}: ${ctx.parsed.toLocaleString('pt-BR')} (${pct}%)`;
                 }
+              }
+            },
+            datalabels: {
+              color: '#fff',
+              font: { weight: 'bold', size: 11 },
+              formatter: (value) => {
+                const pct = totalPie > 0 ? (value / totalPie * 100) : 0;
+                return pct >= 5 ? pct.toFixed(1) + '%' : '';
+              },
+              offset: 2,
+              display: (ctx) => {
+                const pct = totalPie > 0 ? (ctx.dataset.data[ctx.dataIndex] / totalPie * 100) : 0;
+                return pct >= 5;
               }
             }
           }
