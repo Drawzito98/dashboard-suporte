@@ -592,7 +592,7 @@ function resetPanelState() {
   if (atendenteSelect) atendenteSelect.value = 'all';
   if (arquivoSelect) arquivoSelect.value = 'all';
   if (viewSelect) viewSelect.value = 'attendee';
-  if (metricSelect) metricSelect.value = 'Finalizados';
+  if (metricSelect) metricSelect.value = 'Desempenho';
   if (searchAtendenteInput) searchAtendenteInput.value = '';
 
   // reset compare + ocultos + ordenação
@@ -723,7 +723,7 @@ function applySavedState(state) {
     if (atendenteSelect && state.filters?.atendente) atendenteSelect.value = state.filters.atendente;
     if (arquivoSelect && state.filters?.arquivo) arquivoSelect.value = state.filters.arquivo;
 
-    if (metricSelect && state.filters?.metric) metricSelect.value = state.filters.metric;
+    if (metricSelect) metricSelect.value = 'Desempenho';
     if (searchAtendenteInput && typeof state.filters?.search === 'string') searchAtendenteInput.value = state.filters.search;
     if (viewSelect && state.filters?.view) viewSelect.value = state.filters.view;
 
@@ -2072,91 +2072,10 @@ function sortRows(rows, key, desc=true) {
 
 function renderChart(rows) {
   if (!rows) return;
-  const metric = metricSelect.value;
-  // Charts should not include aggregate rows (e.g. "Média Setor", "Total/Média CG").
   const rowsForChart = (rows || []).filter(r => !isAggregateName(r['Atendente']));
 
   if (!rowsForChart.length) { setChartEmpty(true, 'Ajuste os filtros ou importe novos arquivos.'); return; }
   setChartEmpty(false);
-
-  if (metric === 'Finalizados' || metric === 'Assumidos' || metric === 'Transferidos') {
-    // group by Atendente and sum the selected integer metric
-    const field = metric; // field names match metric values
-    const map = new Map();
-    const searchTerm = (searchAtendenteInput?.value || '').trim().toLowerCase();
-    rowsForChart.forEach(row => {
-      const k = row['Atendente'] || 'Sem nome';
-      if (searchTerm) {
-        const nm = String(row['Atendente'] || '').toLowerCase();
-        if (!nm.includes(searchTerm)) return;
-      }
-      if (hiddenLabels.has(k)) return;
-      const v = Number(row[field] || 0);
-      map.set(k, (map.get(k) || 0) + (isNaN(v) ? 0 : v));
-    });
-    const aliasMap = buildAliasMap(Array.from(map.keys()));
-    let labels = Array.from(map.keys());
-    let data = Array.from(map.values());
-    // Order by value descending, but keep selected atendente(s) first if present
-    const selectedAt = getSelectedAtendentes();
-    if (selectedAt && selectedAt.length > 0) {
-      const present = selectedAt.filter(d => labels.includes(d));
-      const restPairs = labels
-        .filter(l => !present.includes(l))
-        .map(l => ({ l, v: map.get(l) }))
-        .sort((a,b) => b.v - a.v);
-      const rest = restPairs.map(p => p.l);
-      const ordered = [...present, ...rest];
-      const orderedData = ordered.map(l => map.get(l));
-      labels = ordered; data = orderedData;
-    } else {
-      const pairs = labels.map((l,i) => ({ l, v: data[i] }));
-      pairs.sort((a,b) => b.v - a.v);
-      labels = pairs.map(p => p.l);
-      data = pairs.map(p => p.v);
-    }
-    drawBar(labels.map(l => getDisplayName(l, aliasMap)), data, `${field} (soma)`, { integer: true });
-  } else if (metric === 'Score') {
-    // Show average SCORE per Atendente. If setor/mes filters are set, limit to them;
-    // otherwise show overall averages so it's easy to see who has the highest mean.
-    const setorSel = setorSelect.value;
-    const mesSel = getActiveMonths();
-    const selectedAt = getSelectedAtendentes();
-    const map = new Map();
-    const count = new Map();
-    rowsForChart.forEach(r => {
-      if (setorSel !== 'all' && String(r['Setor']) !== setorSel) return;
-      if (mesSel.length && !mesSel.includes(String(r['Mês']))) return;
-      const k = r['Atendente'] || 'Sem nome';
-      if (hiddenLabels.has(k)) return;
-      const v = r['SCORE'];
-      if (v == null || v === '') return;
-      const n = Number(v);
-      if (isNaN(n)) return;
-      map.set(k, (map.get(k) || 0) + n);
-      count.set(k, (count.get(k) || 0) + 1);
-    });
-    let labels = Array.from(map.keys());
-    if (labels.length === 0) {
-      replaceChart({ type: 'bar', data: { labels: [], datasets: [] }, options: { plugins: { legend: { display: false } } } });
-      return;
-    }
-    let data = labels.map(l => Number((map.get(l) / count.get(l)).toFixed(2)));
-    if (selectedAt && selectedAt.length > 0) {
-      const present = selectedAt.filter(d => labels.includes(d));
-      const rest = labels.filter(l => !present.includes(l)).sort((a,b) => String(a).localeCompare(String(b), 'pt'));
-      const ordered = [...present, ...rest];
-      const orderedData = ordered.map(l => data[labels.indexOf(l)]);
-      labels = ordered; data = orderedData;
-    } else {
-      // order by descending average so top collaborators appear first
-      const pairs = labels.map((l,i) => ({ l, avg: data[i] }));
-      pairs.sort((a,b) => b.avg - a.avg);
-      labels = pairs.map(p => p.l);
-      data = pairs.map(p => p.avg);
-    }
-    drawBar(labels.map(l => getDisplayName(l, aliasMap)), data, 'Média Score por Atendente', { integer: false });
-  } else if (metric === 'Desempenho') {
     const searchTerm = (searchAtendenteInput?.value || '').trim().toLowerCase();
     const selectedAt = getSelectedAtendentes();
     const finMap = new Map(), assMap = new Map(), scMap = new Map(), scCount = new Map();
@@ -2242,7 +2161,8 @@ function renderTimelineChart(rows) {
     setChartEmpty(true, 'Gráfico indisponível: a biblioteca Chart.js não foi carregada.');
     return;
   }
-  const metric = metricSelect.value;
+  const rawMetric = metricSelect.value;
+  const metric = rawMetric === 'Desempenho' ? 'Finalizados' : rawMetric;
 
   // Para evolução mensal, usamos as linhas individuais (sem agregados)
   const base = (rows || []).filter(r => !isAggregateName(r['Atendente']));
