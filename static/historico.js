@@ -64,20 +64,20 @@ function renderHistorico() {
                 const label = actionLabels[e.action] || e.action;
                 let detalhes = '';
                 if (e.action === 'edit' && e.campo) {
-                  detalhes = \`<span style="font-size:12px"><code>\${escapeHtml(e.campo)}</code>: \${escapeHtml(e.before || '—')} → \${escapeHtml(e.after || '—')}</span>\`;
+                  detalhes = `<span style="font-size:12px"><code>${escapeHtml(e.campo)}</code>: ${escapeHtml(e.before || '—')} → ${escapeHtml(e.after || '—')}</span>`;
                 } else if (e.detalhes) {
                   detalhes = escapeHtml(e.detalhes);
                 }
                 const ts = new Date(e.ts);
                 const dataStr = ts.toLocaleString('pt-BR');
-                return \`<tr>
-                  <td style="font-size:11px;white-space:nowrap">\${escapeHtml(dataStr)}</td>
-                  <td style="font-size:12px">\${escapeHtml(e.user)}</td>
-                  <td>\${icone} \${label}</td>
-                  <td>\${escapeHtml(e.colaborador || '—')}</td>
-                  <td>\${escapeHtml(e.mes || '—')}</td>
-                  <td style="font-size:12px">\${detalhes || '—'}</td>
-                </tr>\`;
+                return `<tr>
+                  <td style="font-size:11px;white-space:nowrap">${escapeHtml(dataStr)}</td>
+                  <td style="font-size:12px">${escapeHtml(e.user)}</td>
+                  <td>${icone} ${label}</td>
+                  <td>${escapeHtml(e.colaborador || '—')}</td>
+                  <td>${escapeHtml(e.mes || '—')}</td>
+                  <td style="font-size:12px">${detalhes || '—'}</td>
+                </tr>`;
               }).join('')}
             </tbody>
           </table>
