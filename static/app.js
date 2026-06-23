@@ -2488,7 +2488,7 @@ function getCurrentFilteredRows() {
   return rawRecords.filter(r => {
     if (!r) return false;
     if (setorVal !== 'all' && String(r['Setor']) !== setorVal) return false;
-    if (setorVal === 'all' && typeof isSetorActive === 'function' && !isSetorActive(String(r['Setor']))) return false;
+    if (setorVal === 'all' && typeof isSetorActive === 'function' && !isSetorActive(String(r['Setor']).trim())) return false;
     if (mesVal.length && !mesVal.includes(String(r['Mês']))) return false;
     if (arquivoVal !== 'all' && String(r['Arquivo']) !== arquivoVal) return false;
     if (selectedAt && selectedAt.length && !selectedAt.includes('all')) {

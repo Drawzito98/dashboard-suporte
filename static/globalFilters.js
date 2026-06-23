@@ -57,7 +57,7 @@ const globalFilters = {
     if (this.setor && this.setor !== 'all') {
       data = data.filter(r => String(r['Setor']) === this.setor);
     } else if (typeof isSetorActive === 'function') {
-      data = data.filter(r => isSetorActive(String(r['Setor'])));
+      data = data.filter(r => isSetorActive(String(r['Setor']).trim()));
     }
 
     if (this.colaborador && this.colaborador !== 'all') {

@@ -373,7 +373,7 @@ async function dbSetorInativosLoad() {
       const names = data.map(r => r.nome);
       localStorage.setItem(INATIVOS_SETORES_LOCAL_KEY, JSON.stringify(names));
       if (typeof window.__inactiveSetores !== 'undefined') {
-        window.__inactiveSetores = new Set(names);
+        names.forEach(n => window.__inactiveSetores.add(n));
       }
       return new Set(names);
     }
