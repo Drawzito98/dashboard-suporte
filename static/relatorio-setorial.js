@@ -276,14 +276,22 @@ function renderRelatorioSetorial() {
   const pessoasSection = (() => {
     const colabScore = {};
     const colabFin = {};
+    const colabMeses = {};
+    const latestMonth = meses[meses.length - 1];
+    const activeNow = new Set(
+      rows.filter(r => String(r['Mês']) === latestMonth).map(r => r['Atendente']).filter(Boolean)
+    );
     rows.forEach(r => {
       const n = r['Atendente'];
       if (!n || isAggregateName(n)) return;
-      if (!colabScore[n]) { colabScore[n] = []; colabFin[n] = 0; }
+      if (!colabScore[n]) { colabScore[n] = []; colabFin[n] = 0; colabMeses[n] = new Set(); }
       if (r['SCORE'] != null && !isNaN(Number(r['SCORE']))) colabScore[n].push(Number(r['SCORE']));
       colabFin[n] += parseInt(r['Finalizados']) || 0;
+      colabMeses[n].add(r['Mês']);
     });
-    const candidates = Object.keys(colabScore).filter(n => colabScore[n].length >= 2).map(n => ({
+    const candidates = Object.keys(colabScore)
+      .filter(n => activeNow.has(n) && colabScore[n].length >= 2 && colabMeses[n].size >= 2)
+      .map(n => ({
       nome: n,
       score: colabScore[n].reduce((a, b) => a + b, 0) / colabScore[n].length,
       fin: colabFin[n]
