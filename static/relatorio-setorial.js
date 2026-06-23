@@ -314,28 +314,24 @@ function renderRelatorioSetorial() {
 
   // ── Próximos passos e plano de ação ──
   const passos = [];
-  if (lowScoreSetores.length) {
-    lowScoreSetores.forEach(s => {
-      passos.push(`Revisar processo do setor \u201C${escapeHtml(s.nome)}\u201D para elevar o score (atual: ${fmtScore(s.scAvg)}). Meta: 4,70+`);
-    });
-  }
-  if (highTransf.length) {
-    highTransf.forEach(s => {
+  const MEDIA_SCORE = 4.5;
+  const ALTA_TRANSF = 0.25;
+  const BAIXA_PROD = 0.7;
+
+  setorMetrics.forEach(s => {
+    if (s.scAvg > 0 && s.scAvg < MEDIA_SCORE) {
+      passos.push(`Revisar processo do setor \u201C${escapeHtml(s.nome)}\u201D para elevar o score (atual: ${fmtScore(s.scAvg)}). Meta: ${MEDIA_SCORE}+`);
+    } else if (s.taxaT > ALTA_TRANSF) {
       passos.push(`Reduzir taxa de transferência do setor \u201C${escapeHtml(s.nome)}\u201D (${fmtPct(s.taxaT)}). Investigar causas e criar plano de ação.`);
-    });
-  }
-  if (lowProd.length) {
-    lowProd.forEach(s => {
+    } else if (s.prod < BAIXA_PROD) {
       passos.push(`Melhorar produtividade do setor \u201C${escapeHtml(s.nome)}\u201D (${fmtPct(s.prod)}). Avaliar carga e distribuição de chamados.`);
-    });
-  }
-  if (!passos.length && avgScore >= 4.5) {
-    passos.push('Manter o padrão atual de qualidade e produtividade.');
+    } else {
+      passos.push(`Manter o padrão de qualidade e produtividade do setor \u201C${escapeHtml(s.nome)}\u201D (score ${fmtScore(s.scAvg)}, prod ${fmtPct(s.prod)}).`);
+    }
+  });
+
+  if (avgScore >= MEDIA_SCORE) {
     passos.push('Monitorar indicadores mensalmente para detecção precoce de desvios.');
-  }
-  if (!passos.length) {
-    passos.push('Estabelecer metas individuais e por setor para o próximo período.');
-    passos.push('Realizar feedbacks individuais com base nos dados do relatório.');
   }
   passos.push('Agendar próxima revisão de indicadores em 30 dias.');
 
