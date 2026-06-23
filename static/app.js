@@ -815,15 +815,18 @@ const valueLabelPlugin = {
         else if (isCount) text = String(Math.round(raw));
         else text = showInteger ? String(Math.round(raw)) : fmt2(raw);
         ctx.save();
-        ctx.font = '12px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
-        ctx.fillStyle = (typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : (document.documentElement.classList.contains('dark') || document.body.classList.contains('dark') ? '#e2e8f0' : '#334155');
+        ctx.font = isScore || isCount ? '14px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial' : '12px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
+        ctx.fillStyle = isScore ? '#f59e0b' : ((typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : (document.documentElement.classList.contains('dark') || document.body.classList.contains('dark') ? '#e2e8f0' : '#334155'));
+        if (isCount) ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        // element has x and y for point/bar top
+        ctx.textBaseline = isScore ? 'bottom' : 'bottom';
         const x = element.x !== undefined ? element.x : (element.getCenterPoint ? element.getCenterPoint().x : null);
         const y = element.y !== undefined ? element.y : (element.getCenterPoint ? element.getCenterPoint().y : null);
         if (x == null || y == null) { ctx.restore(); return; }
-        const yOffset = -8; // place slightly above
+        const yOffset = isScore ? -16 : -8;
+        if (isCount) ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        if (isCount) ctx.lineWidth = 2.5;
+        if (isCount) ctx.strokeText(text, x, y + yOffset);
         ctx.fillText(text, x, y + yOffset);
         ctx.restore();
       });
@@ -2156,6 +2159,80 @@ function renderChart(rows) {
       data = pairs.map(p => p.avg);
     }
     drawBar(labels.map(l => getDisplayName(l, aliasMap)), data, 'Média Score por Atendente', { integer: false });
+  } else if (metric === 'Desempenho') {
+    const searchTerm = (searchAtendenteInput?.value || '').trim().toLowerCase();
+    const selectedAt = getSelectedAtendentes();
+    const finMap = new Map(), assMap = new Map(), scMap = new Map(), scCount = new Map();
+    rowsForChart.forEach(r => {
+      const k = r['Atendente'] || 'Sem nome';
+      if (searchTerm) { const nm = String(k).toLowerCase(); if (!nm.includes(searchTerm)) return; }
+      if (hiddenLabels.has(k)) return;
+      const fin = parseInt(r['Finalizados']) || 0;
+      const ass = parseInt(r['Assumidos']) || 0;
+      const sc = r['SCORE'];
+      finMap.set(k, (finMap.get(k) || 0) + fin);
+      assMap.set(k, (assMap.get(k) || 0) + ass);
+      if (sc != null && !isNaN(Number(sc))) {
+        scMap.set(k, (scMap.get(k) || 0) + Number(sc));
+        scCount.set(k, (scCount.get(k) || 0) + 1);
+      }
+    });
+    let labels = Array.from(finMap.keys());
+    if (!labels.length) { replaceChart({ type: 'bar', data: { labels: [], datasets: [] }, options: { plugins: { legend: { display: false } } } }); return; }
+    if (selectedAt && selectedAt.length) {
+      const present = selectedAt.filter(d => labels.includes(d));
+      const rest = labels.filter(l => !present.includes(l)).sort((a,b) => (finMap.get(b)||0) - (finMap.get(a)||0));
+      labels = [...present, ...rest];
+    } else {
+      labels.sort((a,b) => (finMap.get(b)||0) - (finMap.get(a)||0));
+    }
+    const aliasMap = buildAliasMap(labels);
+    const displayLabels = labels.map(l => getDisplayName(l, aliasMap));
+    const finData = labels.map(l => finMap.get(l) || 0);
+    const assData = labels.map(l => assMap.get(l) || 0);
+    const scData = labels.map(l => { const s = scMap.get(l), c = scCount.get(l); return c ? Number((s/c).toFixed(2)) : null; });
+    sizeChartInnerForLabels(labels.length, 110);
+    const bgFin = labels.map((_,i) => `rgba(16,185,129,0.85)`);
+    const bgAss = labels.map((_,i) => `rgba(37,99,235,0.85)`);
+    const cfg = {
+      type: 'bar',
+      data: {
+        labels: displayLabels,
+        datasets: [
+          { label: 'Assumidos', data: assData, backgroundColor: bgAss, borderRadius: 3, yAxisID: 'y' },
+          { label: 'Finalizados', data: finData, backgroundColor: bgFin, borderRadius: 3, yAxisID: 'y' },
+          { label: 'Score', type: 'line', data: scData, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.15)', pointBackgroundColor: '#f59e0b', pointRadius: 4, pointHoverRadius: 6, tension: 0.3, fill: true, yAxisID: 'y1' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { top: 32, right: 12, bottom: 4, left: 4 } },
+        plugins: {
+          valueLabels: { integer: false },
+          legend: { display: true, position: 'bottom', align: 'center', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 } } },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+            titleColor: '#f8fafc', bodyColor: '#e2e8f0',
+            borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+            padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6,
+            callbacks: {
+              label: (ctx) => {
+                const v = ctx.parsed && ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.raw;
+                if ((ctx.dataset.label || '').includes('Score')) return `Score: ${Number(v).toFixed(2)}`;
+                return `${ctx.dataset.label}: ${Math.round(v).toLocaleString('pt-BR')}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 } } },
+          y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5, ticks: { font: { size: 11.5 }, callback: v => Number(v).toFixed(2) } },
+          x: { grid: { display: false }, ticks: { font: { size: 11.5 } } }
+        }
+      }
+    };
+    replaceChart(cfg);
   }
 }
 
