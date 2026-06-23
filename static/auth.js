@@ -146,11 +146,57 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ── Esqueci minha senha ──
+  const forgotPwdBtn = document.getElementById('forgotPwdBtn');
+  const forgotForm = document.getElementById('authForgotForm');
+  const forgotBackBtn = document.getElementById('forgotBackBtn');
+  const forgotSendBtn = document.getElementById('forgotSendBtn');
+
+  if (forgotPwdBtn && forgotForm && loginForm) {
+    forgotPwdBtn.addEventListener('click', () => {
+      loginForm.style.display = 'none';
+      forgotForm.style.display = '';
+      document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value;
+      document.getElementById('forgotError').classList.add('hidden');
+      document.getElementById('forgotSuccess').classList.add('hidden');
+    });
+    forgotBackBtn?.addEventListener('click', () => {
+      forgotForm.style.display = 'none';
+      loginForm.style.display = '';
+      document.getElementById('forgotError').classList.add('hidden');
+      document.getElementById('forgotSuccess').classList.add('hidden');
+    });
+    forgotSendBtn?.addEventListener('click', async () => {
+      const email = document.getElementById('forgotEmail').value.trim();
+      const errEl = document.getElementById('forgotError');
+      const sucEl = document.getElementById('forgotSuccess');
+      if (!email) { if (errEl) { errEl.textContent = 'Digite seu email.'; errEl.classList.remove('hidden'); } return; }
+      if (errEl) errEl.classList.add('hidden');
+      if (sucEl) sucEl.classList.add('hidden');
+      setAuthLoading(true);
+      const { error } = await sbClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin
+      });
+      setAuthLoading(false);
+      if (error) {
+        if (errEl) { errEl.textContent = error.message; errEl.classList.remove('hidden'); }
+      } else {
+        if (sucEl) {
+          sucEl.textContent = 'Email de recuperação enviado! Verifique sua caixa de entrada.';
+          sucEl.classList.remove('hidden');
+        }
+      }
+    });
+  }
+
   // Enter key nos campos de login/register
   document.getElementById('loginPassword')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') loginBtn?.click();
   });
   document.getElementById('registerPassword')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') registerBtn?.click();
+  });
+  document.getElementById('forgotEmail')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') forgotSendBtn?.click();
   });
 });

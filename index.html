@@ -49,7 +49,19 @@
           <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password"/>
         </label>
         <button id="loginBtn" class="btn-primary" type="button" style="width:100%;justify-content:center;margin-top:var(--s-3)">Entrar</button>
+        <button id="forgotPwdBtn" type="button" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;margin-top:var(--s-2);width:100%;text-align:center;padding:4px 0">Esqueci minha senha</button>
         <div id="loginError" class="auth-error hidden"></div>
+      </div>
+      <div id="authForgotForm" style="display:none">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-3)">Digite seu email para receber o link de recuperação.</p>
+        <label class="field">
+          <span>Email</span>
+          <input id="forgotEmail" type="email" placeholder="seu@email.com" autocomplete="email"/>
+        </label>
+        <button id="forgotSendBtn" class="btn-primary" type="button" style="width:100%;justify-content:center;margin-top:var(--s-2)">Enviar link</button>
+        <button id="forgotBackBtn" type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:12px;margin-top:var(--s-2);width:100%;text-align:center;padding:4px 0">Voltar ao login</button>
+        <div id="forgotError" class="auth-error hidden"></div>
+        <div id="forgotSuccess" class="auth-success hidden" style="font-size:13px"></div>
       </div>
       <div id="authRegisterForm" style="display:none">
         <label class="field">
