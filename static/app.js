@@ -817,16 +817,13 @@ const valueLabelPlugin = {
         ctx.save();
         ctx.font = isScore || isCount ? '14px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial' : '12px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
         ctx.fillStyle = isScore ? '#f59e0b' : ((typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : (document.documentElement.classList.contains('dark') || document.body.classList.contains('dark') ? '#e2e8f0' : '#334155'));
-        if (isCount) ctx.fillStyle = '#fff';
+        if (isCount) ctx.fillStyle = '#1e293b';
         ctx.textAlign = 'center';
         ctx.textBaseline = isScore ? 'bottom' : 'bottom';
         const x = element.x !== undefined ? element.x : (element.getCenterPoint ? element.getCenterPoint().x : null);
         const y = element.y !== undefined ? element.y : (element.getCenterPoint ? element.getCenterPoint().y : null);
         if (x == null || y == null) { ctx.restore(); return; }
         const yOffset = isScore ? -16 : -8;
-        if (isCount) ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-        if (isCount) ctx.lineWidth = 2.5;
-        if (isCount) ctx.strokeText(text, x, y + yOffset);
         ctx.fillText(text, x, y + yOffset);
         ctx.restore();
       });
