@@ -6,7 +6,16 @@ function _rsData() {
   else if (typeof globalFilters !== 'undefined' && globalFilters) data = globalFilters.aplicar(rawRecords || []);
   else data = rawRecords || [];
   if (typeof isSetorActive === 'function') {
-    data = data.filter(r => r && isSetorActive(String(r['Setor'] || '')));
+    console.log('[RS] _rsData rows before:', data.length);
+    const before = data.length;
+    data = data.filter(r => {
+      if (!r) return false;
+      const setor = String(r['Setor'] || '').trim();
+      const active = isSetorActive(setor);
+      if (!active) console.log('[RS] Filtrando setor inativo:', JSON.stringify(setor));
+      return active;
+    });
+    console.log('[RS] _rsData rows after:', data.length, '| filtrados:', before - data.length);
   }
   return data;
 }
