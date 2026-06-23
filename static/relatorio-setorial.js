@@ -274,57 +274,76 @@ function renderRelatorioSetorial() {
 
   // ── Pessoas em destaque ──
   const pessoasSection = (() => {
-    const colabScore = {};
-    const colabFin = {};
-    const colabMeses = {};
     const latestMonth = meses[meses.length - 1];
     const activeNow = new Set(
       rows.filter(r => String(r['Mês']) === latestMonth).map(r => r['Atendente']).filter(Boolean)
     );
+
+    // Group by setor → pessoa
+    const bySetor = {};
     rows.forEach(r => {
+      const setor = r['Setor'];
       const n = r['Atendente'];
-      if (!n || isAggregateName(n)) return;
-      if (!colabScore[n]) { colabScore[n] = []; colabFin[n] = 0; colabMeses[n] = new Set(); }
-      if (r['SCORE'] != null && !isNaN(Number(r['SCORE']))) colabScore[n].push(Number(r['SCORE']));
-      colabFin[n] += parseInt(r['Finalizados']) || 0;
-      colabMeses[n].add(r['Mês']);
+      if (!n || isAggregateName(n) || !setor) return;
+      if (!bySetor[setor]) bySetor[setor] = {};
+      if (!bySetor[setor][n]) bySetor[setor][n] = { scores: [], fin: 0 };
+      if (r['SCORE'] != null && !isNaN(Number(r['SCORE']))) bySetor[setor][n].scores.push(Number(r['SCORE']));
+      bySetor[setor][n].fin += parseInt(r['Finalizados']) || 0;
     });
-    const candidates = Object.keys(colabScore)
-      .filter(n => activeNow.has(n) && colabScore[n].length >= 2 && colabMeses[n].size >= 2)
-      .map(n => ({
-      nome: n,
-      score: colabScore[n].reduce((a, b) => a + b, 0) / colabScore[n].length,
-      fin: colabFin[n]
-    }));
-    if (!candidates.length) return '';
-    const maxFin = Math.max(...candidates.map(c => c.fin), 1);
-    const avgFin = candidates.reduce((s, c) => s + c.fin, 0) / candidates.length;
-    const ranked = candidates.map(c => ({
-      ...c,
-      _combined: (c.score / 5) * 0.6 + (c.fin / maxFin) * 0.4
-    })).sort((a, b) => b._combined - a._combined);
-    const top3 = ranked.slice(0, 3);
-    const bottom3 = candidates.filter(c => c.score < 4.5 && c.fin < avgFin).sort((a, b) => a.score - b.score).slice(0, 3);
+
+    const bestList = [];
+    const worstList = [];
+
+    Object.keys(bySetor).forEach(setor => {
+      const pessoas = bySetor[setor];
+      const entries = Object.keys(pessoas)
+        .filter(n => activeNow.has(n) && pessoas[n].scores.length >= 2)
+        .map(n => ({
+          nome: n,
+          score: pessoas[n].scores.reduce((a, b) => a + b, 0) / pessoas[n].scores.length,
+          fin: pessoas[n].fin,
+          setor
+        }));
+      if (!entries.length) return;
+
+      const maxFin = Math.max(...entries.map(e => e.fin), 1);
+      const avgFin = entries.reduce((s, e) => s + e.fin, 0) / entries.length;
+
+      const ranked = entries.map(e => ({
+        ...e,
+        _combined: (e.score / 5) * 0.6 + (e.fin / maxFin) * 0.4
+      })).sort((a, b) => b._combined - a._combined);
+      bestList.push(ranked[0]);
+
+      const worstPool = entries.filter(e => e.score < 4.5 && e.fin < avgFin)
+        .sort((a, b) => a.score - b.score);
+      if (worstPool.length) worstList.push(worstPool[0]);
+    });
+
+    bestList.sort((a, b) => b._combined - a._combined);
+    worstList.sort((a, b) => a.score - b.score);
+
+    if (!bestList.length && !worstList.length) return '';
 
     let h = `<div class="rs-section"><h2 class="rs-section-title">\uD83C\uDFC6 Pessoas em Destaque</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4)">`;
 
-    if (top3.length) {
+    if (bestList.length) {
       h += `<div><h4 style="font-size:13px;font-weight:600;margin:0 0 var(--s-3);color:var(--success)">\u2B06 Destaques Positivos</h4><div style="display:flex;flex-direction:column;gap:var(--s-2)">`;
-      top3.forEach(c => {
+      bestList.forEach(c => {
         h += `<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--s-3) var(--s-4)">
           <div style="font-weight:600;font-size:14px;color:var(--text-strong)">${escapeHtml(c.nome)}</div>
-          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Média ${Number(c.score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u00B7 ${fmtNum(c.fin)} finalizados</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${escapeHtml(c.setor)} \u00B7 Média ${Number(c.score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u00B7 ${fmtNum(c.fin)} finalizados</div>
         </div>`;
       });
       h += `</div></div>`;
     }
 
-    if (bottom3.length) {
+    if (worstList.length) {
       h += `<div><h4 style="font-size:13px;font-weight:600;margin:0 0 var(--s-3);color:var(--danger)">\u26A0\uFE0F Pontos de Atenção</h4><div style="display:flex;flex-direction:column;gap:var(--s-2)">`;
-      bottom3.forEach(c => {
+      worstList.forEach(c => {
         h += `<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--s-3) var(--s-4)">
           <div style="font-weight:600;font-size:14px;color:var(--text-strong)">${escapeHtml(c.nome)}</div>
-          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Média ${Number(c.score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u00B7 ${fmtNum(c.fin)} finalizados</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${escapeHtml(c.setor)} \u00B7 Média ${Number(c.score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u00B7 ${fmtNum(c.fin)} finalizados</div>
         </div>`;
       });
       h += `</div></div>`;
