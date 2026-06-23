@@ -273,7 +273,7 @@ function renderRelatorioSetorial() {
   });
 
   // ── Pessoas em destaque ──
-  const topColabs = (() => {
+  const pessoasSection = (() => {
     const colabScore = {};
     const colabFin = {};
     rows.forEach(r => {
@@ -288,29 +288,44 @@ function renderRelatorioSetorial() {
       score: colabScore[n].reduce((a, b) => a + b, 0) / colabScore[n].length,
       fin: colabFin[n]
     }));
+    if (!candidates.length) return '';
     const maxFin = Math.max(...candidates.map(c => c.fin), 1);
-    const scored = candidates.map(c => ({
+    const ranked = candidates.map(c => ({
       ...c,
       _combined: (c.score / 5) * 0.6 + (c.fin / maxFin) * 0.4
-    })).sort((a, b) => b._combined - a._combined).slice(0, 4);
-    return scored;
+    })).sort((a, b) => b._combined - a._combined);
+    const top4 = ranked.slice(0, 4);
+    const bottom4 = ranked.filter(c => c.score < 4.5).slice(-4).reverse();
+
+    let h = `<div class="rs-section"><h2 class="rs-section-title">\uD83C\uDFC6 Pessoas em Destaque</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4)">`;
+
+    if (top4.length) {
+      h += `<div><h4 style="font-size:13px;font-weight:600;margin:0 0 var(--s-3);color:var(--success)">\u2B06 Destaques Positivos</h4><div style="display:flex;flex-direction:column;gap:var(--s-2)">`;
+      top4.forEach(c => {
+        h += `<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--s-3) var(--s-4)">
+          <div style="font-weight:600;font-size:14px;color:var(--text-strong)">${escapeHtml(c.nome)}</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Média ${Number(c.score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u00B7 ${fmtNum(c.fin)} finalizados</div>
+        </div>`;
+      });
+      h += `</div></div>`;
+    }
+
+    if (bottom4.length) {
+      h += `<div><h4 style="font-size:13px;font-weight:600;margin:0 0 var(--s-3);color:var(--danger)">\u26A0\uFE0F Pontos de Atenção</h4><div style="display:flex;flex-direction:column;gap:var(--s-2)">`;
+      bottom4.forEach(c => {
+        h += `<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--s-3) var(--s-4)">
+          <div style="font-weight:600;font-size:14px;color:var(--text-strong)">${escapeHtml(c.nome)}</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Média ${Number(c.score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u00B7 ${fmtNum(c.fin)} finalizados</div>
+        </div>`;
+      });
+      h += `</div></div>`;
+    }
+
+    h += `</div></div>`;
+    return h;
   })();
 
-  if (topColabs.length) {
-    html += `<div class="rs-section">
-      <h2 class="rs-section-title">\uD83C\uDFC6 Pessoas em Destaque</h2>
-      <div class="rs-people-grid">
-        ${topColabs.map((c, i) => `
-          <div class="rs-people-card">
-            <div class="rs-people-rank">#${i + 1}</div>
-            <div class="rs-people-name">${escapeHtml(c.nome)}</div>
-            <div class="rs-people-score ${getClasseScore(c.score)}">${Number(c.score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-            <div class="rs-people-meta">${fmtNum(c.fin)} finalizados</div>
-          </div>
-        `).join('')}
-      </div>
-    </div>`;
-  }
+  html += pessoasSection;
 
   // ── Próximos passos e plano de ação ──
   const passos = [];
