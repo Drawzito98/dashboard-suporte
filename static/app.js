@@ -2109,6 +2109,8 @@ function renderChart(rows) {
   const assData = labels.map(l => assMap.get(l) || 0);
   const scData = labels.map(l => { const s = scMap.get(l), c = scCount.get(l); return c ? Number((s/c).toFixed(2)) : null; });
   sizeChartInnerForLabels(labels.length, 110);
+  const maxVal = Math.max(...finData, ...assData, 1);
+  const yMax = Math.ceil(maxVal * 2.2 / 100) * 100 || 200;
   const bgFin = labels.map((_,i) => `rgba(16,185,129,0.85)`);
   const bgAss = labels.map((_,i) => `rgba(37,99,235,0.85)`);
   const cfg = {
@@ -2118,13 +2120,13 @@ function renderChart(rows) {
       datasets: [
         { label: 'Assumidos', data: assData, backgroundColor: bgAss, borderRadius: 3, yAxisID: 'y' },
         { label: 'Finalizados', data: finData, backgroundColor: bgFin, borderRadius: 3, yAxisID: 'y' },
-        { label: 'Score', type: 'line', data: scData, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.15)', pointBackgroundColor: '#f59e0b', pointRadius: 4, pointHoverRadius: 6, tension: 0.3, fill: true, yAxisID: 'y1' }
+        { label: 'Score', type: 'line', data: scData, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.05)', pointBackgroundColor: '#f59e0b', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true, yAxisID: 'y1' }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      layout: { padding: { top: 48, right: 12, bottom: 4, left: 4 } },
+      layout: { padding: { top: 56, right: 16, bottom: 4, left: 4 } },
       plugins: {
         valueLabels: { integer: false },
         legend: { display: true, position: 'bottom', align: 'center', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 } } },
@@ -2143,8 +2145,8 @@ function renderChart(rows) {
         }
       },
       scales: {
-        y: { beginAtZero: true, grace: '25%', position: 'left', grid: { color: 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 } } },
-          y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, callback: v => Number(v).toFixed(2) } },
+        y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 } } },
+        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, callback: v => Number(v).toFixed(2) } },
         x: { grid: { display: false }, ticks: { font: { size: 11.5 } } }
       }
     }
