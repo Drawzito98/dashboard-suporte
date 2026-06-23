@@ -266,7 +266,7 @@ function renderRelatorioSetorial() {
           </tr>`;
         }).join('')}</tbody>
       </table></div>
-      <div style="margin-top:var(--s-4);height:220px">
+      <div style="margin-top:var(--s-4);height:160px">
         <canvas id="rsChart_${setorIdx}"></canvas>
       </div>
     </div>`;
@@ -422,7 +422,8 @@ function renderRelatorioSetorial() {
             {
               label: 'Finalizados',
               data: monthData.map(d => d.fin),
-              backgroundColor: 'rgba(16,185,129,0.7)',
+              backgroundColor: 'rgba(16,185,129,0.92)',
+              borderRadius: 3,
               yAxisID: 'y',
               order: 2
             },
@@ -430,11 +431,13 @@ function renderRelatorioSetorial() {
               label: 'Score médio',
               data: monthData.map(d => d.sc),
               type: 'line',
-              borderColor: 'rgba(99,102,241,1)',
-              backgroundColor: 'rgba(99,102,241,0.1)',
+              borderColor: '#6366f1',
+              backgroundColor: 'transparent',
               tension: 0.3,
-              fill: true,
-              pointRadius: 3,
+              fill: false,
+              pointRadius: 4,
+              pointBackgroundColor: '#6366f1',
+              borderWidth: 2.5,
               yAxisID: 'y1',
               order: 1
             }
