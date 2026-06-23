@@ -418,49 +418,47 @@ function renderRelatorioSetorial() {
         type: 'bar',
         data: {
           labels: monthData.map(d => d.label),
-          datasets: [
-            {
-              label: 'Finalizados',
-              data: monthData.map(d => d.fin),
-              backgroundColor: 'rgba(16,185,129,0.92)',
-              borderRadius: 3,
-              yAxisID: 'y',
-              order: 2
-            },
-            {
-              label: 'Score médio',
-              data: monthData.map(d => d.sc),
-              type: 'line',
-              borderColor: '#6366f1',
-              backgroundColor: 'transparent',
-              tension: 0.3,
-              fill: false,
-              pointRadius: 4,
-              pointBackgroundColor: '#6366f1',
-              borderWidth: 2.5,
-              yAxisID: 'y1',
-              order: 1
-            }
-          ]
+          datasets: [{
+            label: 'Finalizados',
+            data: monthData.map(d => d.fin),
+            backgroundColor: 'rgba(16,185,129,0.92)',
+            borderRadius: 3,
+            yAxisID: 'y'
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              display: true,
-              position: 'bottom',
-              labels: { usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 12, font: { size: 10.5 } }
+            legend: { display: false },
+            datalabels: {
+              display: (ctx) => {
+                const i = ctx.dataIndex;
+                return monthData[i]?.sc > 0;
+              },
+              color: '#6366f1',
+              font: { weight: 'bold', size: 9.5 },
+              formatter: (value, ctx) => {
+                const i = ctx.dataIndex;
+                const sc = monthData[i]?.sc;
+                return sc > 0 ? '☆ ' + sc.toFixed(2) : '';
+              },
+              anchor: 'end',
+              align: 'end',
+              offset: 2
             },
             tooltip: {
               callbacks: {
-                label: ctx => ctx.dataset.label + ': ' + (ctx.dataset.yAxisID === 'y1' ? ctx.parsed.y.toFixed(2) : ctx.parsed.y.toLocaleString('pt-BR'))
+                label: ctx => {
+                  const i = ctx.dataIndex;
+                  const sc = monthData[i]?.sc;
+                  return `Finalizados: ${ctx.parsed.y.toLocaleString('pt-BR')}${sc > 0 ? ` | Score: ${sc.toFixed(2)}` : ''}`;
+                }
               }
             }
           },
           scales: {
             y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(148,163,184,0.12)' }, ticks: { font: { size: 10 } } },
-            y1: { beginAtZero: true, suggestedMax: 5, grace: 0.8, position: 'right', grid: { display: false }, ticks: { font: { size: 10 } } },
             x: { grid: { display: false }, ticks: { font: { size: 10 } } }
           }
         }
