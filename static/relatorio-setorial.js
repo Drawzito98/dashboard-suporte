@@ -303,14 +303,14 @@ function renderRelatorioSetorial() {
       ...c,
       _combined: (c.score / 5) * 0.6 + (c.fin / maxFin) * 0.4
     })).sort((a, b) => b._combined - a._combined);
-    const top4 = ranked.slice(0, 4);
-    const bottom4 = candidates.filter(c => c.score < 4.5 && c.fin < avgFin).sort((a, b) => a.score - b.score).slice(0, 4);
+    const top3 = ranked.slice(0, 3);
+    const bottom3 = candidates.filter(c => c.score < 4.5 && c.fin < avgFin).sort((a, b) => a.score - b.score).slice(0, 3);
 
     let h = `<div class="rs-section"><h2 class="rs-section-title">\uD83C\uDFC6 Pessoas em Destaque</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4)">`;
 
-    if (top4.length) {
+    if (top3.length) {
       h += `<div><h4 style="font-size:13px;font-weight:600;margin:0 0 var(--s-3);color:var(--success)">\u2B06 Destaques Positivos</h4><div style="display:flex;flex-direction:column;gap:var(--s-2)">`;
-      top4.forEach(c => {
+      top3.forEach(c => {
         h += `<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--s-3) var(--s-4)">
           <div style="font-weight:600;font-size:14px;color:var(--text-strong)">${escapeHtml(c.nome)}</div>
           <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Média ${Number(c.score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u00B7 ${fmtNum(c.fin)} finalizados</div>
@@ -319,9 +319,9 @@ function renderRelatorioSetorial() {
       h += `</div></div>`;
     }
 
-    if (bottom4.length) {
+    if (bottom3.length) {
       h += `<div><h4 style="font-size:13px;font-weight:600;margin:0 0 var(--s-3);color:var(--danger)">\u26A0\uFE0F Pontos de Atenção</h4><div style="display:flex;flex-direction:column;gap:var(--s-2)">`;
-      bottom4.forEach(c => {
+      bottom3.forEach(c => {
         h += `<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--s-3) var(--s-4)">
           <div style="font-weight:600;font-size:14px;color:var(--text-strong)">${escapeHtml(c.nome)}</div>
           <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Média ${Number(c.score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u00B7 ${fmtNum(c.fin)} finalizados</div>
