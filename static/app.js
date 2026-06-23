@@ -817,7 +817,7 @@ const valueLabelPlugin = {
         ctx.save();
         ctx.font = isScore || isCount ? '14px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial' : '12px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
         ctx.fillStyle = isScore ? '#f59e0b' : ((typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : (document.documentElement.classList.contains('dark') || document.body.classList.contains('dark') ? '#e2e8f0' : '#334155'));
-        if (isCount) ctx.fillStyle = '#1e293b';
+        if (isCount) ctx.fillStyle = (document.documentElement.classList.contains('dark') || document.body.classList.contains('dark') ? '#e2e8f0' : '#1e293b');
         ctx.textAlign = 'center';
         ctx.textBaseline = isScore ? 'bottom' : 'bottom';
         const x = element.x !== undefined ? element.x : (element.getCenterPoint ? element.getCenterPoint().x : null);
