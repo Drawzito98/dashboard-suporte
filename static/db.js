@@ -3,7 +3,9 @@ const SUPABASE_URL = 'https://agvkmfusyetkicmuvumz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFndmttZnVzeWV0a2ljbXV2dW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NTkxNjUsImV4cCI6MjA5NzMzNTE2NX0.9dxpGlGCf0TQbq46cm0fpD6gvkNUuqwMQNR3xolV4X4';
 
 const sbClient = (typeof supabase !== 'undefined' && supabase.createClient)
-  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { storage: window.sessionStorage }
+    })
   : null;
 
 function isAdmin() {
