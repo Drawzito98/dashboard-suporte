@@ -295,7 +295,7 @@ function renderRelatorioSetorial() {
       _combined: (c.score / 5) * 0.6 + (c.fin / maxFin) * 0.4
     })).sort((a, b) => b._combined - a._combined);
     const top4 = ranked.slice(0, 4);
-    const bottom4 = ranked.filter(c => c.score < 4.5).slice(-4).reverse();
+    const bottom4 = candidates.filter(c => c.score < 4.5).sort((a, b) => a.score - b.score).slice(0, 4);
 
     let h = `<div class="rs-section"><h2 class="rs-section-title">\uD83C\uDFC6 Pessoas em Destaque</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4)">`;
 
