@@ -1,9 +1,14 @@
 // Relatório Setorial — visão completa por setor, mês a mês
 
 function _rsData() {
-  if (typeof getCurrentFilteredRows === 'function') return getCurrentFilteredRows();
-  if (typeof globalFilters !== 'undefined' && globalFilters) return globalFilters.aplicar(rawRecords || []);
-  return rawRecords || [];
+  let data;
+  if (typeof getCurrentFilteredRows === 'function') data = getCurrentFilteredRows();
+  else if (typeof globalFilters !== 'undefined' && globalFilters) data = globalFilters.aplicar(rawRecords || []);
+  else data = rawRecords || [];
+  if (typeof isSetorActive === 'function') {
+    data = data.filter(r => r && isSetorActive(String(r['Setor'] || '')));
+  }
+  return data;
 }
 
 function getFilteredMeses(rows) {
