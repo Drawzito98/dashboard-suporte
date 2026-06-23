@@ -63,7 +63,7 @@ function renderRelatorioSetorial() {
   const totalAtendentes = [...new Set(rows.map(r => r['Atendente']))].filter(Boolean).length;
 
   const fmtNum = n => (Number(n) || 0).toLocaleString('pt-BR');
-  const fmtScore = n => n > 0 ? n.toFixed(2) : '\u2014';
+  const fmtScore = n => n > 0 ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014';
   const fmtPct = n => n !== null && n !== undefined ? (n * 100).toFixed(1) + '%' : '\u2014';
 
   // Métricas por setor (para análise)
@@ -299,7 +299,7 @@ function renderRelatorioSetorial() {
           <div class="rs-people-card">
             <div class="rs-people-rank">#${i + 1}</div>
             <div class="rs-people-name">${escapeHtml(c.nome)}</div>
-            <div class="rs-people-score ${getClasseScore(c.score)}">${c.score.toFixed(2)}</div>
+            <div class="rs-people-score ${getClasseScore(c.score)}">${Number(c.score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <div class="rs-people-meta">${fmtNum(c.fin)} finalizados</div>
           </div>
         `).join('')}
@@ -441,7 +441,7 @@ function renderRelatorioSetorial() {
               formatter: (value, ctx) => {
                 const i = ctx.dataIndex;
                 const sc = monthData[i]?.sc;
-                return sc > 0 ? '☆ ' + sc.toFixed(2) : '';
+                return sc > 0 ? '☆ ' + Number(sc).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
               },
               anchor: 'end',
               align: 'end',
@@ -452,7 +452,7 @@ function renderRelatorioSetorial() {
                 label: ctx => {
                   const i = ctx.dataIndex;
                   const sc = monthData[i]?.sc;
-                  return `Finalizados: ${ctx.parsed.y.toLocaleString('pt-BR')}${sc > 0 ? ` | Score: ${sc.toFixed(2)}` : ''}`;
+                  return `Finalizados: ${ctx.parsed.y.toLocaleString('pt-BR')}${sc > 0 ? ` | Score: ${Number(sc).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}`;
                 }
               }
             }
