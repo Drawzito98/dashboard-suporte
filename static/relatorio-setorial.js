@@ -266,7 +266,7 @@ function renderRelatorioSetorial() {
           </tr>`;
         }).join('')}</tbody>
       </table></div>
-      <div style="margin-top:var(--s-4);height:160px">
+      <div style="margin-top:var(--s-4);height:220px">
         <canvas id="rsChart_${setorIdx}"></canvas>
       </div>
     </div>`;
