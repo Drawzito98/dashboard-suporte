@@ -290,12 +290,13 @@ function renderRelatorioSetorial() {
     }));
     if (!candidates.length) return '';
     const maxFin = Math.max(...candidates.map(c => c.fin), 1);
+    const avgFin = candidates.reduce((s, c) => s + c.fin, 0) / candidates.length;
     const ranked = candidates.map(c => ({
       ...c,
       _combined: (c.score / 5) * 0.6 + (c.fin / maxFin) * 0.4
     })).sort((a, b) => b._combined - a._combined);
     const top4 = ranked.slice(0, 4);
-    const bottom4 = candidates.filter(c => c.score < 4.5).sort((a, b) => a.score - b.score).slice(0, 4);
+    const bottom4 = candidates.filter(c => c.score < 4.5 && c.fin < avgFin).sort((a, b) => a.score - b.score).slice(0, 4);
 
     let h = `<div class="rs-section"><h2 class="rs-section-title">\uD83C\uDFC6 Pessoas em Destaque</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4)">`;
 
