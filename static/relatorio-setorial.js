@@ -31,6 +31,7 @@ function _deltaHtml(delta) {
 function renderRelatorioSetorial() {
   const container = document.getElementById('relatorioSetorialContent');
   if (!container) return;
+  container.classList.add('rs-container');
   const data = _rsData();
   if (!data || !data.length) {
     container.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado carregado</div><div class="empty-sub">Importe dados para gerar o relatório setorial.</div></div>';
@@ -90,15 +91,19 @@ function renderRelatorioSetorial() {
     <button class="btn-primary" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
   </div>`;
 
-  // ── KPIs gerais ──
-  html += `<div class="gamification-stats" style="margin-bottom:var(--s-5)">
-    <div class="kpi"><div class="label">Finalizados</div><div class="value">${fmtNum(totalFin)}</div></div>
-    <div class="kpi"><div class="label">Assumidos</div><div class="value">${fmtNum(totalAss)}</div></div>
-    <div class="kpi"><div class="label">Transferidos</div><div class="value">${fmtNum(totalTra)} (${fmtPct(traGeral)})</div></div>
-    <div class="kpi"><div class="label">Score médio</div><div class="value ${avgScore > 0 ? getClasseScore(avgScore) : ''}">${fmtScore(avgScore)}</div></div>
-    <div class="kpi"><div class="label">Produtividade</div><div class="value">${fmtPct(prodGeral)}</div></div>
-    <div class="kpi"><div class="label">Setores</div><div class="value">${setores.length}</div></div>
-    <div class="kpi" id="rsAtendentesKpi" style="cursor:pointer" title="Clique para ver a lista de atendentes"><div class="label">Atendentes</div><div class="value">${totalAtendentes}</div></div>
+  // ── Panorama Geral da Operação (KPIs) ──
+  html += `<div class="rs-section">
+    <h2 class="rs-section-title">\uD83D\uDCCA Panorama Geral da Operação</h2>
+    <div class="gamification-stats rs-kpis">
+      <div class="kpi"><div class="label">Finalizados</div><div class="value">${fmtNum(totalFin)}</div></div>
+      <div class="kpi"><div class="label">Assumidos</div><div class="value">${fmtNum(totalAss)}</div></div>
+      <div class="kpi"><div class="label">Transferidos</div><div class="value">${fmtNum(totalTra)} (${fmtPct(traGeral)})</div></div>
+      <div class="kpi"><div class="label">Score Geral da Operação</div><div class="value ${avgScore > 0 ? getClasseScore(avgScore) : ''}">${fmtScore(avgScore)}</div></div>
+      <div class="kpi"><div class="label">Produtividade Geral</div><div class="value">${fmtPct(prodGeral)}</div></div>
+      <div class="kpi" id="rsAtendentesKpi" style="cursor:pointer" title="Clique para ver a lista de atendentes"><div class="label">Atendentes</div><div class="value">${totalAtendentes}</div></div>
+      <div class="kpi"><div class="label">Setores</div><div class="value">${setores.length}</div></div>
+    </div>
+    <p class="rs-obs" style="font-size:12px;color:var(--text-muted);margin-top:var(--s-3);font-style:italic">O score geral foi calculado considerando o peso operacional (volume de atendimentos) de cada setor.</p>
   </div>`;
 
   // ── Destaques e Pontos de Atenção ──
@@ -143,25 +148,22 @@ function renderRelatorioSetorial() {
     atencao.push(`${escapeHtml(s.nome)} com produtividade abaixo de 75% (${fmtPct(s.prod)})`);
   });
 
-  if (destaques.length || atencao.length) {
-    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4);margin-bottom:var(--s-5)">`;
-    if (destaques.length) {
-      html += `<div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--success)">\u2705 Destaques</h3>
-        <ul style="margin:0;padding-left:var(--s-4);font-size:13px;color:var(--text-primary);line-height:1.8">
-          ${destaques.map(d => `<li>${d}</li>`).join('')}
-        </ul>
-      </div>`;
-    }
-    if (atencao.length) {
-      html += `<div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--danger)">\u26A0\uFE0F Pontos de Atenção</h3>
-        <ul style="margin:0;padding-left:var(--s-4);font-size:13px;color:var(--text-primary);line-height:1.8">
-          ${atencao.map(a => `<li>${a}</li>`).join('')}
-        </ul>
-      </div>`;
-    }
-    html += `</div>`;
+  if (destaques.length) {
+    html += `<div class="rs-section">
+      <h2 class="rs-section-title">\u2705 Destaques</h2>
+      <div class="rs-list rs-list-success">
+        ${destaques.map(d => `<div class="rs-list-item">${d}</div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (atencao.length) {
+    html += `<div class="rs-section">
+      <h2 class="rs-section-title">\u26A0\uFE0F Pontos de Atenção</h2>
+      <div class="rs-list rs-list-danger">
+        ${atencao.map(a => `<div class="rs-list-item">${a}</div>`).join('')}
+      </div>
+    </div>`;
   }
 
   // ── Gráfico de pizza — distribuição de finalizados por setor ──
@@ -174,7 +176,7 @@ function renderRelatorioSetorial() {
     <div class="card" style="flex:1;min-width:200px;padding:var(--s-4);display:flex;flex-direction:column;justify-content:center;gap:var(--s-2)">
       ${setorMetrics.slice().sort((a, b) => b.fin - a.fin).map(s => {
         const pct = totalFin > 0 ? ((s.fin / totalFin) * 100).toFixed(1) : 0;
-        const cor = totalFin > 0 ? `hsl(${Math.round(setorMetrics.indexOf(s) * 360 / setorMetrics.length)}, 60%, 55%)` : '#888';
+        const cor = totalFin > 0 ? `hsl(${Math.round(setorMetrics.indexOf(s) * 360 / setorMetrics.length)}, 42%, 58%)` : '#94a3b8';
         return `<div style="display:flex;align-items:center;gap:var(--s-3);font-size:13px">
           <span style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0"></span>
           <span style="flex:1;font-weight:500;color:var(--text-primary)">${escapeHtml(s.nome)}</span>
@@ -270,6 +272,75 @@ function renderRelatorioSetorial() {
     </div>`;
   });
 
+  // ── Pessoas em destaque ──
+  const topColabs = (() => {
+    const colabScore = {};
+    const colabFin = {};
+    rows.forEach(r => {
+      const n = r['Atendente'];
+      if (!n || isAggregateName(n)) return;
+      if (!colabScore[n]) { colabScore[n] = []; colabFin[n] = 0; }
+      if (r['SCORE'] != null && !isNaN(Number(r['SCORE']))) colabScore[n].push(Number(r['SCORE']));
+      colabFin[n] += parseInt(r['Finalizados']) || 0;
+    });
+    const scored = Object.keys(colabScore).filter(n => colabScore[n].length >= 2).map(n => ({
+      nome: n,
+      score: colabScore[n].reduce((a, b) => a + b, 0) / colabScore[n].length,
+      fin: colabFin[n]
+    })).sort((a, b) => b.score - a.score).slice(0, 4);
+    return scored;
+  })();
+
+  if (topColabs.length) {
+    html += `<div class="rs-section">
+      <h2 class="rs-section-title">\uD83C\uDFC6 Pessoas em Destaque</h2>
+      <div class="rs-people-grid">
+        ${topColabs.map((c, i) => `
+          <div class="rs-people-card">
+            <div class="rs-people-rank">#${i + 1}</div>
+            <div class="rs-people-name">${escapeHtml(c.nome)}</div>
+            <div class="rs-people-score ${getClasseScore(c.score)}">${c.score.toFixed(2)}</div>
+            <div class="rs-people-meta">${fmtNum(c.fin)} finalizados</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+
+  // ── Próximos passos e plano de ação ──
+  const passos = [];
+  if (lowScoreSetores.length) {
+    lowScoreSetores.forEach(s => {
+      passos.push(`Revisar processo do setor \u201C${escapeHtml(s.nome)}\u201D para elevar o score (atual: ${fmtScore(s.scAvg)}). Meta: 4,70+`);
+    });
+  }
+  if (highTransf.length) {
+    highTransf.forEach(s => {
+      passos.push(`Reduzir taxa de transferência do setor \u201C${escapeHtml(s.nome)}\u201D (${fmtPct(s.taxaT)}). Investigar causas e criar plano de ação.`);
+    });
+  }
+  if (lowProd.length) {
+    lowProd.forEach(s => {
+      passos.push(`Melhorar produtividade do setor \u201C${escapeHtml(s.nome)}\u201D (${fmtPct(s.prod)}). Avaliar carga e distribuição de chamados.`);
+    });
+  }
+  if (!passos.length && avgScore >= 4.5) {
+    passos.push('Manter o padrão atual de qualidade e produtividade.');
+    passos.push('Monitorar indicadores mensalmente para detecção precoce de desvios.');
+  }
+  if (!passos.length) {
+    passos.push('Estabelecer metas individuais e por setor para o próximo período.');
+    passos.push('Realizar feedbacks individuais com base nos dados do relatório.');
+  }
+  passos.push('Agendar próxima revisão de indicadores em 30 dias.');
+
+  html += `<div class="rs-section">
+    <h2 class="rs-section-title">\uD83D\uDCCC Próximos Passos e Plano de Ação</h2>
+    <div class="rs-list rs-list-info">
+      ${passos.map(p => `<div class="rs-list-item">${p}</div>`).join('')}
+    </div>
+  </div>`;
+
   container.innerHTML = html;
 
   // ── Renderizar gráficos ──
@@ -288,9 +359,9 @@ function renderRelatorioSetorial() {
           labels: sorted.map(s => s.nome),
           datasets: [{
             data: sorted.map(s => s.fin),
-            backgroundColor: sorted.map(s => `hsl(${Math.round(setorMetrics.indexOf(s) * 360 / setorMetrics.length)}, 60%, 55%)`),
-            borderColor: '#1e293b',
-            borderWidth: 2
+            backgroundColor: sorted.map(s => `hsl(${Math.round(setorMetrics.indexOf(s) * 360 / setorMetrics.length)}, 42%, 58%)`),
+            borderColor: '#ffffff',
+            borderWidth: 1
           }]
         },
         options: {
