@@ -283,11 +283,16 @@ function renderRelatorioSetorial() {
       if (r['SCORE'] != null && !isNaN(Number(r['SCORE']))) colabScore[n].push(Number(r['SCORE']));
       colabFin[n] += parseInt(r['Finalizados']) || 0;
     });
-    const scored = Object.keys(colabScore).filter(n => colabScore[n].length >= 2).map(n => ({
+    const candidates = Object.keys(colabScore).filter(n => colabScore[n].length >= 2).map(n => ({
       nome: n,
       score: colabScore[n].reduce((a, b) => a + b, 0) / colabScore[n].length,
       fin: colabFin[n]
-    })).sort((a, b) => b.score - a.score).slice(0, 4);
+    }));
+    const maxFin = Math.max(...candidates.map(c => c.fin), 1);
+    const scored = candidates.map(c => ({
+      ...c,
+      _combined: (c.score / 5) * 0.6 + (c.fin / maxFin) * 0.4
+    })).sort((a, b) => b._combined - a._combined).slice(0, 4);
     return scored;
   })();
 
