@@ -1430,7 +1430,6 @@ function renderSummary(filtered) {
   const scopeParts = [];
   if (arquivoSel !== 'all') scopeParts.push(`Arquivo: ${escapeHtml(arquivoSel)}`);
   if (setorSel !== 'all') scopeParts.push(`Setor: ${escapeHtml(setorSel)}`);
-  if (mesSel.length) scopeParts.push(`Período: ${escapeHtml(getMonthScopeLabel())}`);
   if (presentationMode) scopeParts.push('Modo apresentação');
   if (meetingMode) scopeParts.push('Modo reunião');
   if (atendenteSel !== 'all') scopeParts.push(`Atendente: ${escapeHtml(atendenteSel)}`);
@@ -1734,6 +1733,7 @@ function renderPreviewDisplay(rows) {
   previewTable.querySelectorAll('.btn-delete').forEach(b => {
     b.addEventListener('click', async (e) => {
       if (!requireAdmin()) return;
+      if (!confirm('Tem certeza que deseja excluir este registro?')) return;
       const scrollX = window.scrollX || 0;
       const scrollY = window.scrollY || 0;
       const idx = Number(e.target.getAttribute('data-idx'));
