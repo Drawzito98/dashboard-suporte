@@ -936,7 +936,7 @@ async function parseCsvFile(file) {
 }
 
 function showImportError(message) {
-  try { showToast(message, 'error', 'Importação'); } catch (e) { console.error(message); }
+  handleError('Importação', () => showToast(message, 'error', 'Importação'));
 }
 
 
@@ -2893,6 +2893,17 @@ function escapeHtml(str) {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
+// ── Error handling utilitário ──
+function handleError(context, fn, fallback) {
+  try { return fn(); } catch (e) {
+    console.error(`[${context}]`, e);
+    if (typeof fallback === 'function') fallback(e);
+    if (typeof showToast === 'function' && context) {
+      showToast(`Erro em ${context}.`, 'error', null, 3000);
+    }
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[App] DOMContentLoaded disparado! sbClient:', !!sbClient);
   // Aguarda autenticação (se Supabase estiver disponível)
@@ -2971,7 +2982,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[App] chamando updateFilterOptions...');
     updateFilterOptions();
     console.log('[App] chamando updateView...');
-    try { updateView(); } catch (e) { console.error('[App] updateView error:', e); }
+    handleError('updateView', () => updateView());
     clearSavedState();
     console.log('[App] chamando showAppScreen...');
     showAppScreen();
@@ -3659,17 +3670,16 @@ function setCaretToEnd(el) {
 }
 
 function exportCsv() {
-  if (!rawRecords || rawRecords.length === 0) {
-    alert('Sem dados para exportar');
+  const data = typeof getCurrentFilteredRows === 'function' ? getCurrentFilteredRows() : (rawRecords || []);
+  if (!data || data.length === 0) {
+    showToast('Nenhum dado no escopo atual para exportar.', 'error');
     return;
   }
-  // derive headers from first record (preserve order of common columns)
   const preferred = ['Setor','Mês','Atendente','Assumidos','Transferidos','Finalizados','SCORE','Nota1','Nota2','Nota3','Total','Objetivo'];
-  const keys = Array.from(new Set([...(rawRecords[0] ? Object.keys(rawRecords[0]) : []), ...preferred]));
-  // ensure preferred order
+  const keys = Array.from(new Set([...(data[0] ? Object.keys(data[0]) : []), ...preferred]));
   const orderedKeys = preferred.concat(keys.filter(k => !preferred.includes(k)));
   const rows = [orderedKeys.join(',')];
-  rawRecords.forEach(r => {
+  data.forEach(r => {
     const vals = orderedKeys.map(k => {
       let v = r[k];
       if (v === null || v === undefined) return '';
@@ -3689,7 +3699,9 @@ function exportCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'export.csv';
+  const now = new Date().toISOString().slice(0, 10);
+  const scopeLabel = (typeof getActiveMonths === 'function' ? getActiveMonths().join('-') : '') || 'todos';
+  a.download = `dashboard-${scopeLabel}-${now}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();

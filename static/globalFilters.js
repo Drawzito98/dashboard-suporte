@@ -91,7 +91,10 @@ const globalFilters = {
 
     if (this.pesquisa) {
       const q = String(this.pesquisa).toLowerCase();
-      data = data.filter(r => String(r['Atendente'] || '').toLowerCase().includes(q));
+      data = data.filter(r => {
+        const cols = [r['Atendente'], r['Setor'], r['Mês'], r['Arquivo']];
+        return cols.some(v => String(v || '').toLowerCase().includes(q));
+      });
     }
 
     return data;
