@@ -6,6 +6,26 @@ function hoje() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function updateTarefasBadge() {
+  const badge = document.getElementById('tarefasBadge');
+  if (!badge) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem('sistema_tarefas_v1') || '[]');
+    const today = hoje();
+    const count = saved.filter(t => t.data === today && t.status !== 'concluida' && t.status !== 'cancelada').length;
+    if (count > 0) {
+      badge.textContent = count;
+      badge.classList.add('visible');
+    } else {
+      badge.textContent = '';
+      badge.classList.remove('visible');
+    }
+  } catch (e) {
+    badge.textContent = '';
+    badge.classList.remove('visible');
+  }
+}
+
 function formatarData(dataStr) {
   if (!dataStr) return '';
   const [ano, mes, dia] = dataStr.split('-');
@@ -126,6 +146,7 @@ html += `<span style="font-size:11px;padding:1px 6px;border-radius:var(--r-sm);b
 
   container.innerHTML = html;
   bindTarefaEvents(saved);
+  updateTarefasBadge();
 }
 
 function bindTarefaEvents(saved) {

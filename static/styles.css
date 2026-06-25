@@ -1096,6 +1096,20 @@ body.meeting-mode .menu-dd { display: none !important; }
   box-shadow: none;
 }
 .tab-btn .tab-icon { font-size: 14px; line-height: 1; }
+.tab-badge {
+  display: none;
+  margin-left: 3px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #fff;
+  background: var(--danger);
+  border-radius: 8px;
+  min-width: 14px;
+  text-align: center;
+}
+.tab-badge.visible { display: inline-block; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 

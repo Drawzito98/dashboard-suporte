@@ -3042,6 +3042,7 @@ function setCaretToEnd(el) {
         setTheme(getTheme() === 'dark' ? 'light' : 'dark');
       });
     });
+    setTimeout(updateTarefasBadge, 100);
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
