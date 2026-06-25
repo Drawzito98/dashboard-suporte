@@ -19,6 +19,14 @@ function stopChatsRefresh() {
   if (chatsIntervalId) { clearInterval(chatsIntervalId); chatsIntervalId = null; }
 }
 
+function getSessionCookie() {
+  try { return localStorage.getItem('lider_session_cookie') || ''; } catch { return ''; }
+}
+
+function setSessionCookie(val) {
+  try { localStorage.setItem('lider_session_cookie', val); } catch {}
+}
+
 function _arr(data) {
   if (Array.isArray(data)) return data;
   if (data && typeof data === 'object') {
@@ -30,22 +38,18 @@ function _arr(data) {
 }
 
 function _id(item) {
-  if (!item) return '';
   return String(item.id || item._id || item.codigo || item.cod || item.ID || '');
 }
 
 function _name(item) {
-  if (!item) return '';
   return String(item.nome || item.name || item.Nome || item.nm || item.descricao || item.label || item.title || '');
 }
 
 function _status(chat) {
-  if (!chat) return '';
   return String(chat.status || chat.Status || chat.situacao || chat.state || '');
 }
 
 function _protocolo(chat) {
-  if (!chat) return '';
   return String(chat.protocolo || chat.Protocolo || chat.id || chat.ID || chat.numero || chat.num || chat.protocol || '');
 }
 
@@ -65,9 +69,10 @@ function _time(chat) {
 function renderChatsPanel() {
   const c = document.getElementById('chatsContent');
   if (!c) return;
+  const savedCookie = getSessionCookie();
   c.innerHTML = `
 <div class="card" style="padding:var(--s-5)">
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--s-3);margin-bottom:var(--s-5)">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--s-3);margin-bottom:var(--s-4)">
     <h2 style="margin:0;font-size:18px;font-weight:700;color:var(--text-strong)">💬 Chat Online</h2>
     <div style="display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text-secondary)">
@@ -78,6 +83,19 @@ function renderChatsPanel() {
       <span id="chatsTs" style="font-size:11px;color:var(--text-muted)"></span>
     </div>
   </div>
+
+  <!-- Cookie / Conexao -->
+  <div style="margin-bottom:var(--s-4);padding:var(--s-3);background:var(--bg-subtle);border-radius:var(--r-md)">
+    <div style="display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:600;color:var(--text-strong);white-space:nowrap">🔑 Sessão</span>
+      <input id="chatsCookieInput" type="text" style="flex:1;min-width:200px;font-size:12px;padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-surface);color:var(--text-primary);font-family:monospace" placeholder="Cole o cookie connect.sid aqui..." value="${savedCookie}">
+      <button class="btn-small" id="chatsConnectBtn" type="button">Conectar</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
+      Como obter: <code style="background:var(--bg-surface);padding:1px 6px;border-radius:3px">F12 → Application → Cookies → lider.opasuite.com.br → connect.sid</code>
+    </div>
+  </div>
+
   <div id="chatsAlert" class="hidden" style="padding:var(--s-3);border-radius:var(--r-md);margin-bottom:var(--s-4);font-size:13px"></div>
   <div id="chatsDeptGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:var(--s-3);margin-bottom:var(--s-5)"></div>
   <div style="margin-bottom:var(--s-5)">
@@ -97,8 +115,13 @@ function renderChatsPanel() {
   document.getElementById('chatsRefreshBtn').onclick = loadChatsData;
   document.getElementById('chatsAutoCb').onchange = function () {
     chatsAutoRefresh = this.checked;
-    if (this.checked) startChatsRefresh();
-    else stopChatsRefresh();
+    if (this.checked) startChatsRefresh(); else stopChatsRefresh();
+  };
+  document.getElementById('chatsConnectBtn').onclick = function () {
+    const val = document.getElementById('chatsCookieInput').value.trim();
+    if (!val) return;
+    setSessionCookie(val);
+    loadChatsData();
   };
   const filterSel = document.getElementById('chatsDeptFilter');
   if (filterSel) filterSel.onchange = function () {
@@ -106,34 +129,41 @@ function renderChatsPanel() {
     chatsCache.chats = {};
     fetchChats();
   };
-  loadChatsData();
+  if (savedCookie) loadChatsData();
 }
 
 async function loadChatsData() {
+  const cookie = getSessionCookie();
   const alertEl = document.getElementById('chatsAlert');
   const deptGrid = document.getElementById('chatsDeptGrid');
   if (!deptGrid || !alertEl) return;
   alertEl.classList.add('hidden');
+  if (!cookie) {
+    deptGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:var(--s-5);color:var(--text-muted);font-size:13px">Cole o cookie da sessão acima e clique em Conectar.</div>';
+    return;
+  }
   deptGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:var(--s-5);color:var(--text-muted);font-size:13px">Carregando...</div>';
   try {
-    const [d, a] = await Promise.all([fetchProxy('departments'), fetchProxy('agents')]);
+    const [d, a] = await Promise.all([fetchProxy('api/chats/departments', cookie), fetchProxy('api/chats/agents', cookie)]);
     chatsCache.depts = _arr(d);
     chatsCache.agents = _arr(a);
     renderDeptGrid();
     renderAgents();
     updateDeptFilter();
-    await fetchChats();
+    await fetchChats(cookie);
     document.getElementById('chatsTs').textContent = '⏰ ' + new Date().toLocaleTimeString('pt-BR');
   } catch (err) {
     alertEl.className = '';
     alertEl.style.cssText = 'padding:var(--s-3);border-radius:var(--r-md);margin-bottom:var(--s-4);font-size:13px;background:rgba(239,68,68,0.1);color:var(--danger)';
     alertEl.textContent = 'Erro: ' + err.message;
-    deptGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:var(--s-5);color:var(--text-muted);font-size:13px">Falha ao carregar. Verifique se o proxy está implantado e as env vars configuradas.</div>';
+    deptGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:var(--s-4);color:var(--text-muted);font-size:13px">Falha ao conectar. Verifique se o cookie é válido.</div>';
   }
 }
 
-async function fetchProxy(path) {
-  const r = await fetch('/api/chat-proxy?path=' + encodeURIComponent(path));
+async function fetchProxy(path, cookie) {
+  const r = await fetch('/api/chat-proxy?path=' + encodeURIComponent(path), {
+    headers: { 'X-Session-Cookie': cookie }
+  });
   if (!r.ok) {
     const t = await r.text();
     throw new Error(r.status + ': ' + t.slice(0, 150));
@@ -153,19 +183,18 @@ function renderDeptGrid() {
     const id = _id(d);
     const nm = _name(d);
     const active = chatsDept && chatsDept === id;
-    return `<div class="card" data-dept-id="${id}" style="padding:var(--s-3);cursor:pointer;text-align:center;${active ? 'border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-alpha, rgba(99,102,241,0.3))' : ''}">
+    return `<div class="card" data-dept-id="${id}" style="padding:var(--s-3);cursor:pointer;text-align:center;${active ? 'border-color:var(--primary);box-shadow:0 0 0 2px rgba(99,102,241,0.3)' : ''}">
       <div style="font-weight:600;font-size:14px;color:var(--text-strong)">${nm || id}</div>
       <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${id ? 'ID: ' + id : ''}</div>
     </div>`;
   }).join('');
   g.querySelectorAll('.card').forEach(el => {
     el.onclick = () => {
-      const id = el.dataset.deptId;
-      chatsDept = id;
+      chatsDept = el.dataset.deptId;
       const filter = document.getElementById('chatsDeptFilter');
-      if (filter) filter.value = id;
+      if (filter) filter.value = chatsDept;
       chatsCache.chats = {};
-      fetchChats();
+      fetchChats(getSessionCookie());
       renderDeptGrid();
     };
   });
@@ -198,7 +227,7 @@ function updateDeptFilter() {
   if (cur) sel.value = cur;
 }
 
-async function fetchChats() {
+async function fetchChats(cookie) {
   const listEl = document.getElementById('chatsList');
   if (!listEl) return;
   listEl.innerHTML = '<div style="text-align:center;padding:var(--s-4);color:var(--text-muted);font-size:13px">Carregando chats...</div>';
@@ -207,7 +236,7 @@ async function fetchChats() {
     const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
     let allChats = [];
     if (chatsDept) {
-      const data = await fetchProxy(`department/${chatsDept}?start=${today}&end=${tomorrow}`);
+      const data = await fetchProxy(`api/chats/department/${chatsDept}?start=${today}T10:00:00.000Z&end=${tomorrow}T22:00:00.000Z`, cookie);
       allChats = _arr(data);
     } else {
       const depts = chatsCache.depts;
@@ -216,11 +245,9 @@ async function fetchChats() {
         return;
       }
       const results = await Promise.allSettled(depts.slice(0, 10).map(d =>
-        fetchProxy(`department/${_id(d)}?start=${today}&end=${tomorrow}`)
+        fetchProxy(`api/chats/department/${_id(d)}?start=${today}T10:00:00.000Z&end=${tomorrow}T22:00:00.000Z`, cookie)
       ));
-      results.forEach(r => {
-        if (r.status === 'fulfilled') allChats = allChats.concat(_arr(r.value));
-      });
+      results.forEach(r => { if (r.status === 'fulfilled') allChats = allChats.concat(_arr(r.value)); });
     }
     renderChatsList(allChats);
   } catch (err) {
@@ -244,8 +271,7 @@ function renderChatsList(chats) {
   sorted.slice(0, 100).forEach(ch => {
     const prot = _protocolo(ch) || '-';
     const st = _status(ch) || '-';
-    const agents = _agents(ch);
-    const agentNames = agents.map(a => _name(a) || _id(a) || '').filter(Boolean).join(', ') || '-';
+    const agentNames = _agents(ch).map(a => _name(a) || _id(a) || '').filter(Boolean).join(', ') || '-';
     const ia = _ai(ch);
     const tm = _time(ch);
     const tmStr = tm ? (typeof tm === 'string' ? tm.slice(0, 16).replace('T', ' ') : String(tm)) : '-';
