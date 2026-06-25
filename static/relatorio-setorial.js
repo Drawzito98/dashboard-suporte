@@ -116,6 +116,7 @@ function renderRelatorioSetorial() {
   rows.forEach(r => {
     const nome = String(r['Atendente'] || '').trim();
     if (!nome) return;
+    if (typeof isColabActive === 'function' && !isColabActive(nome)) return;
     if (!colabData[nome]) colabData[nome] = { fin: 0, scores: [] };
     colabData[nome].fin += (parseInt(r['Finalizados']) || 0);
     const sc = r['SCORE'];
