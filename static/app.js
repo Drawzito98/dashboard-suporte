@@ -1858,6 +1858,7 @@ function renderChart(rows) {
       maintainAspectRatio: false,
       layout: { padding: { top: 56, right: 16, bottom: 4, left: 4 } },
       plugins: {
+        datalabels: { display: false },
         valueLabels: { integer: false },
         legend: { display: true, position: 'bottom', align: 'center', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 } } },
         tooltip: {
@@ -1945,6 +1946,7 @@ function renderTimelineChart(rows) {
       maintainAspectRatio: false,
       layout: { padding: { top: 8, right: 8, bottom: 4, left: 4 } },
       plugins: {
+        datalabels: { display: false },
         valueLabels: { integer: metric !== 'Score' },
         legend: {
           display: true,
@@ -2039,6 +2041,7 @@ function renderDetailedByMonthChart(rows) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         valueLabels: { integer: false },
+        datalabels: { display: false },
         legend: {
           display: true,
           position: 'bottom',
