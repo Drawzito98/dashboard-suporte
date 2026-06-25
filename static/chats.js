@@ -1,7 +1,8 @@
 let chatsIntervalId = null;
 let chatsAutoRefresh = true;
-let chatsDept = '';
-let chatsCache = { depts: [], agents: [], chats: {} };
+const CHATS_DEFAULT_DEPT = '6595602255960f38e6f6b9b1';
+const CHATS_PROXY = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+  ? '/proxy' : '/api/chat-proxy';
 
 function onChatsTabActivated() {
   renderChatsPanel();
@@ -27,43 +28,46 @@ function setSessionCookie(val) {
   try { localStorage.setItem('lider_session_cookie', val); } catch {}
 }
 
-function _arr(data) {
-  if (Array.isArray(data)) return data;
-  if (data && typeof data === 'object') {
-    for (const k of ['departments', 'agents', 'chats', 'data', 'items', 'list', 'results']) {
-      if (Array.isArray(data[k])) return data[k];
+async function fetchProxy(path, cookie) {
+  const r = await fetch(CHATS_PROXY + '?path=' + encodeURIComponent(path), {
+    headers: { 'X-Session-Cookie': cookie }
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(r.status + ': ' + t.slice(0, 150));
+  }
+  return r.json();
+}
+
+function getBrazilDate() {
+  const br = Date.now() - 3 * 3600 * 1000;
+  return new Date(br).toISOString().slice(0, 10);
+}
+
+function computeAgentMetrics(chats, agentId) {
+  const today = getBrazilDate();
+  let assumiu = 0, transferiu = 0, finalizou = 0;
+  for (const c of chats) {
+    const status = c.status || '';
+    const history = c.history || [];
+    const allAtts = history.filter(h => h.type === 'in_attendance');
+    const humanAtts = allAtts.filter(h => h.isHumanAgent === true);
+    const agentAtts = humanAtts.filter(h => h.agentId === agentId);
+    if (!agentAtts.length) continue;
+    const aDate = new Date((agentAtts[0].start || 0)).toISOString().slice(0, 10);
+    if (aDate !== today) continue;
+    if (!humanAtts.length || humanAtts[0].agentId !== agentId) continue;
+    if (allAtts.some(h => h.isHumanAgent === false)) continue;
+    assumiu++;
+    const last = agentAtts[agentAtts.length - 1];
+    const later = humanAtts.filter(h => (h.start || 0) > (last.start || 0));
+    if (later.length) {
+      transferiu++;
+    } else if (status === 'F') {
+      finalizou++;
     }
   }
-  return [];
-}
-
-function _id(item) {
-  return String(item.id || item._id || item.codigo || item.cod || item.ID || '');
-}
-
-function _name(item) {
-  return String(item.nome || item.name || item.Nome || item.nm || item.descricao || item.label || item.title || '');
-}
-
-function _status(chat) {
-  return String(chat.status || chat.Status || chat.situacao || chat.state || '');
-}
-
-function _protocolo(chat) {
-  return String(chat.protocolo || chat.Protocolo || chat.id || chat.ID || chat.numero || chat.num || chat.protocol || '');
-}
-
-function _ai(chat) {
-  return !!(chat.aiAssisted || chat.ai_assisted || chat.ai || chat.AI || chat.iaAssistida);
-}
-
-function _agents(chat) {
-  const a = chat.agents || chat.agentes || chat.Agents || chat.Agentes || chat.agent || [];
-  return Array.isArray(a) ? a : (a ? [a] : []);
-}
-
-function _time(chat) {
-  return chat.createdAt || chat.created_at || chat.createdAt || chat.data || chat.Data || chat.dataHora || chat.inicio || chat.start || '';
+  return { assumiu, transferiu, finalizou };
 }
 
 function renderChatsPanel() {
@@ -84,7 +88,6 @@ function renderChatsPanel() {
     </div>
   </div>
 
-  <!-- Cookie / Conexao -->
   <div style="margin-bottom:var(--s-4);padding:var(--s-3);background:var(--bg-subtle);border-radius:var(--r-md)">
     <div style="display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap">
       <span style="font-size:13px;font-weight:600;color:var(--text-strong);white-space:nowrap">🔑 Sessão</span>
@@ -97,19 +100,25 @@ function renderChatsPanel() {
   </div>
 
   <div id="chatsAlert" class="hidden" style="padding:var(--s-3);border-radius:var(--r-md);margin-bottom:var(--s-4);font-size:13px"></div>
-  <div id="chatsDeptGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:var(--s-3);margin-bottom:var(--s-5)"></div>
-  <div style="margin-bottom:var(--s-5)">
-    <h3 style="font-size:14px;font-weight:600;margin:0 0 var(--s-3);color:var(--text-strong)">👤 Agentes</h3>
-    <div id="chatsAgentsTbl" style="overflow-x:auto"></div>
+
+  <div style="margin-bottom:var(--s-4);padding:var(--s-3);background:var(--bg-subtle);border-radius:var(--r-md)">
+    <div style="font-size:13px;font-weight:600;color:var(--text-strong);margin-bottom:var(--s-2)">📋 Departamento: ¡HOLA! - Telefonía</div>
+    <div id="chatsDeptGrid" style="font-size:13px;color:var(--text-secondary)"></div>
   </div>
-  <div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-3);flex-wrap:wrap;gap:var(--s-2)">
-      <h3 style="font-size:14px;font-weight:600;margin:0;color:var(--text-strong)">💬 Chats</h3>
-      <select id="chatsDeptFilter" style="font-size:12px;padding:4px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-surface);color:var(--text-primary);max-width:200px">
-        <option value="">Todos os departamentos</option>
-      </select>
-    </div>
-    <div id="chatsList" style="overflow-x:auto"></div>
+
+  <div style="overflow-x:auto">
+    <table class="ranking-table" style="min-width:500px">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Colaborador</th>
+          <th>Assumiu</th>
+          <th>Transferiu</th>
+          <th>Finalizou</th>
+        </tr>
+      </thead>
+      <tbody id="chatsAgentsBody"></tbody>
+    </table>
   </div>
 </div>`;
   document.getElementById('chatsRefreshBtn').onclick = loadChatsData;
@@ -123,12 +132,6 @@ function renderChatsPanel() {
     setSessionCookie(val);
     loadChatsData();
   };
-  const filterSel = document.getElementById('chatsDeptFilter');
-  if (filterSel) filterSel.onchange = function () {
-    chatsDept = this.value;
-    chatsCache.chats = {};
-    fetchChats();
-  };
   if (savedCookie) loadChatsData();
 }
 
@@ -136,154 +139,58 @@ async function loadChatsData() {
   const cookie = getSessionCookie();
   const alertEl = document.getElementById('chatsAlert');
   const deptGrid = document.getElementById('chatsDeptGrid');
-  if (!deptGrid || !alertEl) return;
+  const tbody = document.getElementById('chatsAgentsBody');
+  if (!deptGrid || !alertEl || !tbody) return;
   alertEl.classList.add('hidden');
   if (!cookie) {
-    deptGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:var(--s-5);color:var(--text-muted);font-size:13px">Cole o cookie da sessão acima e clique em Conectar.</div>';
+    deptGrid.innerHTML = 'Cole o cookie da sessão acima e clique em Conectar.';
     return;
   }
-  deptGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:var(--s-5);color:var(--text-muted);font-size:13px">Carregando...</div>';
+  deptGrid.innerHTML = 'Carregando...';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:var(--s-4);color:var(--text-muted);font-size:13px">Carregando...</td></tr>';
   try {
-      const [d, a] = await Promise.all([fetchProxy('api/departments', cookie), fetchProxy('api/agents', cookie)]);
-    chatsCache.depts = _arr(d);
-    chatsCache.agents = _arr(a);
-    renderDeptGrid();
-    renderAgents();
-    updateDeptFilter();
-    await fetchChats(cookie);
+    const deptData = await fetchProxy(
+      `api/chats/department/${CHATS_DEFAULT_DEPT}?start=2026-01-01T10:00:00.000Z&end=2026-12-31T22:00:00.000Z`,
+      cookie
+    );
+    const agents = (deptData.agents || []).map(a => ({ id: a.id, name: a.name }));
+    deptGrid.innerHTML = `Agentes encontrados: <strong>${agents.length}</strong>`;
+
+    const brNow = Date.now() - 3 * 3600 * 1000;
+    const today = new Date(brNow).toISOString().slice(0, 10);
+    const tomorrow = new Date(brNow + 86400000).toISOString().slice(0, 10);
+
+    const rows = [];
+    for (const a of agents) {
+      try {
+        const data = await fetchProxy(
+          `api/chats/agent/${a.id}?start=${today}T03:00:00.000Z&end=${tomorrow}T03:00:00.000Z`,
+          cookie
+        );
+        const metrics = computeAgentMetrics(data.chats || [], a.id);
+        rows.push({ name: a.name, ...metrics });
+      } catch {
+        rows.push({ name: a.name, assumiu: 0, transferiu: 0, finalizou: 0 });
+      }
+    }
+
+    rows.sort((a, b) => b.assumiu - a.assumiu || b.finalizou - a.finalizou || a.name.localeCompare(b.name));
+
+    tbody.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td><strong>${r.name}</strong></td>
+        <td style="color:var(--text-strong)">${r.assumiu}</td>
+        <td style="color:#f59e0b">${r.transferiu}</td>
+        <td style="color:#22c55e">${r.finalizou}</td>
+      </tr>
+    `).join('');
+
     document.getElementById('chatsTs').textContent = '⏰ ' + new Date().toLocaleTimeString('pt-BR');
   } catch (err) {
     alertEl.className = '';
     alertEl.style.cssText = 'padding:var(--s-3);border-radius:var(--r-md);margin-bottom:var(--s-4);font-size:13px;background:rgba(239,68,68,0.1);color:var(--danger)';
     alertEl.textContent = 'Erro: ' + err.message;
-    deptGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:var(--s-4);color:var(--text-muted);font-size:13px">Falha ao conectar. Verifique se o cookie é válido.</div>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:var(--s-4);color:var(--text-muted);font-size:13px">Falha ao conectar.</td></tr>';
   }
-}
-
-async function fetchProxy(path, cookie) {
-  const r = await fetch('/api/chat-proxy?path=' + encodeURIComponent(path), {
-    headers: { 'X-Session-Cookie': cookie }
-  });
-  if (!r.ok) {
-    const t = await r.text();
-    throw new Error(r.status + ': ' + t.slice(0, 150));
-  }
-  return r.json();
-}
-
-function renderDeptGrid() {
-  const g = document.getElementById('chatsDeptGrid');
-  if (!g) return;
-  const depts = chatsCache.depts;
-  if (!depts.length) {
-    g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:var(--s-4);color:var(--text-muted);font-size:13px">Nenhum departamento encontrado.</div>';
-    return;
-  }
-  g.innerHTML = depts.map(d => {
-    const id = _id(d);
-    const nm = _name(d);
-    const active = chatsDept && chatsDept === id;
-    return `<div class="card" data-dept-id="${id}" style="padding:var(--s-3);cursor:pointer;text-align:center;${active ? 'border-color:var(--primary);box-shadow:0 0 0 2px rgba(99,102,241,0.3)' : ''}">
-      <div style="font-weight:600;font-size:14px;color:var(--text-strong)">${nm || id}</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${id ? 'ID: ' + id : ''}</div>
-    </div>`;
-  }).join('');
-  g.querySelectorAll('.card').forEach(el => {
-    el.onclick = () => {
-      chatsDept = el.dataset.deptId;
-      const filter = document.getElementById('chatsDeptFilter');
-      if (filter) filter.value = chatsDept;
-      chatsCache.chats = {};
-      fetchChats(getSessionCookie());
-      renderDeptGrid();
-    };
-  });
-}
-
-function renderAgents() {
-  const t = document.getElementById('chatsAgentsTbl');
-  if (!t) return;
-  const agents = chatsCache.agents;
-  if (!agents.length) {
-    t.innerHTML = '<div style="padding:var(--s-3);color:var(--text-muted);font-size:13px">Nenhum agente encontrado.</div>';
-    return;
-  }
-  let html = '<table class="ranking-table" style="min-width:400px"><thead><tr><th>Nome</th><th>Departamento</th></tr></thead><tbody>';
-  agents.forEach(a => {
-    const nm = _name(a);
-    const deptNm = _name(a.department || a.departamento || a.setor || a.Departamento || '');
-    html += `<tr><td><strong>${nm || _id(a)}</strong></td><td>${deptNm || '-'}</td></tr>`;
-  });
-  html += '</tbody></table>';
-  t.innerHTML = html;
-}
-
-function updateDeptFilter() {
-  const sel = document.getElementById('chatsDeptFilter');
-  if (!sel) return;
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">Todos os departamentos</option>' +
-    chatsCache.depts.map(d => `<option value="${_id(d)}">${_name(d) || _id(d)}</option>`).join('');
-  if (cur) sel.value = cur;
-}
-
-async function fetchChats(cookie) {
-  const listEl = document.getElementById('chatsList');
-  if (!listEl) return;
-  listEl.innerHTML = '<div style="text-align:center;padding:var(--s-4);color:var(--text-muted);font-size:13px">Carregando chats...</div>';
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-    let allChats = [];
-    if (chatsDept) {
-      const data = await fetchProxy(`api/chats/department/${chatsDept}?start=${today}T10:00:00.000Z&end=${tomorrow}T22:00:00.000Z`, cookie);
-      allChats = _arr(data);
-    } else {
-      const depts = chatsCache.depts;
-      if (!depts.length) {
-        listEl.innerHTML = '<div style="text-align:center;padding:var(--s-4);color:var(--text-muted);font-size:13px">Nenhum departamento disponível.</div>';
-        return;
-      }
-      const results = await Promise.allSettled(depts.slice(0, 10).map(d =>
-        fetchProxy(`api/chats/department/${_id(d)}?start=${today}T10:00:00.000Z&end=${tomorrow}T22:00:00.000Z`, cookie)
-      ));
-      results.forEach(r => { if (r.status === 'fulfilled') allChats = allChats.concat(_arr(r.value)); });
-    }
-    renderChatsList(allChats);
-  } catch (err) {
-    listEl.innerHTML = `<div style="text-align:center;padding:var(--s-4);color:var(--danger);font-size:13px">Erro ao carregar chats: ${err.message}</div>`;
-  }
-}
-
-function renderChatsList(chats) {
-  const listEl = document.getElementById('chatsList');
-  if (!listEl) return;
-  if (!chats || !chats.length) {
-    listEl.innerHTML = '<div style="text-align:center;padding:var(--s-4);color:var(--text-muted);font-size:13px">Nenhum chat encontrado no período.</div>';
-    return;
-  }
-  const sorted = [...chats].sort((a, b) => {
-    const ta = String(_time(a) || '');
-    const tb = String(_time(b) || '');
-    return tb.localeCompare(ta);
-  });
-  let html = '<table class="ranking-table" style="min-width:600px"><thead><tr><th>Protocolo</th><th>Status</th><th>Agentes</th><th>IA</th><th>Início</th></tr></thead><tbody>';
-  sorted.slice(0, 100).forEach(ch => {
-    const prot = _protocolo(ch) || '-';
-    const st = _status(ch) || '-';
-    const agentNames = _agents(ch).map(a => _name(a) || _id(a) || '').filter(Boolean).join(', ') || '-';
-    const ia = _ai(ch);
-    const tm = _time(ch);
-    const tmStr = tm ? (typeof tm === 'string' ? tm.slice(0, 16).replace('T', ' ') : String(tm)) : '-';
-    html += `<tr>
-      <td><strong>${prot}</strong></td>
-      <td>${st}</td>
-      <td>${agentNames}</td>
-      <td>${ia ? '<span style="color:var(--accent);font-weight:600">🤖 Sim</span>' : '-'}</td>
-      <td style="font-size:12px;color:var(--text-secondary)">${tmStr}</td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  if (sorted.length > 100) html += `<div style="text-align:center;padding:var(--s-2);font-size:12px;color:var(--text-muted)">Mostrando 100 de ${sorted.length} chats</div>`;
-  listEl.innerHTML = html;
 }
