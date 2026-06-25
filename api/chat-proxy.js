@@ -1,4 +1,4 @@
-const API_BASE = 'https://lider.opasuite.com.br';
+const LIDER = 'https://lider.opasuite.com.br';
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -10,17 +10,14 @@ module.exports = async (req, res) => {
   const sessionCookie = req.headers['x-session-cookie'];
   if (!sessionCookie) return res.status(401).json({ error: 'X-Session-Cookie header required' });
   try {
-    const apiUrl = `${API_BASE}/${path}`;
+    const apiUrl = `${LIDER}/${path}`;
     const response = await fetch(apiUrl, {
       headers: {
         'Cookie': `connect.sid=${sessionCookie}`,
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
         'Accept': '*/*',
         'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Referer': 'https://lider.opasuite.com.br/',
-        'Sec-Fetch-Site': 'same-origin',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Dest': 'empty'
+        'Referer': 'https://lider.opasuite.com.br/'
       }
     });
     if (!response.ok && response.status !== 304) {

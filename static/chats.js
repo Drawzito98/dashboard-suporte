@@ -144,7 +144,7 @@ async function loadChatsData() {
   }
   deptGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:var(--s-5);color:var(--text-muted);font-size:13px">Carregando...</div>';
   try {
-    const [d, a] = await Promise.all([fetchProxy('api/chats/departments', cookie), fetchProxy('api/chats/agents', cookie)]);
+      const [d, a] = await Promise.all([fetchProxy('api/departments', cookie), fetchProxy('api/agents', cookie)]);
     chatsCache.depts = _arr(d);
     chatsCache.agents = _arr(a);
     renderDeptGrid();
