@@ -21,9 +21,9 @@ const globalFilters = {
   setor: 'all',
   scoreMinimo: 0,
   metaAtingida: 'all',
-  favoritos: false,
   pesquisa: '',
   mesesSelecionados: [],
+  _colabNames: [],
 
   _listeners: [],
 
@@ -85,10 +85,6 @@ const globalFilters = {
       });
     }
 
-    if (this.favoritos && window.__favoriteColabs && window.__favoriteColabs.size) {
-      data = data.filter(r => window.__favoriteColabs.has(String(r['Atendente'])));
-    }
-
     if (this.pesquisa) {
       const q = String(this.pesquisa).toLowerCase();
       data = data.filter(r => {
@@ -108,7 +104,6 @@ const globalFilters = {
         setor: this.setor,
         scoreMinimo: this.scoreMinimo,
         metaAtingida: this.metaAtingida,
-        favoritos: this.favoritos,
         pesquisa: this.pesquisa,
         mesesSelecionados: this.mesesSelecionados
       };
@@ -134,7 +129,6 @@ const globalFilters = {
     this.setor = 'all';
     this.scoreMinimo = 0;
     this.metaAtingida = 'all';
-    this.favoritos = false;
     this.pesquisa = '';
     this.mesesSelecionados = [];
     this._syncUI();
@@ -159,10 +153,6 @@ const globalFilters = {
             <select id="gfSetor"><option value="all">Todos</option></select>
           </label>
           <label class="global-filter-field">
-            <span>Colaborador</span>
-            <select id="gfColaborador"><option value="all">Todos</option></select>
-          </label>
-          <label class="global-filter-field">
             <span>Score mín.</span>
             <select id="gfScoreMinimo">
               <option value="0">0</option>
@@ -180,13 +170,10 @@ const globalFilters = {
               <option value="nao">Não atingida</option>
             </select>
           </label>
-          <label class="global-filter-field" style="flex-direction:row;align-items:center;gap:6px;padding-top:18px">
-            <input type="checkbox" id="gfFavoritos" style="accent-color:var(--accent)"/>
-            <span style="font-size:12px;font-weight:500;color:var(--text-secondary)">⭐ Favoritos</span>
-          </label>
-          <label class="global-filter-field" style="flex:1;min-width:150px">
-            <span>Buscar</span>
-            <input type="text" id="gfPesquisa" placeholder="Nome..." style="padding:6px 10px;font-size:12px"/>
+          <label class="global-filter-field" style="flex:1;min-width:180px">
+            <span>Colaborador / Busca</span>
+            <input type="text" id="gfPesquisa" placeholder="Digite um nome ou busque..." list="gfColabList" autocomplete="off" style="padding:6px 10px;font-size:12px"/>
+            <datalist id="gfColabList"></datalist>
           </label>
           <div style="display:flex;align-items:flex-end;padding-bottom:2px;gap:4px">
             <button class="btn-small" id="gfApplyBtn" type="button" style="padding:6px 12px;font-size:12px">Filtrar</button>
@@ -270,19 +257,23 @@ const globalFilters = {
   _collectAndNotify() {
     const periodo = document.getElementById('gfPeriodo');
     const setor = document.getElementById('gfSetor');
-    const colab = document.getElementById('gfColaborador');
     const score = document.getElementById('gfScoreMinimo');
     const meta = document.getElementById('gfMetaAtingida');
-    const fav = document.getElementById('gfFavoritos');
     const pesq = document.getElementById('gfPesquisa');
 
     this.periodo = periodo ? periodo.value : 'all';
     this.setor = setor ? setor.value : 'all';
-    this.colaborador = colab ? colab.value : 'all';
     this.scoreMinimo = score ? parseFloat(score.value) : 0;
     this.metaAtingida = meta ? meta.value : 'all';
-    this.favoritos = fav ? fav.checked : false;
-    this.pesquisa = pesq ? pesq.value.trim() : '';
+
+    const q = pesq ? pesq.value.trim() : '';
+    if (q && this._colabNames.some(n => n.toLowerCase() === q.toLowerCase())) {
+      this.colaborador = q;
+      this.pesquisa = '';
+    } else {
+      this.colaborador = 'all';
+      this.pesquisa = q;
+    }
 
     if (this.periodo === '__multi__') {
       this.mesesSelecionados = [];
@@ -306,11 +297,13 @@ const globalFilters = {
     };
     setVal('gfPeriodo', this.periodo);
     setVal('gfSetor', this.setor);
-    setVal('gfColaborador', this.colaborador);
     setVal('gfScoreMinimo', String(this.scoreMinimo));
     setVal('gfMetaAtingida', this.metaAtingida);
-    setVal('gfFavoritos', this.favoritos);
-    setVal('gfPesquisa', this.pesquisa);
+
+    const pesq = document.getElementById('gfPesquisa');
+    if (pesq) {
+      pesq.value = this.colaborador !== 'all' ? this.colaborador : this.pesquisa;
+    }
 
     const panel = document.getElementById('gfMonthMulti');
     if (panel) panel.style.display = this.periodo === '__multi__' ? '' : 'none';
@@ -337,7 +330,6 @@ const globalFilters = {
     if (this.colaborador && this.colaborador !== 'all') parts.push(`Colab: ${this.colaborador}`);
     if (this.scoreMinimo > 0) parts.push(`Score ≥ ${this.scoreMinimo}`);
     if (this.metaAtingida !== 'all') parts.push(`Meta: ${this.metaAtingida === 'sim' ? '✅' : '❌'}`);
-    if (this.favoritos) parts.push('⭐ Favoritos');
     if (this.pesquisa) parts.push(`Busca: ${this.pesquisa}`);
     chips.innerHTML = parts.length
       ? parts.map(p => `<span class="chip">${p}</span>`).join(' ')
@@ -345,12 +337,10 @@ const globalFilters = {
   },
 
   _updateColaboradorOptions() {
-    const colab = document.getElementById('gfColaborador');
     const setorEl = document.getElementById('gfSetor');
-    if (!colab || !setorEl) return;
+    if (!setorEl) return;
     const setorVal = setorEl.value;
 
-    // Determina meses ativos para refinar a lista de colaboradores
     let activeMonths = null;
     if (this.periodo && this.periodo !== 'all' && this.periodo !== '__multi__') {
       activeMonths = [this.periodo];
@@ -372,14 +362,13 @@ const globalFilters = {
     if (typeof isColabActive === 'function') {
       cols = cols.filter(c => isColabActive(c));
     }
-    const current = colab.value;
-    colab.innerHTML = '<option value="all">Todos</option>' + cols.map(v =>
-      `<option value="${String(v).replace(/"/g, '&quot;')}">${String(v).replace(/"/g, '&quot;')}</option>`
-    ).join('');
-    if (current && [...colab.options].some(o => o.value === current)) {
-      colab.value = current;
-    } else {
-      colab.value = 'all';
+    this._colabNames = cols;
+
+    const dataList = document.getElementById('gfColabList');
+    if (dataList) {
+      dataList.innerHTML = cols.map(v =>
+        `<option value="${String(v).replace(/"/g, '&quot;')}">`
+      ).join('');
     }
   },
 

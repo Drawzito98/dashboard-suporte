@@ -70,7 +70,6 @@ function renderColabDetail(name) {
 
   const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
-  const isFav = window.__favoriteColabs && window.__favoriteColabs.has(name);
   const aliasMap = buildAliasMap([name]);
   const displayName = getDisplayName(name, aliasMap);
 
@@ -81,9 +80,7 @@ function renderColabDetail(name) {
         <h2>${escapeHtml(displayName)}</h2>
         <p>${escapeHtml(setores.join(', '))} · ${meses.length} ${meses.length === 1 ? 'período' : 'períodos'} · #${rankPos} no ranking</p>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="fav-btn" id="colabFavBtn" type="button" title="${isFav ? 'Remover dos favoritos' : 'Favoritar'}">${isFav ? '⭐' : '☆'}</button>
-        ${perfilLink ? `<button class="btn-small" id="colabPerfilBtn" type="button">📄 Perfil</button>` : ''}
+      <div style="display:flex;gap:8px;align-items:center">${perfilLink ? `<button class="btn-small" id="colabPerfilBtn" type="button">📄 Perfil</button>` : ''}
       </div>
     </div>
 
@@ -165,16 +162,6 @@ function renderColabDetail(name) {
   </table></div>`;
 
   container.innerHTML = html;
-
-  // Bind fav button
-  const favBtn = document.getElementById('colabFavBtn');
-  if (favBtn) {
-    favBtn.addEventListener('click', () => {
-      toggleFavorite(name);
-      favBtn.textContent = window.__favoriteColabs && window.__favoriteColabs.has(name) ? '⭐' : '☆';
-      favBtn.title = window.__favoriteColabs && window.__favoriteColabs.has(name) ? 'Remover dos favoritos' : 'Favoritar';
-    });
-  }
 
   // Bind perfil button
   const perfilBtn = document.getElementById('colabPerfilBtn');

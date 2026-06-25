@@ -157,13 +157,12 @@ function renderGamification() {
     const streak = computeStreak(item.name);
     const posClass = i === 0 ? 'gold' : (i === 1 ? 'silver' : (i === 2 ? 'bronze' : ''));
     const medalIcons = medals.slice(0, 3).map(m => `<span title="${escapeHtml(m.name + ': ' + m.desc)}">${m.icon}</span>`).join(' ');
-    const isFav = window.__favoriteColabs && window.__favoriteColabs.has(item.name);
 
     const breakdown = item.score.breakdown || {};
     const posPts = Object.values(breakdown).filter(v => v > 0).reduce((s, v) => s + v, 0);
     const negPts = Object.values(breakdown).filter(v => v < 0).reduce((s, v) => s + v, 0);
 
-    html += `<tr class="${isFav ? 'highlight-row' : ''}">
+    html += `<tr>
       <td><span class="rank-pos-badge ${posClass}">${i + 1}</span></td>
       <td style="display:flex;align-items:center;gap:8px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(item.name, 28) : ''}<strong>${escapeHtml(getDisplayName(item.name, aliasMap))}</strong></td>
       <td><strong>${item.score.total.toFixed(1)}</strong></td>
