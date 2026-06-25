@@ -2770,9 +2770,6 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') {
         onRelatorioSetorialTabActivated();
       }
-      if (tab === 'chats' && typeof onChatsTabActivated === 'function') {
-        onChatsTabActivated();
-      }
       if (tab === 'dashboard') {
         updateView();
       }
