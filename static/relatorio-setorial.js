@@ -491,14 +491,14 @@ function renderRelatorioSetorial() {
                   },
                   anchor: 'end',
                   align: 'end',
-                  color: '#6366f1',
-                  font: { weight: 'bold', size: 9.5 },
+                  color: () => (typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : '#1e293b',
+                  font: { weight: '600', size: 12 },
                   formatter: (value, ctx) => {
                     const i = ctx.dataIndex;
                     const sc = monthData[i]?.sc;
                     return sc > 0 ? '☆ ' + Number(sc).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
                   },
-                  offset: 2
+                  offset: 4
                 }
               }
             },
