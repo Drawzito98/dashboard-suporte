@@ -2811,7 +2811,7 @@ async function exportPDFcomGrafico() {
     // Título
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text('Relatório Executivo - Dashboard de Suporte', pageW / 2, y, { align: 'center' });
+    doc.text('Relatório Executivo - IXC CG · Painel de Suporte', pageW / 2, y, { align: 'center' });
     y += 10;
 
     doc.setFontSize(10);

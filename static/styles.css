@@ -286,6 +286,7 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-6) var(--s-6) var
 
 /* ===== Topbar ===== */
 .topbar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -293,6 +294,16 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-6) var(--s-6) var
   margin-bottom: var(--s-6);
   padding-bottom: var(--s-5);
   border-bottom: 1px solid var(--border);
+}
+.topbar::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 72px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
 }
 .titleblock h1 {
   font-size: 24px;
@@ -376,7 +387,7 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-6) var(--s-6) var
   box-shadow: var(--shadow-sm);
   transition: box-shadow var(--t-base), border-color var(--t-base), transform var(--t-base);
 }
-.card:hover { box-shadow: var(--shadow-md); }
+.card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .panel { padding: var(--s-5); }
 .card  { padding: var(--s-6); }
 
@@ -1069,6 +1080,17 @@ body.meeting-mode .menu-dd { display: none !important; }
   color: var(--accent);
   font-weight: 600;
   box-shadow: var(--shadow-xs);
+  position: relative;
+}
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 20%;
+  width: 60%;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
 }
 .tab-btn .tab-icon { font-size: 16px; line-height: 1; }
 .tab-content { display: none; }
@@ -2037,6 +2059,15 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ===== Scrollbar sutil ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* ===== Focus visível global ===== */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Acessibilidade ===== */
 @media (prefers-reduced-motion: reduce) {
