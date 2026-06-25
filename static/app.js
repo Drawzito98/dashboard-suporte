@@ -853,7 +853,8 @@ const ctx = document.getElementById('mainChart');
 const restoreHiddenBtn = document.getElementById('restoreHiddenBtn');
 
 if (typeof Chart !== 'undefined' && Chart.defaults) {
-  Chart.defaults.color = '#1f2937';
+  const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  Chart.defaults.color = initialTheme === 'dark' ? '#e2e8f0' : '#1f2937';
 }
 
 // ── Removed: parseCsvFile, showImportError, importCsvFiles, onFileInputChange, normalizeRecords, isAggregateName, normalizeNumber, parseDateKey moved to static/csv-import.js ──
@@ -2990,6 +2991,9 @@ function setCaretToEnd(el) {
   function setTheme(t){
     document.documentElement.setAttribute('data-theme', t);
     try { localStorage.setItem('theme', t); } catch(e) {}
+    if (typeof Chart !== 'undefined' && Chart.defaults) {
+      Chart.defaults.color = t === 'dark' ? '#e2e8f0' : '#1f2937';
+    }
     updateButtons(t);
     updateChartTheme();
   }
