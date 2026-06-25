@@ -19,7 +19,6 @@ const globalFilters = {
   periodo: 'all',
   colaborador: 'all',
   setor: 'all',
-  scoreMinimo: 0,
   pesquisa: '',
   mesesSelecionados: [],
   _colabNames: [],
@@ -63,13 +62,6 @@ const globalFilters = {
       data = data.filter(r => String(r['Atendente']) === this.colaborador);
     }
 
-    if (this.scoreMinimo > 0) {
-      data = data.filter(r => {
-        const sc = r['SCORE'];
-        return sc !== null && sc !== undefined && !isNaN(Number(sc)) && Number(sc) >= this.scoreMinimo;
-      });
-    }
-
     if (this.pesquisa) {
       const q = String(this.pesquisa).toLowerCase();
       data = data.filter(r => {
@@ -87,7 +79,6 @@ const globalFilters = {
         periodo: this.periodo,
         colaborador: this.colaborador,
         setor: this.setor,
-        scoreMinimo: this.scoreMinimo,
         pesquisa: this.pesquisa,
         mesesSelecionados: this.mesesSelecionados
       };
@@ -111,7 +102,6 @@ const globalFilters = {
     this.periodo = 'all';
     this.colaborador = 'all';
     this.setor = 'all';
-    this.scoreMinimo = 0;
     this.pesquisa = '';
     this.mesesSelecionados = [];
     this._syncUI();
@@ -134,16 +124,6 @@ const globalFilters = {
           <label class="global-filter-field">
             <span>Setor</span>
             <select id="gfSetor"><option value="all">Todos</option></select>
-          </label>
-          <label class="global-filter-field">
-            <span>Score mín.</span>
-            <select id="gfScoreMinimo">
-              <option value="0">0</option>
-              <option value="3.0">3.0</option>
-              <option value="3.5">3.5</option>
-              <option value="4.0">4.0</option>
-              <option value="4.5">4.5</option>
-            </select>
           </label>
           <label class="global-filter-field" style="flex:1;min-width:180px">
             <span>Colaborador / Busca</span>
@@ -232,12 +212,10 @@ const globalFilters = {
   _collectAndNotify() {
     const periodo = document.getElementById('gfPeriodo');
     const setor = document.getElementById('gfSetor');
-    const score = document.getElementById('gfScoreMinimo');
     const pesq = document.getElementById('gfPesquisa');
 
     this.periodo = periodo ? periodo.value : 'all';
     this.setor = setor ? setor.value : 'all';
-    this.scoreMinimo = score ? parseFloat(score.value) : 0;
 
     const q = pesq ? pesq.value.trim() : '';
     if (q && this._colabNames.some(n => n.toLowerCase() === q.toLowerCase())) {
@@ -270,7 +248,6 @@ const globalFilters = {
     };
     setVal('gfPeriodo', this.periodo);
     setVal('gfSetor', this.setor);
-    setVal('gfScoreMinimo', String(this.scoreMinimo));
 
     const pesq = document.getElementById('gfPesquisa');
     if (pesq) {
@@ -300,7 +277,6 @@ const globalFilters = {
     }
     if (this.setor && this.setor !== 'all') parts.push(`Setor: ${this.setor}`);
     if (this.colaborador && this.colaborador !== 'all') parts.push(`Colab: ${this.colaborador}`);
-    if (this.scoreMinimo > 0) parts.push(`Score ≥ ${this.scoreMinimo}`);
     if (this.pesquisa) parts.push(`Busca: ${this.pesquisa}`);
     chips.innerHTML = parts.length
       ? parts.map(p => `<span class="chip">${p}</span>`).join(' ')

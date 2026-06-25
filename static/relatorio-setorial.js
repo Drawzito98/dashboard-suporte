@@ -320,9 +320,9 @@ function renderRelatorioSetorial() {
       <div style="overflow-x:auto"><table class="ranking-table" style="min-width:680px">
         <thead><tr>
           <th style="position:sticky;top:0;background:var(--bg-elevated)">Mês</th>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Finalizados</th>
           <th style="position:sticky;top:0;background:var(--bg-elevated)">Assumidos</th>
           <th style="position:sticky;top:0;background:var(--bg-elevated)">Transferidos</th>
+          <th style="position:sticky;top:0;background:var(--bg-elevated)">Finalizados</th>
           <th style="position:sticky;top:0;background:var(--bg-elevated)">Score</th>
           <th style="position:sticky;top:0;background:var(--bg-elevated)">Prod.</th>
           <th style="position:sticky;top:0;background:var(--bg-elevated)">Colabs</th>
@@ -338,9 +338,9 @@ function renderRelatorioSetorial() {
           const dProd = prev && prev.hasData && prev.prod > 0 ? _deltaHtml(_calcDeltaPct(prev.prod, md.prod)) : '';
           return `<tr>
             <td><strong>${md.mes}</strong></td>
-            <td>${fmtNum(md.fin)}${dFin}</td>
             <td>${fmtNum(md.ass)}${dAss}</td>
             <td>${fmtNum(md.tra)}${dTra}</td>
+            <td>${fmtNum(md.fin)}${dFin}</td>
             <td class="score-cell ${cls}">${fmtScore(md.scAvg)}${dSc}</td>
             <td>${fmtPct(md.prod)}${dProd}</td>
             <td>${md.cols}</td>
