@@ -114,15 +114,15 @@ function renderRelatorioSetorial() {
   html += `<div class="rs-section">
     <h2 class="rs-section-title">\uD83D\uDCCA Panorama Geral da Operação</h2>
     <div class="gamification-stats rs-kpis">
-      <div class="kpi"><div class="label">Finalizados</div><div class="value">${fmtNum(totalFin)}</div></div>
       <div class="kpi"><div class="label">Assumidos</div><div class="value">${fmtNum(totalAss)}</div></div>
       <div class="kpi"><div class="label">Transferidos</div><div class="value">${fmtNum(totalTra)}</div><div class="sub">${fmtPct(traGeral)}</div></div>
+      <div class="kpi"><div class="label">Finalizados</div><div class="value">${fmtNum(totalFin)}</div></div>
       <div class="kpi"><div class="label">Score Geral da Operação</div><div class="value ${avgScore > 0 ? getClasseScore(avgScore) : ''}">${fmtScore(avgScore)}</div></div>
       <div class="kpi"><div class="label">Produtividade Geral</div><div class="value">${fmtPct(prodGeral)}</div></div>
       <div class="kpi" id="rsAtendentesKpi" style="cursor:pointer" title="Clique para ver a lista de atendentes"><div class="label">Atendentes</div><div class="value">${totalAtendentes}</div></div>
       <div class="kpi"><div class="label">Setores</div><div class="value">${setores.length}</div></div>
     </div>
-    <p class="rs-obs" style="font-size:12px;color:var(--text-muted);margin-top:var(--s-3);font-style:italic">O score geral foi calculado considerando o peso operacional (volume de atendimentos) de cada setor.</p>
+    <p class="rs-obs" style="font-size:12px;color:var(--text-muted);margin-top:var(--s-3);font-style:italic">Score geral = média das médias por setor (cada setor com peso igual).</p>
   </div>`;
 
   // ── Top 3 Rankings ──
