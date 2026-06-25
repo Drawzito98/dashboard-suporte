@@ -1735,8 +1735,9 @@ function renderPreviewDisplay(rows) {
       updateFilterOptions();
       const filtered = rawRecords.filter(r => {
         if (!r) return false;
-        if (setorSelect.value !== 'all' && String(r['Setor']) !== setorSelect.value) return false;
-        if (!monthMatches(r['Mês'])) return false;
+    if (setorSelect.value !== 'all' && String(r['Setor']) !== setorSelect.value) return false;
+    if (setorSelect.value === 'all' && typeof isSetorActive === 'function' && !isSetorActive(String(r['Setor']).trim())) return false;
+    if (!monthMatches(r['Mês'])) return false;
     if (arquivoSelect && arquivoSelect.value !== 'all' && String(r['Arquivo']) !== arquivoSelect.value) return false;
         return true;
       });
