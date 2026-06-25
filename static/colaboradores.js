@@ -298,8 +298,8 @@ function openColabDetailOverlay(nome) {
     </div>
     <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0">
       <input type="checkbox" id="ciCondutaToggle" ${condutaChecked ? 'checked' : ''} style="opacity:0;width:0;height:0">
-      <span style="position:absolute;cursor:pointer;inset:0;background:${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:12px;transition:.2s"></span>
-      <span style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:var(--bg-surface);border-radius:50%;transition:.2s;transform:${condutaChecked ? 'translateX(20px)' : 'translateX(0)'}"></span>
+      <span style="position:absolute;pointer-events:none;inset:0;background:${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:12px;transition:.2s"></span>
+      <span style="position:absolute;pointer-events:none;content:'';height:18px;width:18px;left:3px;bottom:3px;background:var(--bg-surface);border-radius:50%;transition:.2s;transform:${condutaChecked ? 'translateX(20px)' : 'translateX(0)'}"></span>
     </label>
   </div>`;
 
