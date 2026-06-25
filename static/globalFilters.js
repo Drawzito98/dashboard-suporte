@@ -20,7 +20,6 @@ const globalFilters = {
   colaborador: 'all',
   setor: 'all',
   scoreMinimo: 0,
-  metaAtingida: 'all',
   pesquisa: '',
   mesesSelecionados: [],
   _colabNames: [],
@@ -71,20 +70,6 @@ const globalFilters = {
       });
     }
 
-    if (this.metaAtingida === 'sim') {
-      data = data.filter(r => {
-        const obj = parseInt(r['Objetivo']) || 0;
-        const fin = parseInt(r['Finalizados']) || 0;
-        return obj > 0 && fin >= obj;
-      });
-    } else if (this.metaAtingida === 'nao') {
-      data = data.filter(r => {
-        const obj = parseInt(r['Objetivo']) || 0;
-        const fin = parseInt(r['Finalizados']) || 0;
-        return obj > 0 && fin < obj;
-      });
-    }
-
     if (this.pesquisa) {
       const q = String(this.pesquisa).toLowerCase();
       data = data.filter(r => {
@@ -103,7 +88,6 @@ const globalFilters = {
         colaborador: this.colaborador,
         setor: this.setor,
         scoreMinimo: this.scoreMinimo,
-        metaAtingida: this.metaAtingida,
         pesquisa: this.pesquisa,
         mesesSelecionados: this.mesesSelecionados
       };
@@ -128,7 +112,6 @@ const globalFilters = {
     this.colaborador = 'all';
     this.setor = 'all';
     this.scoreMinimo = 0;
-    this.metaAtingida = 'all';
     this.pesquisa = '';
     this.mesesSelecionados = [];
     this._syncUI();
@@ -160,14 +143,6 @@ const globalFilters = {
               <option value="3.5">3.5</option>
               <option value="4.0">4.0</option>
               <option value="4.5">4.5</option>
-            </select>
-          </label>
-          <label class="global-filter-field">
-            <span>Meta</span>
-            <select id="gfMetaAtingida">
-              <option value="all">Todas</option>
-              <option value="sim">Atingida</option>
-              <option value="nao">Não atingida</option>
             </select>
           </label>
           <label class="global-filter-field" style="flex:1;min-width:180px">
@@ -258,13 +233,11 @@ const globalFilters = {
     const periodo = document.getElementById('gfPeriodo');
     const setor = document.getElementById('gfSetor');
     const score = document.getElementById('gfScoreMinimo');
-    const meta = document.getElementById('gfMetaAtingida');
     const pesq = document.getElementById('gfPesquisa');
 
     this.periodo = periodo ? periodo.value : 'all';
     this.setor = setor ? setor.value : 'all';
     this.scoreMinimo = score ? parseFloat(score.value) : 0;
-    this.metaAtingida = meta ? meta.value : 'all';
 
     const q = pesq ? pesq.value.trim() : '';
     if (q && this._colabNames.some(n => n.toLowerCase() === q.toLowerCase())) {
@@ -298,7 +271,6 @@ const globalFilters = {
     setVal('gfPeriodo', this.periodo);
     setVal('gfSetor', this.setor);
     setVal('gfScoreMinimo', String(this.scoreMinimo));
-    setVal('gfMetaAtingida', this.metaAtingida);
 
     const pesq = document.getElementById('gfPesquisa');
     if (pesq) {
@@ -329,7 +301,6 @@ const globalFilters = {
     if (this.setor && this.setor !== 'all') parts.push(`Setor: ${this.setor}`);
     if (this.colaborador && this.colaborador !== 'all') parts.push(`Colab: ${this.colaborador}`);
     if (this.scoreMinimo > 0) parts.push(`Score ≥ ${this.scoreMinimo}`);
-    if (this.metaAtingida !== 'all') parts.push(`Meta: ${this.metaAtingida === 'sim' ? '✅' : '❌'}`);
     if (this.pesquisa) parts.push(`Busca: ${this.pesquisa}`);
     chips.innerHTML = parts.length
       ? parts.map(p => `<span class="chip">${p}</span>`).join(' ')
