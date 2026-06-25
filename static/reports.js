@@ -395,6 +395,224 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
+async function exportSlides() {
+  setLoading(true, 'Gerando slides…');
+  try {
+    const rows = typeof getCurrentFilteredRows === 'function' ? getCurrentFilteredRows() : [];
+    if (!rows.length) {
+      showToast('Sem dados no escopo atual para gerar slides.', 'warn');
+      return;
+    }
+
+    const sum = (key) => rows.reduce((s, r) => s + (parseInt(r[key]) || 0), 0);
+    const totalAss = sum('Assumidos');
+    const totalFin = sum('Finalizados');
+    const totalTrans = sum('Transferidos');
+    const scores = rows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && !Number.isNaN(Number(v)));
+    const avgScore = scores.length ? (scores.reduce((a,b)=>a+Number(b),0)/scores.length).toFixed(2) : '—';
+    const prod = totalAss > 0 ? ((totalFin/totalAss)*100).toFixed(1) : '—';
+    const txTrans = totalAss > 0 ? ((totalTrans/totalAss)*100).toFixed(1) : '—';
+
+    const byAtt = {};
+    rows.forEach(r => {
+      const a = String(r['Atendente'] || '').trim();
+      if (!a) return;
+      if (!byAtt[a]) byAtt[a] = { fin:0, ass:0, sc:[] };
+      byAtt[a].fin += parseInt(r['Finalizados']) || 0;
+      byAtt[a].ass += parseInt(r['Assumidos']) || 0;
+      const sc = r['SCORE'];
+      if (sc !== null && sc !== undefined && !Number.isNaN(Number(sc))) byAtt[a].sc.push(Number(sc));
+    });
+    const ranking = Object.entries(byAtt).map(([name, v]) => ({
+      name, fin: v.fin, ass: v.ass,
+      avgScore: v.sc.length ? (v.sc.reduce((a,b)=>a+b,0)/v.sc.length).toFixed(2) : '—'
+    })).sort((a,b) => b.fin - a.fin);
+
+    const top5 = ranking.slice(0, 5);
+    const meses = [...new Set(rows.map(r => r['Mês']))].sort();
+    const scopeLabel = typeof globalFilters !== 'undefined' ? `Período: ${globalFilters.periodo !== 'all' ? globalFilters.periodo : (meses[0]||'') + (meses.length>1 ? ' — '+meses[meses.length-1] : '')}` : '';
+
+    const now = new Date().toLocaleString('pt-BR', { hour12: false });
+    const dateStr = new Date().toLocaleDateString('pt-BR');
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const bg = isDark ? '#0f172a' : '#ffffff';
+    const fg = isDark ? '#f1f5f9' : '#0f172a';
+    const muted = isDark ? '#94a3b8' : '#475569';
+    const accent = '#2563eb';
+
+    function slideHTML(contentHTML) {
+      return `<div style="width:297mm;height:210mm;background:${bg};color:${fg};font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;display:flex;flex-direction:column;padding:32px 40px;box-sizing:border-box;overflow:hidden;position:relative">
+        <div style="flex:1;display:flex;flex-direction:column">${contentHTML}</div>
+        <div style="text-align:center;font-size:10px;color:${muted};padding-top:12px;border-top:1px solid ${isDark ? '#1e293b' : '#e5e9f0'};margin-top:8px">IXC CG · Painel de Suporte — ${dateStr}</div>
+      </div>`;
+    }
+
+    const slidesHTML = [];
+
+    // --- Slide 1: Cover ---
+    slidesHTML.push(slideHTML(`
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:12px">
+        <div style="font-size:48px;font-weight:700;letter-spacing:-.02em;background:linear-gradient(135deg,${accent},#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent">IXC CG</div>
+        <div style="font-size:28px;font-weight:600;color:${fg}">Painel de Suporte</div>
+        <div style="height:3px;width:80px;background:${accent};border-radius:2px;margin:8px 0"></div>
+        <div style="font-size:14px;color:${muted};line-height:1.6">${scopeLabel}</div>
+        <div style="font-size:12px;color:${muted}">Gerado em ${now}</div>
+      </div>
+    `));
+
+    // --- Slide 2: KPIs ---
+    function kpiCard(label, value, sub) {
+      return `<div style="background:${isDark?'#1e293b':'#f8fafc'};border:1px solid ${isDark?'#334155':'#e5e9f0'};border-radius:16px;padding:20px 24px;text-align:center;flex:1;min-width:140px">
+        <div style="font-size:12px;color:${muted};text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:8px">${label}</div>
+        <div style="font-size:36px;font-weight:700;letter-spacing:-.01em">${value}</div>
+        ${sub ? `<div style="font-size:11px;color:${muted};margin-top:4px">${sub}</div>` : ''}
+      </div>`;
+    }
+
+    slidesHTML.push(slideHTML(`
+      <div style="font-size:20px;font-weight:700;margin-bottom:24px">📊 Indicadores do Período</div>
+      <div style="display:flex;flex-wrap:wrap;gap:16px">
+        ${kpiCard('Finalizados', totalFin.toLocaleString('pt-BR'))}
+        ${kpiCard('Assumidos', totalAss.toLocaleString('pt-BR'))}
+        ${kpiCard('Transferidos', totalTrans.toLocaleString('pt-BR'))}
+        ${kpiCard('Score Médio', avgScore, 'de 0 a 5')}
+        ${kpiCard('Produtividade', prod !== '—' ? prod+'%' : '—', 'FINALIZADOS ÷ ASSUMIDOS')}
+        ${kpiCard('Taxa Transf.', txTrans !== '—' ? txTrans+'%' : '—', 'TRANSFERIDOS ÷ ASSUMIDOS')}
+      </div>
+      <div style="font-size:11px;color:${muted};margin-top:24px;line-height:1.6">
+        Total de colaboradores no período: ${ranking.length} · Meses considerados: ${meses.join(', ') || 'todos'}${scopeLabel ? ' · '+scopeLabel : ''}
+      </div>
+    `));
+
+    // --- Slide 3: Chart ---
+    slidesHTML.push(slideHTML(`
+      <div style="font-size:20px;font-weight:700;margin-bottom:16px">📈 Gráfico de Desempenho</div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;background:${isDark?'#1e293b':'#f8fafc'};border-radius:16px;border:1px solid ${isDark?'#334155':'#e5e9f0'};overflow:hidden">
+        <div id="slideChartContainer" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:16px">
+          <canvas id="slideChartCanvas" style="max-width:100%;max-height:100%"></canvas>
+        </div>
+      </div>
+    `));
+
+    // --- Slide 4: Ranking ---
+    const rankRows = top5.map((p, i) => `
+      <div style="display:flex;align-items:center;padding:14px 0;border-bottom:1px solid ${isDark?'#1e293b':'#f1f4f9'};gap:16px">
+        <div style="width:36px;height:36px;border-radius:10px;background:${i===0?accent:(isDark?'#334155':'#e5e9f0')};color:${i===0?'#fff':fg};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0">${i+1}</div>
+        <div style="flex:1;font-weight:600;font-size:16px">${escapeHtml(p.name)}</div>
+        <div style="display:flex;gap:24px;text-align:right">
+          <div><div style="font-size:11px;color:${muted}">Finalizados</div><div style="font-weight:700;font-size:18px">${p.fin}</div></div>
+          <div><div style="font-size:11px;color:${muted}">Score</div><div style="font-weight:700;font-size:18px">${p.avgScore}</div></div>
+        </div>
+      </div>
+    `).join('');
+
+    slidesHTML.push(slideHTML(`
+      <div style="font-size:20px;font-weight:700;margin-bottom:24px">🏆 Top Colaboradores</div>
+      <div style="flex:1;background:${isDark?'#1e293b':'#f8fafc'};border-radius:16px;border:1px solid ${isDark?'#334155':'#e5e9f0'};padding:8px 20px">${rankRows}</div>
+      <div style="font-size:11px;color:${muted};margin-top:12px;text-align:center">Ranking por finalizações — Período: ${meses.join(', ') || 'todos'}</div>
+    `));
+
+    // --- Slide 5: Insights ---
+    const bestScore = ranking.filter(p => p.avgScore !== '—').sort((a,b) => parseFloat(b.avgScore) - parseFloat(a.avgScore))[0];
+    const pctWarning = prod !== '—' && parseFloat(prod) < 70 ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:${isDark?'#451a1a':'#fef2f2'};border:1px solid ${isDark?'#7f1d1d':'#fecaca'};border-radius:10px;font-size:13px;color:${isDark?'#fca5a5':'#991b1b'};margin-bottom:8px">⚠️ Produtividade abaixo de 70% (${prod}%)</div>` : '';
+    const scoreWarning = avgScore !== '—' && parseFloat(avgScore) < 4.5 ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:${isDark?'#451a1a':'#fef2f2'};border:1px solid ${isDark?'#7f1d1d':'#fecaca'};border-radius:10px;font-size:13px;color:${isDark?'#fca5a5':'#991b1b'};margin-bottom:8px">⚠️ Score médio abaixo de 4.5 (${avgScore})</div>` : '';
+    const transWarning = txTrans !== '—' && parseFloat(txTrans) > 25 ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:${isDark?'#451a1a':'#fef2f2'};border:1px solid ${isDark?'#7f1d1d':'#fecaca'};border-radius:10px;font-size:13px;color:${isDark?'#fca5a5':'#991b1b'};margin-bottom:8px">⚠️ Taxa de transferências acima de 25% (${txTrans}%)</div>` : '';
+
+    slidesHTML.push(slideHTML(`
+      <div style="font-size:20px;font-weight:700;margin-bottom:24px">💡 Destaques & Alertas</div>
+      <div style="display:flex;flex-direction:column;gap:12px;flex:1">
+        <div style="background:${isDark?'#1e293b':'#f8fafc'};border:1px solid ${isDark?'#334155':'#e5e9f0'};border-radius:16px;padding:20px">
+          <div style="font-size:14px;font-weight:600;margin-bottom:12px">✅ Pontos Fortes</div>
+          ${ranking[0] ? `<div style="font-size:13px;line-height:1.6">🏆 ${ranking[0].name} lidera com ${ranking[0].fin} finalizações${ranking[0].avgScore !== '—' ? ` e score ${ranking[0].avgScore}` : ''}</div>` : ''}
+          ${bestScore && bestScore.avgScore >= 4.5 ? `<div style="font-size:13px;line-height:1.6">⭐ ${bestScore.name} com melhor score (${bestScore.avgScore})</div>` : ''}
+          ${prod !== '—' && parseFloat(prod) >= 80 ? `<div style="font-size:13px;line-height:1.6">📈 Produtividade elevada (${prod}%)</div>` : ''}
+        </div>
+        <div style="background:${isDark?'#1e293b':'#f8fafc'};border:1px solid ${isDark?'#334155':'#e5e9f0'};border-radius:16px;padding:20px">
+          <div style="font-size:14px;font-weight:600;margin-bottom:12px">🔶 Oportunidades</div>
+          ${pctWarning || scoreWarning || transWarning || '<div style="font-size:13px;color:'+muted+'">Nenhum alerta crítico identificado.</div>'}
+        </div>
+      </div>
+    `));
+
+    // Render slides in hidden container, capture with html2canvas, build PDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4');
+    const pageW = 297;
+    const pageH = 210;
+
+    const container = document.createElement('div');
+    container.id = 'slidesRenderContainer';
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1';
+    document.body.appendChild(container);
+
+    for (let i = 0; i < slidesHTML.length; i++) {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = slidesHTML[i];
+
+      if (i === 2) { // Chart slide — clone chart onto canvas
+        const origCanvas = document.getElementById('mainChart');
+        if (origCanvas) {
+          const tempCanvas = wrapper.querySelector('#slideChartCanvas');
+          if (tempCanvas) {
+            tempCanvas.width = origCanvas.width;
+            tempCanvas.height = origCanvas.height;
+            const tCtx = tempCanvas.getContext('2d');
+            const isDark2 = isDark;
+            tCtx.fillStyle = isDark2 ? '#1e293b' : '#f8fafc';
+            tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tCtx.drawImage(origCanvas, 0, 0);
+          }
+        }
+      }
+
+      container.appendChild(wrapper);
+
+      const slideEl = wrapper.firstElementChild;
+      await new Promise(r => setTimeout(r, 100));
+
+      try {
+        const canvas = await html2canvas(slideEl, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: bg
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const imgW = pageW;
+        const imgH = (canvas.height / canvas.width) * imgW;
+
+        if (i > 0) doc.addPage();
+        doc.addImage(imgData, 'PNG', 0, 0, imgW, Math.min(imgH, pageH));
+      } catch (capErr) {
+        console.error(`Slide ${i+1} capture failed:`, capErr);
+      }
+
+      wrapper.remove();
+    }
+
+    document.body.removeChild(container);
+
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `slides-canva-${new Date().toISOString().slice(0,10)}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('Slides gerados! Abra o PDF no Canva para editar.', 'success', 'Slides');
+  } catch (err) {
+    console.error('exportSlides error:', err);
+    showToast('Erro ao gerar slides: ' + (err.message || err), 'error');
+  } finally {
+    setLoading(false);
+    const c = document.getElementById('slidesRenderContainer');
+    if (c) c.remove();
+  }
+}
+
 function buildReportHTML(text) {
   const title = 'Relatório Executivo';
   const now = new Date();

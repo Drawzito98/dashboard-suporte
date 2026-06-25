@@ -2695,6 +2695,11 @@ if (!rawRecords || !rawRecords.length) {
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');
   if (exportChartPngBtn) exportChartPngBtn.addEventListener('click', () => { exportChartAsPNG(); });
+  const exportSlidesBtn = document.getElementById('exportSlidesBtn');
+  if (exportSlidesBtn) {
+    exportSlidesBtn.style.display = isAdmin() ? '' : 'none';
+    exportSlidesBtn.addEventListener('click', () => { exportSlides(); });
+  }
   // Exportar PDF é vinculado em renderSummary() — abre HTML bonito em nova aba
 
   // ── Compact table toggle ──

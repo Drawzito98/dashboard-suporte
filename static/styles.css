@@ -2210,3 +2210,6 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   border-color: var(--accent);
   color: var(--text-on-accent);
 }
+
+.admin-only { display: none; }
+[data-role="admin"] .admin-only { display: inline-flex; }
