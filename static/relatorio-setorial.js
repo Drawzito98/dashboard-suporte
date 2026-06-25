@@ -33,6 +33,21 @@ function _deltaHtml(delta) {
   return ` <span class="${cls}" style="font-size:11px;white-space:nowrap" title="Variação vs mês anterior">${arrow} ${abs.toFixed(1)}%</span>`;
 }
 
+// Média de scores por setor (cada setor pesa igual)
+function _avgScoreBySetor(rows) {
+  const bySetor = {};
+  rows.forEach(r => {
+    const s = String(r['Setor'] || '').trim();
+    if (!s) return;
+    const sc = r['SCORE'];
+    if (sc == null || isNaN(Number(sc))) return;
+    if (!bySetor[s]) bySetor[s] = [];
+    bySetor[s].push(Number(sc));
+  });
+  const avgs = Object.values(bySetor).filter(a => a.length > 0).map(a => a.reduce((x, y) => x + y, 0) / a.length);
+  return avgs.length ? avgs.reduce((x, y) => x + y, 0) / avgs.length : 0;
+}
+
 function renderRelatorioSetorial() {
   const container = document.getElementById('relatorioSetorialContent');
   if (!container) return;
@@ -61,8 +76,7 @@ function renderRelatorioSetorial() {
   const totalFin = rows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
   const totalAss = rows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
   const totalTra = rows.reduce((s, r) => s + (parseInt(r['Transferidos']) || 0), 0);
-  const scores = rows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && !isNaN(Number(v)));
-  const avgScore = scores.length ? scores.reduce((a, b) => a + Number(b), 0) / scores.length : 0;
+  const avgScore = _avgScoreBySetor(rows);
   const prodGeral = totalAss > 0 ? totalFin / totalAss : 0;
   const traGeral = totalAss > 0 ? totalTra / totalAss : 0;
   const totalAtendentes = [...new Set(rows.map(r => r['Atendente']))].filter(Boolean).length;

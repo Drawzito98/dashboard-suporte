@@ -4,8 +4,20 @@ function clearReportTextOnly() {
   const ta = document.getElementById('reportText');
   if (ta) ta.value = '';
   window.__lastReportText = '';
-  // Mantém o painel e os dados; apenas remove o texto salvo do relatório
   saveState();
+}
+function _rsAvgScoreBySetor(rows) {
+  const bySetor = {};
+  rows.forEach(r => {
+    const s = String(r['Setor'] || '').trim();
+    if (!s) return;
+    const sc = r['SCORE'];
+    if (sc == null || isNaN(Number(sc))) return;
+    if (!bySetor[s]) bySetor[s] = [];
+    bySetor[s].push(Number(sc));
+  });
+  const avgs = Object.values(bySetor).filter(a => a.length > 0).map(a => a.reduce((x, y) => x + y, 0) / a.length);
+  return avgs.length ? avgs.reduce((x, y) => x + y, 0) / avgs.length : 0;
 }
 function generateAndShowReport() {
   // Gera o relatório e garante feedback visual (sem depender do botão "Atualizar")
@@ -179,8 +191,7 @@ function generateIntelReport() {
     const totalAss = rows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
     const totalFin = rows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
     const totalTrans = rows.reduce((s, r) => s + (parseInt(r['Transferidos']) || 0), 0);
-    const scores = rows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && !isNaN(Number(v)));
-    const avgScore = scores.length ? scores.reduce((a, b) => a + Number(b), 0) / scores.length : 0;
+    const avgScore = _rsAvgScoreBySetor(rows);
     const prod = totalAss > 0 ? (totalFin / totalAss) : 0;
     const taxaTrans = totalAss > 0 ? (totalTrans / totalAss) : 0;
 
@@ -408,8 +419,8 @@ async function exportSlides() {
     const totalAss = sum('Assumidos');
     const totalFin = sum('Finalizados');
     const totalTrans = sum('Transferidos');
-    const scores = rows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && !Number.isNaN(Number(v)));
-    const avgScore = scores.length ? (scores.reduce((a,b)=>a+Number(b),0)/scores.length).toFixed(2) : '—';
+    const avgScore = _rsAvgScoreBySetor(rows);
+    const avgScoreDisplay = avgScore ? avgScore.toFixed(2) : '—';
     const prod = totalAss > 0 ? ((totalFin/totalAss)*100).toFixed(1) : '—';
     const txTrans = totalAss > 0 ? ((totalTrans/totalAss)*100).toFixed(1) : '—';
 
@@ -476,7 +487,7 @@ async function exportSlides() {
         ${kpiCard('Finalizados', totalFin.toLocaleString('pt-BR'))}
         ${kpiCard('Assumidos', totalAss.toLocaleString('pt-BR'))}
         ${kpiCard('Transferidos', totalTrans.toLocaleString('pt-BR'))}
-        ${kpiCard('Score Médio', avgScore, 'de 0 a 5')}
+        ${kpiCard('Score Médio', avgScoreDisplay, 'de 0 a 5')}
         ${kpiCard('Produtividade', prod !== '—' ? prod+'%' : '—', 'FINALIZADOS ÷ ASSUMIDOS')}
         ${kpiCard('Taxa Transf.', txTrans !== '—' ? txTrans+'%' : '—', 'TRANSFERIDOS ÷ ASSUMIDOS')}
       </div>
@@ -516,7 +527,7 @@ async function exportSlides() {
     // --- Slide 5: Insights ---
     const bestScore = ranking.filter(p => p.avgScore !== '—').sort((a,b) => parseFloat(b.avgScore) - parseFloat(a.avgScore))[0];
     const pctWarning = prod !== '—' && parseFloat(prod) < 70 ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:${isDark?'#451a1a':'#fef2f2'};border:1px solid ${isDark?'#7f1d1d':'#fecaca'};border-radius:10px;font-size:13px;color:${isDark?'#fca5a5':'#991b1b'};margin-bottom:8px">⚠️ Produtividade abaixo de 70% (${prod}%)</div>` : '';
-    const scoreWarning = avgScore !== '—' && parseFloat(avgScore) < 4.5 ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:${isDark?'#451a1a':'#fef2f2'};border:1px solid ${isDark?'#7f1d1d':'#fecaca'};border-radius:10px;font-size:13px;color:${isDark?'#fca5a5':'#991b1b'};margin-bottom:8px">⚠️ Score médio abaixo de 4.5 (${avgScore})</div>` : '';
+    const scoreWarning = avgScoreDisplay !== '—' && parseFloat(avgScoreDisplay) < 4.5 ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:${isDark?'#451a1a':'#fef2f2'};border:1px solid ${isDark?'#7f1d1d':'#fecaca'};border-radius:10px;font-size:13px;color:${isDark?'#fca5a5':'#991b1b'};margin-bottom:8px">⚠️ Score médio abaixo de 4.5 (${avgScoreDisplay})</div>` : '';
     const transWarning = txTrans !== '—' && parseFloat(txTrans) > 25 ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:${isDark?'#451a1a':'#fef2f2'};border:1px solid ${isDark?'#7f1d1d':'#fecaca'};border-radius:10px;font-size:13px;color:${isDark?'#fca5a5':'#991b1b'};margin-bottom:8px">⚠️ Taxa de transferências acima de 25% (${txTrans}%)</div>` : '';
 
     slidesHTML.push(slideHTML(`

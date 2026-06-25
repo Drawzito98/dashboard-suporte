@@ -1345,6 +1345,23 @@ function getMultiSetorMap(rows) {
   return out;
 }
 
+// Média de scores: média das médias por setor (cada setor pesa igual)
+function avgScoreBySetor(rows) {
+  const bySetor = {};
+  rows.forEach(r => {
+    const s = String(r['Setor'] || '').trim();
+    if (!s) return;
+    const sc = r['SCORE'];
+    if (sc == null || Number.isNaN(Number(sc))) return;
+    if (!bySetor[s]) bySetor[s] = [];
+    bySetor[s].push(Number(sc));
+  });
+  const setorAvgs = Object.values(bySetor)
+    .filter(arr => arr.length > 0)
+    .map(arr => arr.reduce((a, b) => a + b, 0) / arr.length);
+  return setorAvgs.length ? setorAvgs.reduce((a, b) => a + b, 0) / setorAvgs.length : null;
+}
+
 function renderSummary(filtered) {
   const card = document.getElementById('summaryCard');
   const container = document.getElementById('summaryContent');
@@ -1369,8 +1386,7 @@ function renderSummary(filtered) {
   const totalTransferidos = total('Transferidos');
   const totalFinalizados = total('Finalizados');
 
-  const scores = rows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && !Number.isNaN(Number(v)));
-  const avgScoreNum = scores.length ? (scores.reduce((a,b)=>a+Number(b),0) / scores.length) : null;
+  const avgScoreNum = avgScoreBySetor(rows);
 
   const produtividade = totalAssumidos > 0 ? (totalFinalizados / totalAssumidos) : null;
   const taxaTransfer = totalAssumidos > 0 ? (totalTransferidos / totalAssumidos) : null;
@@ -1407,8 +1423,7 @@ function renderSummary(filtered) {
 
       const prevFinal = prevRows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
       const prevAssumidos = prevRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
-      const prevScores = prevRows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && !Number.isNaN(Number(v)));
-      const prevAvgScore = prevScores.length ? (prevScores.reduce((a,b)=>a+Number(b),0)/prevScores.length) : null;
+      const prevAvgScore = avgScoreBySetor(prevRows);
 
       if (prevFinal > 0) deltaFinalizados = ((totalFinalizados - prevFinal) / prevFinal) * 100;
       if (prevAssumidos > 0) deltaAssumidos = ((totalAssumidos - prevAssumidos) / prevAssumidos) * 100;
@@ -2243,8 +2258,7 @@ function buildReportText() {
   const totalFin = sum('Finalizados');
   const totalTrans = sum('Transferidos');
 
-  const scores = rows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && !Number.isNaN(Number(v)));
-  const avgScore = scores.length ? (scores.reduce((a,b)=>a+Number(b),0)/scores.length) : null;
+  const avgScore = avgScoreBySetor(rows);
 
   const produtividade = totalAss > 0 ? (totalFin / totalAss) : null;
   const taxaTrans = totalAss > 0 ? (totalTrans / totalAss) : null;
