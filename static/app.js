@@ -1355,6 +1355,7 @@ function renderSummary(filtered) {
 
   const rows = (filtered || []).filter(r => r && !isAggregateName(r['Atendente']));
   if (!rows.length) { card.style.display = 'none'; container.innerHTML = ''; return; }
+  card.style.display = '';
   // Texto de busca (para filtros e comparação mês anterior)
   const qTxt = (searchAtendenteInput?.value || '').trim();
   const qLower = qTxt.toLowerCase();
@@ -1683,7 +1684,7 @@ function renderPreviewDisplay(rows) {
   const _tbody = previewTable.querySelector('tbody');
   if (_tbody) {
     _tbody.querySelectorAll('tr').forEach((tr, idx) => {
-      const row = toRender[idx] || displayRows[idx];
+      const row = rows[idx];
       if (!row) return;
       const sc = row['SCORE'];
       if (sc !== null && sc !== undefined && !isNaN(Number(sc))) {
