@@ -1674,7 +1674,7 @@ function renderPreviewDisplay(rows) {
       }
       rowHtml += `<td contenteditable="${isAdmin() && !(k === 'Atendente' && presentationMode)}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(shown)}</td>`;
     });
-    html.push('<tr>' + rowHtml + `<td style="white-space:nowrap"><span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span> <button class="btn-small btn-report-row" data-idx="${ridx}" title="Relatório de desempenho" aria-label="Relatório">📊</button> <button class="btn-small btn-delete" data-idx="${ridx}" title="Remover" aria-label="Remover">🗑️</button></td>` + '</tr>');
+    html.push('<tr>' + rowHtml + `<td style="white-space:nowrap"><span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span> <button class="btn-small btn-delete" data-idx="${ridx}" title="Remover" aria-label="Remover">🗑️</button></td>` + '</tr>');
   });
   html.push('</tbody></table></div>');
   previewTable.innerHTML = html.join('');
@@ -1755,18 +1755,6 @@ function renderPreviewDisplay(rows) {
       updateFilterOptions();
       updateView();
       window.scrollTo(scrollX, scrollY);
-    });
-  });
-
-  previewTable.querySelectorAll('.btn-report-row').forEach(b => {
-    b.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const idx = Number(e.target.getAttribute('data-idx'));
-      if (isNaN(idx)) return;
-      const row = previewRows[idx];
-      if (!row) return;
-      const nome = String(row['Atendente'] || '').trim();
-      if (nome && typeof openColabReport === 'function') openColabReport(nome);
     });
   });
 
