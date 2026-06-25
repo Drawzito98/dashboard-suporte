@@ -209,43 +209,44 @@
       <!-- Sidebar -->
       <aside class="sidebar">
         
-        <!-- Data Panel -->
-        <section class="panel">
-          <div class="panel-header">
-            <h2>Dados</h2>
+        <!-- Panel: Visualização -->
+        <section class="panel panel-collapsible">
+          <div class="panel-header" data-toggle="vizContent">
+            <h2>👁️ Visualização</h2>
+            <span class="panel-chevron">▼</span>
           </div>
-          <div class="form-stack">
+          <div class="form-stack" id="vizContent">
             <label class="field">
-              <span>Modo de analise</span>
+              <span>Modo de análise</span>
               <select id="viewSelect">
                 <option value="attendee">Por atendente (soma)</option>
-                <option value="timeline">Evolucao mensal</option>
-                <option value="detailed">Detalhada por mes</option>
+                <option value="timeline">Evolução mensal</option>
+                <option value="detailed">Detalhada por mês</option>
               </select>
             </label>
-            <label class="field">
-              <span>Indicador</span>
-              <select id="metricSelect">
-                <option value="Desempenho">Desempenho</option>
-              </select>
-            </label>
-            <div class="btn-row">
-              <button class="btn-primary" id="generateReportBtn" type="button" title="Gera um relatório executivo em texto com os dados filtrados">
-                Gerar relatorio executivo
-              </button>
+            <div class="btn-row" style="margin-top:4px">
+              <button class="btn-small" id="compactTableBtn" type="button" title="Alternar entre visual compacta e normal das tabelas">📏 Visão compacta</button>
             </div>
+            <button class="btn-primary" id="generateReportBtn" type="button" title="Gera um relatório executivo em texto com os dados filtrados" style="margin-top:8px;width:100%;justify-content:center">
+              📊 Gerar relatório
+            </button>
           </div>
         </section>
 
-
-
-        <!-- Ferramentas Panel (ferramentas e configurações, sem filtros duplicados) -->
-        <section class="panel">
-          <div class="panel-header">
-            <h2>Ferramentas</h2>
+        <!-- Panel: Dados -->
+        <section class="panel panel-collapsible">
+          <div class="panel-header" data-toggle="dataContent">
+            <h2>📁 Dados</h2>
+            <span class="panel-chevron">▼</span>
           </div>
-          <div class="form-stack">
-            <label class="field" id="compareLabel" style="display:none">
+          <div class="form-stack" id="dataContent">
+            <div class="btn-row">
+              <button class="btn-small" id="addRowTopBtn" type="button" title="Adicionar um novo registro mensal manualmente">➕ Novo registro</button>
+              <button class="btn-small" id="cleanDupBtn" type="button" title="Remove registros duplicados da base">🧹 Limpar duplicatas</button>
+              <button class="btn-small" id="historicoBtn" type="button" title="Histórico de alterações feitas nos dados">📝 Histórico</button>
+              <button class="btn-small" id="comentariosBtn" type="button" title="Ver e gerenciar comentários por período">💬 Comentários</button>
+            </div>
+            <label class="field" id="compareLabel" style="display:none;margin-top:8px">
               <span>Comparar atendentes</span>
               <div class="compare-row">
                 <select id="compareSelect"></select>
@@ -254,15 +255,19 @@
               </div>
               <div class="chips" id="compareChips"></div>
             </label>
+          </div>
+        </section>
+
+        <!-- Panel: Administração (admin only) -->
+        <section class="panel panel-collapsible admin-only-panel">
+          <div class="panel-header" data-toggle="adminContent">
+            <h2>⚙️ Administração</h2>
+            <span class="panel-chevron">▼</span>
+          </div>
+          <div class="form-stack" id="adminContent">
             <div class="btn-row">
-              <button class="btn-small" id="addRowTopBtn" type="button" title="Adicionar um novo registro mensal manualmente">➕ Novo registro mensal</button>
-              <button class="btn-small" id="manageColabsBtn" type="button" title="Ativar/desativar colaboradores exibidos no dashboard">👥 Gerenciar colaboradores</button>
-              <button class="btn-small" id="manageSetoresBtn" type="button" title="Ativar/desativar setores exibidos no dashboard">🏢 Gerenciar setores</button>
-              <button class="btn-small" id="comentariosBtn" type="button" title="Ver e gerenciar comentários por período">💬 Comentários</button>
-              <button class="btn-small" id="historicoBtn" type="button" title="Histórico de alterações feitas nos dados">📝 Histórico</button>
-              <button class="btn-small" id="cleanDupBtn" type="button" title="Remove registros duplicados da base">🧹 Limpar duplicatas</button>
-              <button class="btn-small" id="compactTableBtn" type="button" title="Alternar entre visual compacta e normal das tabelas">📏 Visão compacta</button>
-              <button class="btn-small admin-only" id="exportSlidesBtn" type="button" title="Exporta slides com KPIs, gráfico e ranking para usar no Canva">📊 Exportar slides (Canva)</button>
+              <button class="btn-small" id="manageColabsBtn" type="button" title="Ativar/desativar colaboradores">👥 Colaboradores</button>
+              <button class="btn-small" id="manageSetoresBtn" type="button" title="Ativar/desativar setores">🏢 Setores</button>
             </div>
           </div>
         </section>

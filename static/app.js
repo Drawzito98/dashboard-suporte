@@ -592,7 +592,6 @@ function resetPanelState() {
   if (atendenteSelect) atendenteSelect.value = 'all';
   if (arquivoSelect) arquivoSelect.value = 'all';
   if (viewSelect) viewSelect.value = 'attendee';
-  if (metricSelect) metricSelect.value = 'Desempenho';
   if (searchAtendenteInput) searchAtendenteInput.value = '';
 
   // reset compare + ocultos + ordenação
@@ -653,7 +652,7 @@ function getStateSnapshot() {
       arquivo: arquivoSelect?.value ?? 'all',
       view: viewSelect?.value ?? 'attendee',
       compareSelect: compareSelect?.value ?? 'all',
-      metric: metricSelect?.value ?? 'Finalizados',
+      metric: 'Finalizados',
       search: searchAtendenteInput?.value ?? ''
     },
     currentSort,
@@ -720,7 +719,6 @@ function applySavedState(state) {
     if (atendenteSelect && state.filters?.atendente) atendenteSelect.value = state.filters.atendente;
     if (arquivoSelect && state.filters?.arquivo) arquivoSelect.value = state.filters.arquivo;
 
-    if (metricSelect) metricSelect.value = 'Desempenho';
     if (searchAtendenteInput && typeof state.filters?.search === 'string') searchAtendenteInput.value = state.filters.search;
     if (viewSelect && state.filters?.view) viewSelect.value = state.filters.view;
 
@@ -854,7 +852,6 @@ const clearCompareBtn = document.getElementById('clearCompareBtn');
 const compareChips = document.getElementById('compareChips');
 let compareChosen = []; // ordered array of names added for comparison
 const clearFiltersBtn = document.getElementById('clearFiltersBtn');
-const metricSelect = document.getElementById('metricSelect');
 const previewTable = document.getElementById('previewTable');
 const ctx = document.getElementById('mainChart');
 const restoreHiddenBtn = document.getElementById('restoreHiddenBtn');
@@ -902,7 +899,6 @@ if (generateReportBtn) generateReportBtn.addEventListener('click', () => { gener
 if (compareSelect) compareSelect.addEventListener('change', () => {}); // no-op; use Add button
 if (addCompareBtn) addCompareBtn.addEventListener('click', () => { addCompare(); updateView(); });
 if (clearCompareBtn) clearCompareBtn.addEventListener('click', () => { clearCompare(); updateView(); });
-metricSelect.addEventListener('change', updateView);
 if (searchAtendenteInput) searchAtendenteInput.addEventListener('input', () => { updateView(); });
 if (selectAllMonthsBtn) selectAllMonthsBtn.addEventListener('click', () => { selectedMonths = uniqueSorted(rawRecords.map(r => r['Mês'])); renderMonthPickerOptions(); updateFilterOptions(); updateView(); });
 if (clearMonthsBtn) clearMonthsBtn.addEventListener('click', () => { selectedMonths = []; renderMonthPickerOptions(); updateFilterOptions(); updateView(); });
@@ -1914,8 +1910,7 @@ function renderTimelineChart(rows) {
     setChartEmpty(true, 'Gráfico indisponível: a biblioteca Chart.js não foi carregada.');
     return;
   }
-  const rawMetric = metricSelect.value;
-  const metric = rawMetric === 'Desempenho' ? 'Finalizados' : rawMetric;
+  const metric = 'Finalizados';
 
   // Para evolução mensal, usamos as linhas individuais (sem agregados)
   const base = (rows || []).filter(r => !isAggregateName(r['Atendente']));
@@ -2695,11 +2690,6 @@ if (!rawRecords || !rawRecords.length) {
   if (restoreHiddenBtn) restoreHiddenBtn.addEventListener('click', () => { hiddenLabels.clear(); updateView(); });
   const exportChartPngBtn = document.getElementById('exportChartPngBtn');
   if (exportChartPngBtn) exportChartPngBtn.addEventListener('click', () => { exportChartAsPNG(); });
-  const exportSlidesBtn = document.getElementById('exportSlidesBtn');
-  if (exportSlidesBtn) {
-    exportSlidesBtn.style.display = isAdmin() ? '' : 'none';
-    exportSlidesBtn.addEventListener('click', () => { exportSlides(); });
-  }
   // Exportar PDF é vinculado em renderSummary() — abre HTML bonito em nova aba
 
   // ── Compact table toggle ──
@@ -2717,6 +2707,15 @@ if (!rawRecords || !rawRecords.length) {
       applyCompact(!document.body.classList.contains('table-compact'));
     });
   }
+
+  // ── Collapsible sidebar panels ──
+  document.querySelectorAll('.panel-collapsible .panel-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const panel = header.closest('.panel-collapsible');
+      if (panel) panel.classList.toggle('collapsed');
+    });
+  });
+
   updatePreviewSortControls();
 
   // ===== Tab System =====

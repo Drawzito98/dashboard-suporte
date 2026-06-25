@@ -2213,3 +2213,25 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 
 .admin-only { display: none; }
 [data-role="admin"] .admin-only { display: inline-flex; }
+
+.admin-only-panel { display: none; }
+[data-role="admin"] .admin-only-panel { display: block; }
+
+.panel-collapsible .panel-header {
+  cursor: pointer;
+  user-select: none;
+}
+.panel-collapsible .panel-header:hover {
+  opacity: 0.8;
+}
+.panel-chevron {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+  margin-left: auto;
+}
+.panel-collapsible.collapsed .panel-chevron {
+  transform: rotate(-90deg);
+}
+.panel-collapsible.collapsed .form-stack {
+  display: none;
+}
