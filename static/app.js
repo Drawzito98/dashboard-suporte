@@ -591,7 +591,6 @@ function resetPanelState() {
   selectedMonths = [];
   if (atendenteSelect) atendenteSelect.value = 'all';
   if (arquivoSelect) arquivoSelect.value = 'all';
-  if (viewSelect) viewSelect.value = 'attendee';
   if (searchAtendenteInput) searchAtendenteInput.value = '';
 
   // reset compare + ocultos + ordenação
@@ -650,7 +649,6 @@ function getStateSnapshot() {
       meetingMode,
       atendente: atendenteSelect?.value ?? 'all',
       arquivo: arquivoSelect?.value ?? 'all',
-      view: viewSelect?.value ?? 'attendee',
       compareSelect: compareSelect?.value ?? 'all',
       metric: 'Finalizados',
       search: searchAtendenteInput?.value ?? ''
@@ -720,7 +718,6 @@ function applySavedState(state) {
     if (arquivoSelect && state.filters?.arquivo) arquivoSelect.value = state.filters.arquivo;
 
     if (searchAtendenteInput && typeof state.filters?.search === 'string') searchAtendenteInput.value = state.filters.search;
-    if (viewSelect && state.filters?.view) viewSelect.value = state.filters.view;
 
     updateFilterOptions();
     if (compareSelect && state.filters?.compareSelect) compareSelect.value = state.filters.compareSelect;
@@ -844,7 +841,6 @@ const atendenteSelect = document.getElementById('atendenteSelect');
 const searchAtendenteInput = document.getElementById('searchAtendenteInput');
 const compareSelect = document.getElementById('compareSelect');
 const arquivoSelect = document.getElementById('arquivoSelect');
-const viewSelect = document.getElementById('viewSelect');
 const generateReportBtn = document.getElementById('generateReportBtn');
 const compareLabel = document.getElementById('compareLabel');
 const addCompareBtn = document.getElementById('addCompareBtn');
@@ -856,6 +852,9 @@ const previewTable = document.getElementById('previewTable');
 const ctx = document.getElementById('mainChart');
 const restoreHiddenBtn = document.getElementById('restoreHiddenBtn');
 
+if (typeof Chart !== 'undefined' && Chart.defaults) {
+  Chart.defaults.color = '#1f2937';
+}
 
 // ── Removed: parseCsvFile, showImportError, importCsvFiles, onFileInputChange, normalizeRecords, isAggregateName, normalizeNumber, parseDateKey moved to static/csv-import.js ──
 
@@ -894,7 +893,6 @@ atendenteSelect.addEventListener('change', () => {});
 const applyFiltersBtn = document.getElementById('applyFiltersBtn');
 if (applyFiltersBtn) applyFiltersBtn.addEventListener('click', () => { updateView(); });
 if (arquivoSelect) arquivoSelect.addEventListener('change', () => { updateFilterOptions(); updateView(); });
-if (viewSelect) viewSelect.addEventListener('change', updateView);
 if (generateReportBtn) generateReportBtn.addEventListener('click', () => { generateAndShowReport(); });
 if (compareSelect) compareSelect.addEventListener('change', () => {}); // no-op; use Add button
 if (addCompareBtn) addCompareBtn.addEventListener('click', () => { addCompare(); updateView(); });
@@ -1148,7 +1146,6 @@ function clearFilters() {
   selectedMonths = [];
   if (atendenteSelect) atendenteSelect.selectedIndex = 0;
   if (arquivoSelect) arquivoSelect.value = 'all';
-  if (viewSelect) viewSelect.value = 'attendee';
   // clear compare list
   clearCompare();
   if (compareSelect) compareSelect.selectedIndex = -1;
@@ -1287,27 +1284,7 @@ function updateView() {
   // Remove inativos do gráfico (colaboradores desligados/transferidos)
   const chartRows = visible.filter(r => isColabActive(r['Atendente']));
 
-  // Auto-detecção da visão do gráfico:
-  //   colaborador único → evolução mensal (timeline)
-  //   setor ou múltiplos → ranking por colaborador (attendee)
-  // Salva a escolha manual do usuário para restaurar quando limpar o filtro de colaborador
-  const singleColab = atendenteSelect && atendenteSelect.value !== 'all';
-  const lastViewKey = 'sistema_last_chart_view';
-  if (viewSelect) {
-    if (singleColab) {
-      if (viewSelect.value !== 'timeline') {
-        try { localStorage.setItem(lastViewKey, viewSelect.value); } catch (e) {}
-        viewSelect.value = 'timeline';
-      }
-    } else {
-      const saved = localStorage.getItem(lastViewKey);
-      if (saved && ['attendee','timeline','detailed'].includes(saved)) viewSelect.value = saved;
-    }
-  }
-  const _vw = viewSelect ? viewSelect.value : 'attendee';
-  if (_vw === 'timeline') renderTimelineChart(chartRows);
-  else if (_vw === 'detailed') renderDetailedByMonthChart(chartRows);
-  else renderChart(chartRows);
+  renderChart(chartRows);
   renderSummary(filtered);
   updatePreviewSortControls(); // update controls after filtering
 }
@@ -1471,7 +1448,7 @@ function renderSummary(filtered) {
         <div style="margin-top:6px;color:var(--muted);font-size:13px">Período: <strong>${escapeHtml(periodoTxt)}</strong> · Atendentes: <strong>${escapeHtml(String(atendentesNoEscopo))}</strong></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <span class="badge">${(viewSelect && viewSelect.value === 'timeline') ? 'Visão: Evolução mensal' : ((viewSelect && viewSelect.value === 'detailed') ? 'Visão: Detalhada por mês' : 'Visão: Por atendente (agrupado)')}</span>
+        <span class="badge">Visão: Por atendente (agrupado)</span>
         ${alerts.length ? `<span class="badge" style="background:var(--badge-alert-bg);border-color:var(--badge-alert-border);color:var(--badge-alert-text)">⚠️ ${escapeHtml(alerts.join(' · '))}</span>` : `<span class="badge" style="background:var(--badge-ok-bg);border-color:var(--badge-ok-border);color:var(--badge-ok-text)">OK</span>`}${presentationMode ? `<span class="badge presentation-note">Nomes ocultos na exibição</span>` : ''}${meetingMode ? `<span class="badge meeting-note">Foco em reunião</span>` : ''}
       </div>
     </div>
