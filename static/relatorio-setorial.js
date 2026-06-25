@@ -111,6 +111,67 @@ function renderRelatorioSetorial() {
     <p class="rs-obs" style="font-size:12px;color:var(--text-muted);margin-top:var(--s-3);font-style:italic">O score geral foi calculado considerando o peso operacional (volume de atendimentos) de cada setor.</p>
   </div>`;
 
+  // ── Top 3 Rankings ──
+  const colabData = {};
+  rows.forEach(r => {
+    const nome = String(r['Atendente'] || '').trim();
+    if (!nome) return;
+    if (!colabData[nome]) colabData[nome] = { fin: 0, scores: [] };
+    colabData[nome].fin += (parseInt(r['Finalizados']) || 0);
+    const sc = r['SCORE'];
+    if (sc !== null && sc !== undefined && !isNaN(Number(sc))) {
+      colabData[nome].scores.push(Number(sc));
+    }
+  });
+  const colabList = Object.entries(colabData).map(([nome, d]) => ({
+    nome,
+    fin: d.fin,
+    score: d.scores.length ? d.scores.reduce((a, b) => a + b, 0) / d.scores.length : 0
+  }));
+
+  const topFin = colabList.slice().sort((a, b) => b.fin - a.fin).slice(0, 3);
+  const bottomFin = colabList.slice().sort((a, b) => a.fin - b.fin).slice(0, 3);
+  const topScore = colabList.filter(c => c.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
+  const bottomScore = colabList.filter(c => c.score > 0).sort((a, b) => a.score - b.score).slice(0, 3);
+
+  html += `<div class="rs-section">
+    <h2 class="rs-section-title">\uD83C\uDFC6 Top 3 Rankings</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--s-4)">
+      <div class="card" style="padding:var(--s-4)">
+        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD1D Melhores Finaliza\u00E7\u00F5es</h3>
+        ${topFin.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
+          <span style="font-weight:700;color:var(--accent);min-width:18px">${i + 1}\u00BA</span>
+          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
+          <span style="font-weight:600;color:var(--text-strong)">${fmtNum(c.fin)}</span>
+        </div>`).join('')}
+      </div>
+      <div class="card" style="padding:var(--s-4)">
+        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD1D Melhores Score</h3>
+        ${topScore.length ? topScore.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
+          <span style="font-weight:700;color:var(--accent);min-width:18px">${i + 1}\u00BA</span>
+          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
+          <span style="font-weight:600;color:var(--text-strong);font-family:monospace">${fmtScore(c.score)}</span>
+        </div>`).join('') : '<div style="font-size:12px;color:var(--text-muted)">Nenhum dado de score</div>'}
+      </div>
+      <div class="card" style="padding:var(--s-4)">
+        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD3B Piores Score</h3>
+        ${bottomScore.length ? bottomScore.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
+          <span style="font-weight:700;color:var(--danger);min-width:18px">${i + 1}\u00BA</span>
+          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
+          <span style="font-weight:600;color:var(--danger);font-family:monospace">${fmtScore(c.score)}</span>
+        </div>`).join('') : '<div style="font-size:12px;color:var(--text-muted)">Nenhum dado de score</div>'}
+      </div>
+      <div class="card" style="padding:var(--s-4)">
+        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD3B Piores Finaliza\u00E7\u00F5es</h3>
+        ${bottomFin.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
+          <span style="font-weight:700;color:var(--danger);min-width:18px">${i + 1}\u00BA</span>
+          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
+          <span style="font-weight:600;color:var(--danger)">${fmtNum(c.fin)}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+
   // ── Destaques e Pontos de Atenção ──
   const destaques = [];
   const atencao = [];
@@ -484,11 +545,11 @@ function _showModalAtendentes(nomes) {
 
   box.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-4,16px)">
-      <h3 style="margin:0;font-size:15px;font-weight:600;color:var(--text-strong,#f1f5f9)">Atendentes (${nomes.length})</h3>
-      <button type="button" style="background:none;border:none;color:var(--text-secondary,#94a3b8);font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>
+      <h3 style="margin:0;font-size:15px;font-weight:600;color:var(--text-strong)">Atendentes (${nomes.length})</h3>
+      <button type="button" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>
     </div>
     <div style="overflow-y:auto;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2,8px)">
-      ${nomes.map(n => `<div style="font-size:13px;color:var(--text-primary,#e2e8f0);padding:var(--s-1,4px) 0">${escapeHtml ? escapeHtml(n) : n}</div>`).join('')}
+      ${nomes.map(n => `<div style="font-size:13px;color:var(--text-primary);padding:var(--s-1,4px) 0">${escapeHtml ? escapeHtml(n) : n}</div>`).join('')}
     </div>
   `;
 

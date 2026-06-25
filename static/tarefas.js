@@ -92,7 +92,7 @@ function renderTarefas() {
         html += '</select>';
         html += '</div>';
         html += '<div style="display:flex;gap:var(--s-2)">';
-        html += `<button class="btn-small tarefa-inline-salvar" data-id="${t.id}" type="button" style="background:var(--success);color:#fff;border:none">💾 Salvar</button>`;
+        html += `<button class="btn-small tarefa-inline-salvar" data-id="${t.id}" type="button" style="background:var(--success);color:var(--text-on-success);border:none">💾 Salvar</button>`;
         html += `<button class="btn-small tarefa-inline-cancelar" type="button">Cancelar</button>`;
         html += '</div></div>';
       } else {
@@ -104,7 +104,9 @@ function renderTarefas() {
       html += `<div style="flex:1;min-width:0">`;
       html += `<div style="display:flex;align-items:center;gap:var(--s-2)">`;
       html += `<strong style="font-size:14px;${concluida ? 'text-decoration:line-through' : ''}">${escapeHtml(t.titulo)}</strong>`;
-      html += `<span style="font-size:11px;padding:1px 6px;border-radius:var(--r-sm);background:${t.prioridade === 'alta' ? 'var(--danger)' : t.prioridade === 'media' ? 'var(--warning)' : 'var(--success)'};color:#fff">${PRIORIDADE_LABEL[t.prioridade] || t.prioridade}</span>`;
+      const priorBg = t.prioridade === 'alta' ? 'var(--danger)' : t.prioridade === 'media' ? 'var(--warning)' : 'var(--success)';
+const priorColor = t.prioridade === 'alta' ? 'var(--text-on-danger)' : t.prioridade === 'media' ? 'var(--text-on-warning)' : 'var(--text-on-success)';
+html += `<span style="font-size:11px;padding:1px 6px;border-radius:var(--r-sm);background:${priorBg};color:${priorColor}">${PRIORIDADE_LABEL[t.prioridade] || t.prioridade}</span>`;
       html += `</div>`;
       html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">📅 ${formatarData(t.data)} ${STATUS_LABEL[t.status] || t.status}</div>`;
       if (t.descricao) {

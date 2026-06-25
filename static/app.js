@@ -1725,7 +1725,7 @@ function renderSummary(filtered) {
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <span class="badge">${(viewSelect && viewSelect.value === 'timeline') ? 'Visão: Evolução mensal' : ((viewSelect && viewSelect.value === 'detailed') ? 'Visão: Detalhada por mês' : 'Visão: Por atendente (agrupado)')}</span>
-        ${alerts.length ? `<span class="badge" style="background:#fff7ed;border-color:#fed7aa;color:#9a3412">⚠️ ${escapeHtml(alerts.join(' · '))}</span>` : `<span class="badge" style="background:#ecfeff;border-color:#a5f3fc;color:#155e75">OK</span>`}${presentationMode ? `<span class="badge presentation-note">Nomes ocultos na exibição</span>` : ''}${meetingMode ? `<span class="badge meeting-note">Foco em reunião</span>` : ''}
+        ${alerts.length ? `<span class="badge" style="background:var(--badge-alert-bg);border-color:var(--badge-alert-border);color:var(--badge-alert-text)">⚠️ ${escapeHtml(alerts.join(' · '))}</span>` : `<span class="badge" style="background:var(--badge-ok-bg);border-color:var(--badge-ok-border);color:var(--badge-ok-text)">OK</span>`}${presentationMode ? `<span class="badge presentation-note">Nomes ocultos na exibição</span>` : ''}${meetingMode ? `<span class="badge meeting-note">Foco em reunião</span>` : ''}
       </div>
     </div>
 

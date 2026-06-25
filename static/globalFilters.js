@@ -28,9 +28,9 @@ const globalFilters = {
   _listeners: [],
 
   init() {
-    this.carregar();
     this._renderBar();
     this._bindEvents();
+    this.limpar();
   },
 
   onChange(cb) {
