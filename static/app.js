@@ -1457,6 +1457,7 @@ function renderSummary(filtered) {
   const mesesNoEscopo = Array.from(new Set(rows.map(r=>String(r['Mês']||'')).filter(Boolean))).sort();
   const periodoTxt = mesesNoEscopo.length===0 ? '—' : (mesesNoEscopo.length===1 ? mesesNoEscopo[0] : `${mesesNoEscopo[0]} → ${mesesNoEscopo[mesesNoEscopo.length-1]}`);
   const atendentesNoEscopo = Array.from(new Set(rows.map(r=>String(r['Atendente']||'')).filter(Boolean))).length;
+  const setoresNoEscopo = Array.from(new Set(rows.map(r=>String(r['Setor']||'')).filter(Boolean))).length;
   container.innerHTML = `
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end">
       <div>
@@ -1472,11 +1473,12 @@ function renderSummary(filtered) {
 
     <div class="kpi-grid" style="margin-top:12px">
       <div class="kpi"><div class="label">Assumidos</div><div class="value">${fmtInt(totalAssumidos)}</div><div class="sub">${deltaAssumidos===null?'':`Δ mês ant.: ${fmtPct(deltaAssumidos)}`}</div></div>
-      <div class="kpi"><div class="label">Finalizados</div><div class="value">${fmtInt(totalFinalizados)}</div><div class="sub">${deltaFinalizados===null?'':`Δ mês ant.: ${fmtPct(deltaFinalizados)}`}</div></div>
       <div class="kpi"><div class="label">Transferidos</div><div class="value">${fmtInt(totalTransferidos)}</div><div class="sub">${taxaTransfer===null?'':`Taxa: ${(taxaTransfer*100).toFixed(1)}%`}</div></div>
+      <div class="kpi"><div class="label">Finalizados</div><div class="value">${fmtInt(totalFinalizados)}</div><div class="sub">${deltaFinalizados===null?'':`Δ mês ant.: ${fmtPct(deltaFinalizados)}`}</div></div>
       <div class="kpi"><div class="label">Score médio</div><div class="value${avgScoreNum!==null ? ' ' + getClasseScore(avgScoreNum) : ''}">${fmtScore(avgScoreNum)}</div><div class="sub">${deltaScore===null?'':`Δ mês ant.: ${deltaScore>=0?'+':''}${deltaScore.toFixed(2)}`}</div></div>
       <div class="kpi"><div class="label">Produtividade</div><div class="value">${produtividade===null?'—':(produtividade*100).toFixed(1)+'%'}</div><div class="sub">Finalizados / Assumidos</div></div>
-      <div class="kpi"><div class="label">Registros</div><div class="value">${fmtInt(rows.length)}</div><div class="sub">linhas no escopo</div></div>
+      <div class="kpi"><div class="label">Atendentes</div><div class="value">${fmtInt(atendentesNoEscopo)}</div><div class="sub">no escopo</div></div>
+      <div class="kpi"><div class="label">Setores</div><div class="value">${fmtInt(setoresNoEscopo)}</div><div class="sub">no escopo</div></div>
     </div>
 
     ${(() => {
