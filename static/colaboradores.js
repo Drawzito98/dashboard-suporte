@@ -290,16 +290,16 @@ function openColabDetailOverlay(nome) {
 
   const condutaChecked = info.conduta_negativa === 'true' || info.conduta_negativa === true;
 
-  html += `<div class="field" style="grid-column:1/-1;display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);border:1px solid ${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:var(--r-md)">
+  html += `<div id="ciCondutaField" class="field" style="grid-column:1/-1;display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);border:1px solid ${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:var(--r-md)">
     <span style="font-size:18px">🚩</span>
     <div style="flex:1">
       <div style="font-size:13px;font-weight:600;color:var(--text-strong)">Destacar por conduta negativa</div>
       <div style="font-size:11px;color:var(--text-muted)">Ex: desrespeito, faltas, reclamações recorrentes</div>
     </div>
-    <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0">
-      <input type="checkbox" id="ciCondutaToggle" ${condutaChecked ? 'checked' : ''} style="position:absolute;opacity:0;width:100%;height:100%;left:0;top:0;margin:0;cursor:pointer">
-      <span style="position:absolute;pointer-events:none;inset:0;background:${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:12px;transition:.2s"></span>
-      <span style="position:absolute;pointer-events:none;content:'';height:18px;width:18px;left:3px;bottom:3px;background:var(--bg-surface);border-radius:50%;transition:.2s;transform:${condutaChecked ? 'translateX(20px)' : 'translateX(0)'}"></span>
+    <label id="ciCondutaLabel" style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;cursor:pointer">
+      <input type="checkbox" id="ciCondutaToggle" ${condutaChecked ? 'checked' : ''} style="position:absolute;opacity:0;width:100%;height:100%;left:0;top:0;margin:0;pointer-events:none">
+      <span id="ciCondutaTrack" style="position:absolute;pointer-events:none;inset:0;background:${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:12px;transition:.2s"></span>
+      <span id="ciCondutaKnob" style="position:absolute;pointer-events:none;height:18px;width:18px;left:3px;bottom:3px;background:var(--bg-surface);border-radius:50%;transition:.2s;transform:${condutaChecked ? 'translateX(20px)' : 'translateX(0)'}"></span>
     </label>
   </div>`;
 
@@ -365,9 +365,19 @@ function openColabDetailOverlay(nome) {
     if (typeof renderColaboradores === 'function') renderColaboradores();
   });
 
-  document.getElementById('ciCondutaToggle').addEventListener('change', () => {
+  document.getElementById('ciCondutaLabel').addEventListener('click', (e) => {
+    e.preventDefault();
+    const cb = document.getElementById('ciCondutaToggle');
+    cb.checked = !cb.checked;
+    const checked = cb.checked;
     const field = document.getElementById('ciCondutaMotivoField');
-    if (field) field.hidden = !document.getElementById('ciCondutaToggle').checked;
+    if (field) field.hidden = !checked;
+    const track = document.getElementById('ciCondutaTrack');
+    if (track) track.style.background = checked ? 'var(--danger)' : 'var(--border)';
+    const knob = document.getElementById('ciCondutaKnob');
+    if (knob) knob.style.transform = checked ? 'translateX(20px)' : 'translateX(0)';
+    const condutaField = document.getElementById('ciCondutaField');
+    if (condutaField) condutaField.style.borderColor = checked ? 'var(--danger)' : 'var(--border)';
   });
 
   document.getElementById('ciLimparBtn').addEventListener('click', async () => {
