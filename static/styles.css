@@ -2251,3 +2251,15 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 .panel-collapsible.collapsed .form-stack {
   display: none;
 }
+
+/* ── Chat Online ── */
+#chatsDeptGrid .card {
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+#chatsDeptGrid .card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.2);
+}
+#chatsDeptGrid .card:active {
+  transform: scale(0.97);
+}
