@@ -1679,6 +1679,21 @@ function renderPreviewDisplay(rows) {
   html.push('</tbody></table></div>');
   previewTable.innerHTML = html.join('');
 
+  // Highlight rows based on performance
+  const _tbody = previewTable.querySelector('tbody');
+  if (_tbody) {
+    _tbody.querySelectorAll('tr').forEach((tr, idx) => {
+      const row = toRender[idx] || displayRows[idx];
+      if (!row) return;
+      const sc = row['SCORE'];
+      if (sc !== null && sc !== undefined && !isNaN(Number(sc))) {
+        const cls = getClasseScore(Number(sc));
+        if (cls === 'score-excelente') tr.classList.add('highlight-row');
+        else if (cls === 'score-critico') tr.classList.add('attention-row');
+      }
+    });
+  }
+
   // attach handlers for inline editing and deletion
   previewTable.querySelectorAll('.cell-edit').forEach(td => {
     td.addEventListener('keydown', (ev) => {
@@ -2908,35 +2923,6 @@ if (!rawRecords || !rawRecords.length) {
     }
   };
 
-  // ===== Extend persistence save on updateView =====
-  const _originalRenderSummary = renderSummary;
-  renderSummary = function(filtered) {
-    _originalRenderSummary(filtered);
-  };
-
-  // ===== Highlight rows in preview based on performance =====
-  const _originalRenderPreviewDisplay = renderPreviewDisplay;
-  renderPreviewDisplay = function(rows) {
-    _originalRenderPreviewDisplay(rows);
-    // Add highlight classes based on performance
-    if (!rows || !rows.length) return;
-    const table = document.querySelector('#previewTable table');
-    if (!table) return;
-    const tbody = table.querySelector('tbody');
-    if (!tbody) return;
-    const trs = tbody.querySelectorAll('tr');
-    trs.forEach((tr, idx) => {
-      const row = rows[idx];
-      if (!row) return;
-      const sc = row['SCORE'];
-      const fin = parseInt(row['Finalizados']) || 0;
-      if (sc !== null && sc !== undefined && !isNaN(Number(sc))) {
-        const cls = getClasseScore(Number(sc));
-        if (cls === 'score-excelente') tr.classList.add('highlight-row');
-        else if (cls === 'score-critico') tr.classList.add('attention-row');
-      }
-    });
-  };
   // ===== Resize handler for scrollbar sync =====
   let resizeTimer;
   window.addEventListener('resize', () => {
