@@ -8,13 +8,19 @@ module.exports = async (req, res) => {
   const path = req.query.path;
   if (!path) return res.status(400).json({ error: 'Query param "path" is required' });
   const sessionCookie = req.headers['x-session-cookie'];
-  if (!sessionCookie) return res.status(401).json({ error: 'X-Session-Cookie header required. Set it with the connect.sid cookie from lider.opasuite.com.br' });
+  if (!sessionCookie) return res.status(401).json({ error: 'X-Session-Cookie header required' });
   try {
     const apiUrl = `${API_BASE}/${path}`;
     const response = await fetch(apiUrl, {
       headers: {
         'Cookie': `connect.sid=${sessionCookie}`,
-        'User-Agent': 'Mozilla/5.0'
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Referer': 'https://lider.opasuite.com.br/',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Dest': 'empty'
       }
     });
     if (!response.ok && response.status !== 304) {
