@@ -155,7 +155,7 @@ function renderColabDetail(name) {
           <td>${m.assumidos}</td>
           <td>${m.finalizados}</td>
           <td>${m.transferidos}</td>
-          <td class="score-cell ${m.score > 0 ? getClasseScore(m.score) : 'score-good'}">${m.score > 0 ? m.score.toFixed(2) : '—'}</td>
+          <td class="score-cell ${m.score > 0 ? getClasseScore(m.score) : 'score-neutro'}">${m.score > 0 ? m.score.toFixed(2) : '—'}</td>
         </tr>
       `).join('')}
     </tbody>

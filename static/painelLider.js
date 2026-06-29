@@ -272,7 +272,7 @@ function renderPainelLider() {
         <td><strong>${escapeHtml(getDisplayName(name, aliasMap))}${condutaBadge(name)}</strong></td>
         <td>${d.fin.toLocaleString('pt-BR')}</td>
         <td class="${finClass}" style="font-size:12px">${deltaFin !== null ? (deltaFin >= 0 ? '↑ +' : '↓ ') + deltaFin : '—'}</td>
-        <td class="score-cell ${d.avgSc > 0 ? getClasseScore(d.avgSc) : 'score-good'}">${d.avgSc > 0 ? d.avgSc.toFixed(2) : '—'}</td>
+        <td class="score-cell ${d.avgSc > 0 ? getClasseScore(d.avgSc) : 'score-neutro'}">${d.avgSc > 0 ? d.avgSc.toFixed(2) : '—'}</td>
         <td class="${scClass}" style="font-size:12px">${deltaSc !== null ? (deltaSc >= 0 ? '↑ +' : '↓ ') + deltaSc.toFixed(2) : '—'}</td>
         <td>${(d.prod * 100).toFixed(0)}%</td>
         <td>${metaTxt}</td>

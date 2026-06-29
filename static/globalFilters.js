@@ -359,15 +359,15 @@ const globalFilters = {
 };
 
 // ===== Função global de classificação de score =====
-// 🟢 >= 4.70 Bom (meta) | 🟡 4.50–4.69 Atenção | 🔴 < 4.50 Crítico
+// 🟢 >= 4.70 Excelente (meta) | 🟡 4.50–4.69 Atenção | 🔴 < 4.50 Crítico
 function getClasseScore(score) {
   if (score === null || score === undefined || isNaN(Number(score))) {
-    return 'score-good';
+    return 'score-neutro';
   }
   const n = Number(score);
-  if (n < 4.50) return 'score-bad';
-  if (n < 4.70) return 'score-warn';
-  return 'score-good';
+  if (n < 4.50) return 'score-critico';
+  if (n < 4.70) return 'score-atencao';
+  return 'score-excelente';
 }
 
 if (document.readyState === 'loading') {

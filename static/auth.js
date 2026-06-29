@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const logoutBtn = document.getElementById('logoutBtn') || document.getElementById('dropdownLogoutBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
       await sbClient.auth.signOut();

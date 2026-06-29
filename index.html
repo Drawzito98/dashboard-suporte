@@ -121,18 +121,7 @@
         <p>Indicadores de desempenho e análise do suporte IXC CG</p>
       </div>
       <div class="topbar-right">
-        <div class="user-menu">
-          <button class="user-menu-trigger" id="userMenuBtn" type="button" aria-label="Menu do usuário" title="Usuário">
-            <span id="userAvatar" class="user-avatar">👤</span>
-          </button>
-          <div class="user-dropdown" id="userDropdown">
-            <div class="dropdown-header" id="dropdownUserEmail"></div>
-            <button class="dropdown-item dropdown-logout" id="dropdownLogoutBtn" type="button">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              Sair
-            </button>
-          </div>
-        </div>
+        <span id="currentUserDisplay" class="current-user" style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;margin-right:8px;white-space:nowrap"></span>
         <div class="seg-toggles" role="group" aria-label="Modos de visualização">
           <label class="presentation-toggle" title="Oculta nomes para apresentacao aos colaboradores">
             <input id="presentationModeToggle" type="checkbox"/>
@@ -142,6 +131,10 @@
         <button class="btn-small theme-toggle" id="themeToggle" type="button" aria-label="Alternar tema">
           <span class="theme-icon">🌙</span>
           <span class="theme-label">Alternar tema</span>
+        </button>
+        <button class="btn-small" id="logoutBtn" type="button" style="color:var(--danger);font-weight:600;gap:4px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sair
         </button>
       </div>
     </header>
@@ -306,8 +299,14 @@
                 <p>Clique na legenda para ocultar/mostrar series</p>
               </div>
               <div class="chart-toolbar">
-                <button id="exportChartPngBtn" type="button" class="btn-small btn-icon" title="Exportar gráfico como PNG">🖼️</button>
-                <button id="exportPdfBtn" type="button" class="btn-small btn-icon" title="Exportar gráfico como PDF">📄</button>
+                <button id="exportChartPngBtn" type="button" class="btn-small">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Exportar PNG
+                </button>
+                <button id="exportPdfBtn" type="button" class="btn-small">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  Exportar PDF
+                </button>
               </div>
             </div>
             <div class="chart-area">
@@ -330,12 +329,6 @@
                 <h2>Dados Detalhados</h2>
                 <p>Visualize e edite os registros importados</p>
               </div>
-              <div class="report-quick-bar">
-                <select id="reportColabSelect" style="min-width:160px;font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary)">
-                  <option value="">Relatório individual...</option>
-                </select>
-                <button class="btn-small" id="gerarRelatorioCompactBtn" type="button" title="Gerar relatório do colaborador">📋</button>
-              </div>
             </div>
             <div class="sortbar" id="previewSortControls" style="display:none">
               <span class="sort-label">Ordenar por:</span>
@@ -350,6 +343,13 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Exportar CSV
               </button>
+            </div>
+            <div id="previewReportBar" style="display:none;padding:var(--s-2) var(--s-3);margin-bottom:var(--s-3);background:var(--bg-subtle);border-radius:var(--r-md);align-items:center;gap:var(--s-3)">
+              <span style="font-size:13px;font-weight:600;white-space:nowrap">📊 Relatório:</span>
+              <select id="reportColabSelect" style="flex:1;min-width:120px">
+                <option value="">Selecione um colaborador...</option>
+              </select>
+              <button class="btn-primary" id="gerarRelatorioBtn" type="button" style="white-space:nowrap;font-size:13px">📊 Gerar</button>
             </div>
             <div id="previewTable"></div>
           </section>
