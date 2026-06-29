@@ -508,22 +508,16 @@ let presentationMode = false;
 function showHomeScreen() {
   const home = document.getElementById('homeScreen');
   const app = document.getElementById('appScreen');
-  const homeBtn = document.getElementById('homeBtn');
   if (home) home.style.display = 'flex';
   if (app) app.style.display = 'none';
-  if (homeBtn) homeBtn.classList.add('hidden');
-
   setGlobalEmpty(true);
 }
 
 function showAppScreen() {
   const home = document.getElementById('homeScreen');
   const app = document.getElementById('appScreen');
-  const homeBtn = document.getElementById('homeBtn');
   if (home) home.style.display = 'none';
   if (app) app.style.display = 'block';
-  if (homeBtn) homeBtn.classList.remove('hidden');
-
   setGlobalEmpty(!rawRecords || rawRecords.length === 0);
 }
 
@@ -581,31 +575,6 @@ function setChartEmpty(isEmpty, message) {
     empty.classList.toggle('hidden', !isEmpty);
   }
   if (canvas) canvas.style.display = isEmpty ? 'none' : 'block';
-}
-
-function resetPanelState() {
-  // Reseta filtros, comparações e ordenação (sem apagar dados salvos)
-  if (setorSelect) setorSelect.value = 'all';
-  if (mesSelect) mesSelect.value = 'all';
-  selectedMonths = [];
-  if (atendenteSelect) atendenteSelect.value = 'all';
-  if (arquivoSelect) arquivoSelect.value = 'all';
-  if (searchAtendenteInput) searchAtendenteInput.value = '';
-
-  // reset compare + ocultos + ordenação
-  compareChosen = [];
-  hiddenLabels = new Set();
-  currentSort = { key: null, desc: true };
-
-  renderCompareChips && renderCompareChips();
-  updatePreviewSortControls && updatePreviewSortControls();
-  updateFilterOptions && updateFilterOptions();
-}
-
-function goToHomeMenu() {
-  resetPanelState();
-  clearVisualsOnly();
-  showHomeScreen();
 }
 
 // -------------------------
@@ -733,35 +702,7 @@ function applySavedState(state) {
   }
 }
 
-function updateStorageUI(status, savedAtIso) {
-  const badge = document.getElementById('storageBadge');
-  const btnRestore = document.getElementById('restoreSavedBtn');
-  const btnClear = document.getElementById('clearSavedBtn');
-
-  const existing = loadSavedState();
-  const hasSaved = !!existing;
-
-  if (!badge || !btnRestore || !btnClear) return;
-
-  if (!hasSaved) {
-    badge.classList.add('hidden');
-    btnRestore.classList.add('hidden');
-    btnClear.classList.add('hidden');
-    return;
-  }
-
-  const savedAt = savedAtIso || existing?.savedAt;
-  const when = savedAt ? formatDateTime(savedAt) : '';
-  badge.textContent = when ? `Salvo: ${when}` : 'Salvo';
-  badge.classList.remove('hidden');
-
-  badge.classList.remove('ok', 'warn');
-  if (status === 'warn') badge.classList.add('warn');
-  else badge.classList.add('ok');
-
-  btnRestore.classList.remove('hidden');
-  btnClear.classList.remove('hidden');
-}
+function updateStorageUI(status, savedAtIso) {}
 
 // Plugin to draw value labels on bars/points so values are visible without hover
 
@@ -2595,41 +2536,12 @@ if (openSavedBtn) openSavedBtn.addEventListener('click', async () => {
   }
 });
 
-if (homeBtn) homeBtn.addEventListener('click', () => {
-  goToHomeMenu();
-});
-
 // Se já existir estado em memória (restaurado acima), mantém oculto até o usuário entrar
 if (!rawRecords || !rawRecords.length) {
   showHomeScreen();
 }
 
-  if (restoreSavedBtn) restoreSavedBtn.addEventListener('click', async () => {
-    if (rawRecords && rawRecords.length > 0) {
-      showToast('Dados já carregados.', 'success', 'Supabase');
-      return;
-    }
-    const supabaseRecords = await dbLoadRecords();
-    if (supabaseRecords && supabaseRecords.length > 0) {
-      rawRecords = normalizeAtendenteOnRecords(supabaseRecords);
-      if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
-      setGlobalEmpty(false);
-      populateFilters(rawRecords);
-      updateFilterOptions();
-      try { updateView(); } catch (e) {}
-      showToast(`${rawRecords.length} registros carregados do banco.`, 'success', 'Supabase');
-    } else {
-      const st = loadSavedState();
-      if (st) applySavedState(st);
-    }
-  });
 
-  if (clearSavedBtn) clearSavedBtn.addEventListener('click', () => {
-    if (!requireAdmin()) return;
-    if (confirm('Remover os dados salvos deste app no navegador?')) {
-      clearSavedState();
-    }
-  });
 
   if (btnF) btnF.addEventListener('click', () => { 
     if (currentSort.key === 'Finalizados') currentSort.desc = !currentSort.desc; else { currentSort.key = 'Finalizados'; currentSort.desc = true; }
@@ -2760,58 +2672,6 @@ if (!rawRecords || !rawRecords.length) {
       if (btn) btn.click();
     }
   } catch(e) {}
-
-  // ===== Global Search =====
-  const globalSearchInput = document.getElementById('globalSearchInput');
-  const globalSearchResults = document.getElementById('globalSearchResults');
-  let searchTimeout = null;
-
-  if (globalSearchInput && globalSearchResults) {
-    globalSearchInput.addEventListener('input', () => {
-      clearTimeout(searchTimeout);
-      const q = globalSearchInput.value.trim().toLowerCase();
-      if (q.length < 2) { globalSearchResults.classList.remove('open'); return; }
-
-      searchTimeout = setTimeout(() => {
-        const names = [...new Set((rawRecords || []).filter(r => r && r['Atendente']).map(r => r['Atendente']))];
-        const matches = names.filter(n => String(n).toLowerCase().includes(q)).slice(0, 10);
-        if (!matches.length) { globalSearchResults.classList.remove('open'); return; }
-
-        globalSearchResults.innerHTML = matches.map(name => {
-          const score = typeof computeScoreForCollaborator === 'function' ? computeScoreForCollaborator(name, rawRecords) : null;
-          const pts = score ? score.total.toFixed(1) : '';
-          return `<div class="global-search-result-item" data-name="${escapeHtml(name)}">
-            <span style="font-weight:600;color:var(--accent);font-size:14px">${escapeHtml(name.charAt(0).toUpperCase())}</span>
-            <div>
-              <div class="global-search-result-name">${escapeHtml(name)}</div>
-              ${pts ? `<div class="global-search-result-meta">${pts} pts</div>` : ''}
-            </div>
-          </div>`;
-        }).join('');
-
-        globalSearchResults.classList.add('open');
-
-        globalSearchResults.querySelectorAll('.global-search-result-item').forEach(item => {
-          item.addEventListener('click', () => {
-            const name = item.getAttribute('data-name');
-            globalSearchInput.value = '';
-            globalSearchResults.classList.remove('open');
-            if (typeof openColabDetail === 'function') openColabDetail(name);
-          });
-        });
-      }, 250);
-    });
-
-    globalSearchInput.addEventListener('blur', () => {
-      setTimeout(() => globalSearchResults.classList.remove('open'), 200);
-    });
-
-    globalSearchInput.addEventListener('focus', () => {
-      if (globalSearchResults.querySelector('.global-search-result-item')) {
-        globalSearchResults.classList.add('open');
-      }
-    });
-  }
 
   // ===== Initialize Scoring Rules UI =====
   if (typeof renderScoringRules === 'function') {

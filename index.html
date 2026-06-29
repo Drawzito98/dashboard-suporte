@@ -121,39 +121,21 @@
         <p>Indicadores de desempenho e análise do suporte IXC CG</p>
       </div>
       <div class="topbar-right">
+        <span id="currentUserDisplay" class="current-user" style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;margin-right:8px;white-space:nowrap"></span>
         <div class="seg-toggles" role="group" aria-label="Modos de visualização">
           <label class="presentation-toggle" title="Oculta nomes para apresentacao aos colaboradores">
             <input id="presentationModeToggle" type="checkbox"/>
             <span>Apresentação</span>
           </label>
-
         </div>
-        <span id="currentUserDisplay" class="current-user" style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;margin-right:8px;white-space:nowrap"></span>
-        <button class="btn-small" id="logoutBtn" type="button" style="color:var(--danger);font-weight:600;gap:4px;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          Sair
-        </button>
         <button class="btn-small theme-toggle" id="themeToggle" type="button" aria-label="Alternar tema">
           <span class="theme-icon">🌙</span>
           <span class="theme-label">Alternar tema</span>
         </button>
-        <details class="menu-dd">
-          <summary aria-label="Mais opções" title="Mais opções">⋯</summary>
-          <div class="menu-dd-panel">
-            <button class="btn-small" id="homeBtn" type="button">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-              Início
-            </button>
-            <span class="badge hidden" id="storageBadge"></span>
-            <button class="btn-small hidden" id="restoreSavedBtn" type="button">Restaurar sessão</button>
-            <button class="btn-small hidden" id="clearSavedBtn" type="button">Limpar dados salvos</button>
-          </div>
-        </details>
-        <div class="global-search">
-          <span class="search-icon">🔍</span>
-          <input id="globalSearchInput" type="text" placeholder="Buscar colaborador..." autocomplete="off"/>
-          <div class="global-search-results" id="globalSearchResults"></div>
-        </div>
+        <button class="btn-small" id="logoutBtn" type="button" style="color:var(--danger);font-weight:600;gap:4px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sair
+        </button>
       </div>
     </header>
 
