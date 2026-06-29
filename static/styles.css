@@ -857,6 +857,7 @@ html[data-theme="dark"] .loading-overlay { background: rgba(15, 23, 42, 0.7); }
   vertical-align: middle;
 }
 .cell-atendente { white-space: nowrap; min-width: 180px; line-height: 1.6; }
+.cell-obs { min-width: 260px; max-width: 400px; white-space: normal; }
 .badge-ferias { background: var(--info-soft);    color: var(--info); }
 .badge-multi  { background: var(--warning-soft); color: var(--warning); }
 .cell-ferias  { background: var(--info-soft) !important; }

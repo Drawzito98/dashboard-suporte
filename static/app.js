@@ -1530,19 +1530,18 @@ function renderPreviewDisplay(rows) {
   const aliasMap = buildAliasMap(rows.map(r => r['Atendente']));
   let keys = Object.keys(rows[0]);
   // exclude internal/metadata columns
-  keys = keys.filter(k => !['foto', 'id', 'user_id', 'created_at', 'arquivo'].includes(k.toLowerCase()));
-  // move Objetivo and Observações to the end
-  ['Objetivo', 'Observações'].forEach(col => {
-    const idx = keys.indexOf(col);
-    if (idx !== -1) {
-      keys.splice(idx, 1);
-      keys.push(col);
-    }
-  });
+  keys = keys.filter(k => !['foto', 'id', 'user_id', 'created_at', 'arquivo', 'objetivo'].includes(k.toLowerCase()));
+  // move Observações to the end
+  const obsIdx = keys.indexOf('Observações');
+  if (obsIdx !== -1) {
+    keys.splice(obsIdx, 1);
+    keys.push('Observações');
+  }
   // Build headers with extra columns
   let headerHtml = '';
   keys.forEach(k => {
-    headerHtml += `<th>${escapeHtml(k)}</th>`;
+    const thClass = k === 'Observações' ? ' class="cell-obs"' : '';
+    headerHtml += `<th${thClass}>${escapeHtml(k)}</th>`;
     if (k === 'Finalizados') {
       headerHtml += '<th>Var.%</th><th>📈</th>';
     }
@@ -1607,7 +1606,7 @@ function renderPreviewDisplay(rows) {
       }
       if (k === 'Observações') {
         const isFer = isFeriasObs(raw);
-        rowHtml += `<td contenteditable="${isAdmin()}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit ${isFer ? 'cell-ferias' : ''}">${escapeHtml(shown)}</td>`;
+        rowHtml += `<td contenteditable="${isAdmin()}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit cell-obs ${isFer ? 'cell-ferias' : ''}">${escapeHtml(shown)}</td>`;
         return;
       }
       rowHtml += `<td contenteditable="${isAdmin() && !(k === 'Atendente' && presentationMode)}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(shown)}</td>`;
