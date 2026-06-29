@@ -2,13 +2,13 @@
 // Tabelas: metas, comentarios, historico, scoring_config, alertas_config, colaborador_fotos, colab_inativos
 
 // ─── Helpers internos ────────────────────────────────────────────
-function _uid() {
-  try { return sbClient?.auth?.getUser()?.then?.(r => r.data?.user?.id) ?? null; }
+async function _uid() {
+  try { const u = await sbClient?.auth?.getUser(); return u?.data?.user?.id ?? null; }
   catch { return null; }
 }
 
-function _email() {
-  try { return sbClient?.auth?.getUser()?.then?.(r => r.data?.user?.email) ?? null; }
+async function _email() {
+  try { const u = await sbClient?.auth?.getUser(); return u?.data?.user?.email ?? null; }
   catch { return null; }
 }
 

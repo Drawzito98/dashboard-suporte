@@ -808,7 +808,7 @@ const valueLabelPlugin = {
         else text = showInteger ? String(Math.round(raw)) : fmt2(raw);
         ctx.save();
         ctx.font = isScore || isCount ? '500 16px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial' : '12px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
-        const _isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark') || document.documentElement.getAttribute('data-theme') === 'dark';
+        const _isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         ctx.fillStyle = isScore ? ((typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : (_isDark ? '#e2e8f0' : '#334155')) : ((typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : (_isDark ? '#e2e8f0' : '#334155'));
         if (isCount) ctx.fillStyle = _isDark ? '#e2e8f0' : '#1e293b';
         ctx.textAlign = 'center';

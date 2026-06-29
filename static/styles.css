@@ -242,6 +242,20 @@ body {
   transition: background-color var(--t-base), color var(--t-base);
 }
 
+/* ===== Smooth theme transitions ===== */
+.panel, .card, .kpi, .badge, .list-item,
+table th, table td,
+.ranking-table th, .ranking-table td,
+.week-grid > span,
+.period-total,
+.global-filter-bar select,
+.global-filter-bar input,
+.modal-sheet,
+.notification,
+.tab-bar button {
+  transition: background-color var(--t-base), border-color var(--t-base), color var(--t-base);
+}
+
 /* ===== Home ===== */
 .home-screen {
   min-height: 100vh;
@@ -958,6 +972,7 @@ body.meeting-mode .menu-dd { display: none !important; }
 
 /* ===== Print (relatórios — sempre claro) ===== */
 @media print {
+  @page { margin: 15mm; }
   body { background: white !important; color: #0f172a !important; }
   .sidebar, .topbar-right, .btn-small, .theme-toggle, .presentation-toggle, .menu-dd { display: none !important; }
   .layout { grid-template-columns: 1fr; }
@@ -1827,16 +1842,16 @@ body.meeting-mode .menu-dd { display: none !important; }
   color: var(--text-muted);
 }
 
-/* ===== Scrollbar ===== */
-::-webkit-scrollbar { width: 10px; height: 10px; }
+/* ===== Scrollbar sutil ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); background-clip: padding-box; }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
 html[data-theme="dark"] select option { background: var(--bg-surface); color: var(--text-primary); }
 
 /* ===== Focus visível ===== */
-:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); border-radius: var(--r-sm); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Acessibilidade ===== */
 @media (prefers-reduced-motion: reduce) {
@@ -2076,19 +2091,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   }
 }
 
-/* ===== Scrollbar sutil ===== */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
-/* ===== Focus visível global ===== */
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-/* Acessibilidade ===== */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition: none !important; animation: none !important; }
-}
 
 /* Relatório de Desempenho ===== */
 .report-header {

@@ -1,20 +1,27 @@
 const SUPABASE_URL = 'https://agvkmfusyetkicmuvumz.supabase.co';
 const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
 
-function getCallerRole(req) {
+async function getCallerRole(req) {
   try {
     const auth = req.headers['authorization'] || req.headers['x-supabase-auth'] || '';
     const token = auth.replace('Bearer ', '');
     if (!token) return null;
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-    return payload?.user_metadata?.role || null;
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        'apikey': SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) return null;
+    const user = await response.json();
+    return user?.user_metadata?.role || null;
   } catch {
     return null;
   }
 }
 
-function requireAdminApi(req, res) {
-  const role = getCallerRole(req);
+async function requireAdminApi(req, res) {
+  const role = await getCallerRole(req);
   if (role !== 'admin') {
     res.status(403).json({ error: 'Apenas administradores podem gerenciar usuários.' });
     return false;
@@ -33,7 +40,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  if (!requireAdminApi(req, res)) return;
+  if (!(await requireAdminApi(req, res))) return;
 
   try {
     // GET: listar usuários
