@@ -1530,7 +1530,15 @@ function renderPreviewDisplay(rows) {
   const aliasMap = buildAliasMap(rows.map(r => r['Atendente']));
   let keys = Object.keys(rows[0]);
   // exclude internal/metadata columns
-  keys = keys.filter(k => !['foto', 'id', 'user_id', 'created_at'].includes(k.toLowerCase()));
+  keys = keys.filter(k => !['foto', 'id', 'user_id', 'created_at', 'arquivo'].includes(k.toLowerCase()));
+  // move Objetivo and Observações to the end
+  ['Objetivo', 'Observações'].forEach(col => {
+    const idx = keys.indexOf(col);
+    if (idx !== -1) {
+      keys.splice(idx, 1);
+      keys.push(col);
+    }
+  });
   // Build headers with extra columns
   let headerHtml = '';
   keys.forEach(k => {
