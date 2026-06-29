@@ -105,24 +105,9 @@ function renderRelatorioSetorial() {
   html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-5);flex-wrap:wrap;gap:var(--s-3)">
     <div>
       <h2 style="font-size:18px;font-weight:700;color:var(--text-strong);margin:0">\uD83D\uDCCA Relatório Setorial</h2>
-      <p style="font-size:13px;color:var(--text-secondary);margin-top:2px">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]}</p>
+      <p style="font-size:13px;color:var(--text-secondary);margin-top:2px">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 Rankings, análise setorial, tendências e relatório executivo</p>
     </div>
     <button class="btn-primary" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
-  </div>`;
-
-  // ── Panorama Geral da Operação (KPIs) ──
-  html += `<div class="rs-section">
-    <h2 class="rs-section-title">\uD83D\uDCCA Panorama Geral da Operação</h2>
-    <div class="gamification-stats rs-kpis">
-      <div class="kpi"><div class="label">Assumidos</div><div class="value">${fmtNum(totalAss)}</div></div>
-      <div class="kpi"><div class="label">Transferidos</div><div class="value">${fmtNum(totalTra)}</div><div class="sub">${fmtPct(traGeral)}</div></div>
-      <div class="kpi"><div class="label">Finalizados</div><div class="value">${fmtNum(totalFin)}</div></div>
-      <div class="kpi"><div class="label">Score Geral da Operação</div><div class="value ${avgScore > 0 ? getClasseScore(avgScore) : ''}">${fmtScore(avgScore)}</div></div>
-      <div class="kpi"><div class="label">Produtividade Geral</div><div class="value">${fmtPct(prodGeral)}</div></div>
-      <div class="kpi" id="rsAtendentesKpi" style="cursor:pointer" title="Clique para ver a lista de atendentes"><div class="label">Atendentes</div><div class="value">${totalAtendentes}</div></div>
-      <div class="kpi"><div class="label">Setores</div><div class="value">${setores.length}</div></div>
-    </div>
-    <p class="rs-obs" style="font-size:12px;color:var(--text-muted);margin-top:var(--s-3);font-style:italic">Score geral = média das médias por setor (cada setor com peso igual).</p>
   </div>`;
 
   // ── Top 3 Rankings ──
@@ -551,13 +536,6 @@ function renderRelatorioSetorial() {
         }
       });
     });
-  }
-
-  // ── Modal de atendentes ──
-  const kpiEl = document.getElementById('rsAtendentesKpi');
-  const atendentesLista = [...new Set(rows.map(r => r['Atendente']))].filter(Boolean).sort();
-  if (kpiEl) {
-    kpiEl.addEventListener('click', () => _showModalAtendentes(atendentesLista));
   }
 
   // ── Exportar PNG ──
