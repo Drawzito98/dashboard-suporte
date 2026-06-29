@@ -817,9 +817,7 @@ function _rerenderActiveNonDashboardTab() {
   if (!active) return;
   const tab = active.getAttribute('data-tab');
   if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
-  else if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') onGamificationTabActivated();
-  else if (tab === 'metas' && typeof onMetasTabActivated === 'function') onMetasTabActivated();
-  else if (tab === 'comparativos' && typeof onComparativosTabActivated === 'function') onComparativosTabActivated();
+  else if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') { onGamificationTabActivated(); if (typeof onMetasTabActivated === 'function') onMetasTabActivated(); }
   else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();
   else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
 }
@@ -2471,6 +2469,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     initDbExtra().then(() => {
       setLoading(false);
       console.log('[App] db-extra carregado do Supabase');
+      if (isAdmin() && typeof dbNotificacoesLoad === 'function') {
+        dbNotificacoesLoad().then(initNotificacoesUI);
+      }
     }).catch(() => setLoading(false));
   }
 
@@ -2672,21 +2673,13 @@ if (!rawRecords || !rawRecords.length) {
       // Call per-tab initialization
       if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') {
         onGamificationTabActivated();
-      }
-      if (tab === 'metas' && typeof onMetasTabActivated === 'function') {
-        onMetasTabActivated();
-      }
-      if (tab === 'comparativos' && typeof onComparativosTabActivated === 'function') {
-        onComparativosTabActivated();
+        if (typeof onMetasTabActivated === 'function') onMetasTabActivated();
       }
       if (tab === 'lider' && typeof onLiderTabActivated === 'function') {
         onLiderTabActivated();
       }
       if (tab === 'insights' && typeof onInsightsTabActivated === 'function') {
         onInsightsTabActivated();
-      }
-      if (tab === 'feedbacks' && typeof onFeedbacksTabActivated === 'function') {
-        onFeedbacksTabActivated();
       }
       if (tab === 'anotacoes' && typeof onAnotacoesTabActivated === 'function') {
         onAnotacoesTabActivated();
@@ -2702,6 +2695,9 @@ if (!rawRecords || !rawRecords.length) {
       }
       if (tab === 'avaliacao' && typeof onAvaliacaoTabActivated === 'function') {
         onAvaliacaoTabActivated();
+        const feedbacksSection = document.getElementById('feedbacksAvaliacaoSection');
+        if (feedbacksSection) feedbacksSection.style.display = '';
+        if (typeof onFeedbacksTabActivated === 'function') onFeedbacksTabActivated();
       }
       if (tab === 'dashboard') {
         updateView();
@@ -2781,6 +2777,24 @@ if (!rawRecords || !rawRecords.length) {
     });
   }
 
+  // ===== Toggle Comparativos (dentro do Dashboard) =====
+  const toggleCompBtn = document.getElementById('toggleComparativosBtn');
+  if (toggleCompBtn) {
+    toggleCompBtn.addEventListener('click', () => {
+      const section = document.getElementById('comparativosDashboardSection');
+      if (!section) return;
+      const isHidden = section.style.display === 'none' || section.style.display === '';
+      if (isHidden) {
+        section.style.display = '';
+        if (typeof renderComparativos === 'function') renderComparativos();
+        toggleCompBtn.textContent = '📉 Fechar Comparativos';
+      } else {
+        section.style.display = 'none';
+        toggleCompBtn.textContent = '📈 Comparativos';
+      }
+    });
+  }
+
   // ===== Refresh Comparativos =====
   const refreshCompBtn = document.getElementById('refreshComparativosBtn');
   if (refreshCompBtn) {
@@ -2807,14 +2821,12 @@ if (!rawRecords || !rawRecords.length) {
       const activeTab = document.querySelector('.tab-btn.active');
       if (activeTab) {
         const tab = activeTab.getAttribute('data-tab');
-        if (tab === 'dashboard') updateView();
-        else if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') onGamificationTabActivated();
-        else if (tab === 'metas' && typeof onMetasTabActivated === 'function') onMetasTabActivated();
-        else if (tab === 'comparativos' && typeof onComparativosTabActivated === 'function') onComparativosTabActivated();
+        if (tab === 'dashboard') { updateView(); const compSec = document.getElementById('comparativosDashboardSection'); if (compSec && compSec.style.display !== 'none' && typeof renderComparativos === 'function') renderComparativos(); }
+        else if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') { onGamificationTabActivated(); if (typeof onMetasTabActivated === 'function') onMetasTabActivated(); }
         else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();
         else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
         else if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
-        else if (tab === 'avaliacao' && typeof onAvaliacaoTabActivated === 'function') onAvaliacaoTabActivated();
+        else if (tab === 'avaliacao' && typeof onAvaliacaoTabActivated === 'function') { onAvaliacaoTabActivated(); if (typeof onFeedbacksTabActivated === 'function') onFeedbacksTabActivated(); }
       }
     });
   }
@@ -2929,5 +2941,71 @@ function setCaretToEnd(el) {
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
+
+// ── Notificações UI ──
+function initNotificacoesUI() {
+  const wrapper = document.getElementById('notifBtnWrapper');
+  const btn = document.getElementById('notifBtn');
+  const badge = document.getElementById('notifBadge');
+  const panel = document.getElementById('notifPanel');
+  const body = document.getElementById('notifPanelBody');
+  const marcarTodas = document.getElementById('notifMarcarTodasBtn');
+  if (!wrapper || !btn || !badge || !panel || !body) return;
+
+  if (!isAdmin()) { wrapper.style.display = 'none'; return; }
+  wrapper.style.display = '';
+
+  function atualizarUI() {
+    const naoLidas = getNotificacoesNaoLidas();
+    if (naoLidas.length) {
+      badge.textContent = naoLidas.length;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+    if (panel.style.display !== 'none') renderPainel();
+  }
+
+  function renderPainel() {
+    const lista = _notificacoesCache || [];
+    if (!lista.length) {
+      body.innerHTML = '<div class="notif-empty">Nenhuma notificação</div>';
+      return;
+    }
+    body.innerHTML = lista.map(n => {
+      const tempo = n.created_at ? new Date(n.created_at + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+      return `<div class="notif-item${n.lida ? ' lida' : ''}" data-id="${n.id}">
+        <span class="notif-dot"></span>
+        <div class="notif-text">${escapeHtml(n.descricao)}<br><small style="color:var(--text-muted)">${escapeHtml(n.actor_email || '')} · ${tempo}</small></div>
+      </div>`;
+    }).join('');
+    body.querySelectorAll('.notif-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.id;
+        marcarNotificacaoLida(id).then(atualizarUI);
+      });
+    });
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : '';
+    if (!isOpen) renderPainel();
+  });
+
+  if (marcarTodas) {
+    marcarTodas.addEventListener('click', () => {
+      marcarTodasNotificacoesLidas().then(atualizarUI);
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!wrapper.contains(e.target)) panel.style.display = 'none';
+  });
+
+  onNotificacoesChange(atualizarUI);
+  atualizarUI();
+}
 // ── Removed: buildReportHTML moved to static/reports.js ──
 

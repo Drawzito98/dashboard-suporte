@@ -73,7 +73,6 @@ async function dbAvaliacoesLoad() {
 }
 
 async function dbAvaliacaoSave(avaliacao) {
-  if (!requireAdmin()) return;
   const list = getAvaliacoesLocal();
   const idx = list.findIndex(a => a.id === avaliacao.id);
   if (idx >= 0) list[idx] = avaliacao;
@@ -107,11 +106,13 @@ async function dbAvaliacaoSave(avaliacao) {
         }
       });
     }
+    if (typeof criarNotificacao === 'function') {
+      criarNotificacao('avaliacao', `Nova avaliação para ${avaliacao.colaborador || 'colaborador'} (${avaliacao.ciclo || 'sem ciclo'})`, 'avaliacao');
+    }
   } catch {}
 }
 
 async function dbAvaliacaoDelete(id) {
-  if (!requireAdmin()) return;
   const list = getAvaliacoesLocal();
   const filtered = list.filter(a => a.id !== id);
   saveAvaliacoesLocal(filtered);
@@ -288,7 +289,6 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
 
   document.getElementById('avaliacaoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!requireAdmin()) return;
     const form = e.target;
     const colab = form.dataset.colaborador;
     const cicloForm = form.dataset.ciclo;
@@ -415,7 +415,6 @@ function renderHistoricoAvaliacoes() {
 
   container.querySelectorAll('.avaliacao-excluir-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!requireAdmin()) return;
       if (!confirm('Tem certeza que deseja excluir esta avaliação?')) return;
       await dbAvaliacaoDelete(btn.dataset.id);
       showToast('Avaliação excluída.', 'success');

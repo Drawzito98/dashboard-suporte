@@ -16,7 +16,7 @@ function loadMetas() {
       if (loaded && Array.isArray(loaded)) {
         goals = loaded;
         saveMetas();
-        if (document.querySelector('#tab-metas.active')) renderMetas();
+        if (document.querySelector('#tab-gamificacao.active')) renderMetas();
       }
     });
   }

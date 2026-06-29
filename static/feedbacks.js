@@ -356,7 +356,6 @@ function bindFbEvents(colabs, meses, saved) {
 
   if (salvarBtn) {
     salvarBtn.addEventListener('click', async () => {
-      if (!requireAdmin()) return;
       const cur = JSON.parse(localStorage.getItem(FB_EDITING_KEY) || '{}');
       if (!cur.colaborador) return;
       const final = document.getElementById('fbFinalTexto').value;
@@ -417,7 +416,6 @@ function bindFbEvents(colabs, meses, saved) {
 
   container.querySelectorAll('.fb-excluir-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!requireAdmin()) return;
       const id = btn.dataset.id;
       const fb = saved.find(f => f.id === id);
       if (!fb || !confirm(`Excluir feedback de ${fb.colaborador} (${fb.mes})?`)) return;
