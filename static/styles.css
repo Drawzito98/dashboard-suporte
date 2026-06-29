@@ -366,8 +366,6 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-6) var(--s-6) var
 }
 .panel { padding: var(--s-4); }
 .card  { padding: var(--s-5); }
-.card:hover { border-color: var(--border-strong); }
-
 .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s-3); }
 .panel-header h2 {
   font-size: 10px; font-weight: 600;
@@ -867,7 +865,8 @@ html[data-theme="dark"] .loading-overlay { background: rgba(15, 23, 42, 0.7); }
   .tab-btn .tab-icon { font-size: 13px; }
 
   /* Sidebar: padding reduzido */
-  .panel { padding: var(--s-4); }
+.panel { padding: var(--s-4); transition: box-shadow var(--t-base), border-color var(--t-base); }
+.panel:hover { box-shadow: var(--shadow-sm); border-color: var(--border-strong); }
 
   /* Cards: padding reduzido */
   .card { padding: var(--s-4); }
