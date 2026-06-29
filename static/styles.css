@@ -502,7 +502,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   border-radius: var(--r-md);
   padding: 16px 18px;
   overflow: hidden;
-  transition: border-color var(--t-base);
+  transition: border-color var(--t-base), background-color var(--t-base);
 }
 .kpi::before {
   content: '';
@@ -1028,14 +1028,14 @@ html[data-theme="dark"] .loading-overlay { background: rgba(15, 23, 42, 0.7); }
   white-space: nowrap;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  transition: color var(--t-fast), border-color var(--t-fast);
+  transition: color var(--t-fast), border-color var(--t-fast), background-color var(--t-fast), box-shadow var(--t-fast);
 }
 .tab-btn:hover { color: var(--text-primary); }
 .tab-btn.active {
   color: var(--accent);
   font-weight: 600;
   border-bottom-color: var(--accent);
-  background: transparent;
+  background: var(--accent-soft);
   box-shadow: none;
 }
 .tab-btn .tab-icon { font-size: 14px; line-height: 1; }
