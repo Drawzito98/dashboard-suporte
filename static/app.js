@@ -1402,52 +1402,9 @@ function renderSummary(filtered) {
       const multiHtml = multi.size ? `<div class="avisos-item avisos-multi"><span class="avisos-icon">🔁</span><div><div class="avisos-title">Atuou em mais de um setor</div><ul class="avisos-list">${Array.from(multi.entries()).map(([a, secs]) => `<li><strong>${escapeHtml(getDisplayName(a, aliasMap))}</strong> — ${escapeHtml(secs.join(', '))}</li>`).join('')}</ul></div></div>` : '';
       return `<div class="avisos-card">${ferHtml}${multiHtml}</div>`;
     })()}
-
-    <div class="reportBox">
-      <div class="reportActions">
-        <button id="copyReportBtn" type="button" class="btn-small">Copiar relatório</button>
-        <button id="exportPdfBtn" type="button" class="btn-small">Exportar PDF</button>
-<button id="openPerfilDocsBtn" type="button" class="btn-small" style="display:none">Abrir Perfil (Docs)</button>
-<button id="refreshReportBtn" type="button" class="btn-small">Atualizar relatório</button>
-        <button id="intelReportBtn" type="button" class="btn-small">🤖 Relatório Inteligente</button>
-        <button id="deleteReportBtn" type="button" class="btn-small btn-danger">Apagar relatório</button>
-      </div>
-      <textarea id="reportText" class="reportText" placeholder="Clique em “Gerar relatório executivo” para montar o texto automaticamente…"></textarea>
-    </div>
   `;
 
-  // Bind buttons inside summary
-  const copyBtn = document.getElementById('copyReportBtn');
-  const exportPdfBtn = document.getElementById('exportPdfBtn');
-  const openPerfilDocsBtn = document.getElementById('openPerfilDocsBtn');
-  const refreshBtn = document.getElementById('refreshReportBtn');
-  const intelBtn = document.getElementById('intelReportBtn');
-  if (copyBtn) copyBtn.addEventListener('click', () => copyReportToClipboard());
-  if (exportPdfBtn) exportPdfBtn.addEventListener('click', () => exportReportToPDF());
-  if (intelBtn) intelBtn.addEventListener('click', () => generateIntelReport());
-  // Perfil (Docs) button: visible only when a single atendente is selected and a link exists
-  if (openPerfilDocsBtn) {
-    const selected = (typeof atendenteSelect !== 'undefined' && atendenteSelect && atendenteSelect.value && atendenteSelect.value !== 'all') ? atendenteSelect.value : '';
-    const link = getPerfilDocsLink(selected);
-    if (!presentationMode && selected && link) {
-      openPerfilDocsBtn.style.display = 'inline-flex';
-      openPerfilDocsBtn.onclick = () => window.open(link, '_blank', 'noopener,noreferrer');
-    } else {
-      openPerfilDocsBtn.style.display = 'none';
-      openPerfilDocsBtn.onclick = null;
-    }
-  }
-  if (refreshBtn) refreshBtn.addEventListener('click', () => generateAndShowReport());
-  const delBtn = document.getElementById('deleteReportBtn');
-  if (delBtn) delBtn.addEventListener('click', () => clearReportTextOnly());
-
   card.style.display = 'block';
-
-  // Preenche relatório se já existir
-  if (window.__lastReportText) {
-    const ta = document.getElementById('reportText');
-    if (ta && !ta.value) ta.value = window.__lastReportText;
-  }
 }
 
 // ─── KPI Drill-down: clique no card mostra detalhamento por setor ───

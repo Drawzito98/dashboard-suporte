@@ -23,22 +23,23 @@ function generateAndShowReport() {
   // Gera o relatório e garante feedback visual (sem depender do botão "Atualizar")
   try {
     setLoading(true, 'Gerando relatório…');
-    const card = document.getElementById('summaryCard');
     const ta = document.getElementById('reportText');
 
     const text = buildReportText();
     window.__lastReportText = text;
 
-    if (card) card.style.display = 'block';
     if (ta) {
       ta.value = text;
       ta.focus({ preventScroll: true });
     }
 
-    // rola até a seção do relatório para ficar óbvio que gerou
-    const target = document.getElementById('summaryCard') || document.getElementById('summarySection') || ta;
-    if (target && target.scrollIntoView) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Switch to Relatório Setorial tab
+    const tabBtn = document.querySelector('.tab-btn[data-tab="relatorio-setorial"]');
+    if (tabBtn) tabBtn.click();
+
+    // rola até o textarea
+    if (ta && ta.scrollIntoView) {
+      setTimeout(() => ta.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
     }
 
     showToast('Relatório gerado com sucesso.', 'success', 'Relatório');

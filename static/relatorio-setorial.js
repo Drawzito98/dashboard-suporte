@@ -379,13 +379,45 @@ function renderRelatorioSetorial() {
   passos.push('Agendar próxima revisão de indicadores em 30 dias.');
 
   html += `<div class="rs-section">
-    <h2 class="rs-section-title">\uD83D\uDCCC Próximos Passos e Plano de Ação</h2>
+    <h2 class="rs-section-title">📋 Próximos Passos e Plano de Ação</h2>
     <div class="rs-list rs-list-info">
       ${passos.map(p => `<div class="rs-list-item">${p}</div>`).join('')}
     </div>
   </div>`;
 
+  // ── Relatório Executivo ──
+  html += `<div class="reportBox" style="margin-top:var(--s-6)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-3);flex-wrap:wrap;gap:var(--s-2)">
+      <h3 style="font-size:14px;font-weight:600;color:var(--text-strong);margin:0">📝 Relatório Executivo</h3>
+      <div style="display:flex;gap:var(--s-2);flex-wrap:wrap">
+        <button id="copyReportBtn" type="button" class="btn-small">Copiar relatório</button>
+        <button id="exportPdfBtn" type="button" class="btn-small">Exportar PDF</button>
+        <button id="refreshReportBtn" type="button" class="btn-small">Atualizar</button>
+        <button id="intelReportBtn" type="button" class="btn-small">🤖 Relatório Inteligente</button>
+        <button id="deleteReportBtn" type="button" class="btn-small btn-danger">Apagar</button>
+      </div>
+    </div>
+    <textarea id="reportText" class="reportText" placeholder="Clique em “Gerar relatório executivo” no menu lateral para montar o texto automaticamente…"></textarea>
+  </div>`;
+
   container.innerHTML = html;
+
+  // ── Bind dos botões do relatório executivo ──
+  const copyBtn = document.getElementById('copyReportBtn');
+  const exportPdfBtn = document.getElementById('exportPdfBtn');
+  const refreshBtn = document.getElementById('refreshReportBtn');
+  const intelBtn = document.getElementById('intelReportBtn');
+  const delBtn = document.getElementById('deleteReportBtn');
+  if (copyBtn && typeof copyReportToClipboard === 'function') copyBtn.addEventListener('click', () => copyReportToClipboard());
+  if (exportPdfBtn && typeof exportReportToPDF === 'function') exportPdfBtn.addEventListener('click', () => exportReportToPDF());
+  if (intelBtn && typeof generateIntelReport === 'function') intelBtn.addEventListener('click', () => generateIntelReport());
+  if (refreshBtn && typeof generateAndShowReport === 'function') refreshBtn.addEventListener('click', () => generateAndShowReport());
+  if (delBtn && typeof clearReportTextOnly === 'function') delBtn.addEventListener('click', () => clearReportTextOnly());
+  // Preenche relatório se já existir
+  if (window.__lastReportText) {
+    const ta = document.getElementById('reportText');
+    if (ta && !ta.value) ta.value = window.__lastReportText;
+  }
 
   // ── Renderizar gráficos ──
   if (typeof Chart !== 'undefined') {
