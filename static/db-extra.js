@@ -1015,7 +1015,8 @@ async function initDbExtra() {
       dbAnotacoesLoad(),
       dbTarefasLoad(),
       dbPontosExtrasLoad(),
-      dbColabInfoLoad()
+      dbColabInfoLoad(),
+      typeof dbAvaliacoesLoad === 'function' ? dbAvaliacoesLoad() : Promise.resolve()
     ]);
   } catch {}
 }

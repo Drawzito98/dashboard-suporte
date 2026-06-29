@@ -2700,6 +2700,9 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') {
         onRelatorioSetorialTabActivated();
       }
+      if (tab === 'avaliacao' && typeof onAvaliacaoTabActivated === 'function') {
+        onAvaliacaoTabActivated();
+      }
       if (tab === 'dashboard') {
         updateView();
       }
@@ -2811,6 +2814,7 @@ if (!rawRecords || !rawRecords.length) {
         else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();
         else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
         else if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
+        else if (tab === 'avaliacao' && typeof onAvaliacaoTabActivated === 'function') onAvaliacaoTabActivated();
       }
     });
   }
