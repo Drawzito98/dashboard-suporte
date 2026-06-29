@@ -514,6 +514,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   opacity: 0.5;
 }
 .kpi:hover { border-color: var(--border-strong); }
+.kpi-drill { cursor: pointer; }
 .kpi .label {
   font-size: 10px; font-weight: 600;
   color: var(--text-muted);
@@ -662,6 +663,51 @@ td.score-cell.score-neutro    { color: var(--score-neutro); }
 
 .sparkline-cell { padding: 4px 8px; text-align: center; }
 .sparkline-cell svg { display: block; margin: 0 auto; }
+
+/* ===== KPI Drill Overlay ===== */
+.kpi-drill-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.4);
+  padding: var(--s-5);
+}
+.kpi-drill-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  max-width: 560px; width: 100%;
+  max-height: 80vh; overflow-y: auto;
+  padding: var(--s-5);
+  box-shadow: var(--shadow-lg);
+}
+.kpi-drill-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--s-4);
+}
+.kpi-drill-header h2 { font-size: 16px; font-weight: 600; color: var(--text-strong); }
+.kpi-drill-close {
+  background: none; border: none; font-size: 20px;
+  cursor: pointer; color: var(--text-muted); padding: 4px; line-height: 1;
+}
+.kpi-drill-close:hover { color: var(--text-primary); }
+.kpi-drill-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.kpi-drill-table th {
+  text-align: left; padding: 8px 10px;
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.kpi-drill-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+.kpi-drill-table tr:last-child td { border-bottom: none; }
+.kpi-drill-table td:last-child { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kpi-drill-total td {
+  border-top: 2px solid var(--border-strong);
+  font-weight: 700; color: var(--text-strong);
+}
 
 .score-excelente { color: var(--score-excelente); font-weight: 700; }
 .score-atencao   { color: var(--score-atencao); font-weight: 700; }

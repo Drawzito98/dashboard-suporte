@@ -1384,13 +1384,13 @@ function renderSummary(filtered) {
     </div>
 
     <div class="kpi-grid" style="margin-top:12px">
-      <div class="kpi"><div class="label">Assumidos</div><div class="value">${fmtInt(totalAssumidos)}</div><div class="sub">${deltaAssumidos===null?'':`Δ mês ant.: ${fmtPct(deltaAssumidos)}`}</div></div>
-      <div class="kpi"><div class="label">Transferidos</div><div class="value">${fmtInt(totalTransferidos)}</div><div class="sub">${taxaTransfer===null?'':`Taxa: ${(taxaTransfer*100).toFixed(1)}%`}</div></div>
-      <div class="kpi"><div class="label">Finalizados</div><div class="value">${fmtInt(totalFinalizados)}</div><div class="sub">${deltaFinalizados===null?'':`Δ mês ant.: ${fmtPct(deltaFinalizados)}`}</div></div>
-      <div class="kpi"><div class="label">Score médio</div><div class="value${avgScoreNum!==null ? ' ' + getClasseScore(avgScoreNum) : ''}">${fmtScore(avgScoreNum)}</div><div class="sub">${deltaScore===null?'':`Δ mês ant.: ${deltaScore>=0?'+':''}${deltaScore.toFixed(2)}`}</div></div>
-      <div class="kpi"><div class="label">Produtividade</div><div class="value">${produtividade===null?'—':(produtividade*100).toFixed(1)+'%'}</div><div class="sub">Finalizados / Assumidos</div></div>
-      <div class="kpi"><div class="label">Atendentes</div><div class="value">${fmtInt(atendentesNoEscopo)}</div><div class="sub">no escopo</div></div>
-      <div class="kpi"><div class="label">Setores</div><div class="value">${fmtInt(setoresNoEscopo)}</div><div class="sub">no escopo</div></div>
+      <div class="kpi kpi-drill" data-kpi="assumidos"><div class="label">Assumidos</div><div class="value">${fmtInt(totalAssumidos)}</div><div class="sub">${deltaAssumidos===null?'':`Δ mês ant.: ${fmtPct(deltaAssumidos)}`}</div></div>
+      <div class="kpi kpi-drill" data-kpi="transferidos"><div class="label">Transferidos</div><div class="value">${fmtInt(totalTransferidos)}</div><div class="sub">${taxaTransfer===null?'':`Taxa: ${(taxaTransfer*100).toFixed(1)}%`}</div></div>
+      <div class="kpi kpi-drill" data-kpi="finalizados"><div class="label">Finalizados</div><div class="value">${fmtInt(totalFinalizados)}</div><div class="sub">${deltaFinalizados===null?'':`Δ mês ant.: ${fmtPct(deltaFinalizados)}`}</div></div>
+      <div class="kpi kpi-drill" data-kpi="score"><div class="label">Score médio</div><div class="value${avgScoreNum!==null ? ' ' + getClasseScore(avgScoreNum) : ''}">${fmtScore(avgScoreNum)}</div><div class="sub">${deltaScore===null?'':`Δ mês ant.: ${deltaScore>=0?'+':''}${deltaScore.toFixed(2)}`}</div></div>
+      <div class="kpi kpi-drill" data-kpi="produtividade"><div class="label">Produtividade</div><div class="value">${produtividade===null?'—':(produtividade*100).toFixed(1)+'%'}</div><div class="sub">Finalizados / Assumidos</div></div>
+      <div class="kpi kpi-drill" data-kpi="atendentes"><div class="label">Atendentes</div><div class="value">${fmtInt(atendentesNoEscopo)}</div><div class="sub">no escopo</div></div>
+      <div class="kpi kpi-drill" data-kpi="setores"><div class="label">Setores</div><div class="value">${fmtInt(setoresNoEscopo)}</div><div class="sub">no escopo</div></div>
     </div>
 
     ${(() => {
@@ -1448,6 +1448,83 @@ function renderSummary(filtered) {
     const ta = document.getElementById('reportText');
     if (ta && !ta.value) ta.value = window.__lastReportText;
   }
+}
+
+// ─── KPI Drill-down: clique no card mostra detalhamento por setor ───
+
+function showKpiBreakdown(kpiType, rows) {
+  const filtered = rows.filter(r => r && !isAggregateName(r['Atendente']));
+  if (!filtered.length) return;
+
+  const sectors = {};
+  filtered.forEach(r => {
+    const s = r['Setor'] || 'Sem setor';
+    if (!sectors[s]) sectors[s] = { count: 0, assumidos: 0, transferidos: 0, finalizados: 0, scores: [] };
+    sectors[s].count++;
+    sectors[s].assumidos += parseInt(r['Assumidos']) || 0;
+    sectors[s].transferidos += parseInt(r['Transferidos']) || 0;
+    sectors[s].finalizados += parseInt(r['Finalizados']) || 0;
+    const sc = parseFloat(r['SCORE']);
+    if (!isNaN(sc)) sectors[s].scores.push(sc);
+  });
+
+  const labels = {
+    assumidos: 'Assumidos',
+    transferidos: 'Transferidos',
+    finalizados: 'Finalizados',
+    score: 'Score médio',
+    produtividade: 'Produtividade',
+    atendentes: 'Atendentes',
+    setores: 'Setores'
+  };
+
+  const entries = Object.entries(sectors).sort((a, b) => a[0].localeCompare(b[0]));
+
+  let tableRows = '';
+  let total = 0;
+
+  entries.forEach(([setor, data]) => {
+    let value = data[kpiType];
+    if (kpiType === 'score') {
+      value = data.scores.length ? (data.scores.reduce((a, b) => a + b, 0) / data.scores.length).toFixed(2) : '—';
+    } else if (kpiType === 'produtividade') {
+      value = data.assumidos > 0 ? ((data.finalizados / data.assumidos) * 100).toFixed(1) + '%' : '—';
+    } else if (kpiType === 'atendentes') {
+      value = data.count;
+    } else if (kpiType === 'setores') {
+      value = 1;
+    }
+
+    if (typeof value === 'number') total += value;
+    const display = typeof value === 'number' ? value.toLocaleString('pt-BR', { minimumFractionDigits: kpiType === 'score' ? 2 : 0, maximumFractionDigits: kpiType === 'score' ? 2 : 0 }) : value;
+    tableRows += `<tr><td>${escapeHtml(setor)}</td><td>${display}</td></tr>`;
+  });
+
+  // Total row (skip for score, produtividade ratio)
+  if (kpiType !== 'score' && kpiType !== 'produtividade' && kpiType !== 'setores') {
+    const totalDisplay = total.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    tableRows += `<tr class="kpi-drill-total"><td>Total</td><td>${totalDisplay}</td></tr>`;
+  }
+
+  const title = labels[kpiType] || kpiType;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'kpi-drill-overlay';
+  overlay.innerHTML = `
+    <div class="kpi-drill-panel">
+      <div class="kpi-drill-header">
+        <h2>${title} por setor</h2>
+        <button class="kpi-drill-close" type="button">✕</button>
+      </div>
+      <table class="kpi-drill-table">
+        <thead><tr><th>Setor</th><th>${title}</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.kpi-drill-close').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
 // ─── VISUAL IMPROVEMENTS: variação % + sparklines ────────────
@@ -2604,6 +2681,15 @@ if (!rawRecords || !rawRecords.length) {
       const panel = header.closest('.panel-collapsible');
       if (panel) panel.classList.toggle('collapsed');
     });
+  });
+
+  // ── KPI drill-down (delegation on summaryContent) ──
+  document.getElementById('summaryContent')?.addEventListener('click', (e) => {
+    const kpi = e.target.closest('.kpi-drill');
+    if (!kpi) return;
+    const kpiType = kpi.dataset.kpi;
+    const rows = getCurrentFilteredRows();
+    showKpiBreakdown(kpiType, rows);
   });
 
   updatePreviewSortControls();
