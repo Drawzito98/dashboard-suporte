@@ -501,7 +501,6 @@ let currentSort = { key: null, desc: true };
 let hiddenLabels = new Set();
 let selectedMonths = [];
 let presentationMode = false;
-let meetingMode = false;
 
 // -------------------------
 // Navegação: Menu inicial / Painel
@@ -646,7 +645,6 @@ function getStateSnapshot() {
       mes: mesSelect?.value ?? 'all',
       mesesSelecionados: Array.isArray(selectedMonths) ? selectedMonths.slice() : [],
       presentationMode,
-      meetingMode,
       atendente: atendenteSelect?.value ?? 'all',
       arquivo: arquivoSelect?.value ?? 'all',
       compareSelect: compareSelect?.value ?? 'all',
@@ -710,10 +708,7 @@ function applySavedState(state) {
     if (mesSelect && state.filters?.mes) mesSelect.value = state.filters.mes;
     selectedMonths = Array.isArray(state.filters?.mesesSelecionados) ? state.filters.mesesSelecionados.slice() : [];
     presentationMode = !!state.filters?.presentationMode;
-    meetingMode = !!state.filters?.meetingMode;
     if (presentationModeToggle) presentationModeToggle.checked = presentationMode;
-    if (meetingModeToggle) meetingModeToggle.checked = meetingMode;
-    applyMeetingMode();
     if (atendenteSelect && state.filters?.atendente) atendenteSelect.value = state.filters.atendente;
     if (arquivoSelect && state.filters?.arquivo) arquivoSelect.value = state.filters.arquivo;
 
@@ -836,7 +831,6 @@ const monthChips = document.getElementById('monthChips');
 const selectAllMonthsBtn = document.getElementById('selectAllMonthsBtn');
 const clearMonthsBtn = document.getElementById('clearMonthsBtn');
 const presentationModeToggle = document.getElementById('presentationModeToggle');
-const meetingModeToggle = document.getElementById('meetingModeToggle');
 const atendenteSelect = document.getElementById('atendenteSelect');
 const searchAtendenteInput = document.getElementById('searchAtendenteInput');
 const compareSelect = document.getElementById('compareSelect');
@@ -902,16 +896,6 @@ if (searchAtendenteInput) searchAtendenteInput.addEventListener('input', () => {
 if (selectAllMonthsBtn) selectAllMonthsBtn.addEventListener('click', () => { selectedMonths = uniqueSorted(rawRecords.map(r => r['Mês'])); renderMonthPickerOptions(); updateFilterOptions(); updateView(); });
 if (clearMonthsBtn) clearMonthsBtn.addEventListener('click', () => { selectedMonths = []; renderMonthPickerOptions(); updateFilterOptions(); updateView(); });
 if (presentationModeToggle) presentationModeToggle.addEventListener('change', () => { presentationMode = !!presentationModeToggle.checked; updateView(); saveState(); });
-if (meetingModeToggle) meetingModeToggle.addEventListener('change', () => {
-  meetingMode = !!meetingModeToggle.checked;
-  if (meetingMode) {
-    presentationMode = true;
-    if (presentationModeToggle) presentationModeToggle.checked = true;
-  }
-  applyMeetingMode();
-  updateView();
-  saveState();
-});
 if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', () => { clearFilters(); });
 // preview filters handled when rendering preview
 
@@ -1003,18 +987,6 @@ function renderMonthPickerOptions() {
   });
   renderMonthChips();
   syncMonthPickerVisibility();
-}
-
-function applyMeetingMode() {
-  document.body.classList.toggle('meeting-mode', !!meetingMode);
-  if (presentationModeToggle) {
-    presentationModeToggle.classList.toggle('is-locked', !!meetingMode);
-    presentationModeToggle.title = meetingMode
-      ? 'No modo reunião os nomes ficam ocultos automaticamente.'
-      : 'Oculta nomes na tela para apresentação aos colaboradores';
-    const input = presentationModeToggle.querySelector('input');
-    if (input) input.disabled = !!meetingMode;
-  }
 }
 
 function buildAliasMap(names) {
@@ -1449,7 +1421,6 @@ function renderSummary(filtered) {
   if (arquivoSel !== 'all') scopeParts.push(`Arquivo: ${escapeHtml(arquivoSel)}`);
   if (setorSel !== 'all') scopeParts.push(`Setor: ${escapeHtml(setorSel)}`);
   if (presentationMode) scopeParts.push('Modo apresentação');
-  if (meetingMode) scopeParts.push('Modo reunião');
   if (atendenteSel !== 'all') scopeParts.push(`Atendente: ${escapeHtml(atendenteSel)}`);
   const q = qTxt;
   if (qLower) scopeParts.push(`Busca: ${escapeHtml(q)}`);
@@ -1467,7 +1438,7 @@ function renderSummary(filtered) {
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <span class="badge">Visão: Por atendente (agrupado)</span>
-        ${alerts.length ? `<span class="badge" style="background:var(--badge-alert-bg);border-color:var(--badge-alert-border);color:var(--badge-alert-text)">⚠️ ${escapeHtml(alerts.join(' · '))}</span>` : `<span class="badge" style="background:var(--badge-ok-bg);border-color:var(--badge-ok-border);color:var(--badge-ok-text)">OK</span>`}${presentationMode ? `<span class="badge presentation-note">Nomes ocultos na exibição</span>` : ''}${meetingMode ? `<span class="badge meeting-note">Foco em reunião</span>` : ''}
+        ${alerts.length ? `<span class="badge" style="background:var(--badge-alert-bg);border-color:var(--badge-alert-border);color:var(--badge-alert-text)">⚠️ ${escapeHtml(alerts.join(' · '))}</span>` : `<span class="badge" style="background:var(--badge-ok-bg);border-color:var(--badge-ok-border);color:var(--badge-ok-text)">OK</span>`}${presentationMode ? `<span class="badge presentation-note">Nomes ocultos na exibição</span>` : ''}
       </div>
     </div>
 
@@ -1490,8 +1461,6 @@ function renderSummary(filtered) {
       const multiHtml = multi.size ? `<div class="avisos-item avisos-multi"><span class="avisos-icon">🔁</span><div><div class="avisos-title">Atuou em mais de um setor</div><ul class="avisos-list">${Array.from(multi.entries()).map(([a, secs]) => `<li><strong>${escapeHtml(getDisplayName(a, aliasMap))}</strong> — ${escapeHtml(secs.join(', '))}</li>`).join('')}</ul></div></div>` : '';
       return `<div class="avisos-card">${ferHtml}${multiHtml}</div>`;
     })()}
-
-    ${meetingMode ? `<div class="meeting-banner"><div><strong>Modo reunião ativo</strong><span>Exibição limpa para apresentar os resultados do setor sem expor nomes.</span></div></div>` : ''}
 
     <div class="reportBox">
       <div class="reportActions">
@@ -2270,7 +2239,6 @@ function buildReportText() {
   if (setorVal !== 'all') scope.push(`Setor: ${setorVal}`);
   if (mesVal.length) scope.push(`Período: ${getMonthScopeLabel()}`);
   if (presentationMode) scope.push('Modo apresentação ativo');
-  if (meetingMode) scope.push('Modo reunião ativo');
   const q = (searchAtendenteInput?.value || '').trim();
   if (q) scope.push(`Busca: ${q}`);
 
