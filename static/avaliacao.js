@@ -109,7 +109,7 @@ async function dbAvaliacaoSave(avaliacao) {
     if (typeof criarNotificacao === 'function') {
       criarNotificacao('avaliacao', `Nova avaliação para ${avaliacao.colaborador || 'colaborador'} (${avaliacao.ciclo || 'sem ciclo'})`, 'avaliacao');
     }
-  } catch {}
+  } catch (e) { console.error('[avaliacao] dbAvaliacaoSave:', e); }
 }
 
 async function dbAvaliacaoDelete(id) {
@@ -119,7 +119,7 @@ async function dbAvaliacaoDelete(id) {
   if (!sbClient) return;
   try {
     await sbClient.from('avaliacoes').delete().eq('id', id);
-  } catch {}
+  } catch (e) { console.error('[avaliacao] dbAvaliacaoDelete:', e); }
 }
 
 function renderAvaliacao() {
@@ -333,9 +333,14 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
       avaliacaoData.createdAt = new Date().toISOString();
     }
 
-    await dbAvaliacaoSave(avaliacaoData);
-    showToast(`Avaliação de ${escapeHtml(colab)} salva com sucesso!`, 'success', 'Avaliação');
-    renderAvaliacao();
+    if (typeof setLoading === 'function') setLoading(true, 'Salvando avaliação…');
+    try {
+      await dbAvaliacaoSave(avaliacaoData);
+      showToast(`Avaliação de ${escapeHtml(colab)} salva com sucesso!`, 'success', 'Avaliação');
+      renderAvaliacao();
+    } finally {
+      if (typeof setLoading === 'function') setLoading(false);
+    }
   });
 
   document.getElementById('avaliacaoCancelarBtn').addEventListener('click', () => {

@@ -358,22 +358,27 @@ function bindFbEvents(colabs, meses, saved) {
     salvarBtn.addEventListener('click', async () => {
       const cur = JSON.parse(localStorage.getItem(FB_EDITING_KEY) || '{}');
       if (!cur.colaborador) return;
-      const final = document.getElementById('fbFinalTexto').value;
-      const anotacoes = document.getElementById('fbAnotacoesTexto').value;
-      const sugestao = (document.getElementById('fbSugestaoTexto') || {}).value || cur.sugestao_automatica || '';
-      const fb = {
-        id: cur.id || Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-        colaborador: cur.colaborador,
-        mes: cur.mes || 'all',
-        sugestao_automatica: sugestao,
-        anotacoes: anotacoes,
-        feedback_final: final,
-        createdAt: cur.createdAt || new Date().toISOString()
-      };
-      await dbFeedbacksSave(fb);
-      localStorage.removeItem(FB_EDITING_KEY);
-      showToast('Feedback salvo com sucesso!', 'success', 'Feedbacks');
-      renderFeedbacks();
+      if (typeof setLoading === 'function') setLoading(true, 'Salvando feedback…');
+      try {
+        const final = document.getElementById('fbFinalTexto').value;
+        const anotacoes = document.getElementById('fbAnotacoesTexto').value;
+        const sugestao = (document.getElementById('fbSugestaoTexto') || {}).value || cur.sugestao_automatica || '';
+        const fb = {
+          id: cur.id || Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+          colaborador: cur.colaborador,
+          mes: cur.mes || 'all',
+          sugestao_automatica: sugestao,
+          anotacoes: anotacoes,
+          feedback_final: final,
+          createdAt: cur.createdAt || new Date().toISOString()
+        };
+        await dbFeedbacksSave(fb);
+        localStorage.removeItem(FB_EDITING_KEY);
+        showToast('Feedback salvo com sucesso!', 'success', 'Feedbacks');
+        renderFeedbacks();
+      } finally {
+        if (typeof setLoading === 'function') setLoading(false);
+      }
     });
   }
 

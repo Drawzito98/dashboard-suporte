@@ -78,7 +78,7 @@ async function dbMetasSave(goals) {
       period: g.period || 'all'
     }));
     await sbClient.from('metas').insert(rows);
-  } catch {}
+  } catch (e) { console.error('[db-extra] dbMetasSave:', e); }
 }
 
 // ─── COMENTÁRIOS ─────────────────────────────────────────────────
@@ -128,7 +128,7 @@ async function dbComentarioAdd(mes, texto) {
         texto: texto.trim(),
         user_email: email || ''
       });
-    } catch {}
+    } catch (e) { console.error('[db-extra]', e); }
   }
   return entry;
 }
@@ -146,7 +146,7 @@ async function dbComentarioDel(mes, id) {
     } catch {
       try {
         await sbClient.from('comentarios').delete().filter('id', 'eq', id);
-      } catch {}
+      } catch (e) { console.error('[db-extra]', e); }
     }
   }
 }
@@ -209,7 +209,7 @@ async function dbHistoricoAdd(entry) {
         detalhes: enriched.detalhes,
         user_email: email || ''
       });
-    } catch {}
+    } catch (e) { console.error('[db-extra]', e); }
   }
 }
 
@@ -244,7 +244,7 @@ async function dbScoringSave(rules) {
     } else {
       await sbClient.from('scoring_config').insert({ user_id: uid, rules });
     }
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 // ─── ALERTAS CONFIG ──────────────────────────────────────────────
@@ -278,7 +278,7 @@ async function dbAlertasSave(config) {
     } else {
       await sbClient.from('alertas_config').insert({ user_id: uid, config });
     }
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 // ─── FOTOS ───────────────────────────────────────────────────────
@@ -319,7 +319,7 @@ async function dbFotoSave(nome, url) {
     } else if (url) {
       await sbClient.from('colaborador_fotos').insert({ nome, foto_url: url });
     }
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 // ─── COLABORADORES INATIVOS ──────────────────────────────────────
@@ -356,7 +356,7 @@ async function dbInativosSave(names) {
     if (arr.length) {
       await sbClient.from('colab_inativos').insert(arr.map(nome => ({ user_id: uid, nome })));
     }
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 // ─── SETORES INATIVOS ─────────────────────────────────────────
@@ -393,7 +393,7 @@ async function dbSetorInativosSave(names) {
     if (arr.length) {
       await sbClient.from('setor_inativos').insert(arr.map(nome => ({ user_id: uid, nome })));
     }
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 // ─── FEEDBACKS ──────────────────────────────────────────────────
@@ -459,7 +459,7 @@ async function dbFeedbacksSave(feedback) {
     if (typeof criarNotificacao === 'function') {
       criarNotificacao('feedback', `Novo feedback para ${feedback.colaborador || 'colaborador'}`, 'avaliacao');
     }
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 async function dbFeedbacksDelete(id) {
@@ -469,7 +469,7 @@ async function dbFeedbacksDelete(id) {
   if (!sbClient) return;
   try {
     await sbClient.from('feedbacks').delete().eq('id', id);
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 // ─── ANOTAÇÕES DIÁRIAS ──────────────────────────────────────────
@@ -523,7 +523,7 @@ async function dbAnotacoesSave(anotacao) {
         conteudo: anotacao.conteudo || ''
       });
     }
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 async function dbAnotacoesDelete(id) {
@@ -533,7 +533,7 @@ async function dbAnotacoesDelete(id) {
   if (!sbClient) return;
   try {
     await sbClient.from('anotacoes_diarias').delete().eq('id', id);
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 // ─── TAREFAS / AGENDA ───────────────────────────────────────────
@@ -596,7 +596,7 @@ async function dbTarefasSave(tarefa) {
         status: tarefa.status || 'pendente'
       });
     }
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 async function dbTarefasDelete(id) {
@@ -606,7 +606,7 @@ async function dbTarefasDelete(id) {
   if (!sbClient) return;
   try {
     await sbClient.from('tarefas').delete().eq('id', id);
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 // ─── PONTOS EXTRAS (Bônus Manuais) ──────────────────────────────
@@ -665,7 +665,7 @@ async function dbPontosExtrasSave(bonus) {
         mes: bonus.mes || ''
       });
     }
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 async function dbPontosExtrasDelete(id) {
@@ -675,7 +675,7 @@ async function dbPontosExtrasDelete(id) {
   if (!sbClient) return;
   try {
     await sbClient.from('pontos_extras').delete().eq('id', id);
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 // ─── COLABORADORES INFO (Cadastro) ─────────────────────────────
@@ -749,7 +749,7 @@ async function dbColabInfoSave(nome, data) {
         conduta_motivo: data.conduta_motivo || ''
       });
     }
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }
 
 // ─── FALLBACK ────────────────────────────────────────────────────
@@ -1015,5 +1015,5 @@ async function initDbExtra() {
       dbColabInfoLoad(),
       typeof dbAvaliacoesLoad === 'function' ? dbAvaliacoesLoad() : Promise.resolve()
     ]);
-  } catch {}
+  } catch (e) { console.error('[db-extra]', e); }
 }

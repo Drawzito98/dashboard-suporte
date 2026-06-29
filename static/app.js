@@ -384,7 +384,27 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { closeManageColabs(); closeManageSetores(); }
+  if (e.key === 'Escape') {
+    closeManageColabs(); closeManageSetores();
+    if (typeof closeHistorico === 'function') closeHistorico();
+    if (typeof closeComentarios === 'function') closeComentarios();
+    if (typeof closeProjecao === 'function') closeProjecao();
+    const bonusOverlay = document.getElementById('bonusOverlay');
+    if (bonusOverlay) bonusOverlay.style.display = 'none';
+    const panel = document.getElementById('notifPanel');
+    if (panel) panel.style.display = 'none';
+    const colabOverlay = document.getElementById('colabDetailOverlay');
+    if (colabOverlay) colabOverlay.style.display = 'none';
+    const reportOverlay = document.getElementById('colabReportOverlay');
+    if (reportOverlay) reportOverlay.style.display = 'none';
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    const avaliacaoForm = document.getElementById('avaliacaoForm');
+    if (avaliacaoForm) { avaliacaoForm.requestSubmit(); return; }
+    const fbSalvarBtn = document.getElementById('fbSalvarBtn');
+    if (fbSalvarBtn && !fbSalvarBtn.disabled) { fbSalvarBtn.click(); return; }
+  }
 });
 function _normName(s) {
   try {
@@ -2605,7 +2625,7 @@ if (!rawRecords || !rawRecords.length) {
   if (addRowBtn) addRowBtn.addEventListener('click', () => { if (!requireAdmin()) return; addRow(); });
   if (addRowTopBtn) addRowTopBtn.addEventListener('click', () => { if (!requireAdmin()) return; openProjecaoOverlay(); });
   const cleanDupBtn = document.getElementById('cleanDupBtn');
-  if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { if (!requireAdmin()) return; cleanDuplicates(); });
+  if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { if (!requireAdmin()) return; if (!confirm('Remover registros duplicados? Esta ação não pode ser desfeita.')) return; cleanDuplicates(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
   document.getElementById('gerarRelatorioBtn')?.addEventListener('click', () => {
     const sel = document.getElementById('reportColabSelect');
