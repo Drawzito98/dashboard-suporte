@@ -67,10 +67,7 @@ async function dbLoadRecords() {
   if (!sbClient) { console.warn('dbLoadRecords: sbClient nulo'); return null; }
   try {
     console.log('[DB] Buscando registros do Supabase...');
-    const user = getCurrentUser();
-    let query = sbClient.from('registros').select('*');
-    if (user?.id) query = query.eq('user_id', user.id);
-    const { data, error } = await query;
+    const { data, error } = await sbClient.from('registros').select('*');
     if (error) {
       console.error('[DB] Erro na query:', error);
       throw error;
