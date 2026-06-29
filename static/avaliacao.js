@@ -27,35 +27,13 @@ const NOTAS = [
   { valor: 4, label: '4 — Supera o esperado' }
 ];
 
-function getCicloAtual() {
+function sugerirCiclo() {
   const agora = new Date();
   const mes = agora.getMonth() + 1;
   const ano = agora.getFullYear();
-  if (mes >= 1 && mes <= 4) return { label: `Jan-Abr ${ano}`, inicio: `${ano}-01`, fim: `${ano}-04` };
-  if (mes >= 5 && mes <= 8) return { label: `Mai-Ago ${ano}`, inicio: `${ano}-05`, fim: `${ano}-08` };
-  return { label: `Set-Dez ${ano}`, inicio: `${ano}-09`, fim: `${ano}-12` };
-}
-
-function getCiclosAnteriores() {
-  const ciclos = [];
-  const atual = getCicloAtual();
-  const [labelAtual, anoAtual] = atual.label.split(' ');
-  const ano = parseInt(anoAtual);
-
-  const todos = [
-    { label: `Jan-Abr ${ano - 1}`, value: `Jan-Abr ${ano - 1}` },
-    { label: `Mai-Ago ${ano - 1}`, value: `Mai-Ago ${ano - 1}` },
-    { label: `Set-Dez ${ano - 1}`, value: `Set-Dez ${ano - 1}` },
-    { label: `Jan-Abr ${ano}`, value: `Jan-Abr ${ano}` },
-    { label: `Mai-Ago ${ano}`, value: `Mai-Ago ${ano}` },
-    { label: `Set-Dez ${ano}`, value: `Set-Dez ${ano}` }
-  ];
-
-  for (const c of todos) {
-    ciclos.push(c);
-    if (c.label === atual.label) break;
-  }
-  return ciclos;
+  if (mes >= 1 && mes <= 4) return `Jan-Abr ${ano}`;
+  if (mes >= 5 && mes <= 8) return `Mai-Ago ${ano}`;
+  return `Set-Dez ${ano}`;
 }
 
 function getAvaliacoesLocal() {
@@ -149,7 +127,7 @@ function renderAvaliacao() {
 
   const avaliacoes = getAvaliacoesLocal();
   const colabs = [...new Set((rawRecords || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
-  const cicloAtual = getCicloAtual();
+  const ciclosExistentes = [...new Set(avaliacoes.map(a => a.ciclo).filter(Boolean))].sort();
 
   let html = `
     <div class="avaliacao-layout">
@@ -157,7 +135,7 @@ function renderAvaliacao() {
         <div class="card-header">
           <div>
             <h2>📋 Avaliação de Desempenho</h2>
-            <p>Avalie um colaborador nas 14 competências — ciclo ${cicloAtual.label}</p>
+            <p>Avalie um colaborador nas 14 competências</p>
           </div>
         </div>
         <div class="avaliacao-form-controls">
@@ -170,9 +148,10 @@ function renderAvaliacao() {
           </label>
           <label class="field">
             <span>Ciclo</span>
-            <select id="avaliacaoCicloSelect">
-              ${getCiclosAnteriores().map(c => `<option value="${escapeHtml(c.value)}" ${c.value === cicloAtual.label ? 'selected' : ''}>${escapeHtml(c.label)}</option>`).join('')}
-            </select>
+            <input type="text" id="avaliacaoCicloInput" value="${escapeHtml(sugerirCiclo())}" placeholder="Ex: Jul-Out 2026" list="avaliacaoCiclosSugeridos"/>
+            <datalist id="avaliacaoCiclosSugeridos">
+              ${ciclosExistentes.map(c => `<option value="${escapeHtml(c)}">`).join('')}
+            </datalist>
           </label>
           <div style="display:flex;gap:var(--s-2);margin-top:var(--s-2)">
             <button class="btn-primary" id="avaliacaoCarregarBtn" type="button" disabled>📋 Carregar avaliação</button>
@@ -212,15 +191,17 @@ function renderAvaliacao() {
 
   document.getElementById('avaliacaoNovaBtn').addEventListener('click', () => {
     const colab = document.getElementById('avaliacaoColabSelect').value;
-    const ciclo = document.getElementById('avaliacaoCicloSelect').value;
+    const ciclo = document.getElementById('avaliacaoCicloInput').value.trim();
     if (!colab) { showToast('Selecione um colaborador.', 'error'); return; }
+    if (!ciclo) { showToast('Informe o ciclo.', 'error'); return; }
     renderAvaliacaoForm(colab, ciclo, null);
   });
 
   document.getElementById('avaliacaoCarregarBtn').addEventListener('click', () => {
     const colab = document.getElementById('avaliacaoColabSelect').value;
-    const ciclo = document.getElementById('avaliacaoCicloSelect').value;
+    const ciclo = document.getElementById('avaliacaoCicloInput').value.trim();
     if (!colab) { showToast('Selecione um colaborador.', 'error'); return; }
+    if (!ciclo) { showToast('Informe o ciclo.', 'error'); return; }
     const existing = avaliacoes.find(a => a.colaborador === colab && a.ciclo === ciclo);
     if (existing) {
       renderAvaliacaoForm(colab, ciclo, existing);
