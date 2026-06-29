@@ -1379,7 +1379,7 @@ function renderSummary(filtered) {
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <span class="badge">Visão: Por atendente (agrupado)</span>
-        ${alerts.length ? `<span class="badge" style="background:var(--badge-alert-bg);border-color:var(--badge-alert-border);color:var(--badge-alert-text)">⚠️ ${escapeHtml(alerts.join(' · '))}</span>` : `<span class="badge" style="background:var(--badge-ok-bg);border-color:var(--badge-ok-border);color:var(--badge-ok-text)">OK</span>`}${presentationMode ? `<span class="badge presentation-note">Nomes ocultos na exibição</span>` : ''}
+        ${alerts.length ? `<span class="status-badge status-bad">⚠️ ${escapeHtml(alerts.join(' · '))}</span>` : `<span class="status-badge status-ok">OK</span>`}${presentationMode ? `<span class="badge presentation-note">Nomes ocultos na exibição</span>` : ''}
       </div>
     </div>
 
@@ -1505,19 +1505,14 @@ function renderPreview(rows) {
   }
   renderPreviewDisplay(toRender);
   saveState();
-  updateReportBar(toRender);
-}
-
-function updateReportBar(rows) {
-  const bar = document.getElementById('previewReportBar');
+  // update collaborator select in card-header
   const sel = document.getElementById('reportColabSelect');
-  if (!bar || !sel) return;
-  const colabs = [...new Set((rows || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
-  if (colabs.length < 1) { bar.style.display = 'none'; return; }
-  const current = sel.value;
-  sel.innerHTML = '<option value="">Selecione um colaborador...</option>' + colabs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-  if (current && colabs.includes(current)) sel.value = current;
-  bar.style.display = 'flex';
+  if (sel) {
+    const colabs = [...new Set((toRender || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Relatório individual...</option>' + colabs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if (current && colabs.includes(current)) sel.value = current;
+  }
 }
 
 function renderPreviewDisplay(rows) {
@@ -1557,8 +1552,8 @@ function renderPreviewDisplay(rows) {
     const classeScore = (scNum !== null && !Number.isNaN(scNum)) ? getClasseScore(scNum) : null;
     let statusClass = 'status-ok';
     let statusText = 'OK';
-    if (classeScore === 'score-critico') { statusClass = 'status-bad'; statusText = 'Crítico'; }
-    else if (classeScore === 'score-atencao') { statusClass = 'status-warn'; statusText = 'Atenção'; }
+    if (classeScore === 'score-bad') { statusClass = 'status-bad'; statusText = 'Crítico'; }
+    else if (classeScore === 'score-warn') { statusClass = 'status-warn'; statusText = 'Atenção'; }
 
     // Pre-compute previous record for variations
     const prevRec = getPreviousRecord(r['Atendente'], r['Mês']);
@@ -1625,8 +1620,8 @@ function renderPreviewDisplay(rows) {
       const sc = row['SCORE'];
       if (sc !== null && sc !== undefined && !isNaN(Number(sc))) {
         const cls = getClasseScore(Number(sc));
-        if (cls === 'score-excelente') tr.classList.add('highlight-row');
-        else if (cls === 'score-critico') tr.classList.add('attention-row');
+        if (cls === 'score-good') tr.classList.add('highlight-row');
+        else if (cls === 'score-bad') tr.classList.add('attention-row');
       }
     });
   }
@@ -2424,9 +2419,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) {}
       }
       // Mostra usuário logado na topbar
-      const display = document.getElementById('currentUserDisplay');
-      if (display) {
-        display.textContent = user.email;
+      const dropdownEmail = document.getElementById('dropdownUserEmail');
+      if (dropdownEmail) {
+        dropdownEmail.textContent = user.email;
+      }
+      const avatar = document.getElementById('userAvatar');
+      if (avatar) {
+        avatar.textContent = '👤';
+      }
+      // User menu toggle
+      const menuBtn = document.getElementById('userMenuBtn');
+      const dropdown = document.getElementById('userDropdown');
+      if (menuBtn && dropdown) {
+        menuBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dropdown.classList.toggle('open');
+        });
+        document.addEventListener('click', () => dropdown.classList.remove('open'), { capture: true });
       }
     }
   }
@@ -2572,7 +2581,7 @@ if (!rawRecords || !rawRecords.length) {
   const cleanDupBtn = document.getElementById('cleanDupBtn');
   if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { if (!requireAdmin()) return; cleanDuplicates(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
-  document.getElementById('gerarRelatorioBtn')?.addEventListener('click', () => {
+  document.getElementById('gerarRelatorioCompactBtn')?.addEventListener('click', () => {
     const sel = document.getElementById('reportColabSelect');
     if (!sel || !sel.value) { showToast('Selecione um colaborador.', 'error', 'Relatório'); return; }
     if (typeof openColabReport === 'function') openColabReport(sel.value);
