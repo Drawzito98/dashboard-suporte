@@ -609,6 +609,7 @@ body.table-compact thead th {
   font-size: 10px;
   padding: 5px 10px;
 }
+body.table-compact .cell-atendente { min-width: 140px; }
 body.table-compact .ranking-table td {
   padding: 5px 10px;
 }
@@ -855,7 +856,7 @@ html[data-theme="dark"] .loading-overlay { background: rgba(15, 23, 42, 0.7); }
   white-space: nowrap;
   vertical-align: middle;
 }
-.cell-atendente { white-space: normal; line-height: 1.6; }
+.cell-atendente { white-space: nowrap; min-width: 180px; line-height: 1.6; }
 .badge-ferias { background: var(--info-soft);    color: var(--info); }
 .badge-multi  { background: var(--warning-soft); color: var(--warning); }
 .cell-ferias  { background: var(--info-soft) !important; }
