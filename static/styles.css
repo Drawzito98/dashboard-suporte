@@ -324,6 +324,22 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-6) var(--s-6) var
   border-radius: 2px;
   background: var(--accent);
 }
+.topbar-logo {
+  height: 28px;
+  width: auto;
+  flex-shrink: 0;
+  display: block;
+}
+.auth-logo, .home-logo {
+  height: 36px;
+  width: auto;
+  margin-bottom: var(--s-3, 12px);
+}
+.titleblock {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3, 12px);
+}
 .titleblock h1 {
   font-size: 24px;
   font-weight: 600;

@@ -6,6 +6,9 @@
   <title>IXC CG · Painel de Suporte</title>
   <meta name="description" content="Painel executivo para análise de indicadores de suporte e atendimento."/>
   <link href="static/styles.css" rel="stylesheet"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="static/favicon.png"/>
+  <link rel="icon" type="image/x-icon" href="static/favicon.ico"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="static/logo-topbar.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -31,7 +34,8 @@
 <div id="authOverlay" class="auth-overlay">
   <div class="auth-card">
     <div class="auth-title">
-      <h1>IXC CG · Painel de Suporte</h1>
+      <img src="static/logo-topbar.png" alt="IXC" class="auth-logo"/>
+      <h1>Painel de Suporte</h1>
       <p>Faça login para acessar seus dados</p>
     </div>
     <div class="auth-form">
@@ -88,8 +92,11 @@
 <div id="homeScreen" class="home-screen" style="display:none">
   <div class="home-card">
     <div class="home-title">
-      <h1>IXC CG · Painel de Suporte</h1>
-      <p>Importe arquivos CSV para visualizar indicadores de desempenho do suporte, gerar relatórios e acompanhar a evolução da equipe IXC CG.</p>
+      <img src="static/logo-topbar.png" alt="IXC" class="home-logo"/>
+      <div>
+        <h1>Painel de Suporte</h1>
+        <p>Importe arquivos CSV para visualizar indicadores de desempenho do suporte, gerar relatórios e acompanhar a evolução da equipe IXC CG.</p>
+      </div>
     </div>
     <div class="home-actions">
       <div class="fileButton">
@@ -117,8 +124,11 @@
     <!-- Top Bar -->
     <header class="topbar">
       <div class="titleblock">
-        <h1>IXC CG · Painel de Suporte</h1>
-        <p>Indicadores de desempenho e análise do suporte IXC CG</p>
+        <img src="static/logo-topbar.png" alt="IXC" class="topbar-logo"/>
+        <div>
+          <h1>IXC CG · Painel de Suporte</h1>
+          <p>Indicadores de desempenho e análise do suporte IXC CG</p>
+        </div>
       </div>
       <div class="topbar-right">
         <span id="currentUserDisplay" class="current-user" style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;margin-right:8px;white-space:nowrap"></span>
