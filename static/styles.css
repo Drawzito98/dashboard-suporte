@@ -3,6 +3,17 @@
    Premium SaaS · Corporate · Minimalista
    ===================================================== */
 
+/* ===== Ícones SVG globais ===== */
+.icon, button svg, .panel-header svg, .tab-icon svg {
+  vertical-align: middle;
+}
+button svg, .btn-small svg, .btn-primary svg {
+  margin-right: 4px;
+}
+.tab-icon svg {
+  margin-right: 0;
+}
+
 /* ===== Tokens ===== */
 :root {
   /* Surfaces — neutros suaves */
