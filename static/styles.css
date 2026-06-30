@@ -1826,7 +1826,6 @@ html[data-theme="dark"] .loading-overlay { background: rgba(15, 23, 42, 0.7); }
    Pesquisa Global
    ===================================================== */
 /* (global-search removido — redundante com gfPesquisa do filtro global) */
-}
 
 /* ===== Scrollbar sutil ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
