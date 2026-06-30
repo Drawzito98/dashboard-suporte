@@ -56,13 +56,13 @@ function _trend(records, colaborador, key, months) {
 
 // ─── Geração de sugestão ────────────────────────────────────────
 
-function gerarSugestaoFeedback(colaborador, mes) {
+function gerarSugestaoFeedback(colaborador, mes, anotacoesTexto) {
   const data = _fbData();
   let records = data.filter(r => r && r['Atendente'] === colaborador);
   if (mes && mes !== 'all') records = records.filter(r => r['Mês'] === mes);
 
   if (!records.length) {
-    return `Não encontrei dados do ${colaborador} no período selecionado. Pode ser que ele(a) não tenha registros ou o período esteja vazio.`;
+    return `Não encontrei seus dados no período selecionado. Pode ser que você não tenha registros ou o período esteja vazio.`;
   }
 
   const totalFin = _sum(records, 'Finalizados');
@@ -85,12 +85,24 @@ function gerarSugestaoFeedback(colaborador, mes) {
   let partes = [];
 
   // Abertura
-  partes.push(`Oi! Aqui vai um resumo do desempenho do(a) ${colaborador} no período ${periodLabel}.\n`);
+  if (anotacoesTexto && anotacoesTexto.trim()) {
+    const frases = anotacoesTexto.trim().split(/[.\n]+/).filter(Boolean);
+    const notaDestaque = frases[0].trim().toLowerCase();
+    partes.push(`Oi ${colaborador}, tudo bem?\n`);
 
-  // Visão geral do desempenho quantitativo
-  let overview = `${colaborador} teve ${totalFin} finalizações e ${totalAss} atendimentos assumidos`;
+    if (notaDestaque.length > 10) {
+      partes.push(`Primeiro, quero reforçar o que observei: ${notaDestaque}.\n`);
+    }
+  } else {
+    partes.push(`Oi ${colaborador}, tudo bem?\n`);
+  }
+
+  partes.push(`Vou deixar um resumo do seu desempenho no ${periodLabel}.\n`);
+
+  // Visão geral
+  let overview = `Você teve ${totalFin} finalizações e ${totalAss} atendimentos assumidos`;
   if (totalTrans > 0) overview += `, com ${totalTrans} transferências`;
-  if (scores.length) overview += `. A média de score ficou em ${avgScore.toFixed(2)}`;
+  if (scores.length) overview += `. Sua média de score ficou em ${avgScore.toFixed(2)}`;
   overview += '.';
   partes.push(overview);
 
@@ -101,8 +113,8 @@ function gerarSugestaoFeedback(colaborador, mes) {
 
   if (Math.abs(finDiff) > 0 || Math.abs(scoreDiff) > 0) {
     comparacao += 'Comparando com a média da equipe: ';
-    const finComp = finDiff >= 0 ? `ficou acima em finalizações (${totalFin} vs ${teamFin.toFixed(1)} da equipe)` : `ficou abaixo em finalizações (${totalFin} vs ${teamFin.toFixed(1)} da equipe)`;
-    const scoreComp = scoreDiff >= 0 ? `e o score está acima da média do time (${avgScore.toFixed(2)} vs ${teamAvgScore.toFixed(2)})` : `e o score está abaixo da média do time (${avgScore.toFixed(2)} vs ${teamAvgScore.toFixed(2)})`;
+    const finComp = finDiff >= 0 ? `você ficou acima em finalizações (${totalFin} vs ${teamFin.toFixed(1)} da equipe)` : `você ficou abaixo em finalizações (${totalFin} vs ${teamFin.toFixed(1)} da equipe)`;
+    const scoreComp = scoreDiff >= 0 ? `e seu score está acima da média do time (${avgScore.toFixed(2)} vs ${teamAvgScore.toFixed(2)})` : `e seu score está abaixo da média do time (${avgScore.toFixed(2)} vs ${teamAvgScore.toFixed(2)})`;
     comparacao += finComp + ', ' + scoreComp + '.';
   }
   if (comparacao) partes.push(comparacao);
@@ -110,43 +122,53 @@ function gerarSugestaoFeedback(colaborador, mes) {
   // Tendência
   let tendencia = '';
   if (trendFin || trendScore) {
-    const finText = trendFin === 'crescendo' ? 'as finalizações estão crescendo' : trendFin === 'caindo' ? 'as finalizações estão caindo' : 'as finalizações se mantiveram estáveis';
-    const scoreText = trendScore === 'crescendo' ? 'e o score tem evoluído positivamente' : trendScore === 'caindo' ? 'e o score tem apresentado queda' : 'e o score se manteve estável';
+    const finText = trendFin === 'crescendo' ? 'suas finalizações estão crescendo' : trendFin === 'caindo' ? 'suas finalizações estão caindo' : 'suas finalizações se mantiveram estáveis';
+    const scoreText = trendScore === 'crescendo' ? 'e seu score tem evoluído positivamente' : trendScore === 'caindo' ? 'e seu score tem apresentado queda' : 'e seu score se manteve estável';
     tendencia += `Olhando a tendência, ${finText} ${scoreText}.`;
   }
   if (tendencia) partes.push(tendencia);
 
   partes.push('');
 
+  // Anotações do gestor no meio do feedback
+  if (anotacoesTexto && anotacoesTexto.trim()) {
+    const linhas = anotacoesTexto.trim().split('\n').map(l => l.trim()).filter(Boolean);
+    if (linhas.length > 1) {
+      partes.push('Sobre o que acompanhamos ao longo do período:');
+      linhas.slice(1).forEach(l => partes.push(`- ${l.replace(/^[-•*]\s*/, '')}`));
+      partes.push('');
+    }
+  }
+
   // Pontos fortes
   const fortes = [];
-  if (totalFin >= teamFin * 1.1) fortes.push('volume de finalizações acima da média — mostra disposição e ritmo de trabalho');
-  else if (totalFin >= 100) fortes.push('volume de finalizações bom');
-  if (avgScore >= teamAvgScore * 1.05 && scores.length) fortes.push('score acima da média do time, indicando qualidade consistente nos atendimentos');
-  else if (avgScore >= 4.0 && scores.length) fortes.push('score elevado, demonstrando qualidade no atendimento');
-  if (trendFin === 'crescendo') fortes.push('evolução positiva nas finalizações ao longo do tempo');
-  if (trendScore === 'crescendo') fortes.push('melhoria contínua no score, mostrando amadurecimento profissional');
-  if (totalTrans === 0) fortes.push('zero transferências, o que indica autonomia e segurança nos atendimentos');
-  else if (totalTrans <= 3) fortes.push('baixo índice de transferências, sinal de segurança');
-  if (totalAss > 0 && totalFin / totalAss >= 0.8) fortes.push('boa taxa de conclusão dos atendimentos que assume');
+  if (totalFin >= teamFin * 1.1) fortes.push('seu volume de finalizações ficou acima da média, mostrando disposição e ritmo de trabalho');
+  else if (totalFin >= 100) fortes.push('seu volume de finalizações foi bom');
+  if (avgScore >= teamAvgScore * 1.05 && scores.length) fortes.push('seu score ficou acima da média do time, indicando qualidade consistente nos atendimentos');
+  else if (avgScore >= 4.0 && scores.length) fortes.push('seu score foi elevado, demonstrando qualidade no atendimento');
+  if (trendFin === 'crescendo') fortes.push('você vem evoluindo positivamente nas finalizações ao longo do tempo');
+  if (trendScore === 'crescendo') fortes.push('você tem melhorado continuamente seu score, mostrando amadurecimento profissional');
+  if (totalTrans === 0) fortes.push('você não fez nenhuma transferência, o que indica autonomia e segurança nos atendimentos');
+  else if (totalTrans <= 3) fortes.push('você teve um baixo índice de transferências, sinal de segurança');
+  if (totalAss > 0 && totalFin / totalAss >= 0.8) fortes.push('você teve uma boa taxa de conclusão dos atendimentos que assumiu');
 
   if (fortes.length) {
-    partes.push('Pontos fortes:');
+    partes.push('Pontos fortes do período:');
     fortes.forEach(f => partes.push(`- ${f}`));
     partes.push('');
   }
 
   // Oportunidades de melhoria
   const oport = [];
-  if (totalFin < teamFin * 0.8) oport.push('o volume de finalizações ficou abaixo da média — vale observar se há gargalos ou se precisa de mais suporte');
-  else if (totalFin < 50) oport.push('buscar aumentar o volume de finalizações, se possível');
-  if (avgScore < teamAvgScore * 0.95 && scores.length) oport.push('o score ficou abaixo da média do time — pode ser útil revisar a qualidade dos atendimentos e identificar pontos de melhoria');
-  else if (avgScore < 3.5 && scores.length) oport.push('focar na qualidade do atendimento para elevar o score');
-  else if (avgScore < 4.0 && scores.length) oport.push('manter atenção à qualidade para continuar evoluindo o score');
-  if (trendFin === 'caindo') oport.push('a queda nas finalizações merece atenção — pode ser um sinal de desaceleração que vale investigar');
-  if (trendScore === 'caindo') oport.push('a queda no score é um ponto de alerta — vale entender o que mudou e agir preventivamente');
-  if (totalTrans > 10) oport.push('o número de transferências está alto — talvez valha reforçar o conhecimento em alguns processos');
-  else if (totalTrans > 5) oport.push('as transferências poderiam ser reduzidas com um pouco mais de segurança em processos específicos');
+  if (totalFin < teamFin * 0.8) oport.push('seu volume de finalizações ficou abaixo da média — vale observarmos se há gargalos ou se você precisa de mais suporte');
+  else if (totalFin < 50) oport.push('tente aumentar seu volume de finalizações, se possível');
+  if (avgScore < teamAvgScore * 0.95 && scores.length) oport.push('seu score ficou abaixo da média do time — vale revisar a qualidade dos atendimentos para identificar pontos de melhoria');
+  else if (avgScore < 3.5 && scores.length) oport.push('foque na qualidade do atendimento para elevar seu score');
+  else if (avgScore < 4.0 && scores.length) oport.push('continue atento à qualidade para seguir evoluindo seu score');
+  if (trendFin === 'caindo') oport.push('a queda nas finalizações merece atenção — pode ser um sinal de desaceleração que vale investigarmos juntos');
+  if (trendScore === 'caindo') oport.push('a queda no score é um ponto de alerta — vamos entender o que mudou e agir preventivamente');
+  if (totalTrans > 10) oport.push('o número de transferências está alto — vale reforçar o conhecimento em alguns processos');
+  else if (totalTrans > 5) oport.push('as transferências podem ser reduzidas com um pouco mais de segurança em processos específicos');
 
   if (oport.length) {
     partes.push('Para seguir evoluindo:');
@@ -157,20 +179,20 @@ function gerarSugestaoFeedback(colaborador, mes) {
   // Fechamento
   let fechamento = '';
   if (fortes.length >= 3 && oport.length <= 1) {
-    fechamento = 'No geral, o desempenho está bem positivo. O caminho é manter o que vem dando certo e seguir ajustando os detalhes.';
+    fechamento = 'No geral, seu desempenho está bem positivo. É manter o que vem dando certo e seguir ajustando os detalhes.';
   } else if (fortes.length >= 2) {
-    fechamento = 'Resumo: há pontos fortes claros e algumas oportunidades pontuais de melhoria. Com os ajustes certos, a tendência é evoluir ainda mais.';
+    fechamento = 'Resumo: você tem pontos fortes claros e algumas oportunidades pontuais de melhoria. Com os ajustes certos, a tendência é evoluir ainda mais.';
   } else if (oport.length >= 3) {
-    fechamento = 'O momento pede atenção a algumas áreas. Com foco e suporte, é possível reverter o cenário e voltar a crescer.';
+    fechamento = 'O momento pede atenção a algumas áreas. Com foco e suporte, tenho certeza que dá para reverter o cenário e voltar a crescer.';
   } else {
-    fechamento = 'Seguimos juntos para continuar evoluindo!';
+    fechamento = 'Segue o trabalho que estou aqui junto com você!';
   }
 
   if (avgScore >= 4.5) {
-    fechamento += ' Destaque especial para o score excelente — um exemplo para a equipe!';
+    fechamento += ' Destaque especial para seu score excelente — você é um exemplo para a equipe!';
   }
   if (totalFin >= 200) {
-    fechamento += ' E o volume de finalizações é realmente excepcional, parabéns!';
+    fechamento += ' E seu volume de finalizações foi realmente excepcional, parabéns!';
   }
 
   partes.push(fechamento);
@@ -328,7 +350,8 @@ function bindFbEvents(colabs, meses, saved) {
       const colab = colabSel.value;
       const mes = mesSel.value;
       if (!colab) return;
-      const sugestao = gerarSugestaoFeedback(colab, mes);
+      const anotacoesAtuais = document.getElementById('fbAnotacoesTexto')?.value || '';
+      const sugestao = gerarSugestaoFeedback(colab, mes, anotacoesAtuais);
       const fbArea = document.getElementById('fbSugestaoArea');
       if (fbArea) {
         fbArea.innerHTML = '<div class="field"><span>Sugestão Automática</span>';
@@ -339,11 +362,10 @@ function bindFbEvents(colabs, meses, saved) {
         colaborador: colab,
         mes: mes,
         sugestao_automatica: sugestao,
-        anotacoes: '',
+        anotacoes: anotacoesAtuais,
         feedback_final: sugestao
       }));
       document.getElementById('fbFinalTexto').value = sugestao;
-      document.getElementById('fbAnotacoesTexto').value = '';
       salvarBtn.disabled = false;
     });
   }
