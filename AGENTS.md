@@ -27,7 +27,7 @@
 
 ## Estrutura de Scripts (ordem de carregamento)
 ```
-auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring.js → gamificacao.js → metas.js → comparativos.js → colab-detail.js → painelLider.js → insights.js → alertas.js → tendencia.js → conquistas.js → projecao.js → historico.js → comentarios.js → feedbacks.js → anotacoes.js → tarefas.js → bonus.js → usuarios.js → app.js
+auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring.js → gamificacao.js → metas.js → comparativos.js → colab-detail.js → painelLider.js → insights.js → alertas.js → conquistas.js → projecao.js → historico.js → comentarios.js → notificacoes.js → feedbacks.js → anotacoes.js → tarefas.js → bonus.js → relatorio-setorial.js → avaliacao.js → colaboradores.js → usuarios.js → csv-import.js → reports.js → app.js
 ```
 
 ## Tabelas Supabase
@@ -47,6 +47,8 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 | `tarefas` | Tarefas/agenda | `db-extra.js` + `tarefas.js` |
 | `pontos_extras` | Bônus manuais | `db-extra.js` + `bonus.js` |
 | `colaboradores_info` | Cadastro de colaboradores | `db-extra.js` + `colaboradores.js` |
+| `avaliacoes` | Avaliações de desempenho | `avaliacao.js` |
+| `notificacoes` | Notificações audit trail | `notificacoes.js` |
 
 ## Arquitetura de Dados
 - **Leitura:** localStorage primeiro (síncrono), Supabase atualiza em background
@@ -56,25 +58,16 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 ## Funcionalidades Implementadas
 
 ### Abas
-1. **Dashboard** — principal (chart + preview table)
-2. **Gamificação** — ranking, medalhas, scoring rules
-3. **Metas** — gestão de metas por colaborador/setor
-4. **Comparativos** — comparar colaboradores lado a lado
-5. **Painel do Líder** — Δ colunas, alertas inteligentes (score <4.5, quedas >30%, produtividade abaixo da média), atalho 👤
-6. **Insights** — análise automática, cruzamento quantidade × qualidade, mini tabela mês a mês com Δ%
-7. **Alertas** — notificações configuráveis
-8. **Tendências** — médias móveis + projeção linear
-9. **Conquistas** — badges por desempenho
-10. **Projeção Mensal** — registro manual de dados futuros
-11. **Histórico** — log de alterações
-12. **Comentários** — anotações por período
-13. **Feedbacks** — geração de sugestão automática + CRUD
-14. **Anotações** — notas diárias privadas
-15. **Tarefas** — agenda com prioridades e status
-16. **Bônus** — pontos extras manuais (integra gamificação)
-17. **Relatório Setorial** — visão por setor, Δ mês a mês, destaques, mini gráfico Chart.js
-18. **Colaboradores** — cadastro com foto, aniversário, admissão, conduta
-19. **Usuários** — gestão de acesso (admin/viewer)
+1. **Dashboard** — principal (chart + preview table, relatório executivo)
+2. **Relatório Setorial** — visão por setor, Δ mês a mês, destaques, mini gráfico Chart.js, exportar PNG
+3. **Gamificação** — ranking, medalhas, scoring rules, gestão de metas, bônus/penalidades
+4. **Tarefas** — agenda com prioridades e status
+5. **Anotações** — notas diárias privadas
+6. **Colaboradores** — cadastro com foto, aniversário, admissão, conduta
+7. **Liderança** — Δ colunas, alertas inteligentes (score <4.5, quedas >30%, produtividade abaixo da média)
+8. **Insights** — análise automática, cruzamento quantidade × qualidade, mini tabela mês a mês, alertas configuráveis
+9. **Avaliação** — avaliação de desempenho (14 competências) + geração de feedback textual
+10. **Usuários** — gestão de acesso (admin/viewer)
 
 ### Recursos Transversais
 - **Filtros Globais** — barra superior com período, setor, colaborador, score mínimo, meta, favoritos, pesquisa
@@ -105,9 +98,11 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 - `migration_v8.sql` — colunas `conduta_negativa` e `conduta_motivo` em `colaboradores_info`
 - `migration_v9.sql` — coluna `mes` em `pontos_extras`
 - `migration_v10.sql` — tabela `setor_inativos` + RLS
+- `migration_v11.sql` — tabela `notificacoes` + RLS
+- `migration_v12.sql` — tabela `avaliacoes` + RLS
 
 ## Observações
-- **Migration v10 (setor_inativos):** já executada no Supabase
+- **Migrations v10-v12:** já executadas no Supabase
 - **Regra de scoring `pontos_extras`:** lê do localStorage `sistema_pontos_extras_v1`; defaultValue na config (padrão 1x) multiplica os pontos lançados
 - **Integração gamificação:** ao salvar/excluir bônus, `renderGamification()` é chamado automaticamente
 

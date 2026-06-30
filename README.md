@@ -4,7 +4,7 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 
 ## Stack
 
-- **Frontend:** HTML/CSS/JS vanilla (SPA, ~25 modules, sem build step)
+- **Frontend:** HTML/CSS/JS vanilla (SPA, 29 módulos, sem build step)
 - **Backend:** Supabase (Auth, PostgreSQL, RLS, REST API)
 - **Deploy:** Vercel (static + serverless functions)
 - **Charts:** Chart.js (CDN)
@@ -40,11 +40,14 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 | `alertas_config` | Configuração de alertas (1 row/user) | Por `user_id` |
 | `colaborador_fotos` | URLs de fotos dos colaboradores | Authenticated |
 | `colab_inativos` | Colaboradores inativos por usuário | Por `user_id` |
+| `setor_inativos` | Setores inativos por usuário | Por `user_id` |
 | `feedbacks` | Feedbacks e avaliações por colaborador | Por `user_id` |
 | `anotacoes_diarias` | Anotações diárias privadas | Por `user_id` |
 | `tarefas` | Tarefas/agenda com prioridades | Por `user_id` |
 | `pontos_extras` | Bônus/penalidades manuais | Por `user_id` |
 | `colaboradores_info` | Dados cadastrais (aniversário, admissão, observações, conduta) | Por `user_id` |
+| `avaliacoes` | Avaliações de desempenho (14 competências) | Por `user_id` |
+| `notificacoes` | Notificações de audit trail | Authenticated |
 
 ### Migrations (executar no SQL Editor do Supabase)
 
@@ -59,6 +62,9 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 | `migration_v7.sql` | Tabela `colaboradores_info` + RLS |
 | `migration_v8.sql` | Colunas `conduta_negativa` / `conduta_motivo` em `colaboradores_info` |
 | `migration_v9.sql` | Coluna `mes` em `pontos_extras` |
+| `migration_v10.sql` | Tabela `setor_inativos` + RLS |
+| `migration_v11.sql` | Tabela `notificacoes` + RLS |
+| `migration_v12.sql` | Tabela `avaliacoes` + RLS |
 
 ### RLS Policies
 
@@ -69,24 +75,18 @@ Tabelas compartilhadas (comentarios, historico, colaborador_fotos): acesso a tod
 
 ### Abas (ordem da tab-bar)
 
-1. **📊 Dashboard** — gráfico de desempenho (ranking por colaborador ou evolução mensal), tabela detalhada com edição inline, filtros por setor/mês/colaborador/arquivo, busca textual, relatório executivo com ✅ destaques e ⚠️ pontos de atenção, exportação para PDF (HTML + gráfico + KPIs)
-2. **🏆 Gamificação** — ranking com pontuação total, pódio, evolução individual por mês, heatmap de desempenho, medalhas por conquistas, scoring rules configuráveis
-3. **🎯 Metas** — gestão de metas por colaborador com sugestão automática (média dos últimos 3 meses)
-4. **📊 Comparativos** — comparar colaboradores lado a lado com gráficos
-5. **👥 Painel do Líder** — visão gerencial com Δ colunas (finalizações, score), alertas inteligentes (score <4.5, quedas consecutivas, produtividade abaixo da média), atalho 👤 para perfil do colaborador
-6. **💡 Insights** — análises automáticas com cruzamento de métricas (quantidade vs qualidade), cards de destaque do período, mini tabela de evolução do time mês a mês com setas ↑↓
-7. **🔔 Alertas** — notificações configuráveis por critérios
-8. **📈 Tendências** — médias móveis + projeção linear
-9. **🏅 Conquistas** — badges e medalhas por desempenho
-10. **📅 Nova Projeção** — registro manual de dados para meses futuros
-11. **📝 Histórico** — audit log de todas as alterações (adição/edição/exclusão)
-12. **💬 Comentários** — anotações mensais por setor
-13. **💬 Feedbacks** — geração automática de sugestão + CRUD de feedbacks por colaborador
-14. **📓 Anotações** — notas diárias privadas
-15. **✅ Tarefas** — agenda com prioridades (alta/média/baixa) e status (pendente/andamento/concluído)
-16. **🎁 Bônus** — pontos extras (bônus/penalidades) manuais com mês de referência, integração com gamificação
-17. **👤 Colaboradores** — gestão de cadastro (foto, aniversário, admissão, email, tarefas, objetivos, observações, conduta), relatório de desempenho individual com métricas e variação vs mês anterior
-18. **👥 Usuários** (admin) — criar, remover, redefinir senha, alterar cargo (admin/viewer)
+1. **📊 Dashboard** — gráfico de desempenho (ranking por colaborador ou evolução mensal), tabela detalhada com edição inline, filtros por setor/mês/colaborador/arquivo, busca textual, relatório executivo com ✅ destaques e ⚠️ pontos de atenção, exportação para PDF
+2. **📊 Relatório Setorial** — visão por setor, Δ mês a mês, destaques, mini gráfico Chart.js, exportar PNG
+3. **🏆 Gamificação** — ranking com pontuação total, pódio, evolução individual por mês, heatmap de desempenho, medalhas por conquistas, scoring rules, gestão de metas, bônus/penalidades
+4. **📅 Tarefas** — agenda com prioridades (alta/média/baixa) e status (pendente/andamento/concluído)
+5. **📝 Anotações** — notas diárias privadas
+6. **👥 Colaboradores** — gestão de cadastro (foto, aniversário, admissão, email, tarefas, objetivos, observações, conduta), relatório de desempenho individual
+7. **👔 Liderança** — visão gerencial com Δ colunas (finalizações, score), alertas inteligentes (score <4.5, quedas consecutivas, produtividade abaixo da média)
+8. **💡 Insights** — análises automáticas com cruzamento de métricas (quantidade vs qualidade), cards de destaque, alertas configuráveis
+9. **📋 Avaliação** — avaliação de desempenho (14 competências, escala 1-4, ciclos de 4 meses) + geração de feedback textual por colaborador
+10. **👥 Usuários** (admin) — criar, remover, redefinir senha, alterar cargo (admin/viewer)
+
+> Recursos antigos (Metas, Comparativos, Alertas, Tendências, Conquistas, Projeção, Histórico, Comentários, Feedbacks, Bônus) foram consolidados como sub-seções ou overlays dentro das abas principais.
 
 ### Funcionalidades Transversais
 
@@ -108,9 +108,10 @@ Tabelas compartilhadas (comentarios, historico, colaborador_fotos): acesso a tod
 ```
 auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring.js →
 gamificacao.js → metas.js → comparativos.js → colab-detail.js → painelLider.js →
-insights.js → alertas.js → tendencia.js → conquistas.js → projecao.js →
-historico.js → comentarios.js → feedbacks.js → anotacoes.js → tarefas.js →
-bonus.js → colaboradores.js → usuarios.js → app.js
+insights.js → alertas.js → conquistas.js → projecao.js → historico.js →
+comentarios.js → notificacoes.js → feedbacks.js → anotacoes.js → tarefas.js →
+bonus.js → relatorio-setorial.js → avaliacao.js → colaboradores.js →
+usuarios.js → csv-import.js → reports.js → app.js
 ```
 
 ## Estrutura de arquivos
@@ -121,7 +122,8 @@ bonus.js → colaboradores.js → usuarios.js → app.js
 ├── vercel.json             → Config Vercel
 ├── AGENTS.md               → Contexto do projeto para IA
 ├── README.md               → Este arquivo
-├── migration_v2-9.sql      → Scripts SQL para Supabase
+├── local-proxy.js          → Proxy local para desenvolvimento
+├── migration_v2-12.sql     → Scripts SQL para Supabase
 ├── api/
 │   └── users.js            → API serverless (CRUD usuários, alterar senha/cargo)
 ├── static/
@@ -138,18 +140,22 @@ bonus.js → colaboradores.js → usuarios.js → app.js
 │   ├── painelLider.js      → Painel do líder com Δ colunas e alertas
 │   ├── insights.js         → Central de insights automáticos
 │   ├── alertas.js          → Sistema de alertas configuráveis
-│   ├── tendencia.js        → Projeções e tendências
 │   ├── conquistas.js       → Badges/conquistas
 │   ├── projecao.js         → Overlay de novo registro mensal
 │   ├── historico.js        → Audit log overlay
 │   ├── comentarios.js      → Anotações mensais overlay
+│   ├── notificacoes.js     → Notificações para admin
 │   ├── feedbacks.js        → Geração e registro de feedbacks
 │   ├── anotacoes.js        → Anotações diárias privadas
 │   ├── tarefas.js          → Tarefas/agenda com prioridades
 │   ├── bonus.js            → Bônus/penalidades manuais com mês de referência
+│   ├── relatorio-setorial.js → Relatório setorial
+│   ├── avaliacao.js        → Avaliação de desempenho (14 competências)
 │   ├── colaboradores.js    → Gestão de cadastro + relatório de desempenho
 │   ├── usuarios.js         → Gestão de usuários (admin)
-│   ├── app.js              → Lógica principal (~3850 linhas)
+│   ├── csv-import.js       → Importação e normalização de CSV
+│   ├── reports.js          → Relatórios auxiliares
+│   ├── app.js              → Lógica principal (~3031 linhas)
 │   └── styles.css          → Estilos com variáveis CSS, tema escuro, responsividade
 ├── scripts/
 │   └── validate_csv.py     → Validador de CSV
@@ -181,9 +187,9 @@ bonus.js → colaboradores.js → usuarios.js → app.js
 
 ## Riscos conhecidos
 
-1. ~~**Service Role Key exposta** em `api/users.js` — permite bypass total de RLS~~ ✅ **Corrigido** — lê de `process.env.SERVICE_ROLE_KEY` no Vercel
+1. ~~**Service Role Key exposta** em `api/users.js`~~ ✅ **Corrigido** — lê de `process.env.SERVICE_ROLE_KEY` no Vercel
 2. **Sem build step** — sem typecheck, sem linter, sem testes automatizados
-3. **`app.js` ~3850 linhas** — monolítico, difícil de manter
+3. **`app.js` ~3031 linhas** — monolítico, difícil de manter
 
 ## Comandos úteis
 
