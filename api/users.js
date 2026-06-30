@@ -1,4 +1,4 @@
-const SUPABASE_URL = 'https://agvkmfusyetkicmuvumz.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://agvkmfusyetkicmuvumz.supabase.co';
 const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
 
 async function getCallerRole(req) {

@@ -23,8 +23,9 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 
 - **URL:** https://agvkmfusyetkicmuvumz.supabase.co
 - **Dashboard:** https://supabase.com/dashboard/project/agvkmfusyetkicmuvumz
-- **Anon key:** `static/db.js` (exposta — risco conhecido)
-- **Service role key:** `api/users.js` (exposta — risco conhecido)
+- **Anon key:** `static/db.js` (pública por design — RLS bloqueia)
+- **Service role key:** env var `SERVICE_ROLE_KEY` no Vercel 🔐
+- **Supabase URL:** env var `SUPABASE_URL` no Vercel (fallback hardcoded)
 - **Auth:** Email/Password (confirmação de email **desabilitada**)
 
 ### Tabelas
@@ -180,10 +181,9 @@ bonus.js → colaboradores.js → usuarios.js → app.js
 
 ## Riscos conhecidos
 
-1. **Service Role Key exposta** em `api/users.js` — permite bypass total de RLS
-2. **Anon key exposta** em `static/db.js` — risco baixo (RLS bloqueia)
-3. **Sem build step** — sem typecheck, sem linter, sem testes automatizados
-4. **`app.js` ~3850 linhas** — monolítico, difícil de manter
+1. ~~**Service Role Key exposta** em `api/users.js` — permite bypass total de RLS~~ ✅ **Corrigido** — lê de `process.env.SERVICE_ROLE_KEY` no Vercel
+2. **Sem build step** — sem typecheck, sem linter, sem testes automatizados
+3. **`app.js` ~3850 linhas** — monolítico, difícil de manter
 
 ## Comandos úteis
 

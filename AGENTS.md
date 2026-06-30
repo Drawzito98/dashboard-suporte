@@ -16,6 +16,7 @@
 ## Supabase
 - **URL:** `https://agvkmfusyetkicmuvumz.supabase.co`
 - **Anon key:** hardcoded em `static/db.js` (pública por design)
+- **Supabase URL:** lê de `SUPABASE_URL` env var no Vercel (fallback hardcoded)
 - **Service Role Key:** env var no Vercel (`SERVICE_ROLE_KEY`)
 - **PAT:** gerar em `https://supabase.com/dashboard/account/tokens`
 
