@@ -54,28 +54,6 @@ function _trend(records, colaborador, key, months) {
   return 'estavel';
 }
 
-function _rating(valor, type) {
-  if (type === 'finalizados' || type === 'assumidos') {
-    if (valor >= 150) return { stars: 3, label: 'Excelente' };
-    if (valor >= 100) return { stars: 2, label: 'Bom' };
-    if (valor >= 50) return { stars: 1, label: 'Regular' };
-    return { stars: 0, label: 'Atenção' };
-  }
-  if (type === 'score') {
-    if (valor >= 4.0) return { stars: 3, label: 'Excelente' };
-    if (valor >= 3.5) return { stars: 2, label: 'Bom' };
-    if (valor >= 2.5) return { stars: 1, label: 'Regular' };
-    return { stars: 0, label: 'Atenção' };
-  }
-  return { stars: 1, label: '' };
-}
-
-function _starsHtml(n) {
-  let s = '';
-  for (let i = 0; i < 3; i++) s += i < n ? '⭐' : '☆';
-  return s;
-}
-
 // ─── Geração de sugestão ────────────────────────────────────────
 
 function gerarSugestaoFeedback(colaborador, mes) {
@@ -84,7 +62,7 @@ function gerarSugestaoFeedback(colaborador, mes) {
   if (mes && mes !== 'all') records = records.filter(r => r['Mês'] === mes);
 
   if (!records.length) {
-    return 'Nenhum dado encontrado para o colaborador no período selecionado.';
+    return `Não encontrei dados do ${colaborador} no período selecionado. Pode ser que ele(a) não tenha registros ou o período esteja vazio.`;
   }
 
   const totalFin = _sum(records, 'Finalizados');
@@ -102,62 +80,102 @@ function gerarSugestaoFeedback(colaborador, mes) {
   const trendFin = _trend(data, colaborador, 'Finalizados', months);
   const trendScore = _trend(data, colaborador, 'SCORE', months);
 
-  const ratingFin = _rating(totalFin, 'finalizados');
-  const ratingScore = _rating(avgScore, 'score');
-
-  let lines = [];
-  lines.push('**📋 SUGESTÃO DE FEEDBACK**\n');
-
   const periodLabel = mes && mes !== 'all' ? mes : 'todo período';
-  lines.push(`Colaborador: **${colaborador}**`);
-  lines.push(`Período: ${periodLabel}`);
-  lines.push('');
 
-  lines.push('**📊 DESEMPENHO QUANTITATIVO**');
-  lines.push(`Finalizações: **${totalFin}** ${_starsHtml(ratingFin.stars)} (${ratingFin.label})`);
-  lines.push(`Assumidos: **${totalAss}**`);
-  lines.push(`Transferidos: **${totalTrans}**`);
-  if (scores.length) {
-    lines.push(`Score médio: **${avgScore.toFixed(2)}** ${_starsHtml(ratingScore.stars)} (${ratingScore.label})`);
+  let partes = [];
+
+  // Abertura
+  partes.push(`Oi! Aqui vai um resumo do desempenho do(a) ${colaborador} no período ${periodLabel}.\n`);
+
+  // Visão geral do desempenho quantitativo
+  let overview = `${colaborador} teve ${totalFin} finalizações e ${totalAss} atendimentos assumidos`;
+  if (totalTrans > 0) overview += `, com ${totalTrans} transferências`;
+  if (scores.length) overview += `. A média de score ficou em ${avgScore.toFixed(2)}`;
+  overview += '.';
+  partes.push(overview);
+
+  // Comparação com o time
+  let comparacao = '';
+  const finDiff = totalFin - teamFin;
+  const scoreDiff = avgScore - teamAvgScore;
+
+  if (Math.abs(finDiff) > 0 || Math.abs(scoreDiff) > 0) {
+    comparacao += 'Comparando com a média da equipe: ';
+    const finComp = finDiff >= 0 ? `ficou acima em finalizações (${totalFin} vs ${teamFin.toFixed(1)} da equipe)` : `ficou abaixo em finalizações (${totalFin} vs ${teamFin.toFixed(1)} da equipe)`;
+    const scoreComp = scoreDiff >= 0 ? `e o score está acima da média do time (${avgScore.toFixed(2)} vs ${teamAvgScore.toFixed(2)})` : `e o score está abaixo da média do time (${avgScore.toFixed(2)} vs ${teamAvgScore.toFixed(2)})`;
+    comparacao += finComp + ', ' + scoreComp + '.';
   }
-  lines.push('');
+  if (comparacao) partes.push(comparacao);
 
-  lines.push('**📈 COMPARATIVO COM A EQUIPE**');
-  lines.push(`Finalizações: ${totalFin} vs média da equipe ${teamFin.toFixed(1)} (${totalFin >= teamFin ? '✅ Acima' : '📈 Abaixo'})`);
-  lines.push(`Score: ${avgScore.toFixed(2)} vs média ${teamAvgScore.toFixed(2)} (${avgScore >= teamAvgScore ? '✅ Acima' : '📈 Abaixo'})`);
-  lines.push('');
+  // Tendência
+  let tendencia = '';
+  if (trendFin || trendScore) {
+    const finText = trendFin === 'crescendo' ? 'as finalizações estão crescendo' : trendFin === 'caindo' ? 'as finalizações estão caindo' : 'as finalizações se mantiveram estáveis';
+    const scoreText = trendScore === 'crescendo' ? 'e o score tem evoluído positivamente' : trendScore === 'caindo' ? 'e o score tem apresentado queda' : 'e o score se manteve estável';
+    tendencia += `Olhando a tendência, ${finText} ${scoreText}.`;
+  }
+  if (tendencia) partes.push(tendencia);
 
-  lines.push('**📉 TENDÊNCIA**');
-  lines.push(`Finalizações: ${trendFin === 'crescendo' ? '📈 Crescendo' : trendFin === 'caindo' ? '📉 Caindo' : '➡️ Estável'}`);
-  lines.push(`Score: ${trendScore === 'crescendo' ? '📈 Crescendo' : trendScore === 'caindo' ? '📉 Caindo' : '➡️ Estável'}`);
-  lines.push('');
+  partes.push('');
 
-  lines.push('**💡 PONTOS FORTES**');
+  // Pontos fortes
   const fortes = [];
-  if (ratingFin.stars >= 2) fortes.push('✅ Bom volume de finalizações');
-  if (ratingScore.stars >= 2) fortes.push('✅ Score acima da média');
-  if (trendFin === 'crescendo') fortes.push('✅ Evolução positiva nas finalizações');
-  if (trendScore === 'crescendo') fortes.push('✅ Evolução positiva no score');
-  lines.push(fortes.length ? fortes.join('\n') : '—');
-  lines.push('');
+  if (totalFin >= teamFin * 1.1) fortes.push('volume de finalizações acima da média — mostra disposição e ritmo de trabalho');
+  else if (totalFin >= 100) fortes.push('volume de finalizações bom');
+  if (avgScore >= teamAvgScore * 1.05 && scores.length) fortes.push('score acima da média do time, indicando qualidade consistente nos atendimentos');
+  else if (avgScore >= 4.0 && scores.length) fortes.push('score elevado, demonstrando qualidade no atendimento');
+  if (trendFin === 'crescendo') fortes.push('evolução positiva nas finalizações ao longo do tempo');
+  if (trendScore === 'crescendo') fortes.push('melhoria contínua no score, mostrando amadurecimento profissional');
+  if (totalTrans === 0) fortes.push('zero transferências, o que indica autonomia e segurança nos atendimentos');
+  else if (totalTrans <= 3) fortes.push('baixo índice de transferências, sinal de segurança');
+  if (totalAss > 0 && totalFin / totalAss >= 0.8) fortes.push('boa taxa de conclusão dos atendimentos que assume');
 
-  lines.push('**🔧 OPORTUNIDADES DE MELHORIA**');
-  const oportunidades = [];
-  if (ratingFin.stars < 2) oportunidades.push('📌 Buscar aumentar o volume de finalizações');
-  if (ratingScore.stars < 2) oportunidades.push('📌 Focar na qualidade do atendimento para elevar o score');
-  if (trendFin === 'caindo') oportunidades.push('📌 Reverter a tendência de queda nas finalizações');
-  if (trendScore === 'caindo') oportunidades.push('📌 Reverter a tendência de queda no score');
-  lines.push(oportunidades.length ? oportunidades.join('\n') : '✅ Mantenha o bom trabalho!');
-  lines.push('');
+  if (fortes.length) {
+    partes.push('Pontos fortes:');
+    fortes.forEach(f => partes.push(`- ${f}`));
+    partes.push('');
+  }
+
+  // Oportunidades de melhoria
+  const oport = [];
+  if (totalFin < teamFin * 0.8) oport.push('o volume de finalizações ficou abaixo da média — vale observar se há gargalos ou se precisa de mais suporte');
+  else if (totalFin < 50) oport.push('buscar aumentar o volume de finalizações, se possível');
+  if (avgScore < teamAvgScore * 0.95 && scores.length) oport.push('o score ficou abaixo da média do time — pode ser útil revisar a qualidade dos atendimentos e identificar pontos de melhoria');
+  else if (avgScore < 3.5 && scores.length) oport.push('focar na qualidade do atendimento para elevar o score');
+  else if (avgScore < 4.0 && scores.length) oport.push('manter atenção à qualidade para continuar evoluindo o score');
+  if (trendFin === 'caindo') oport.push('a queda nas finalizações merece atenção — pode ser um sinal de desaceleração que vale investigar');
+  if (trendScore === 'caindo') oport.push('a queda no score é um ponto de alerta — vale entender o que mudou e agir preventivamente');
+  if (totalTrans > 10) oport.push('o número de transferências está alto — talvez valha reforçar o conhecimento em alguns processos');
+  else if (totalTrans > 5) oport.push('as transferências poderiam ser reduzidas com um pouco mais de segurança em processos específicos');
+
+  if (oport.length) {
+    partes.push('Para seguir evoluindo:');
+    oport.forEach(o => partes.push(`- ${o}`));
+    partes.push('');
+  }
+
+  // Fechamento
+  let fechamento = '';
+  if (fortes.length >= 3 && oport.length <= 1) {
+    fechamento = 'No geral, o desempenho está bem positivo. O caminho é manter o que vem dando certo e seguir ajustando os detalhes.';
+  } else if (fortes.length >= 2) {
+    fechamento = 'Resumo: há pontos fortes claros e algumas oportunidades pontuais de melhoria. Com os ajustes certos, a tendência é evoluir ainda mais.';
+  } else if (oport.length >= 3) {
+    fechamento = 'O momento pede atenção a algumas áreas. Com foco e suporte, é possível reverter o cenário e voltar a crescer.';
+  } else {
+    fechamento = 'Seguimos juntos para continuar evoluindo!';
+  }
 
   if (avgScore >= 4.5) {
-    lines.push('🏆 Destaque: Score excelente! Continue sendo referência para a equipe.');
+    fechamento += ' Destaque especial para o score excelente — um exemplo para a equipe!';
   }
   if (totalFin >= 200) {
-    lines.push('🏆 Destaque: Volume de finalizações excepcional!');
+    fechamento += ' E o volume de finalizações é realmente excepcional, parabéns!';
   }
 
-  return lines.join('\n');
+  partes.push(fechamento);
+
+  return partes.join('\n');
 }
 
 // ─── Render ──────────────────────────────────────────────────────
