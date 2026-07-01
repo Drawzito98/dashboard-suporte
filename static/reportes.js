@@ -51,6 +51,10 @@ function renderReportes() {
           Atualizar
         </button>
         ${isAdminUser ? `
+        <button class="btn-small" id="verFormBtn" type="button" title="Visualizar o formulário público">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Ver formulário
+        </button>
         <button class="btn-small" id="gerarLinkReporteBtn" type="button" title="Gerar link público para compartilhar">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
           Gerar link
@@ -66,6 +70,8 @@ function renderReportes() {
   if (isAdminUser) {
     document.getElementById('gerarLinkReporteBtn')?.addEventListener('click', mostrarModalLink);
   }
+
+  document.getElementById('verFormBtn')?.addEventListener('click', mostrarPreviewForm);
 
   carregarReportes();
 }
@@ -302,6 +308,10 @@ function mostrarModalLink() {
   overlay.classList.remove('hidden');
   const link = `${window.location.origin}/reporte.html`;
   overlay.querySelector('#reporteLinkUrl').value = link;
+  const embedInput = overlay.querySelector('#reporteLinkEmbed');
+  if (embedInput) {
+    embedInput.value = `<iframe src="${link}" width="100%" height="520px" style="border:none"></iframe>`;
+  }
 }
 
 function criarOverlayLink() {
@@ -310,7 +320,7 @@ function criarOverlayLink() {
   div.className = 'hidden';
   div.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center';
   div.innerHTML = `
-    <div style="background:var(--bg-surface);border-radius:var(--r-lg);padding:var(--s-6);max-width:500px;width:90%;box-shadow:var(--shadow-lg)">
+    <div style="background:var(--bg-surface);border-radius:var(--r-lg);padding:var(--s-6);max-width:520px;width:90%;box-shadow:var(--shadow-lg)">
       <h3 style="margin:0 0 var(--s-2)">Link público para reportes</h3>
       <p style="font-size:0.875rem;color:var(--text-secondary);margin:0 0 var(--s-4)">
         Compartilhe este link para que usuários externos enviem mensagens diretamente para o seu dashboard.
@@ -320,6 +330,13 @@ function criarOverlayLink() {
         <div style="display:flex;gap:var(--s-2)">
           <input id="reporteLinkUrl" type="text" readonly style="flex:1;font-size:13px" />
           <button class="btn-small" id="reporteLinkCopiarBtn" type="button">Copiar</button>
+        </div>
+      </label>
+      <label class="field" style="margin-top:var(--s-3)">
+        <span>Embed iframe (para colar no seu site)</span>
+        <div style="display:flex;gap:var(--s-2)">
+          <input id="reporteLinkEmbed" type="text" readonly style="flex:1;font-size:12px" />
+          <button class="btn-small" id="reporteLinkEmbedCopiarBtn" type="button">Copiar</button>
         </div>
       </label>
       <div style="display:flex;gap:var(--s-2);margin-top:var(--s-3)">
@@ -340,10 +357,62 @@ function criarOverlayLink() {
     setTimeout(() => document.getElementById('reporteLinkCopiado').classList.add('hidden'), 2000);
   });
 
+  document.getElementById('reporteLinkEmbedCopiarBtn')?.addEventListener('click', () => {
+    const input = document.getElementById('reporteLinkEmbed');
+    if (input) { input.select(); try { navigator.clipboard?.writeText(input.value); } catch {} }
+    showToast('Embed code copiado!', 'success');
+  });
+
   document.getElementById('reporteLinkFecharBtn').addEventListener('click', () => {
     div.classList.add('hidden');
   });
 
+  return div;
+}
+
+function mostrarPreviewForm() {
+  const overlay = document.getElementById('reportePreviewOverlay') || criarOverlayPreview();
+  overlay.classList.remove('hidden');
+}
+
+function criarOverlayPreview() {
+  const div = document.createElement('div');
+  div.id = 'reportePreviewOverlay';
+  div.className = 'hidden';
+  div.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center';
+  const formUrl = `${window.location.origin}/reporte.html`;
+  div.innerHTML = `
+    <div style="background:var(--bg-surface);border-radius:var(--r-lg);padding:var(--s-4);max-width:600px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-3)">
+        <h3 style="margin:0">Preview do formulário</h3>
+        <button class="btn-small" id="reportePreviewFechar" type="button" style="font-size:18px;line-height:1">✕</button>
+      </div>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-3)">
+        É assim que seus usuários veem o formulário. Você pode incorporar esta página no seu site com um iframe.
+      </p>
+      <div style="border:2px dashed var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:var(--s-3)">
+        <iframe src="${formUrl}" style="width:100%;height:520px;border:none" title="Formulário de reporte"></iframe>
+      </div>
+      <label class="field">
+        <span>Embed code (iframe)</span>
+        <div style="display:flex;gap:var(--s-2)">
+          <input id="reporteEmbedCode" type="text" readonly value="&lt;iframe src=&quot;${formUrl}&quot; width=&quot;100%&quot; height=&quot;520px&quot; style=&quot;border:none&quot;&gt;&lt;/iframe&gt;" style="flex:1;font-size:12px" />
+          <button class="btn-small" id="reporteEmbedCopiarBtn" type="button">Copiar</button>
+        </div>
+      </label>
+    </div>
+  `;
+  document.body.appendChild(div);
+
+  document.getElementById('reportePreviewFechar').addEventListener('click', () => div.classList.add('hidden'));
+  document.getElementById('reporteEmbedCopiarBtn')?.addEventListener('click', () => {
+    const input = document.getElementById('reporteEmbedCode');
+    input.select();
+    try { navigator.clipboard?.writeText(input.value); } catch {}
+    showToast('Embed code copiado!', 'success');
+  });
+
+  div.addEventListener('click', (e) => { if (e.target === div) div.classList.add('hidden'); });
   return div;
 }
 
