@@ -53,7 +53,7 @@ async function carregarUsuarios() {
         const email = u.email || u.id;
         const role = u.user_metadata?.role || 'admin';
         const isYou = email === currentEmail;
-        const roleLabel = role === 'admin' ? 'Admin' : 'Visualizador';
+        const roleLabel = role === 'admin' ? 'Admin' : role === 'colaborador' ? 'Colaborador' : 'Visualizador';
         const isSelf = isYou;
 
         return `<tr>
@@ -62,7 +62,8 @@ async function carregarUsuarios() {
           <td>${created}</td>
           <td style="display:flex;gap:4px;flex-wrap:wrap">
             <button class="btn-small btn-reset-pwd" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔑 Senha</button>
-            ${!isSelf ? `<button class="btn-small btn-toggle-role" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">${role === 'admin' ? '👁️ Tornar viewer' : '👑 Tornar admin'}</button>` : ''}
+            ${!isSelf ? `<button class="btn-small btn-toggle-role" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">${role === 'admin' ? '👁️ Tornar viewer' : role === 'colaborador' ? '👁️ Tornar viewer' : '👑 Tornar admin'}</button>` : ''}
+            ${!isSelf && role !== 'colaborador' ? `<button class="btn-small btn-toggle-colab" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">📬 Tornar colaborador</button>` : ''}
             ${!isSelf ? `<button class="btn-small btn-delete-user" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="color:var(--danger);font-size:11px">🗑️</button>` : ''}
           </td>
         </tr>`;
@@ -89,8 +90,31 @@ async function carregarUsuarios() {
       btn.addEventListener('click', async () => {
         if (!requireAdmin()) return;
         const id = btn.dataset.id;
-        const newRole = btn.dataset.role === 'admin' ? 'viewer' : 'admin';
+        const newRole = btn.dataset.role === 'colaborador' ? 'viewer' : (btn.dataset.role === 'admin' ? 'viewer' : 'admin');
         if (!confirm(`Alterar ${btn.dataset.email} para "${newRole === 'admin' ? 'Admin' : 'Visualizador'}"?`)) return;
+        btn.disabled = true;
+        const res = await fetch('/api/users', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
+          body: JSON.stringify({ id, role: newRole })
+        });
+        if (res.ok) {
+          carregarUsuarios();
+        } else {
+          const d = await res.json();
+          alert('Erro: ' + (d.error || 'desconhecido'));
+          btn.disabled = false;
+        }
+      });
+    });
+
+    // Toggle colaborador
+    container.querySelectorAll('.btn-toggle-colab').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!requireAdmin()) return;
+        const id = btn.dataset.id;
+        const newRole = 'colaborador';
+        if (!confirm(`Alterar ${btn.dataset.email} para "Colaborador"?`)) return;
         btn.disabled = true;
         const res = await fetch('/api/users', {
           method: 'PUT',
@@ -153,6 +177,7 @@ function renderUsuariosAba() {
       <label class="field">
         <span>Cargo</span>
         <select id="novoUserRole">
+          <option value="colaborador">Colaborador (só reportes)</option>
           <option value="viewer">Visualizador (só ver dados)</option>
           <option value="admin">Administrador (controle total)</option>
         </select>

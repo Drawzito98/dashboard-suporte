@@ -101,6 +101,8 @@ button svg, .btn-small svg, .btn-primary svg {
   --role-admin-text:  #1e40af;
   --role-viewer-bg:   #f3f4f6;
   --role-viewer-text: #6b7280;
+  --role-colaborador-bg:  #fef3c7;
+  --role-colaborador-text:#92400e;
 
   /* Streak day */
   --streak-active-bg: linear-gradient(135deg, #f97316, #ef4444);
@@ -232,6 +234,8 @@ html[data-theme="dark"] {
   --role-admin-text:  #93c5fd;
   --role-viewer-bg:   #374151;
   --role-viewer-text: #9ca3af;
+  --role-colaborador-bg:  #451a03;
+  --role-colaborador-text:#fbbf24;
 
   /* Streak day */
   --streak-active-bg: linear-gradient(135deg, #f97316, #ef4444);
@@ -1910,6 +1914,7 @@ html[data-theme="dark"] select option { background: var(--bg-surface); color: va
 .role-badge { display:inline-block; padding:2px 8px; border-radius:var(--r-sm); font-size:0.75rem; font-weight:600; }
 .role-admin { background: var(--role-admin-bg); color: var(--role-admin-text); }
 .role-viewer { background: var(--role-viewer-bg); color: var(--role-viewer-text); }
+.role-colaborador { background: var(--role-colaborador-bg); color: var(--role-colaborador-text); }
 
 /* Viewers: esconde ações de edição/admin */
 body[data-role="viewer"] .tab-btn[data-tab="usuarios"],
@@ -1919,6 +1924,20 @@ body[data-role="viewer"] .btn-delete,
 body[data-role="viewer"] #homeBtn {
   display: none !important;
 }
+body[data-role="viewer"] .cell-edit[contenteditable="true"] {
+  pointer-events: none;
+}
+
+/* Colaborador: só vê a aba Reportes */
+body[data-role="colaborador"] .tab-btn:not([data-tab="reportes"]) { display: none !important; }
+body[data-role="colaborador"] .sidebar { display: none !important; }
+body[data-role="colaborador"] .global-filter-bar { display: none !important; }
+body[data-role="colaborador"] .tab-btn[data-tab="reportes"] { display: inline-flex !important; }
+body[data-role="colaborador"] #addRowBtn,
+body[data-role="colaborador"] #addRowTopBtn,
+body[data-role="colaborador"] .btn-delete,
+body[data-role="colaborador"] .admin-only-panel,
+body[data-role="colaborador"] #homeBtn { display: none !important; }
 body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   cursor: default;
 }
@@ -2547,6 +2566,89 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 
 .avaliacao-detail-table tbody tr:hover {
   background: var(--bg-subtle);
+}
+
+/* ===== REPORTES ===== */
+.reportes-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.reporte-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-3);
+  transition: box-shadow 0.15s;
+}
+.reporte-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+.reporte-card-unread {
+  border-left: 3px solid var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, var(--bg));
+}
+.reporte-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+.reporte-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.reporte-assunto {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.reporte-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.reporte-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-shrink: 0;
+}
+.reporte-card-body {
+  padding: var(--s-3) 0 0;
+  border-top: 1px solid var(--border);
+  margin-top: var(--s-3);
+}
+.reporte-mensagem {
+  background: var(--bg-surface);
+  padding: var(--s-3);
+  border-radius: var(--r-sm);
+  margin-bottom: var(--s-3);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.reporte-resposta {
+  background: color-mix(in srgb, var(--primary) 8%, var(--bg));
+  padding: var(--s-3);
+  border-radius: var(--r-sm);
+  margin-bottom: var(--s-3);
+  border-left: 3px solid var(--primary);
+}
+.reporte-resposta p {
+  margin: var(--s-1) 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.reporte-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
 }
 
 @media (max-width: 768px) {

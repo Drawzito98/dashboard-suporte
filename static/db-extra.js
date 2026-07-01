@@ -1013,7 +1013,8 @@ async function initDbExtra() {
       dbTarefasLoad(),
       dbPontosExtrasLoad(),
       dbColabInfoLoad(),
-      typeof dbAvaliacoesLoad === 'function' ? dbAvaliacoesLoad() : Promise.resolve()
+      typeof dbAvaliacoesLoad === 'function' ? dbAvaliacoesLoad() : Promise.resolve(),
+      typeof dbReportesListar === 'function' ? dbReportesListar() : Promise.resolve()
     ]);
   } catch (e) { console.error('[db-extra]', e); }
 }

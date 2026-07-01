@@ -2463,6 +2463,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const role = user.user_metadata?.role;
       if (role === 'admin') {
         document.body.dataset.role = 'admin';
+      } else if (role === 'colaborador') {
+        document.body.dataset.role = 'colaborador';
       } else {
         document.body.dataset.role = 'viewer';
       }
@@ -2707,6 +2709,9 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'tarefas' && typeof onTarefasTabActivated === 'function') {
         onTarefasTabActivated();
       }
+      if (tab === 'reportes' && typeof onReportesTabActivated === 'function') {
+        onReportesTabActivated();
+      }
       if (tab === 'colaboradores' && typeof onColaboradoresTabActivated === 'function') {
         onColaboradoresTabActivated();
       }
@@ -2735,10 +2740,16 @@ if (!rawRecords || !rawRecords.length) {
 
   // Restore last active tab
   try {
-    const savedTab = localStorage.getItem('sistema_active_tab');
-    if (savedTab && savedTab !== 'dashboard') {
-      const btn = tabBar && tabBar.querySelector(`.tab-btn[data-tab="${savedTab}"]`);
+    const isColab = document.body.dataset.role === 'colaborador';
+    if (isColab) {
+      const btn = tabBar && tabBar.querySelector('.tab-btn[data-tab="reportes"]');
       if (btn) btn.click();
+    } else {
+      const savedTab = localStorage.getItem('sistema_active_tab');
+      if (savedTab && savedTab !== 'dashboard') {
+        const btn = tabBar && tabBar.querySelector(`.tab-btn[data-tab="${savedTab}"]`);
+        if (btn) btn.click();
+      }
     }
   } catch(e) {}
 
