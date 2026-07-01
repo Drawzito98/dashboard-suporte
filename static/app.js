@@ -2494,6 +2494,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (isAdmin() && typeof dbNotificacoesLoad === 'function') {
         dbNotificacoesLoad().then(initNotificacoesUI);
       }
+      if (typeof initReportesNotifications === 'function') {
+        initReportesNotifications();
+      }
     }).catch(() => setLoading(false));
   }
 

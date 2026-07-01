@@ -435,12 +435,10 @@ function iniciarRealtimeReportes() {
     reportesUnsub = channel.on('postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'reportes' },
       (payload) => {
-        const el = document.getElementById('tab-reportes');
-        if (el) {
-          showToast(`Nova mensagem: ${payload.new?.assunto || 'Reporte'}`, 'info');
-          tocarNotificacaoSom();
-          carregarReportes();
-        }
+        showToast(`Nova mensagem: ${payload.new?.assunto || 'Reporte'}`, 'info');
+        tocarNotificacaoSom();
+        atualizarBadgeReportes(payload.new ? 1 : 0);
+        carregarReportes();
       }
     ).subscribe();
   } catch (e) {
@@ -463,8 +461,6 @@ function pararRealtimeReportes() {
 function iniciarPollingReportes() {
   if (reportesPollInterval) return;
   reportesPollInterval = setInterval(() => {
-    const el = document.getElementById('tab-reportes');
-    if (!el || !el.classList.contains('active')) return;
     carregarReportes();
   }, 30000);
 }
@@ -493,17 +489,11 @@ function escHtml(str) {
 // Hook chamado pelo app.js quando a aba é ativada
 function onReportesTabActivated() {
   renderReportes();
-  iniciarRealtimeReportes();
 }
 
-// Cleanup quando sair da aba
-document.addEventListener('DOMContentLoaded', () => {
-  const observer = new MutationObserver(() => {
-    const tab = document.querySelector('#tab-reportes');
-    if (!tab || !tab.classList.contains('active')) {
-      pararRealtimeReportes();
-    }
-  });
-  const tabBar = document.getElementById('tabBar');
-  if (tabBar) observer.observe(tabBar, { attributes: true, subtree: true });
-});
+// Inicia notificações após auth (chamado pelo app.js)
+function initReportesNotifications() {
+  if (!reportesUnsub && !reportesPollInterval) {
+    iniciarRealtimeReportes();
+  }
+}
