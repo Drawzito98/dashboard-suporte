@@ -1965,6 +1965,15 @@ body[data-role="colaborador"] .sidebar { display: none !important; }
 body[data-role="colaborador"] .layout { grid-template-columns: 1fr; }
 body[data-role="colaborador"] .global-filter-bar { display: none !important; }
 body[data-role="colaborador"][data-colab-csv-nome] .global-filter-bar { display: flex !important; }
+
+/* ── Presentation Mode ── */
+body.presentation-mode .tab-bar { display: none !important; }
+body.presentation-mode .sidebar { display: none !important; }
+body.presentation-mode .layout { grid-template-columns: 1fr; }
+body.presentation-mode .titleblock { display: none !important; }
+body.presentation-mode #currentUserDisplay,
+body.presentation-mode #notifBtnWrapper,
+body.presentation-mode #logoutBtn { display: none !important; }
 body[data-role="colaborador"] #addRowBtn,
 body[data-role="colaborador"] #addRowTopBtn,
 body[data-role="colaborador"] .btn-delete,

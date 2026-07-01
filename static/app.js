@@ -1159,6 +1159,7 @@ function syncScrollbar() {
 }
 
 function updateView() {
+  document.body.classList.toggle('presentation-mode', presentationMode);
   syncGlobalState();
   setGlobalEmpty(!rawRecords || rawRecords.length === 0);
 
