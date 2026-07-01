@@ -2710,3 +2710,117 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Links Importantes ── */
+.links-container {
+  padding: var(--s-5);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-5);
+  align-items: start;
+}
+.links-form {
+  background: var(--bg-subtle);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+}
+.links-field {
+  margin-bottom: var(--s-3);
+}
+.links-field label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--s-1);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.links-field input {
+  width: 100%;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+.links-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-ring);
+}
+.links-actions {
+  display: flex;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+.links-empty {
+  grid-column: 2;
+  padding: var(--s-5);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: var(--bg-subtle);
+  border-radius: var(--r-md);
+}
+.links-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.links-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.links-item:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+.links-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.links-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.links-item-name:hover {
+  text-decoration: underline;
+}
+.links-item-url {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.links-item-actions {
+  display: flex;
+  gap: var(--s-1);
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .links-container {
+    grid-template-columns: 1fr;
+  }
+  .links-empty {
+    grid-column: 1;
+  }
+}

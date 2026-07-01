@@ -2866,6 +2866,9 @@ if (!rawRecords || !rawRecords.length) {
         if (feedbacksSection) feedbacksSection.style.display = '';
         if (typeof onFeedbacksTabActivated === 'function') onFeedbacksTabActivated();
       }
+      if (tab === 'links' && typeof onLinksTabActivated === 'function') {
+        onLinksTabActivated();
+      }
       if (tab === 'dashboard') {
         updateView();
       }
