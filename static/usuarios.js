@@ -245,9 +245,9 @@ function renderUsuariosAba() {
       <label class="field">
         <span>Cargo</span>
         <select id="novoUserRole">
-          <option value="colaborador">Colaborador (próprios dados)</option>
-          <option value="viewer">Visualizador (só ver dados)</option>
           <option value="admin">Administrador (controle total)</option>
+          <option value="viewer">Visualizador (só ver dados)</option>
+          <option value="colaborador">Colaborador (próprios dados)</option>
         </select>
       </label>
       <label class="field" id="csvColabField" style="display:none">
