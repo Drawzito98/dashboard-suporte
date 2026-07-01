@@ -374,34 +374,44 @@ function backupCsv() {
     showToast('Nenhum dado para exportar.', 'error');
     return;
   }
-  const preferred = ['Setor','Mês','Atendente','Assumidos','Transferidos','Finalizados','SCORE','Nota1','Nota2','Nota3','Total','Objetivo'];
-  const keys = Array.from(new Set([...(data[0] ? Object.keys(data[0]) : []), ...preferred]));
-  const orderedKeys = preferred.concat(keys.filter(k => !preferred.includes(k)));
-  const rows = [orderedKeys.join(',')];
-  data.forEach(r => {
-    const vals = orderedKeys.map(k => {
-      let v = r[k];
-      if (v === null || v === undefined) return '';
-      if (k === 'SCORE') return String(typeof v === 'number' ? v.toFixed(2) : v).replace(/,/g, '.');
-      if (k === 'Assumidos' || k === 'Transferidos' || k === 'Finalizados') return String(Math.round(Number(v) || 0));
-      const s = String(v);
-      if (s.includes(',') || s.includes('\n') || s.includes('"')) return '"' + s.replace(/"/g, '""') + '"';
-      return s;
-    });
-    rows.push(vals.join(','));
-  });
-  const csv = rows.join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const now = new Date().toISOString().slice(0, 10);
-  a.download = `backup-completo-${now}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  showToast(`Backup exportado: ${data.length} registros`, 'success');
+  if (data.length > 5000 && !confirm(`Exportar ${data.length} registros? O navegador pode travar por alguns segundos.`)) return;
+  if (typeof setLoading === 'function') setLoading(true, 'Exportando backup...');
+  setTimeout(() => {
+    try {
+      const preferred = ['Setor','Mês','Atendente','Assumidos','Transferidos','Finalizados','SCORE','Nota1','Nota2','Nota3','Total','Objetivo'];
+      const keys = Array.from(new Set([...(data[0] ? Object.keys(data[0]) : []), ...preferred]));
+      const orderedKeys = preferred.concat(keys.filter(k => !preferred.includes(k)));
+      const rows = [orderedKeys.join(',')];
+      data.forEach(r => {
+        const vals = orderedKeys.map(k => {
+          let v = r[k];
+          if (v === null || v === undefined) return '';
+          if (k === 'SCORE') return String(typeof v === 'number' ? v.toFixed(2) : v).replace(/,/g, '.');
+          if (k === 'Assumidos' || k === 'Transferidos' || k === 'Finalizados') return String(Math.round(Number(v) || 0));
+          const s = String(v);
+          if (s.includes(',') || s.includes('\n') || s.includes('"')) return '"' + s.replace(/"/g, '""') + '"';
+          return s;
+        });
+        rows.push(vals.join(','));
+      });
+      const csv = rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const now = new Date().toISOString().slice(0, 10);
+      a.download = `backup-completo-${now}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      if (typeof setLoading === 'function') setLoading(false);
+      showToast(`Backup exportado: ${data.length} registros`, 'success');
+    } catch (e) {
+      if (typeof setLoading === 'function') setLoading(false);
+      showToast('Erro ao exportar backup: ' + e.message, 'error');
+    }
+  }, 50);
 }
 
 function exportCsv() {

@@ -1881,7 +1881,7 @@ function renderChart(rows) {
 }
 
 function renderSingleEvolutionChart(rows) {
-  if (!rows || !rows.length) { setChartEmpty(true, 'Nenhum dado para o período selecionado.'); return; }
+  if (!rows || !rows.length) { setChartEmpty(true, 'Nenhum dado para o período selecionado. Tente outro mês ou período.'); return; }
   setChartEmpty(false);
   const months = uniqueSorted(rows.map(r => String(r['Mês'] || '')).filter(Boolean));
   if (!months.length) { setChartEmpty(true, 'Nenhum período encontrado.'); return; }
@@ -2952,11 +2952,13 @@ if (!rawRecords || !rawRecords.length) {
               selectedMonths = [];
             });
             document.getElementById('colabFilterBtn')?.addEventListener('click', () => {
+              const checked = document.querySelectorAll('.colab-month-cb:checked');
+              if (!checked.length) {
+                showToast('Selecione ao menos um mês para filtrar.', 'warn');
+                return;
+              }
               selectedMonths = [];
-              document.querySelectorAll('.colab-month-cb:checked').forEach(cb => {
-                selectedMonths.push(cb.value);
-              });
-              // Sincroniza globalFilters para syncGlobalState não resetar
+              checked.forEach(cb => { selectedMonths.push(cb.value); });
               if (typeof globalFilters !== 'undefined' && globalFilters) {
                 globalFilters.mesesSelecionados = selectedMonths.slice();
                 globalFilters.periodo = '__multi__';
