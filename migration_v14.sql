@@ -1,4 +1,7 @@
--- Migration v14: Adiciona campo de imagem nos reportes + bucket storage
+-- Migration v14: Adiciona campos data e imagem nos reportes + bucket storage
+
+-- Adiciona coluna para data (selecionada pelo usuário)
+ALTER TABLE reportes ADD COLUMN IF NOT EXISTS data DATE;
 
 -- Adiciona coluna para URL da imagem
 ALTER TABLE reportes ADD COLUMN IF NOT EXISTS imagem_url TEXT;

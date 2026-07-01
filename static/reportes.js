@@ -129,6 +129,7 @@ async function carregarReportes() {
             <strong class="reporte-assunto">${escHtml(r.assunto)}</strong>
             <span class="reporte-meta">
               ${escHtml(r.nome)} &lt;${escHtml(r.email)}&gt;
+              ${r.data ? `&middot; ${r.data}` : ''}
               &middot; ${formatReporteShortDate(r.created_at)}
             </span>
           </div>
@@ -140,9 +141,11 @@ async function carregarReportes() {
           </div>
         </div>
         <div class="reporte-card-body" style="display:none">
+          ${r.data ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:var(--s-2)">Data: <strong>${r.data}</strong></div>` : ''}
           <div class="reporte-mensagem">
             <p>${escHtml(r.mensagem)}</p>
           </div>
+          ${r.imagem_url ? `<div style="margin-bottom:var(--s-3)"><img src="${escHtml(r.imagem_url)}" style="max-width:100%;max-height:300px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer" onclick="window.open(this.src)" title="Clique para ampliar"/></div>` : ''}
           ${r.resposta ? `
           <div class="reporte-resposta">
             <strong style="font-size:12px;color:var(--text-secondary)">Sua resposta:</strong>

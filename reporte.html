@@ -158,6 +158,10 @@
         <input id="reporteEmail" type="email" placeholder="seu@email.com" required autocomplete="email"/>
       </label>
       <label class="field">
+        <span>Data</span>
+        <input id="reporteData" type="date"/>
+      </label>
+      <label class="field">
         <span>Assunto</span>
         <input id="reporteAssunto" type="text" placeholder="Ex: Dúvida sobre faturamento" required/>
       </label>
@@ -243,6 +247,7 @@
 
       const nome = document.getElementById('reporteNome').value.trim();
       const email = document.getElementById('reporteEmail').value.trim();
+      const data = document.getElementById('reporteData').value || null;
       const assunto = document.getElementById('reporteAssunto').value.trim();
       const mensagem = document.getElementById('reporteMensagem').value.trim();
 
@@ -283,7 +288,7 @@
 
         const { data, error } = await sbClient
           .from('reportes')
-          .insert({ nome, email, assunto, mensagem, imagem_url })
+          .insert({ nome, email, data, assunto, mensagem, imagem_url })
           .select();
 
         if (error) throw error;
