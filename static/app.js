@@ -2823,9 +2823,14 @@ if (!rawRecords || !rawRecords.length) {
               <div class="global-filter-row">
                 <div class="global-filter-field" style="min-width:auto">
                   <span>Período</span>
-                  <select id="colabPeriodSelect" style="min-width:160px">
-                    <option value="all">Todos os períodos</option>
-                  </select>
+                  <div style="display:flex;flex-wrap:wrap;gap:var(--s-1);align-items:center">
+                    <div id="colabMonthChecklist" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:var(--s-1);align-items:flex-end;padding-bottom:2px">
+                  <button class="btn-small" id="colabSelectAllBtn" type="button" style="font-size:11px">Todos</button>
+                  <button class="btn-small" id="colabClearBtn" type="button" style="font-size:11px">Limpar</button>
+                  <button class="btn-primary" id="colabFilterBtn" type="button" style="font-size:12px;padding:4px 16px;justify-content:center">Filtrar</button>
                 </div>
               </div>
             </div>
@@ -2850,21 +2855,39 @@ if (!rawRecords || !rawRecords.length) {
                 updateView();
               }, 500);
             }
-            // Inicializa seletor de período
-            const periodSelect = document.getElementById('colabPeriodSelect');
-            if (periodSelect) {
+            // Inicializa seletor de período (checkboxes + filtrar)
+            const checklist = document.getElementById('colabMonthChecklist');
+            if (checklist) {
               const meses = uniqueSorted(rawRecords.filter(r => String(r['Atendente']) === csvNome).map(r => r['Mês']));
-              periodSelect.innerHTML = '<option value="all">Todos os períodos</option>' + meses.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
-              periodSelect.addEventListener('change', () => {
-                const val = periodSelect.value;
-                if (val === 'all') {
-                  selectedMonths = [];
-                } else {
-                  selectedMonths = [val];
-                }
-                updateFilterOptions();
-                updateView();
+              checklist.innerHTML = meses.map(m => `
+<label style="font-size:12px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:var(--bg-surface);cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s">
+  <input type="checkbox" class="colab-month-cb" value="${escapeHtml(m)}" style="margin:0"/>
+  <span>${escapeHtml(m)}</span>
+</label>`).join('');
+              // Marca inicialmente todos
+              checklist.querySelectorAll('.colab-month-cb').forEach(cb => { cb.checked = true; });
+              selectedMonths = meses.slice();
+            }
+            document.getElementById('colabSelectAllBtn')?.addEventListener('click', () => {
+              const meses = uniqueSorted(rawRecords.filter(r => String(r['Atendente']) === csvNome).map(r => r['Mês']));
+              document.querySelectorAll('.colab-month-cb').forEach(cb => { cb.checked = true; });
+              selectedMonths = meses.slice();
+            });
+            document.getElementById('colabClearBtn')?.addEventListener('click', () => {
+              document.querySelectorAll('.colab-month-cb').forEach(cb => { cb.checked = false; });
+              selectedMonths = [];
+            });
+            document.getElementById('colabFilterBtn')?.addEventListener('click', () => {
+              selectedMonths = [];
+              document.querySelectorAll('.colab-month-cb:checked').forEach(cb => {
+                selectedMonths.push(cb.value);
               });
+              updateView();
+            });
+            // Trava filtros no globalFilters para syncGlobalState não resetar
+            if (typeof globalFilters !== 'undefined' && globalFilters) {
+              globalFilters.setor = user?.user_metadata?.csv_setor || '';
+              globalFilters.colaborador = csvNome;
             }
             updateView();
             const dashboardBtn = tabBar?.querySelector('.tab-btn[data-tab="dashboard"]');
