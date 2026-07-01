@@ -55,6 +55,8 @@ async function carregarUsuarios() {
         const isYou = email === currentEmail;
         const roleLabel = role === 'admin' ? 'Admin' : role === 'colaborador' ? 'Colaborador' : 'Visualizador';
         const isSelf = isYou;
+        const csvNome = u.user_metadata?.csv_nome || '';
+        const csvSetor = u.user_metadata?.csv_setor || '';
 
         return `<tr>
           <td>${escapeHtml(email)}${isYou ? ' <strong>(você)</strong>' : ''}</td>
@@ -62,6 +64,7 @@ async function carregarUsuarios() {
           <td>${created}</td>
           <td style="display:flex;gap:4px;flex-wrap:wrap">
             <button class="btn-small btn-reset-pwd" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔑 Senha</button>
+            ${role === 'colaborador' && !isSelf ? `<button class="btn-small btn-csv-map" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-csv-nome="${escapeHtml(csvNome)}" data-csv-setor="${escapeHtml(csvSetor)}" style="font-size:11px">📋 Vincular CSV</button>` : ''}
             ${!isSelf ? `<button class="btn-small btn-toggle-role" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">${role === 'admin' ? '👁️ Tornar viewer' : role === 'colaborador' ? '👁️ Tornar viewer' : '👑 Tornar admin'}</button>` : ''}
             ${!isSelf && role !== 'colaborador' ? `<button class="btn-small btn-toggle-colab" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">📬 Tornar colaborador</button>` : ''}
             ${!isSelf ? `<button class="btn-small btn-toggle-block" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-ativo="${u.user_metadata?.ativo !== false}" style="font-size:11px">${u.user_metadata?.ativo === false ? '🔓 Desbloquear' : '🔒 Bloquear'}</button>` : ''}
@@ -157,6 +160,19 @@ async function carregarUsuarios() {
       });
     });
 
+    // CSV mapping overlay
+    container.querySelectorAll('.btn-csv-map').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('csvMapOverlay').classList.remove('hidden');
+        document.getElementById('csvMapUserId').value = btn.dataset.id;
+        document.getElementById('csvMapUserEmail').textContent = btn.dataset.email;
+        document.getElementById('csvMapNome').value = btn.dataset.csvNome;
+        document.getElementById('csvMapSetor').value = btn.dataset.csvSetor;
+        document.getElementById('csvMapError').classList.add('hidden');
+        document.getElementById('csvMapSuccess').classList.add('hidden');
+      });
+    });
+
     // Delete
     container.querySelectorAll('.btn-delete-user').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -233,6 +249,31 @@ function renderUsuariosAba() {
         </div>
         <div id="resetPwdError" class="auth-error hidden"></div>
         <div id="resetPwdSuccess" class="auth-success hidden"></div>
+      </div>
+    </div>
+
+    <!-- CSV Map Overlay -->
+    <div id="csvMapOverlay" class="hidden" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center">
+      <div style="background:var(--bg-surface);border-radius:var(--r-lg);padding:var(--s-6);max-width:420px;width:90%;box-shadow:var(--shadow-lg)">
+        <h3 style="margin:0 0 var(--s-2)">Vincular colaborador ao CSV</h3>
+        <p style="font-size:0.875rem;color:var(--text-secondary);margin:0 0 var(--s-4)">
+          Usuário: <strong id="csvMapUserEmail"></strong>
+        </p>
+        <input type="hidden" id="csvMapUserId" />
+        <label class="field">
+          <span>Nome exato no CSV</span>
+          <input id="csvMapNome" type="text" placeholder="Ex: João Silva" />
+        </label>
+        <label class="field">
+          <span>Setor (opcional)</span>
+          <input id="csvMapSetor" type="text" placeholder="Ex: Suporte N1" />
+        </label>
+        <div style="display:flex;gap:var(--s-2);margin-top:var(--s-3)">
+          <button class="btn-primary" id="csvMapSalvarBtn" type="button" style="flex:1;justify-content:center">Salvar</button>
+          <button class="btn-small" id="csvMapCancelarBtn" type="button" style="flex:1;justify-content:center">Cancelar</button>
+        </div>
+        <div id="csvMapError" class="auth-error hidden"></div>
+        <div id="csvMapSuccess" class="auth-success hidden"></div>
       </div>
     </div>
   `;
@@ -333,6 +374,50 @@ function renderUsuariosAba() {
   document.getElementById('resetPwdNewPassword')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('resetPwdConfirmBtn')?.click();
     if (e.key === 'Escape') document.getElementById('resetPwdOverlay')?.classList.add('hidden');
+  });
+
+  // CSV Map overlay
+  document.getElementById('csvMapSalvarBtn')?.addEventListener('click', async () => {
+    if (!requireAdmin()) return;
+    const id = document.getElementById('csvMapUserId').value;
+    const csvNome = document.getElementById('csvMapNome').value.trim();
+    const csvSetor = document.getElementById('csvMapSetor').value.trim();
+    const errEl = document.getElementById('csvMapError');
+    const okEl = document.getElementById('csvMapSuccess');
+    errEl.classList.add('hidden');
+    okEl.classList.add('hidden');
+    if (!csvNome) { errEl.textContent = 'Informe o nome do colaborador no CSV.'; errEl.classList.remove('hidden'); return; }
+    const btn = document.getElementById('csvMapSalvarBtn');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
+        body: JSON.stringify({ id, csv_nome: csvNome, csv_setor: csvSetor || null })
+      });
+      if (res.ok) {
+        okEl.textContent = 'Vínculo salvo!';
+        okEl.classList.remove('hidden');
+        setTimeout(() => {
+          document.getElementById('csvMapOverlay').classList.add('hidden');
+          carregarUsuarios();
+        }, 1200);
+      } else {
+        const d = await res.json();
+        errEl.textContent = d.error || 'Erro ao salvar.';
+        errEl.classList.remove('hidden');
+      }
+    } catch (e) {
+      errEl.textContent = 'Erro de conexão: ' + e.message;
+      errEl.classList.remove('hidden');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Salvar';
+  });
+
+  document.getElementById('csvMapCancelarBtn')?.addEventListener('click', () => {
+    document.getElementById('csvMapOverlay').classList.add('hidden');
   });
 
   carregarUsuarios();

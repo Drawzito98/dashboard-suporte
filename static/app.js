@@ -2810,11 +2810,43 @@ if (!rawRecords || !rawRecords.length) {
   try {
     const isColab = document.body.dataset.role === 'colaborador';
     if (isColab) {
-      document.getElementById('appScreen')?.querySelector('.app')?.style.setProperty('display', 'none');
-      const msg = document.createElement('div');
-      msg.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:80vh;padding:20px;text-align:center';
-      msg.innerHTML = '<div style="max-width:400px"><h2 style="font-size:20px;margin-bottom:8px">Acesso restrito ao painel</h2><p style="color:var(--text-secondary);font-size:14px">Use o formulário público em <a href="/reportlider" style="color:var(--primary)">/reportlider</a> para enviar suas mensagens.</p></div>';
-      document.getElementById('appScreen')?.appendChild(msg);
+      const { data: { user } } = await sbClient.auth.getUser();
+      const csvNome = user?.user_metadata?.csv_nome;
+      if (csvNome) {
+        document.body.dataset.colabCsvNome = csvNome;
+        document.body.dataset.colabCsvSetor = user?.user_metadata?.csv_setor || '';
+        // Abre dashboard tab e aplica filtros após carregar dados
+        const waitForData = setInterval(() => {
+          if (typeof rawRecords !== 'undefined' && rawRecords.length) {
+            clearInterval(waitForData);
+            if (atendenteSelect) {
+              atendenteSelect.value = csvNome;
+              atendenteSelect.disabled = true;
+              atendenteSelect.style.opacity = '0.8';
+            }
+            if (setorSelect && user?.user_metadata?.csv_setor) {
+              const setorVal = user.user_metadata.csv_setor;
+              // Espera options carregarem
+              setTimeout(() => {
+                setorSelect.value = setorVal;
+                setorSelect.disabled = true;
+                setorSelect.style.opacity = '0.8';
+                updateView();
+              }, 500);
+            }
+            updateView();
+            const dashboardBtn = tabBar?.querySelector('.tab-btn[data-tab="dashboard"]');
+            if (dashboardBtn) dashboardBtn.click();
+          }
+        }, 200);
+        setTimeout(() => clearInterval(waitForData), 15000);
+      } else {
+        document.getElementById('appScreen')?.querySelector('.app')?.style.setProperty('display', 'none');
+        const msg = document.createElement('div');
+        msg.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:80vh;padding:20px;text-align:center';
+        msg.innerHTML = '<div style="max-width:400px"><h2 style="font-size:20px;margin-bottom:8px">Acesso restrito ao painel</h2><p style="color:var(--text-secondary);font-size:14px">Use o formulário público em <a href="/reportlider" style="color:var(--primary)">/reportlider</a> para enviar suas mensagens.</p></div>';
+        document.getElementById('appScreen')?.appendChild(msg);
+      }
     } else {
       const savedTab = localStorage.getItem('sistema_active_tab');
       if (savedTab && savedTab !== 'dashboard') {

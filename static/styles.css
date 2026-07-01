@@ -1930,8 +1930,10 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 
 /* Colaborador: só vê a aba Reportes */
 body[data-role="colaborador"] .tab-btn { display: none !important; }
+body[data-role="colaborador"][data-colab-csv-nome] .tab-btn[data-tab="dashboard"] { display: inline-flex !important; }
 body[data-role="colaborador"] .sidebar { display: none !important; }
 body[data-role="colaborador"] .global-filter-bar { display: none !important; }
+body[data-role="colaborador"][data-colab-csv-nome] .global-filter-bar { display: flex !important; }
 body[data-role="colaborador"] #addRowBtn,
 body[data-role="colaborador"] #addRowTopBtn,
 body[data-role="colaborador"] .btn-delete,
