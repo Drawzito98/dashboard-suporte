@@ -216,7 +216,7 @@ async function carregarReportes() {
           <div class="reporte-card-footer">
             <span style="font-size:11px;color:var(--text-muted)">${formatReporteDate(r.created_at)}</span>
             <div style="display:flex;gap:var(--s-2);flex-wrap:wrap;align-items:center">
-              ${!r.lida ? `<button class="btn-small reporte-marcar-lida" data-id="${r.id}" type="button" style="font-size:11px">Marcar como lida</button>` : ''}
+              ${`<button class="btn-small reporte-toggle-lida" data-id="${r.id}" data-lida="${r.lida}" type="button" style="font-size:11px">${r.lida ? 'Marcar como não lida' : 'Marcar como lida'}</button>`}
               ${!r.respondida ? `<button class="btn-small reporte-responder-btn" data-id="${r.id}" type="button" style="font-size:11px">Responder</button>` : ''}
               ${isAdminUser ? `
                 <select class="reporte-categoria-select" data-id="${r.id}" style="font-size:11px;padding:2px 4px">
@@ -258,10 +258,11 @@ async function carregarReportes() {
     });
   });
 
-  lista.querySelectorAll('.reporte-marcar-lida').forEach(btn => {
+  lista.querySelectorAll('.reporte-toggle-lida').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
-      await dbReportesMarcarLida(id);
+      const lida = btn.dataset.lida === 'true';
+      await dbReportesAtualizar(id, { lida: !lida });
       carregarReportes();
     });
   });
