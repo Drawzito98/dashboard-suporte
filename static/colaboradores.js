@@ -160,8 +160,8 @@ function openColabReport(nome) {
     html += `<div class="report-metric-value" style="color:${m.good ? 'var(--success)' : 'var(--danger)'}">${m.value}</div>`;
     html += `<div class="report-metric-label">${m.label}</div>`;
     if (m.var !== null) {
-      const varColor = m.var >= 0 ? 'var(--success)' : 'var(--danger)';
-      html += `<div class="report-metric-var" style="color:${varColor}">${m.var >= 0 ? '▲' : '▼'} ${Math.abs(m.var).toFixed(1)}%</div>`;
+      const varCls = m.var >= 0 ? 'variation-pos' : 'variation-neg';
+      html += `<div class="report-metric-var"><span class="${varCls}">${m.var >= 0 ? '▲' : '▼'} ${Math.abs(m.var).toFixed(1)}%</span></div>`;
     }
     html += '</div>';
   }
@@ -229,8 +229,8 @@ function openColabReport(nome) {
     html += `<span class="report-grid-value">${d.value}</span>`;
     html += `<span class="report-grid-team">média: ${d.team}</span>`;
     if (d.var !== null) {
-      const vc = d.var >= 0 ? 'var(--success)' : 'var(--danger)';
-      html += `<span class="report-grid-var" style="color:${vc}">${d.var >= 0 ? '▲' : '▼'} ${Math.abs(d.var).toFixed(1)}%</span>`;
+      const vCls = d.var >= 0 ? 'variation-pos' : 'variation-neg';
+      html += `<span class="report-grid-var"><span class="${vCls}">${d.var >= 0 ? '▲' : '▼'} ${Math.abs(d.var).toFixed(1)}%</span></span>`;
     } else {
       html += '<span class="report-grid-var"></span>';
     }
