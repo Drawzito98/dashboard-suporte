@@ -421,7 +421,7 @@ function criarOverlayResposta() {
 function mostrarModalLink() {
   const overlay = document.getElementById('reporteLinkOverlay') || criarOverlayLink();
   overlay.classList.remove('hidden');
-  const link = `${window.location.origin}/reporte.html`;
+  const link = `${window.location.origin}/reportlider`;
   overlay.querySelector('#reporteLinkUrl').value = link;
   const embedInput = overlay.querySelector('#reporteLinkEmbed');
   if (embedInput) {
@@ -495,7 +495,7 @@ function criarOverlayPreview() {
   div.id = 'reportePreviewOverlay';
   div.className = 'hidden';
   div.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center';
-  const formUrl = `${window.location.origin}/reporte.html`;
+  const formUrl = `${window.location.origin}/reportlider`;
   div.innerHTML = `
     <div style="background:var(--bg-surface);border-radius:var(--r-lg);padding:var(--s-4);max-width:600px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-3)">
