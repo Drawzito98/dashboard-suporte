@@ -165,6 +165,18 @@
         <span>Mensagem</span>
         <textarea id="reporteMensagem" placeholder="Descreva sua solicitação ou dúvida em detalhes..." required></textarea>
       </label>
+      <label class="field file-field" id="reporteFileField" style="cursor:pointer">
+        <span>Anexar imagem (opcional)</span>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px dashed var(--border);border-radius:8px;background:var(--bg)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span id="reporteFileLabel" style="font-size:13px;color:var(--text-secondary);font-weight:400">Clique para selecionar (PNG, JPG)</span>
+        </div>
+        <input id="reporteFileInput" type="file" accept="image/png,image/jpeg,image/webp" style="display:none"/>
+      </label>
+      <div id="reporteFilePreview" style="display:none;margin-top:-12px;margin-bottom:16px;position:relative">
+        <img id="reporteFilePreviewImg" style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid var(--border)"/>
+        <button id="reporteFileRemoveBtn" type="button" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
 
       <button class="btn-primary" id="reporteEnviarBtn" type="submit">
         <span class="spinner"></span>
@@ -172,10 +184,10 @@
       </button>
     </form>
 
-    <div id="reporteSuccess" class="msg msg-success">
+    <div id="reporteSuccess" class="msg msg-success" style="display:none">
       <strong>Mensagem enviada!</strong> Assim que possível entraremos em contato.
     </div>
-    <div id="reporteError" class="msg msg-error"></div>
+    <div id="reporteError" class="msg msg-error" style="display:none"></div>
   </div>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -184,6 +196,41 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFndmttZnVzeWV0a2ljbXV2dW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NTkxNjUsImV4cCI6MjA5NzMzNTE2NX0.9dxpGlGCf0TQbq46cm0fpD6gvkNUuqwMQNR3xolV4X4';
 
     const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let selectedFile = null;
+
+    // Preview da imagem selecionada
+    document.getElementById('reporteFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        document.getElementById('reporteError').textContent = 'Imagem muito grande. Máximo 5MB.';
+        document.getElementById('reporteError').style.display = 'block';
+        e.target.value = '';
+        return;
+      }
+      selectedFile = file;
+      document.getElementById('reporteFileLabel').textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const preview = document.getElementById('reporteFilePreview');
+        preview.style.display = 'block';
+        document.getElementById('reporteFilePreviewImg').src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('reporteFileRemoveBtn').addEventListener('click', () => {
+      selectedFile = null;
+      document.getElementById('reporteFileInput').value = '';
+      document.getElementById('reporteFilePreview').style.display = 'none';
+      document.getElementById('reporteFileLabel').textContent = 'Clique para selecionar (PNG, JPG)';
+    });
+
+    document.getElementById('reporteFileField').addEventListener('click', (e) => {
+      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'IMG' && !e.target.closest('#reporteFileRemoveBtn')) {
+        document.getElementById('reporteFileInput').click();
+      }
+    });
 
     document.getElementById('reporteForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -215,15 +262,37 @@
       btn.disabled = true;
 
       try {
+        let imagem_url = null;
+
+        // Upload da imagem se houver
+        if (selectedFile) {
+          const ext = selectedFile.name.split('.').pop();
+          const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+          const { data: uploadData, error: uploadError } = await sbClient.storage
+            .from('reportes-imagens')
+            .upload(fileName, selectedFile, {
+              cacheControl: '3600',
+              upsert: false
+            });
+          if (uploadError) throw uploadError;
+          const { data: { publicUrl } } = sbClient.storage
+            .from('reportes-imagens')
+            .getPublicUrl(fileName);
+          imagem_url = publicUrl;
+        }
+
         const { data, error } = await sbClient
           .from('reportes')
-          .insert({ nome, email, assunto, mensagem })
+          .insert({ nome, email, assunto, mensagem, imagem_url })
           .select();
 
         if (error) throw error;
 
         successEl.style.display = 'block';
         document.getElementById('reporteForm').reset();
+        document.getElementById('reporteFilePreview').style.display = 'none';
+        document.getElementById('reporteFileLabel').textContent = 'Clique para selecionar (PNG, JPG)';
+        selectedFile = null;
       } catch (err) {
         errorEl.textContent = 'Erro ao enviar: ' + (err.message || 'tente novamente mais tarde.');
         errorEl.style.display = 'block';
