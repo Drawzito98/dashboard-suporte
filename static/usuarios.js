@@ -65,6 +65,7 @@ async function carregarUsuarios() {
           <td style="display:flex;gap:4px;flex-wrap:wrap">
             <button class="btn-small btn-reset-pwd" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔑 Senha</button>
             ${role === 'colaborador' && !isSelf ? `<button class="btn-small btn-csv-map" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-csv-nome="${escapeHtml(csvNome)}" data-csv-setor="${escapeHtml(csvSetor)}" style="font-size:11px">📋 Vincular CSV</button>` : ''}
+            ${!isSelf ? `<button class="btn-small btn-reset-default" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔢 Padrão</button>` : ''}
             ${!isSelf ? `<button class="btn-small btn-toggle-role" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">${role === 'admin' ? '👁️ Tornar viewer' : role === 'colaborador' ? '👁️ Tornar viewer' : '👑 Tornar admin'}</button>` : ''}
             ${!isSelf && role !== 'colaborador' ? `<button class="btn-small btn-toggle-colab" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">📬 Tornar colaborador</button>` : ''}
             ${!isSelf ? `<button class="btn-small btn-toggle-block" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-ativo="${u.user_metadata?.ativo !== false}" style="font-size:11px">${u.user_metadata?.ativo === false ? '🔓 Desbloquear' : '🔒 Bloquear'}</button>` : ''}
@@ -76,6 +77,31 @@ async function carregarUsuarios() {
     ].join('');
 
     container.innerHTML = html;
+
+    // Password reset default
+    container.querySelectorAll('.btn-reset-default').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!requireAdmin()) return;
+        if (!confirm(`Redefinir senha de "${btn.dataset.email}" para "12345678"?`)) return;
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/users', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
+            body: JSON.stringify({ id: btn.dataset.id, password: '12345678' })
+          });
+          if (res.ok) {
+            showToast(`Senha de "${btn.dataset.email}" redefinida para 12345678`, 'success');
+          } else {
+            const d = await res.json();
+            showToast(d.error || 'Erro ao redefinir senha', 'error');
+          }
+        } catch (e) {
+          showToast('Erro de conexão', 'error');
+        }
+        btn.disabled = false;
+      });
+    });
 
     // Password reset
     container.querySelectorAll('.btn-reset-pwd').forEach(btn => {
@@ -351,10 +377,7 @@ function renderUsuariosAba() {
     } catch {}
     const pwdInput = document.getElementById('novoUserPassword');
     if (pwdInput && !pwdInput.value) {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-      let pwd = '';
-      for (let i = 0; i < 10; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-      pwdInput.value = pwd;
+      pwdInput.value = '12345678';
     }
   });
 
