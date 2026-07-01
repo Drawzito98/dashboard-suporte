@@ -42,7 +42,7 @@ async function dbLinksInserir({ nome, url }) {
       .from('links_importantes')
       .insert({ nome, url, user_id: uid })
       .select();
-    if (error) throw error;
+    if (error) { console.error('[links] Erro Supabase ao inserir:', error); throw error; }
     if (data?.[0]) {
       _linksCache = null;
       _linksToStorage([]);
@@ -143,7 +143,7 @@ function renderLinksImportantes() {
     container.innerHTML = html;
 
     // Bindings
-    document.getElementById('linkSalvarBtn')?.addEventListener('click', () => handleSalvar(links));
+    document.getElementById('linkSalvarBtn')?.addEventListener('click', handleSalvar);
     document.getElementById('linkCancelarBtn')?.addEventListener('click', () => { _editingId = null; renderLinksImportantes(); });
 
     container.querySelectorAll('.links-edit-btn').forEach(btn => {
@@ -162,12 +162,12 @@ function renderLinksImportantes() {
 
     // Enter key
     document.getElementById('linkUrlInput')?.addEventListener('keydown', e => {
-      if (e.key === 'Enter') handleSalvar(links);
+      if (e.key === 'Enter') handleSalvar();
     });
   });
 }
 
-async function handleSalvar(links) {
+async function handleSalvar() {
   const nome = document.getElementById('linkNomeInput')?.value?.trim();
   const url = document.getElementById('linkUrlInput')?.value?.trim();
   if (!nome || !url) { showToast('Preencha nome e URL', 'error'); return; }
@@ -179,7 +179,7 @@ async function handleSalvar(links) {
   } else {
     const inserted = await dbLinksInserir({ nome, url });
     if (inserted) { renderLinksImportantes(); showToast('Link adicionado', 'success'); }
-    else showToast('Erro ao adicionar', 'error');
+    else showToast('Erro ao adicionar link. Verifique o console (F12).', 'error');
   }
 }
 
