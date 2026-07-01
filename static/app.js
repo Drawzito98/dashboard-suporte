@@ -2488,10 +2488,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           blocked.id = 'blockedScreen';
           blocked.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center;background:var(--bg)';
           blocked.innerHTML = `<div style="max-width:420px">
-            <div style="font-size:48px;margin-bottom:16px">🔒</div>
-            <h1 style="font-size:22px;margin-bottom:8px">Acesso desativado</h1>
-            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:24px">Seu acesso ao Painel de Suporte foi desativado pelo administrador. Clique no botão abaixo para solicitar a liberação.</p>
-            <button id="solicitarDesbloqueioBtn" class="btn-primary" type="button" style="width:100%;justify-content:center">Solicitar liberação</button>
+            <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+            <h1 style="font-size:22px;margin-bottom:8px">Erro ao carregar o painel</h1>
+            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:24px">Ocorreu um erro inesperado ao carregar o Painel de Suporte. Tente novamente mais tarde ou reporte o erro ao administrador.</p>
+            <button id="solicitarDesbloqueioBtn" class="btn-primary" type="button" style="width:100%;justify-content:center">Reportar erro ao administrador</button>
             <div id="solicitarDesbloqueioStatus" style="margin-top:12px;font-size:13px;display:none"></div>
           </div>`;
           document.body.appendChild(blocked);
