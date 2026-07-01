@@ -57,13 +57,16 @@ module.exports = async (req, res) => {
 
     // POST: criar usuário
     if (req.method === 'POST') {
-      const { email, password, role } = req.body || {};
+      const { email, password, role, csv_nome, csv_setor } = req.body || {};
       if (!email || !password) {
         return res.status(400).json({ error: 'Email e senha obrigatórios' });
       }
       if (password.length < 6) {
         return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
       }
+      const user_metadata = { role: role || 'viewer' };
+      if (csv_nome) user_metadata.csv_nome = csv_nome;
+      if (csv_setor) user_metadata.csv_setor = csv_setor;
       const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
         method: 'POST',
         headers: {
@@ -75,7 +78,7 @@ module.exports = async (req, res) => {
           email,
           password,
           email_confirm: true,
-          user_metadata: { role: role || 'viewer' }
+          user_metadata
         })
       });
       const data = await response.json();

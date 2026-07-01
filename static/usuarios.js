@@ -219,9 +219,15 @@ function renderUsuariosAba() {
       <label class="field">
         <span>Cargo</span>
         <select id="novoUserRole">
-          <option value="colaborador">Colaborador (só reportes)</option>
+          <option value="colaborador">Colaborador (próprios dados)</option>
           <option value="viewer">Visualizador (só ver dados)</option>
           <option value="admin">Administrador (controle total)</option>
+        </select>
+      </label>
+      <label class="field" id="csvColabField" style="display:none">
+        <span>Colaborador do CSV</span>
+        <select id="novoUserCsvColab">
+          <option value="">Selecione...</option>
         </select>
       </label>
       <button class="btn-primary" id="criarUsuarioBtn" type="button" style="width:100%;justify-content:center">Criar usuário</button>
@@ -286,6 +292,33 @@ function renderUsuariosAba() {
     if (e.key === 'Enter') document.getElementById('criarUsuarioBtn')?.click();
   });
 
+  // Mostra/esconde select de colaborador CSV conforme cargo
+  document.getElementById('novoUserRole')?.addEventListener('change', () => {
+    const field = document.getElementById('csvColabField');
+    if (!field) return;
+    if (document.getElementById('novoUserRole').value === 'colaborador') {
+      field.style.display = '';
+      // Popula dropdown com colaboradores ativos do CSV
+      const select = document.getElementById('novoUserCsvColab');
+      if (select) {
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">Selecione...</option>';
+        try {
+          const nomes = [...new Set((window.rawRecords || []).filter(r => r && r['Atendente'] && typeof isAggregateName === 'function' && !isAggregateName(r['Atendente']) && typeof isColabActive === 'function' && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
+          nomes.forEach(n => {
+            const opt = document.createElement('option');
+            opt.value = n;
+            opt.textContent = n;
+            select.appendChild(opt);
+          });
+        } catch (e) { console.warn('[usuarios] Erro ao carregar CSV names:', e); }
+        if (currentVal) select.value = currentVal;
+      }
+    } else {
+      field.style.display = 'none';
+    }
+  });
+
   document.getElementById('criarUsuarioBtn')?.addEventListener('click', async () => {
     if (!requireAdmin()) return;
     const email = document.getElementById('novoUserEmail').value.trim();
@@ -304,17 +337,23 @@ function renderUsuariosAba() {
     btn.textContent = 'Criando...';
 
     try {
+      const body = { email, password, role };
+      if (role === 'colaborador') {
+        const csvNome = document.getElementById('novoUserCsvColab')?.value || '';
+        if (csvNome) body.csv_nome = csvNome;
+      }
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
-        body: JSON.stringify({ email, password, role })
+        body: JSON.stringify(body)
       });
       const data = await res.json();
       if (res.ok && !data.error) {
-        okEl.textContent = `Usuário "${email}" criado como ${role === 'admin' ? 'Admin' : 'Visualizador'}!`;
+        okEl.textContent = `Usuário "${email}" criado como ${role === 'admin' ? 'Admin' : role === 'colaborador' ? 'Colaborador' : 'Visualizador'}!`;
         okEl.classList.remove('hidden');
         document.getElementById('novoUserEmail').value = '';
         document.getElementById('novoUserPassword').value = '';
+        document.getElementById('novoUserCsvColab').value = '';
         carregarUsuarios();
       } else {
         errEl.textContent = data.error || data.msg || 'Erro ao criar usuário.';
