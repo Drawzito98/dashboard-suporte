@@ -319,6 +319,25 @@ function renderUsuariosAba() {
     }
   });
 
+  // Quando selecionar nome, sugere email e senha
+  document.getElementById('novoUserCsvColab')?.addEventListener('change', () => {
+    const nome = document.getElementById('novoUserCsvColab').value;
+    if (!nome) return;
+    const emailInput = document.getElementById('novoUserEmail');
+    if (emailInput && !emailInput.value) {
+      const sugerido = nome.toLowerCase().replace(/\s+/g, '.').normalize('NFD').replace(/[\u0300-\u036f]/g, '') + '@exemplo.com';
+      emailInput.value = sugerido;
+      emailInput.placeholder = 'email@exemplo.com';
+    }
+    const pwdInput = document.getElementById('novoUserPassword');
+    if (pwdInput && !pwdInput.value) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+      let pwd = '';
+      for (let i = 0; i < 10; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+      pwdInput.value = pwd;
+    }
+  });
+
   document.getElementById('criarUsuarioBtn')?.addEventListener('click', async () => {
     if (!requireAdmin()) return;
     const email = document.getElementById('novoUserEmail').value.trim();
