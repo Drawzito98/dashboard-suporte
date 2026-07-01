@@ -1402,10 +1402,10 @@ function renderSummary(filtered) {
     </div>
 
     <div class="kpi-grid" style="margin-top:12px">
-      <div class="kpi kpi-drill" data-kpi="assumidos"><div class="label">Assumidos</div><div class="value">${fmtInt(totalAssumidos)}</div><div class="sub">${deltaAssumidos===null?'':`Δ mês ant.: ${fmtPct(deltaAssumidos)}`}</div></div>
+      <div class="kpi kpi-drill" data-kpi="assumidos"><div class="label">Assumidos</div><div class="value">${fmtInt(totalAssumidos)}</div><div class="sub">${deltaAssumidos===null?'':`<span class="${deltaAssumidos>=0?'variation-pos':'variation-neg'}">Δ mês ant.: ${fmtPct(deltaAssumidos)}</span>`}</div></div>
       <div class="kpi kpi-drill" data-kpi="transferidos"><div class="label">Transferidos</div><div class="value">${fmtInt(totalTransferidos)}</div><div class="sub">${taxaTransfer===null?'':`Taxa: ${(taxaTransfer*100).toFixed(1)}%`}</div></div>
-      <div class="kpi kpi-drill" data-kpi="finalizados"><div class="label">Finalizados</div><div class="value">${fmtInt(totalFinalizados)}</div><div class="sub">${deltaFinalizados===null?'':`Δ mês ant.: ${fmtPct(deltaFinalizados)}`}</div></div>
-      <div class="kpi kpi-drill" data-kpi="score"><div class="label">Score médio</div><div class="value${avgScoreNum!==null ? ' ' + getClasseScore(avgScoreNum) : ''}">${fmtScore(avgScoreNum)}</div><div class="sub">${deltaScore===null?'':`Δ mês ant.: ${deltaScore>=0?'+':''}${deltaScore.toFixed(2)}`}</div></div>
+      <div class="kpi kpi-drill" data-kpi="finalizados"><div class="label">Finalizados</div><div class="value">${fmtInt(totalFinalizados)}</div><div class="sub">${deltaFinalizados===null?'':`<span class="${deltaFinalizados>=0?'variation-pos':'variation-neg'}">Δ mês ant.: ${fmtPct(deltaFinalizados)}</span>`}</div></div>
+      <div class="kpi kpi-drill" data-kpi="score"><div class="label">Score médio</div><div class="value${avgScoreNum!==null ? ' ' + getClasseScore(avgScoreNum) : ''}">${fmtScore(avgScoreNum)}</div><div class="sub">${deltaScore===null?'':`<span class="${deltaScore>=0?'variation-pos':'variation-neg'}">Δ mês ant.: ${deltaScore>=0?'+':''}${deltaScore.toFixed(2)}</span>`}</div></div>
       <div class="kpi kpi-drill" data-kpi="produtividade"><div class="label">Produtividade</div><div class="value">${produtividade===null?'—':(produtividade*100).toFixed(1)+'%'}</div><div class="sub">Finalizados / Assumidos</div></div>
       <div class="kpi kpi-drill" data-kpi="atendentes"><div class="label">Atendentes</div><div class="value">${fmtInt(atendentesNoEscopo)}</div><div class="sub">no escopo</div></div>
       <div class="kpi kpi-drill" data-kpi="setores"><div class="label">Setores</div><div class="value">${fmtInt(setoresNoEscopo)}</div><div class="sub">no escopo</div></div>
