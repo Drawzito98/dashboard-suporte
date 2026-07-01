@@ -82,9 +82,9 @@ module.exports = async (req, res) => {
       return res.status(response.ok ? 200 : 400).json(data);
     }
 
-    // PUT/PATCH: atualizar senha e/ou cargo
+    // PUT/PATCH: atualizar senha, cargo e/ou status
     if (req.method === 'PUT' || req.method === 'PATCH') {
-      const { id, password, role } = req.body || {};
+      const { id, password, role, ativo } = req.body || {};
       if (!id) {
         return res.status(400).json({ error: 'ID do usuário obrigatório' });
       }
@@ -92,9 +92,27 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
       }
 
-      const body = {};
+      // Busca metadados atuais para merge
+      let currentMeta = {};
+      try {
+        const currentRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
+          headers: {
+            'apikey': SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${SERVICE_ROLE_KEY}`
+          }
+        });
+        if (currentRes.ok) {
+          const currentData = await currentRes.json();
+          currentMeta = currentData.user_metadata || {};
+        }
+      } catch {}
+
+      const newMeta = { ...currentMeta };
+      if (role !== undefined) newMeta.role = role;
+      if (ativo !== undefined) newMeta.ativo = ativo;
+
+      const body = { user_metadata: newMeta };
       if (password) body.password = password;
-      if (role) body.user_metadata = { role };
 
       const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
         method: 'PUT',

@@ -2477,6 +2477,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           });
         } catch (e) {}
       }
+      // Bloqueio: usuário não-admin com ativo=false não acessa o app
+      if (user.user_metadata?.ativo === false && role !== 'admin') {
+        const appScreen = document.getElementById('appScreen');
+        if (appScreen) {
+          appScreen.style.display = 'none';
+          const blocked = document.createElement('div');
+          blocked.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center';
+          blocked.innerHTML = '<div style=max-width:400px><h1 style=font-size:24px;margin-bottom:12px>Acesso bloqueado</h1><p style=color:var(--text-secondary);font-size:14px>Seu acesso foi temporariamente desativado pelo administrador. Tente novamente mais tarde.</p></div>';
+          document.body.appendChild(blocked);
+        }
+        return;
+      }
       // Mostra usuário logado na topbar
       const display = document.getElementById('currentUserDisplay');
       if (display) {

@@ -64,6 +64,7 @@ async function carregarUsuarios() {
             <button class="btn-small btn-reset-pwd" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔑 Senha</button>
             ${!isSelf ? `<button class="btn-small btn-toggle-role" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">${role === 'admin' ? '👁️ Tornar viewer' : role === 'colaborador' ? '👁️ Tornar viewer' : '👑 Tornar admin'}</button>` : ''}
             ${!isSelf && role !== 'colaborador' ? `<button class="btn-small btn-toggle-colab" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">📬 Tornar colaborador</button>` : ''}
+            ${!isSelf ? `<button class="btn-small btn-toggle-block" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-ativo="${u.user_metadata?.ativo !== false}" style="font-size:11px">${u.user_metadata?.ativo === false ? '🔓 Desbloquear' : '🔒 Bloquear'}</button>` : ''}
             ${!isSelf ? `<button class="btn-small btn-delete-user" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="color:var(--danger);font-size:11px">🗑️</button>` : ''}
           </td>
         </tr>`;
@@ -120,6 +121,31 @@ async function carregarUsuarios() {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
           body: JSON.stringify({ id, role: newRole })
+        });
+        if (res.ok) {
+          carregarUsuarios();
+        } else {
+          const d = await res.json();
+          alert('Erro: ' + (d.error || 'desconhecido'));
+          btn.disabled = false;
+        }
+      });
+    });
+
+    // Block/Unblock
+    container.querySelectorAll('.btn-toggle-block').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!requireAdmin()) return;
+        const id = btn.dataset.id;
+        const email = btn.dataset.email;
+        const isAtivo = btn.dataset.ativo === 'true';
+        const acao = isAtivo ? 'BLOQUEAR' : 'DESBLOQUEAR';
+        if (!confirm(`${acao} o usuário "${email}"? ${isAtivo ? 'Ele não conseguirá acessar o app até ser desbloqueado.' : 'Ele poderá acessar o app novamente.'}`)) return;
+        btn.disabled = true;
+        const res = await fetch('/api/users', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
+          body: JSON.stringify({ id, ativo: !isAtivo })
         });
         if (res.ok) {
           carregarUsuarios();
