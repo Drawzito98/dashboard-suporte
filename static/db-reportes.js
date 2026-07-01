@@ -73,6 +73,21 @@ async function dbReportesAtribuir(id, userId) {
   return dbReportesAtualizar(id, { user_id: userId });
 }
 
+async function dbReportesDeletar(id) {
+  if (!sbClient || !id) return false;
+  try {
+    const { error } = await sbClient
+      .from('reportes')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    return true;
+  } catch (e) {
+    console.error('[db-reportes] Erro ao deletar:', e);
+    return false;
+  }
+}
+
 async function dbReportesNaoLidas() {
   if (!sbClient) return 0;
   try {

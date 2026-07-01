@@ -161,6 +161,10 @@ async function carregarReportes() {
                 <select class="reporte-assign-select" data-id="${r.id}" style="font-size:11px;padding:2px 4px;max-width:150px">
                   <option value="">Atribuir para...</option>
                 </select>
+                <button class="btn-small reporte-deletar-btn" data-id="${r.id}" type="button" style="font-size:11px;color:var(--danger-text,#991b1b)" title="Excluir mensagem">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  Excluir
+                </button>
               ` : ''}
             </div>
           </div>
@@ -237,6 +241,23 @@ async function carregarReportes() {
         });
       });
     }
+
+    // Deletar
+    lista.querySelectorAll('.reporte-deletar-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const card = btn.closest('.reporte-card');
+        const assunto = card?.querySelector('.reporte-assunto')?.textContent || 'esta mensagem';
+        if (!confirm(`Tem certeza que deseja excluir "${assunto}"? Esta ação não pode ser desfeita.`)) return;
+        const ok = await dbReportesDeletar(id);
+        if (ok) {
+          showToast('Mensagem excluída!', 'success');
+          carregarReportes();
+        } else {
+          showToast('Erro ao excluir mensagem.', 'error');
+        }
+      });
+    });
   }
 }
 
