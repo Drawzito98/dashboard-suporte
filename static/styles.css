@@ -725,8 +725,24 @@ html[data-theme="dark"] tbody tr:hover td:last-child { background: var(--bg-subt
 .preview .table-wrap table td:last-child {
   position: sticky; right: 0;
   z-index: 3;
-  background: var(--bg-surface);
+  background: var(--bg-surface) !important;
   box-shadow: -6px 0 10px -8px rgba(0,0,0,0.08);
+}
+.preview .table-wrap table th:last-child {
+  z-index: 4;
+}
+.preview .table-wrap table tr.highlight-row td:last-child {
+  background: var(--bg-surface) !important;
+  box-shadow: inset 3px 0 0 var(--success), -6px 0 10px -8px rgba(0,0,0,0.08);
+}
+.preview .table-wrap table tr.attention-row td:last-child {
+  background: var(--bg-surface) !important;
+  box-shadow: inset 3px 0 0 var(--danger), -6px 0 10px -8px rgba(0,0,0,0.08);
+}
+
+html[data-theme="dark"] .preview .table-wrap table th:last-child,
+html[data-theme="dark"] .preview .table-wrap table td:last-child {
+  box-shadow: -6px 0 10px -8px rgba(0,0,0,0.3);
 }
 .preview .table-wrap table th:last-child {
   background: var(--bg-subtle);
