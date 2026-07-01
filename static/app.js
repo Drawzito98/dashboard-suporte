@@ -2479,11 +2479,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       // Bloqueio: usuário não-admin com ativo=false não acessa o app
       if (user.user_metadata?.ativo === false && role !== 'admin') {
+        // Se já viu a tela de erro antes, desloga e volta pro login
+        if (sessionStorage.getItem('blocked_error_shown')) {
+          await sbClient.auth.signOut();
+          sessionStorage.removeItem('blocked_error_shown');
+          window.location.reload();
+          return;
+        }
+        sessionStorage.setItem('blocked_error_shown', '1');
         const appScreen = document.getElementById('appScreen');
         if (appScreen) {
           appScreen.style.display = 'none';
           const authScreen = document.getElementById('authScreen');
           if (authScreen) authScreen.style.display = 'none';
+          document.getElementById('authLoading')?.classList.add('hidden');
           const blocked = document.createElement('div');
           blocked.id = 'blockedScreen';
           blocked.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center;background:var(--bg)';
@@ -2513,13 +2522,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
               if (error) throw error;
               status.style.cssText = 'margin-top:12px;font-size:13px;display:block;padding:10px;background:var(--success-bg,#d1fae5);color:var(--success-text,#065f46);border-radius:8px';
-              status.textContent = 'Solicitação enviada! Aguarde o administrador liberar seu acesso.';
+              status.textContent = 'Relato enviado! Você será redirecionado.';
               btn.style.display = 'none';
+              setTimeout(async () => {
+                await sbClient.auth.signOut();
+                sessionStorage.removeItem('blocked_error_shown');
+                window.location.reload();
+              }, 2000);
             } catch (e) {
               status.style.cssText = 'margin-top:12px;font-size:13px;display:block;padding:10px;background:var(--danger-bg,#fee2e2);color:var(--danger-text,#991b1b);border-radius:8px';
               status.textContent = 'Erro ao enviar: ' + (e.message || 'tente novamente.');
               btn.disabled = false;
-              btn.textContent = 'Solicitar liberação';
+              btn.textContent = 'Reportar erro ao administrador';
             }
           });
         }
