@@ -2499,43 +2499,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           blocked.innerHTML = `<div style="max-width:420px">
             <div style="font-size:48px;margin-bottom:16px">⚠️</div>
             <h1 style="font-size:22px;margin-bottom:8px">Erro ao carregar o painel</h1>
-            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:24px">Ocorreu um erro inesperado ao carregar o Painel de Suporte. Tente novamente mais tarde ou reporte o erro ao administrador.</p>
-            <button id="solicitarDesbloqueioBtn" class="btn-primary" type="button" style="width:100%;justify-content:center">Reportar erro ao administrador</button>
-            <div id="solicitarDesbloqueioStatus" style="margin-top:12px;font-size:13px;display:none"></div>
+            <p style="color:var(--text-secondary);font-size:14px">Ocorreu um erro inesperado. Tente novamente mais tarde.</p>
           </div>`;
           document.body.appendChild(blocked);
-
-          document.getElementById('solicitarDesbloqueioBtn').addEventListener('click', async () => {
-            const btn = document.getElementById('solicitarDesbloqueioBtn');
-            const status = document.getElementById('solicitarDesbloqueioStatus');
-            btn.disabled = true;
-            btn.textContent = 'Enviando...';
-            status.style.display = 'none';
-            try {
-              const { error } = await sbClient
-                .from('reportes')
-                .insert({
-                  nome: user.email || 'Desconhecido',
-                  email: user.email || '',
-                  assunto: 'Solicitação de desbloqueio',
-                  mensagem: `Usuário ${user.email} está tentando acessar o sistema e está bloqueado.`
-                });
-              if (error) throw error;
-              status.style.cssText = 'margin-top:12px;font-size:13px;display:block;padding:10px;background:var(--success-bg,#d1fae5);color:var(--success-text,#065f46);border-radius:8px';
-              status.textContent = 'Relato enviado! Você será redirecionado.';
-              btn.style.display = 'none';
-              setTimeout(async () => {
-                await sbClient.auth.signOut();
-                sessionStorage.removeItem('blocked_error_shown');
-                window.location.reload();
-              }, 2000);
-            } catch (e) {
-              status.style.cssText = 'margin-top:12px;font-size:13px;display:block;padding:10px;background:var(--danger-bg,#fee2e2);color:var(--danger-text,#991b1b);border-radius:8px';
-              status.textContent = 'Erro ao enviar: ' + (e.message || 'tente novamente.');
-              btn.disabled = false;
-              btn.textContent = 'Reportar erro ao administrador';
-            }
-          });
         }
         return;
       }
