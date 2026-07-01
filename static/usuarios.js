@@ -323,12 +323,18 @@ function renderUsuariosAba() {
   document.getElementById('novoUserCsvColab')?.addEventListener('change', () => {
     const nome = document.getElementById('novoUserCsvColab').value;
     if (!nome) return;
-    const emailInput = document.getElementById('novoUserEmail');
-    if (emailInput && !emailInput.value) {
-      const sugerido = nome.toLowerCase().replace(/\s+/g, '.').normalize('NFD').replace(/[\u0300-\u036f]/g, '') + '@exemplo.com';
-      emailInput.value = sugerido;
-      emailInput.placeholder = 'email@exemplo.com';
-    }
+    // Busca email do cadastro de Colaboradores
+    try {
+      const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+      const info = colabInfo[nome];
+      const emailInput = document.getElementById('novoUserEmail');
+      if (info?.email && emailInput && !emailInput.value) {
+        emailInput.value = info.email;
+      } else if (emailInput && !emailInput.value) {
+        const sugerido = nome.toLowerCase().replace(/\s+/g, '.').normalize('NFD').replace(/[\u0300-\u036f]/g, '') + '@exemplo.com';
+        emailInput.value = sugerido;
+      }
+    } catch {}
     const pwdInput = document.getElementById('novoUserPassword');
     if (pwdInput && !pwdInput.value) {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
