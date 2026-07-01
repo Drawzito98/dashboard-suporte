@@ -26,7 +26,7 @@ button svg, .btn-small svg, .btn-primary svg {
   /* Texto */
   --text-strong:   #0f172a;
   --text-primary:  #1f2937;
-  --text-secondary:#475569;
+  --text-secondary:#334155;
   --text-muted:    #94a3b8;
 
   /* Bordas */
@@ -1017,7 +1017,7 @@ html[data-theme="dark"] .loading-overlay { background: rgba(15, 23, 42, 0.7); }
   white-space: nowrap;
   vertical-align: middle;
 }
-.cell-atendente { white-space: nowrap; min-width: 180px; line-height: 1.6; }
+.cell-atendente { white-space: nowrap; min-width: 180px; line-height: 1.6; color: var(--text-strong); }
 .cell-obs { min-width: 260px; max-width: 400px; white-space: normal; }
 .badge-ferias { background: var(--info-soft);    color: var(--info); }
 .badge-multi  { background: var(--warning-soft); color: var(--warning); }
