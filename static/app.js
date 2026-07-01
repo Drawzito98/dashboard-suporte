@@ -2761,6 +2761,8 @@ if (!rawRecords || !rawRecords.length) {
   const cleanDupBtn = document.getElementById('cleanDupBtn');
   if (cleanDupBtn) cleanDupBtn.addEventListener('click', () => { if (!requireAdmin()) return; if (!confirm('Remover registros duplicados? Esta ação não pode ser desfeita.')) return; cleanDuplicates(); });
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportCsv(); });
+  const backupCsvBtn = document.getElementById('backupCsvBtn');
+  if (backupCsvBtn) backupCsvBtn.addEventListener('click', () => { backupCsv(); });
   document.getElementById('gerarRelatorioBtn')?.addEventListener('click', () => {
     const sel = document.getElementById('reportColabSelect');
     if (!sel || !sel.value) { showToast('Selecione um colaborador.', 'error', 'Relatório'); return; }
