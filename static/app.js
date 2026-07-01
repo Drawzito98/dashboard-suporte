@@ -948,39 +948,6 @@ function renderMonthPickerOptions() {
   syncMonthPickerVisibility();
 }
 
-function renderColabMonthPicker() {
-  const checklist = document.getElementById('colabMonthChecklist');
-  const chips = document.getElementById('colabMonthChips');
-  if (!checklist) return;
-  const csvNome = document.body.dataset.colabCsvNome || '';
-  const meses = uniqueSorted(rawRecords.filter(r => String(r['Atendente']) === csvNome).map(r => r['Mês']));
-  checklist.innerHTML = meses.map(m => `
-<label class="month-option" style="font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg-surface);cursor:pointer;display:flex;align-items:center;gap:3px;transition:all .15s;${selectedMonths.includes(m) ? 'background:var(--primary);color:#fff;border-color:var(--primary)' : ''}">
-  <input type="checkbox" class="month-checkbox" value="${escapeHtml(m)}" ${selectedMonths.includes(m) ? 'checked' : ''} style="display:none"/>
-  <span>${escapeHtml(m)}</span>
-</label>`).join('');
-  checklist.querySelectorAll('.month-option').forEach(el => {
-    el.addEventListener('click', () => {
-      const chk = el.querySelector('input');
-      if (!chk) return;
-      chk.checked = !chk.checked;
-      const val = String(chk.value);
-      if (chk.checked) {
-        if (!selectedMonths.includes(val)) selectedMonths.push(val);
-        el.style.cssText = 'font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid var(--primary);background:var(--primary);color:#fff;cursor:pointer;display:flex;align-items:center;gap:3px';
-      } else {
-        el.style.cssText = 'font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg-surface);cursor:pointer;display:flex;align-items:center;gap:3px';
-      }
-      selectedMonths.sort();
-      updateFilterOptions();
-      updateView();
-    });
-  });
-  if (chips) {
-    chips.innerHTML = selectedMonths.slice().sort().map(m => `<span class="chip" style="font-size:11px;padding:2px 8px">${escapeHtml(m)}</span>`).join(' ');
-  }
-}
-
 function buildAliasMap(names) {
   const uniq = Array.from(new Set((names || []).filter(Boolean).map(n => String(n)))).sort((a,b) => a.localeCompare(b, 'pt-BR'));
   const map = new Map();
@@ -2856,14 +2823,11 @@ if (!rawRecords || !rawRecords.length) {
               <div class="global-filter-row">
                 <div class="global-filter-field" style="min-width:auto">
                   <span>Período</span>
-                  <div style="display:flex;flex-wrap:wrap;gap:var(--s-1);align-items:center">
-                    <div id="colabMonthChecklist" class="month-checklist" style="position:static;display:flex;flex-wrap:wrap;gap:4px;box-shadow:none;border:none;background:transparent;padding:0"></div>
-                    <button class="btn-small" id="colabSelectAllMonthsBtn" type="button" style="font-size:11px">Todos</button>
-                    <button class="btn-small" id="colabClearMonthsBtn" type="button" style="font-size:11px">Limpar</button>
-                  </div>
+                  <select id="colabPeriodSelect" style="min-width:160px">
+                    <option value="all">Todos os períodos</option>
+                  </select>
                 </div>
               </div>
-              <div id="colabMonthChips" class="chips" style="display:flex;flex-wrap:wrap;gap:4px"></div>
             </div>
           `;
         }
@@ -2887,19 +2851,21 @@ if (!rawRecords || !rawRecords.length) {
               }, 500);
             }
             // Inicializa seletor de período
-            renderColabMonthPicker();
-            document.getElementById('colabSelectAllMonthsBtn')?.addEventListener('click', () => {
-              selectedMonths = uniqueSorted(rawRecords.filter(r => String(r['Atendente']) === csvNome).map(r => r['Mês']));
-              renderColabMonthPicker();
-              updateFilterOptions();
-              updateView();
-            });
-            document.getElementById('colabClearMonthsBtn')?.addEventListener('click', () => {
-              selectedMonths = [];
-              renderColabMonthPicker();
-              updateFilterOptions();
-              updateView();
-            });
+            const periodSelect = document.getElementById('colabPeriodSelect');
+            if (periodSelect) {
+              const meses = uniqueSorted(rawRecords.filter(r => String(r['Atendente']) === csvNome).map(r => r['Mês']));
+              periodSelect.innerHTML = '<option value="all">Todos os períodos</option>' + meses.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+              periodSelect.addEventListener('change', () => {
+                const val = periodSelect.value;
+                if (val === 'all') {
+                  selectedMonths = [];
+                } else {
+                  selectedMonths = [val];
+                }
+                updateFilterOptions();
+                updateView();
+              });
+            }
             updateView();
             const dashboardBtn = tabBar?.querySelector('.tab-btn[data-tab="dashboard"]');
             if (dashboardBtn) dashboardBtn.click();
