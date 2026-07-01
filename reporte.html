@@ -297,6 +297,13 @@
         document.getElementById('reporteFilePreview').style.display = 'none';
         document.getElementById('reporteFileLabel').textContent = 'Clique para selecionar (PNG, JPG)';
         selectedFile = null;
+
+        // Notificação por email (opcional, não bloqueia)
+        fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, email, assunto, mensagem })
+        }).catch(() => {});
       } catch (err) {
         errorEl.textContent = 'Erro ao enviar: ' + (err.message || 'tente novamente mais tarde.');
         errorEl.style.display = 'block';

@@ -29,6 +29,19 @@ function reporteStatusBadge(r) {
   return '<span class="role-badge" style="background:var(--danger-bg,#fee2e2);color:var(--danger-text,#991b1b)">Não lido</span>';
 }
 
+function reporteCategoriaBadge(r) {
+  if (!r.categoria) return '';
+  const cores = { suporte: { bg: '#dbeafe', text: '#1e40af' }, feedback: { bg: '#d1fae5', text: '#065f46' }, bug: { bg: '#fee2e2', text: '#991b1b' }, outro: { bg: '#f3f4f6', text: '#6b7280' } };
+  const c = cores[r.categoria] || cores.outro;
+  return `<span class="role-badge" style="background:${c.bg};color:${c.text}">${r.categoria}</span>`;
+}
+
+function reportePrioridadeBadge(r) {
+  const cores = { alta: { bg: '#fee2e2', text: '#991b1b' }, media: { bg: '#fef3c7', text: '#92400e' }, baixa: { bg: '#f3f4f6', text: '#6b7280' } };
+  const c = cores[r.prioridade] || cores.media;
+  return `<span class="role-badge" style="background:${c.bg};color:${c.text}">${r.prioridade || 'media'}</span>`;
+}
+
 function renderReportes() {
   const container = getReportesContainer();
   if (!container) return;
@@ -46,6 +59,10 @@ function renderReportes() {
         </p>
       </div>
       <div style="display:flex;gap:var(--s-2);align-items:center">
+        <button class="btn-small" id="exportarCsvBtn" type="button" title="Exportar CSV">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV
+        </button>
         <button class="btn-small" id="refreshReportesBtn" type="button" title="Atualizar lista">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           Atualizar
@@ -62,10 +79,31 @@ function renderReportes() {
         ` : ''}
       </div>
     </div>
+    <div class="reportes-filters" style="display:flex;gap:var(--s-2);flex-wrap:wrap;margin-bottom:var(--s-3);align-items:center">
+      <input id="reportesSearchInput" type="text" placeholder="Buscar por assunto, nome, email..." style="flex:1;min-width:180px;padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-input);color:var(--text)">
+      <select id="reportesFilterCategoria" style="padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-input);color:var(--text)">
+        <option value="">Todas categorias</option>
+        <option value="suporte">Suporte</option>
+        <option value="feedback">Feedback</option>
+        <option value="bug">Bug</option>
+        <option value="outro">Outro</option>
+      </select>
+      <select id="reportesFilterPrioridade" style="padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-input);color:var(--text)">
+        <option value="">Todas prioridades</option>
+        <option value="alta">Alta</option>
+        <option value="media">Média</option>
+        <option value="baixa">Baixa</option>
+      </select>
+    </div>
     <div id="reportesLista"></div>
   `;
 
   document.getElementById('refreshReportesBtn')?.addEventListener('click', carregarReportes);
+  document.getElementById('exportarCsvBtn')?.addEventListener('click', exportarReportesCsv);
+
+  document.getElementById('reportesSearchInput')?.addEventListener('input', carregarReportes);
+  document.getElementById('reportesFilterCategoria')?.addEventListener('change', carregarReportes);
+  document.getElementById('reportesFilterPrioridade')?.addEventListener('change', carregarReportes);
 
   if (isAdminUser) {
     document.getElementById('gerarLinkReporteBtn')?.addEventListener('click', mostrarModalLink);
@@ -114,8 +152,27 @@ async function carregarReportes() {
     return;
   }
 
-  // Agrupa: não lidos primeiro, depois por data
-  const ordenados = [...visiveis].sort((a, b) => {
+  // Aplicar filtros antes de ordenar
+  let filtrados = visiveis;
+  const termo = document.getElementById('reportesSearchInput')?.value?.toLowerCase() || '';
+  const catFiltro = document.getElementById('reportesFilterCategoria')?.value || '';
+  const priFiltro = document.getElementById('reportesFilterPrioridade')?.value || '';
+  if (termo) filtrados = filtrados.filter(r =>
+    (r.assunto || '').toLowerCase().includes(termo) ||
+    (r.nome || '').toLowerCase().includes(termo) ||
+    (r.email || '').toLowerCase().includes(termo) ||
+    (r.mensagem || '').toLowerCase().includes(termo)
+  );
+  if (catFiltro) filtrados = filtrados.filter(r => r.categoria === catFiltro);
+  if (priFiltro) filtrados = filtrados.filter(r => (r.prioridade || 'media') === priFiltro);
+
+  if (!filtrados.length) {
+    lista.innerHTML = `<div class="empty-state" style="margin-top:var(--s-4)"><div class="empty-title">Nenhum resultado</div><div class="empty-sub">Tente ajustar os filtros.</div></div>`;
+    return;
+  }
+
+  // Ordena: não lidos primeiro, depois por data
+  const ordenados = [...filtrados].sort((a, b) => {
     if (a.lida !== b.lida) return a.lida ? 1 : -1;
     return new Date(b.created_at) - new Date(a.created_at);
   });
@@ -126,6 +183,10 @@ async function carregarReportes() {
       <div class="reporte-card ${!r.lida ? 'reporte-card-unread' : ''}" data-id="${r.id}">
         <div class="reporte-card-header">
           <div class="reporte-card-info">
+            <div style="display:flex;gap:var(--s-1);flex-wrap:wrap;margin-bottom:2px">
+              ${reporteCategoriaBadge(r)}
+              ${reportePrioridadeBadge(r)}
+            </div>
             <strong class="reporte-assunto">${escHtml(r.assunto)}</strong>
             <span class="reporte-meta">
               ${escHtml(r.nome)} &lt;${escHtml(r.email)}&gt;
@@ -154,10 +215,22 @@ async function carregarReportes() {
           ` : ''}
           <div class="reporte-card-footer">
             <span style="font-size:11px;color:var(--text-muted)">${formatReporteDate(r.created_at)}</span>
-            <div style="display:flex;gap:var(--s-2);flex-wrap:wrap">
+            <div style="display:flex;gap:var(--s-2);flex-wrap:wrap;align-items:center">
               ${!r.lida ? `<button class="btn-small reporte-marcar-lida" data-id="${r.id}" type="button" style="font-size:11px">Marcar como lida</button>` : ''}
               ${!r.respondida ? `<button class="btn-small reporte-responder-btn" data-id="${r.id}" type="button" style="font-size:11px">Responder</button>` : ''}
               ${isAdminUser ? `
+                <select class="reporte-categoria-select" data-id="${r.id}" style="font-size:11px;padding:2px 4px">
+                  <option value="">Sem cat.</option>
+                  <option value="suporte" ${r.categoria === 'suporte' ? 'selected' : ''}>Suporte</option>
+                  <option value="feedback" ${r.categoria === 'feedback' ? 'selected' : ''}>Feedback</option>
+                  <option value="bug" ${r.categoria === 'bug' ? 'selected' : ''}>Bug</option>
+                  <option value="outro" ${r.categoria === 'outro' ? 'selected' : ''}>Outro</option>
+                </select>
+                <select class="reporte-prioridade-select" data-id="${r.id}" style="font-size:11px;padding:2px 4px">
+                  <option value="baixa" ${(r.prioridade||'media') === 'baixa' ? 'selected' : ''}>Baixa</option>
+                  <option value="media" ${(r.prioridade||'media') === 'media' ? 'selected' : ''}>Média</option>
+                  <option value="alta" ${(r.prioridade||'media') === 'alta' ? 'selected' : ''}>Alta</option>
+                </select>
                 <select class="reporte-assign-select" data-id="${r.id}" style="font-size:11px;padding:2px 4px;max-width:150px">
                   <option value="">Atribuir para...</option>
                 </select>
@@ -241,6 +314,24 @@ async function carregarReportes() {
         });
       });
     }
+
+    // Categoria select
+    lista.querySelectorAll('.reporte-categoria-select').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        await dbReportesAtualizar(sel.dataset.id, { categoria: sel.value || null });
+        showToast('Categoria atualizada!', 'success');
+        carregarReportes();
+      });
+    });
+
+    // Prioridade select
+    lista.querySelectorAll('.reporte-prioridade-select').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        await dbReportesAtualizar(sel.dataset.id, { prioridade: sel.value });
+        showToast('Prioridade atualizada!', 'success');
+        carregarReportes();
+      });
+    });
 
     // Deletar
     lista.querySelectorAll('.reporte-deletar-btn').forEach(btn => {
@@ -505,6 +596,29 @@ function escHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+async function exportarReportesCsv() {
+  const reportes = await dbReportesListar();
+  if (!reportes.length) { showToast('Nenhum reporte para exportar.', 'error'); return; }
+  const headers = ['ID', 'Nome', 'Email', 'Assunto', 'Mensagem', 'Categoria', 'Prioridade', 'Data', 'Criado em', 'Lida', 'Respondida'];
+  const rows = reportes.map(r => [
+    r.id, r.nome, r.email, r.assunto, (r.mensagem||'').replace(/"/g, '""'),
+    r.categoria || '', r.prioridade || 'media', r.data || '',
+    formatReporteDate(r.created_at), r.lida ? 'Sim' : 'Não', r.respondida ? 'Sim' : 'Não'
+  ]);
+  const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `reportes_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('CSV exportado com sucesso!', 'success');
 }
 
 // Hook chamado pelo app.js quando a aba é ativada
