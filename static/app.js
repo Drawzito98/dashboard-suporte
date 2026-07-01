@@ -1595,10 +1595,13 @@ function renderPreviewDisplay(rows) {
     const thClass = k === 'Observações' ? ' class="cell-obs"' : '';
     headerHtml += `<th${thClass}>${escapeHtml(k)}</th>`;
     if (k === 'Finalizados') {
-      headerHtml += '<th>Var.%</th><th>📈</th>';
+      headerHtml += '<th>Var.%</th>';
     }
     if (k === 'SCORE') {
       headerHtml += '<th>Var.%</th>';
+    }
+    if (k === 'Total') {
+      headerHtml += '<th>📈</th>';
     }
   });
   headerHtml += '<th>Status</th>';
@@ -1637,8 +1640,6 @@ function renderPreviewDisplay(rows) {
         // Variation for Finalizados
         const varFinal = prevFinal !== null ? computeVariation(curFinal, prevFinal) : null;
         rowHtml += `<td class="cell-edit" style="text-align:center">${variationHTML(varFinal)}</td>`;
-        // Sparkline
-        rowHtml += `<td class="sparkline-cell">${colabSparkline(r['Atendente'])}</td>`;
         return;
       }
       if (k === 'Assumidos' || k === 'Transferidos') {
@@ -1662,6 +1663,9 @@ function renderPreviewDisplay(rows) {
         return;
       }
       rowHtml += `<td contenteditable="${isAdmin() && !(k === 'Atendente' && presentationMode)}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit">${escapeHtml(shown)}</td>`;
+      if (k === 'Total') {
+        rowHtml += `<td class="sparkline-cell">${colabSparkline(r['Atendente'])}</td>`;
+      }
     });
     html.push('<tr>' + rowHtml + `<td style="white-space:nowrap"><span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span> <button class="btn-small btn-delete" data-idx="${ridx}" title="Remover" aria-label="Remover">🗑️</button></td>` + '</tr>');
   });
