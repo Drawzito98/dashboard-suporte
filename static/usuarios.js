@@ -312,19 +312,6 @@ function renderUsuariosAba() {
   carregarUsuarios();
 }
 
-// Hook into tab switching
-document.addEventListener('DOMContentLoaded', () => {
-  const observer = new MutationObserver(() => {
-    const tab = document.querySelector('#tab-usuarios');
-    if (tab && tab.classList.contains('active') && !tab.dataset.rendered) {
-      tab.dataset.rendered = '1';
-      renderUsuariosAba();
-    }
-  });
-  const tabBar = document.getElementById('tabBar');
-  if (tabBar) observer.observe(tabBar, { attributes: true, subtree: true });
-
-  document.getElementById('refreshUsuariosBtn')?.addEventListener('click', () => {
-    carregarUsuarios();
-  });
-});
+function onUsuariosTabActivated() {
+  renderUsuariosAba();
+}

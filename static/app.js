@@ -2718,6 +2718,9 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'colaboradores' && typeof onColaboradoresTabActivated === 'function') {
         onColaboradoresTabActivated();
       }
+      if (tab === 'usuarios' && typeof onUsuariosTabActivated === 'function') {
+        onUsuariosTabActivated();
+      }
       if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') {
         onRelatorioSetorialTabActivated();
       }
