@@ -304,7 +304,7 @@ function renderUsuariosAba() {
         const currentVal = select.value;
         select.innerHTML = '<option value="">Selecione...</option>';
         try {
-          const nomes = [...new Set((window.rawRecords || []).filter(r => r && r['Atendente'] && typeof isAggregateName === 'function' && !isAggregateName(r['Atendente']) && typeof isColabActive === 'function' && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
+          const nomes = [...new Set((typeof rawRecords !== 'undefined' ? rawRecords : []).filter(r => r && r['Atendente'] && typeof isAggregateName === 'function' && !isAggregateName(r['Atendente']) && typeof isColabActive === 'function' && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
           nomes.forEach(n => {
             const opt = document.createElement('option');
             opt.value = n;
