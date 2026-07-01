@@ -681,19 +681,19 @@ canvas { max-height: 460px; width: 100%; display: block; }
   border: 1px solid var(--border);
   padding: 2px;
 }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 th, td {
-  padding: 12px 14px; text-align: left; vertical-align: middle;
+  padding: 8px 12px; text-align: left; vertical-align: middle;
   white-space: nowrap; border-bottom: 1px solid var(--border);
 }
 body.table-compact th,
 body.table-compact td {
-  padding: 6px 10px;
-  font-size: 12px;
+  padding: 5px 8px;
+  font-size: 11.5px;
 }
 body.table-compact thead th {
   font-size: 10px;
-  padding: 5px 10px;
+  padding: 4px 8px;
 }
 body.table-compact .cell-atendente { min-width: 140px; }
 body.table-compact .ranking-table td {
@@ -725,7 +725,24 @@ html[data-theme="dark"] tbody tr:hover td:last-child { background: var(--bg-subt
 .preview .table-wrap table td:last-child {
   position: sticky; right: 0;
   z-index: 3;
+  background: var(--bg-surface);
+  box-shadow: -6px 0 10px -8px rgba(0,0,0,0.08);
 }
+.preview .table-wrap table tbody tr:nth-child(even) td:last-child {
+  background: var(--bg-inset);
+}
+.preview .table-wrap table tbody tr:hover td:last-child {
+  background: var(--bg-subtle);
+}
+html[data-theme="dark"] .preview .table-wrap table th:last-child,
+html[data-theme="dark"] .preview .table-wrap table td:last-child {
+  box-shadow: -6px 0 10px -8px rgba(0,0,0,0.3);
+}
+.preview .table-wrap table th:last-child {
+  background: var(--bg-subtle);
+  z-index: 4;
+}
+
 tbody tr td:last-child { background: var(--bg-surface); }
 tbody tr:nth-child(even) td:last-child { background: var(--bg-inset); }
 tbody tr:hover td:last-child { background: var(--bg-subtle); }
