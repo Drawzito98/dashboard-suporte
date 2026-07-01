@@ -2810,8 +2810,11 @@ if (!rawRecords || !rawRecords.length) {
   try {
     const isColab = document.body.dataset.role === 'colaborador';
     if (isColab) {
-      const btn = tabBar && tabBar.querySelector('.tab-btn[data-tab="reportes"]');
-      if (btn) btn.click();
+      document.getElementById('appScreen')?.querySelector('.app')?.style.setProperty('display', 'none');
+      const msg = document.createElement('div');
+      msg.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:80vh;padding:20px;text-align:center';
+      msg.innerHTML = '<div style="max-width:400px"><h2 style="font-size:20px;margin-bottom:8px">Acesso restrito ao painel</h2><p style="color:var(--text-secondary);font-size:14px">Use o formulário público em <a href="/reportlider" style="color:var(--primary)">/reportlider</a> para enviar suas mensagens.</p></div>';
+      document.getElementById('appScreen')?.appendChild(msg);
     } else {
       const savedTab = localStorage.getItem('sistema_active_tab');
       if (savedTab && savedTab !== 'dashboard') {
