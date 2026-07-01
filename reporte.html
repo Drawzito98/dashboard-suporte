@@ -286,9 +286,9 @@
           imagem_url = publicUrl;
         }
 
-        const { data, error } = await sbClient
+        const { data: resultData, error } = await sbClient
           .from('reportes')
-          .insert({ nome, email, data, assunto, mensagem, imagem_url })
+          .insert({ nome, email, data: data, assunto, mensagem, imagem_url })
           .select();
 
         if (error) throw error;
