@@ -2934,6 +2934,11 @@ if (!rawRecords || !rawRecords.length) {
               // Marca inicialmente todos
               checklist.querySelectorAll('.colab-month-cb').forEach(cb => { cb.checked = true; });
               selectedMonths = meses.slice();
+              // Sincroniza globalFilters para syncGlobalState não resetar
+              if (typeof globalFilters !== 'undefined' && globalFilters) {
+                globalFilters.mesesSelecionados = meses.slice();
+                globalFilters.periodo = '__multi__';
+              }
             }
             document.getElementById('colabSelectAllBtn')?.addEventListener('click', () => {
               const meses = uniqueSorted(rawRecords.filter(r => String(r['Atendente']) === csvNome).map(r => r['Mês']));
@@ -2949,6 +2954,11 @@ if (!rawRecords || !rawRecords.length) {
               document.querySelectorAll('.colab-month-cb:checked').forEach(cb => {
                 selectedMonths.push(cb.value);
               });
+              // Sincroniza globalFilters para syncGlobalState não resetar
+              if (typeof globalFilters !== 'undefined' && globalFilters) {
+                globalFilters.mesesSelecionados = selectedMonths.slice();
+                globalFilters.periodo = '__multi__';
+              }
               updateView();
             });
             // Trava filtros no globalFilters para syncGlobalState não resetar
