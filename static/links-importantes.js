@@ -36,9 +36,11 @@ async function dbLinksListar() {
 async function dbLinksInserir({ nome, url }) {
   if (!sbClient) return null;
   try {
+    const uid = (await sbClient.auth.getUser())?.data?.user?.id;
+    if (!uid) return null;
     const { data, error } = await sbClient
       .from('links_importantes')
-      .insert({ nome, url })
+      .insert({ nome, url, user_id: uid })
       .select();
     if (error) throw error;
     if (data?.[0]) {
