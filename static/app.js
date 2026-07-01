@@ -2482,10 +2482,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         const appScreen = document.getElementById('appScreen');
         if (appScreen) {
           appScreen.style.display = 'none';
+          const authScreen = document.getElementById('authScreen');
+          if (authScreen) authScreen.style.display = 'none';
           const blocked = document.createElement('div');
-          blocked.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center';
-          blocked.innerHTML = '<div style=max-width:400px><h1 style=font-size:24px;margin-bottom:12px>Acesso bloqueado</h1><p style=color:var(--text-secondary);font-size:14px>Seu acesso foi temporariamente desativado pelo administrador. Tente novamente mais tarde.</p></div>';
+          blocked.id = 'blockedScreen';
+          blocked.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center;background:var(--bg)';
+          blocked.innerHTML = `<div style="max-width:420px">
+            <div style="font-size:48px;margin-bottom:16px">🔒</div>
+            <h1 style="font-size:22px;margin-bottom:8px">Acesso desativado</h1>
+            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:24px">Seu acesso ao Painel de Suporte foi desativado pelo administrador. Clique no botão abaixo para solicitar a liberação.</p>
+            <button id="solicitarDesbloqueioBtn" class="btn-primary" type="button" style="width:100%;justify-content:center">Solicitar liberação</button>
+            <div id="solicitarDesbloqueioStatus" style="margin-top:12px;font-size:13px;display:none"></div>
+          </div>`;
           document.body.appendChild(blocked);
+
+          document.getElementById('solicitarDesbloqueioBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('solicitarDesbloqueioBtn');
+            const status = document.getElementById('solicitarDesbloqueioStatus');
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            status.style.display = 'none';
+            try {
+              const { error } = await sbClient
+                .from('reportes')
+                .insert({
+                  nome: user.email || 'Desconhecido',
+                  email: user.email || '',
+                  assunto: 'Solicitação de desbloqueio',
+                  mensagem: `Usuário ${user.email} está tentando acessar o sistema e está bloqueado.`
+                });
+              if (error) throw error;
+              status.style.cssText = 'margin-top:12px;font-size:13px;display:block;padding:10px;background:var(--success-bg,#d1fae5);color:var(--success-text,#065f46);border-radius:8px';
+              status.textContent = 'Solicitação enviada! Aguarde o administrador liberar seu acesso.';
+              btn.style.display = 'none';
+            } catch (e) {
+              status.style.cssText = 'margin-top:12px;font-size:13px;display:block;padding:10px;background:var(--danger-bg,#fee2e2);color:var(--danger-text,#991b1b);border-radius:8px';
+              status.textContent = 'Erro ao enviar: ' + (e.message || 'tente novamente.');
+              btn.disabled = false;
+              btn.textContent = 'Solicitar liberação';
+            }
+          });
         }
         return;
       }
