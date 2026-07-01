@@ -214,7 +214,7 @@ function renderUsuariosAba() {
       </label>
       <label class="field">
         <span>Senha</span>
-        <input id="novoUserPassword" type="password" placeholder="mínimo 6 caracteres" />
+        <input id="novoUserPassword" type="text" placeholder="mínimo 6 caracteres" />
       </label>
       <label class="field">
         <span>Cargo</span>
@@ -245,9 +245,10 @@ function renderUsuariosAba() {
         <p style="font-size:0.875rem;color:var(--text-secondary);margin:0 0 var(--s-4)">
           Usuário: <strong id="resetPwdEmail"></strong>
         </p>
-        <label class="field">
+        <label class="field" style="position:relative">
           <span>Nova senha</span>
           <input id="resetPwdNewPassword" type="password" placeholder="mínimo 6 caracteres" />
+          <span id="resetPwdToggle" style="position:absolute;right:8px;bottom:6px;cursor:pointer;font-size:18px;user-select:none" title="Mostrar/esconder senha">👁️</span>
         </label>
         <div style="display:flex;gap:var(--s-2);margin-top:var(--s-3)">
           <button class="btn-primary" id="resetPwdConfirmBtn" type="button" style="flex:1;justify-content:center">Salvar</button>
@@ -283,6 +284,19 @@ function renderUsuariosAba() {
       </div>
     </div>
   `;
+
+  // Toggle visibilidade senha no reset
+  document.getElementById('resetPwdToggle')?.addEventListener('click', () => {
+    const input = document.getElementById('resetPwdNewPassword');
+    const icon = document.getElementById('resetPwdToggle');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      icon.textContent = '👁️';
+    }
+  });
 
   // Bind events
   document.getElementById('novoUserEmail')?.addEventListener('keydown', e => {
