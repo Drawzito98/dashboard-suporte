@@ -1794,6 +1794,14 @@ function renderChart(rows) {
 
   if (!rowsForChart.length) { setChartEmpty(true, 'Ajuste os filtros ou importe novos arquivos.'); return; }
   setChartEmpty(false);
+
+  // Quando filtrado para um único atendente, mostra evolução mensal
+  const singleAtendente = atendenteSelect && atendenteSelect.value && atendenteSelect.value !== 'all';
+  if (singleAtendente) {
+    renderSingleEvolutionChart(rowsForChart);
+    return;
+  }
+
   const searchTerm = (searchAtendenteInput?.value || '').trim().toLowerCase();
   const selectedAt = getSelectedAtendentes();
   const finMap = new Map(), assMap = new Map(), scMap = new Map(), scCount = new Map();
@@ -1837,6 +1845,65 @@ function renderChart(rows) {
       datasets: [
         { label: 'Assumidos', data: assData, backgroundColor: bgAss, borderRadius: 3, yAxisID: 'y' },
         { label: 'Finalizados', data: finData, backgroundColor: bgFin, borderRadius: 3, yAxisID: 'y' },
+        { label: 'Score', type: 'line', data: scData, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.05)', pointBackgroundColor: '#f59e0b', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true, yAxisID: 'y1' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 56, right: 16, bottom: 4, left: 4 } },
+      plugins: {
+        datalabels: { display: false },
+        valueLabels: { integer: false },
+        legend: { display: true, position: 'bottom', align: 'center', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
+          borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+          padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6,
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.parsed && ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.raw;
+              if ((ctx.dataset.label || '').includes('Score')) return `Score: ${Number(v).toFixed(2)}`;
+              return `${ctx.dataset.label}: ${Math.round(v).toLocaleString('pt-BR')}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 } } },
+        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, callback: v => Number(v).toFixed(2) } },
+        x: { grid: { display: false }, ticks: { font: { size: 11.5 } } }
+      }
+    }
+  };
+  replaceChart(cfg);
+}
+
+function renderSingleEvolutionChart(rows) {
+  if (!rows || !rows.length) { setChartEmpty(true, 'Nenhum dado para o período selecionado.'); return; }
+  setChartEmpty(false);
+  const months = uniqueSorted(rows.map(r => String(r['Mês'] || '')).filter(Boolean));
+  if (!months.length) { setChartEmpty(true, 'Nenhum período encontrado.'); return; }
+
+  const assData = months.map(m => rows.filter(r => String(r['Mês']) === m).reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0));
+  const finData = months.map(m => rows.filter(r => String(r['Mês']) === m).reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0));
+  const scData = months.map(m => {
+    const scores = rows.filter(r => String(r['Mês']) === m).map(r => r['SCORE']).filter(v => v != null && !isNaN(Number(v)));
+    return scores.length ? Number((scores.reduce((a, b) => a + Number(b), 0) / scores.length).toFixed(2)) : null;
+  });
+
+  sizeChartInnerForLabels(months.length, 140);
+  const maxVal = Math.max(...assData, ...finData, 1);
+  const yMax = Math.ceil(maxVal * 1.4 / 100) * 100 || 200;
+
+  const cfg = {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { label: 'Assumidos', data: assData, backgroundColor: 'rgba(37,99,235,0.8)', borderRadius: 3, yAxisID: 'y' },
+        { label: 'Finalizados', data: finData, backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 3, yAxisID: 'y' },
         { label: 'Score', type: 'line', data: scData, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.05)', pointBackgroundColor: '#f59e0b', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true, yAxisID: 'y1' }
       ]
     },
