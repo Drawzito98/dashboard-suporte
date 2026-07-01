@@ -728,16 +728,6 @@ html[data-theme="dark"] tbody tr:hover td:last-child { background: var(--bg-subt
   background: var(--bg-surface);
   box-shadow: -6px 0 10px -8px rgba(0,0,0,0.08);
 }
-.preview .table-wrap table tbody tr:nth-child(even) td:last-child {
-  background: var(--bg-inset);
-}
-.preview .table-wrap table tbody tr:hover td:last-child {
-  background: var(--bg-subtle);
-}
-html[data-theme="dark"] .preview .table-wrap table th:last-child,
-html[data-theme="dark"] .preview .table-wrap table td:last-child {
-  box-shadow: -6px 0 10px -8px rgba(0,0,0,0.3);
-}
 .preview .table-wrap table th:last-child {
   background: var(--bg-subtle);
   z-index: 4;
