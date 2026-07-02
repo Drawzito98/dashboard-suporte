@@ -2827,3 +2827,72 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
     grid-column: 1;
   }
 }
+
+/* ─── Ausências ─── */
+.ausencias-form {
+  padding: var(--s-4);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+.ausencias-field label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--s-1);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.ausencias-field input,
+.ausencias-field select {
+  width: 100%;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+.ausencias-field input:focus,
+.ausencias-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-ring);
+}
+.ausencias-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--s-2);
+  padding-top: var(--s-1);
+}
+.ausencias-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+}
+.ausencias-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.ausencias-item:hover {
+  border-color: var(--border-strong);
+}
+.ausencias-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ausencias-item-actions {
+  display: flex;
+  gap: var(--s-2);
+  flex-shrink: 0;
+}

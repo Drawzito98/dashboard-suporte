@@ -678,6 +678,76 @@ async function dbPontosExtrasDelete(id) {
   } catch (e) { console.error('[db-extra]', e); }
 }
 
+// ─── AUSÊNCIAS (Controle de Ponto) ─────────────────────────────
+
+const AUSENCIAS_LOCAL_KEY = 'sistema_ausencias_v1';
+
+async function dbAusenciasLoad() {
+  if (!sbClient) return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
+  try {
+    const uid = await _getUserId();
+    if (!uid) return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
+    const { data } = await sbClient.from('ausencias').select('*').eq('user_id', uid).order('data', { ascending: false });
+    if (data && Array.isArray(data) && data.length > 0) {
+      const list = data.map(r => ({
+        id: r.id,
+        colaborador: r.colaborador,
+        data: r.data,
+        periodo: r.periodo,
+        motivo: r.motivo || '',
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+      }));
+      localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(list));
+      return list;
+    }
+    return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
+  } catch {
+    return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
+  }
+}
+
+async function dbAusenciasSave(ausencia) {
+  const list = JSON.parse(localStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
+  const idx = list.findIndex(a => a.id === ausencia.id);
+  if (idx >= 0) list[idx] = ausencia;
+  else list.unshift(ausencia);
+  localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(list));
+  if (!sbClient) return;
+  try {
+    const uid = await _getUserId();
+    if (!uid) return;
+    const existing = await sbClient.from('ausencias').select('id').eq('id', ausencia.id).maybeSingle();
+    if (existing?.data?.id) {
+      await sbClient.from('ausencias').update({
+        colaborador: ausencia.colaborador,
+        data: ausencia.data,
+        periodo: ausencia.periodo,
+        motivo: ausencia.motivo || '',
+        updated_at: new Date().toISOString()
+      }).eq('id', ausencia.id);
+    } else {
+      await sbClient.from('ausencias').insert({
+        user_id: uid,
+        colaborador: ausencia.colaborador,
+        data: ausencia.data,
+        periodo: ausencia.periodo,
+        motivo: ausencia.motivo || ''
+      });
+    }
+  } catch (e) { console.error('[db-extra]', e); }
+}
+
+async function dbAusenciasDelete(id) {
+  const list = JSON.parse(localStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
+  const filtered = list.filter(a => a.id !== id);
+  localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(filtered));
+  if (!sbClient) return;
+  try {
+    await sbClient.from('ausencias').delete().eq('id', id);
+  } catch (e) { console.error('[db-extra]', e); }
+}
+
 // ─── COLABORADORES INFO (Cadastro) ─────────────────────────────
 
 const COLAB_INFO_LOCAL_KEY = 'sistema_colaboradores_info_v1';
@@ -989,6 +1059,26 @@ async function migrateLocalToSupabase() {
       }
     }
 
+    // Ausências
+    const ausRaw = localStorage.getItem(AUSENCIAS_LOCAL_KEY);
+    if (ausRaw) {
+      const aus = JSON.parse(ausRaw);
+      if (Array.isArray(aus) && aus.length > 0) {
+        const { data: existing } = await sbClient.from('ausencias').select('id').eq('user_id', uid).limit(1);
+        if (!existing || existing.length === 0) {
+          for (const a of aus) {
+            await sbClient.from('ausencias').insert({
+              user_id: uid,
+              colaborador: a.colaborador || '',
+              data: a.data || '',
+              periodo: a.periodo || 'dia_inteiro',
+              motivo: a.motivo || ''
+            });
+          }
+        }
+      }
+    }
+
     localStorage.setItem(MIGRATION_FLAG_KEY, '1');
   } catch (e) { console.warn('[db-extra] migrateLocalToSupabase error:', e); }
 }
@@ -1014,7 +1104,8 @@ async function initDbExtra() {
       dbPontosExtrasLoad(),
       dbColabInfoLoad(),
       typeof dbAvaliacoesLoad === 'function' ? dbAvaliacoesLoad() : Promise.resolve(),
-      typeof dbReportesListar === 'function' ? dbReportesListar() : Promise.resolve()
+      typeof dbReportesListar === 'function' ? dbReportesListar() : Promise.resolve(),
+      dbAusenciasLoad()
     ]);
   } catch (e) { console.error('[db-extra]', e); }
 }

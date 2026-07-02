@@ -2869,6 +2869,9 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'links' && typeof onLinksTabActivated === 'function') {
         onLinksTabActivated();
       }
+      if (tab === 'ausencias' && typeof onAusenciasTabActivated === 'function') {
+        onAusenciasTabActivated();
+      }
       if (tab === 'dashboard') {
         updateView();
       }
