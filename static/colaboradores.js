@@ -283,6 +283,16 @@ function openColabDetailOverlay(nome) {
   html += `<input type="email" id="ciEmail" placeholder="email@exemplo.com" value="${escapeHtml(info.email || '')}">`;
   html += '</div>';
 
+  html += `<div class="field" style="grid-column:1/-1"><span>Nível de Atendimento</span>`;
+  const nivelAtual = info.nivel || '';
+  html += `<select id="ciNivel" style="width:100%">
+    <option value="">Selecione...</option>
+    <option value="N1"${nivelAtual === 'N1' ? ' selected' : ''}>N1</option>
+    <option value="N2"${nivelAtual === 'N2' ? ' selected' : ''}>N2</option>
+    <option value="N3"${nivelAtual === 'N3' ? ' selected' : ''}>N3</option>
+  </select>`;
+  html += '</div>';
+
   html += `<div class="field" style="grid-column:1/-1"><span>Tarefas que já desempenhou</span>`;
   html += `<textarea id="ciTarefas" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Ex: Atendimento N1, Suporte Chat, Projeto Migração...">${escapeHtml(info.tarefas_desempenhadas || '')}</textarea>`;
   html += '</div>';
@@ -310,16 +320,6 @@ function openColabDetailOverlay(nome) {
     <span>Motivo da conduta</span>
     <textarea id="ciCondutaMotivo" style="width:100%;min-height:60px;font-size:13px;line-height:1.6;border-color:var(--danger)" placeholder="Descreva o motivo do destaque...">${escapeHtml(info.conduta_motivo || '')}</textarea>
   </div>`;
-
-  html += `<div class="field" style="grid-column:1/-1"><span>Nível de Atendimento</span>`;
-  const nivelAtual = info.nivel || '';
-  html += `<select id="ciNivel" style="width:100%">
-    <option value="">Selecione...</option>
-    <option value="N1"${nivelAtual === 'N1' ? ' selected' : ''}>N1</option>
-    <option value="N2"${nivelAtual === 'N2' ? ' selected' : ''}>N2</option>
-    <option value="N3"${nivelAtual === 'N3' ? ' selected' : ''}>N3</option>
-  </select>`;
-  html += '</div>';
 
   html += `<div class="field" style="grid-column:1/-1"><span>Observações</span>`;
   html += `<textarea id="ciObservacoes" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Qualquer observação adicional...">${escapeHtml(info.observacoes || '')}</textarea>`;
