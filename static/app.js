@@ -516,6 +516,42 @@ function normalizeAtendenteOnRecords(records) {
   });
   return records;
 }
+
+function deduplicateRecords(records) {
+  const map = new Map();
+  const toRemove = [];
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
+    if (!r) continue;
+    const key = `${r['Mês'] || ''}|${r['Atendente'] || ''}`;
+    if (map.has(key)) {
+      const existing = map.get(key);
+      const scoreExisting = (existing.Assumidos || 0) + (existing.Finalizados || 0) + (existing.SCORE ? 1 : 0) + (existing.Nota1 || 0) + (existing.Nota2 || 0) + (existing.Nota3 || 0);
+      const scoreCurrent = (r.Assumidos || 0) + (r.Finalizados || 0) + (r.SCORE ? 1 : 0) + (r.Nota1 || 0) + (r.Nota2 || 0) + (r.Nota3 || 0);
+      if (scoreCurrent > scoreExisting) {
+        toRemove.push(existing);
+        map.set(key, r);
+      } else {
+        toRemove.push(r);
+      }
+    } else {
+      map.set(key, r);
+    }
+  }
+  if (toRemove.length > 0) {
+    const idsToRemove = toRemove.filter(r => r.id).map(r => r.id);
+    records = records.filter(r => !toRemove.includes(r));
+    // Try to delete zeroed duplicates from Supabase in background
+    if (sbClient && idsToRemove.length > 0 && requireAdmin()) {
+      sbClient.from('registros').delete().in('id', idsToRemove).then(({ error }) => {
+        if (error) console.warn('Erro ao limpar duplicatas no Supabase:', error);
+        else console.log(`[Dedup] ${idsToRemove.length} duplicatas removidas do Supabase`);
+      });
+    }
+  }
+  return records;
+}
+
 let previewRows = [];
 let currentSort = { key: null, desc: true };
 let hiddenLabels = new Set();
@@ -2666,7 +2702,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const synced = await syncPendingRecords();
       const stillPending = getPendingSync();
       if (stillPending.length > 0) {
-        // Merge unsynced records into rawRecords
         for (const pr of stillPending) {
           rawRecords.push(pr);
         }
@@ -2674,13 +2709,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       if (synced.length > 0) {
         showToast(`${synced.length} registro(s) pendentes sincronizados com sucesso.`, 'success', 'Sincronização');
-        // Reload from Supabase to get proper IDs
         const freshData = await dbLoadRecords();
         if (freshData && freshData.length > 0) {
           rawRecords = normalizeAtendenteOnRecords(freshData);
         }
       }
     }
+
+    // Remove zero-valued duplicates keeping only the filled ones
+    rawRecords = deduplicateRecords(rawRecords);
 
     if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
     console.log('[App] chamando populateFilters...');
@@ -2707,9 +2744,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       applySavedState(saved);
       if (sbClient) showAppScreen();
     } else if (pendingPreviously.length > 0) {
-      // No Supabase, no saved state, but we have pending records
       console.log('[App] Usando registros pendentes como fallback');
       rawRecords = normalizeAtendenteOnRecords(pendingPreviously);
+      rawRecords = deduplicateRecords(rawRecords);
       populateFilters(rawRecords);
       updateFilterOptions();
       try { updateView(); } catch (e) {}
