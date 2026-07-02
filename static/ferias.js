@@ -6,6 +6,37 @@ function formatarDataBr(d) {
   return `${dia}/${mes}/${ano}`;
 }
 
+function statusFerias(data_inicio, data_fim) {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const inicio = new Date(data_inicio + 'T00:00:00');
+  const fim = new Date(data_fim + 'T00:00:00');
+  if (hoje > fim) return { label: 'Completas', color: 'var(--text-muted)', bg: 'transparent', border: 'var(--border)' };
+  if (hoje >= inicio && hoje <= fim) return { label: 'Ativa', color: '#fff', bg: '#22c55e', border: '#22c55e' };
+  return { label: 'Agendada', color: '#fff', bg: '#3b82f6', border: '#3b82f6' };
+}
+
+function exportFeriasCSV(saved) {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const linhas = [['Colaborador', 'Data Início', 'Data Fim', 'Dias', 'Status']];
+  for (const f of saved) {
+    const inicio = new Date(f.data_inicio + 'T00:00:00');
+    const fim = new Date(f.data_fim + 'T00:00:00');
+    const dias = Math.round((fim - inicio) / (1000 * 60 * 60 * 24)) + 1;
+    const st = statusFerias(f.data_inicio, f.data_fim);
+    linhas.push([f.colaborador, f.data_inicio, f.data_fim, String(dias), st.label]);
+  }
+  const csv = linhas.map(l => l.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ferias_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function renderFerias(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -53,9 +84,12 @@ function renderFerias(containerId) {
   html += '<div class="card-header">';
   html += '<div><h3 style="font-size:16px;font-weight:600">Férias Registradas</h3>';
   html += `<p style="font-size:13px;color:var(--text-secondary)">${saved.length} registro(s)</p></div>`;
+  html += '<div style="display:flex;gap:var(--s-2)">';
   if (saved.length > 0) {
+    html += '<button class="btn-small" id="feriasExportBtn" type="button">Exportar CSV</button>';
     html += '<button class="btn-small" id="feriasRefreshBtn" type="button">Atualizar</button>';
   }
+  html += '</div>';
   html += '</div>';
 
   if (!saved.length) {
@@ -63,12 +97,16 @@ function renderFerias(containerId) {
   } else {
     html += '<div class="ausencias-list">';
     for (const f of saved) {
-      const inicio = new Date(f.data_inicio);
-      const fim = new Date(f.data_fim);
+      const inicio = new Date(f.data_inicio + 'T00:00:00');
+      const fim = new Date(f.data_fim + 'T00:00:00');
       const dias = Math.round((fim - inicio) / (1000 * 60 * 60 * 24)) + 1;
+      const st = statusFerias(f.data_inicio, f.data_fim);
       html += '<div class="ausencias-item">';
       html += '<div class="ausencias-item-info">';
+      html += '<div style="display:flex;align-items:center;gap:var(--s-2);flex-wrap:wrap">';
       html += `<strong style="font-size:14px">${escapeHtml(f.colaborador)}</strong>`;
+      html += `<span style="display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;color:${st.color};background:${st.bg};border:1px solid ${st.border}">${st.label}</span>`;
+      html += '</div>';
       html += `<span style="font-size:12px;color:var(--text-muted)">${formatarDataBr(f.data_inicio)} → ${formatarDataBr(f.data_fim)} · ${dias} dia(s)</span>`;
       html += '</div>';
       html += '<div class="ausencias-item-actions">';
@@ -108,6 +146,10 @@ function bindFeriasEvents(containerId, saved) {
     document.getElementById('feriasFimInput').value = '';
     showToast(`Férias registradas para ${colaborador}!`, 'success', 'Férias');
     renderFerias(containerId);
+  });
+
+  document.getElementById('feriasExportBtn')?.addEventListener('click', () => {
+    exportFeriasCSV(saved);
   });
 
   const container = document.getElementById(containerId);
