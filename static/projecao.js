@@ -44,7 +44,7 @@ function renderProjecao() {
         Nota2: parseInt(r['Nota2']) || 0,
         Nota3: parseInt(r['Nota3']) || 0,
         Total: parseInt(r['Total']) || 0,
-        Observacao: r['Observacao'] || '',
+        Observações: r['Observações'] || r['Observacao'] || '',
         Setor: r['Setor'] || ''
       };
     });
@@ -105,7 +105,7 @@ function renderProjecao() {
                 <td><input type="number" class="proj-input" data-idx="${i}" data-field="Nota2" value="0" min="0" max="5" step="0.1" style="width:55px"/></td>
                 <td><input type="number" class="proj-input" data-idx="${i}" data-field="Nota3" value="0" min="0" max="5" step="0.1" style="width:55px"/></td>
                 <td><input type="number" class="proj-input" data-idx="${i}" data-field="Total" value="0" min="0" style="width:55px"/></td>
-                <td><input type="text" class="proj-input" data-idx="${i}" data-field="Observacao" value="" placeholder="Férias/ausente..." style="width:100px;font-size:11px"/></td>
+                <td><input type="text" class="proj-input" data-idx="${i}" data-field="Observações" value="" placeholder="Férias/ausente..." style="width:100px;font-size:11px"/></td>
               </tr>`;
             }).join('')}
             }).join('')}
@@ -194,7 +194,7 @@ function renderProjecao() {
           Nota2: 0,
           Nota3: 0,
           Total: 0,
-          Observacao: ''
+          Observações: ''
         };
 
         // Collect all values for this name
@@ -208,7 +208,7 @@ function renderProjecao() {
             rec[f] = val !== '' ? parseFloat(val) : 0;
           } else if (f === 'Assumidos' || f === 'Finalizados' || f === 'Transferidos' || f === 'Total') {
             rec[f] = parseInt(val) || 0;
-          } else if (f === 'Observacao') {
+          } else if (f === 'Observações') {
             rec[f] = val;
           }
         });
@@ -228,11 +228,15 @@ function renderProjecao() {
     try {
       // Save each to Supabase
       let savedCount = 0;
+      let pendingCount = 0;
       for (const rec of records) {
         if (sbClient) {
           const inserted = await dbInsertRow(rec);
           if (inserted && inserted.id) {
             rec.id = inserted.id;
+          } else {
+            addToPendingSync(rec);
+            pendingCount++;
           }
         }
         rawRecords.push(rec);
@@ -248,7 +252,11 @@ function renderProjecao() {
       renderSummary(filtered);
       saveState();
 
-      showToast(`${savedCount} registro(s) adicionados para ${mes}.`, 'success', 'Registro Mensal');
+      if (pendingCount > 0) {
+        showToast(`${savedCount} registro(s) adicionados para ${mes}. ${pendingCount} pendente(s) de sincronização (serão restaurados ao recarregar).`, 'warn', 'Registro Mensal');
+      } else {
+        showToast(`${savedCount} registro(s) adicionados para ${mes}.`, 'success', 'Registro Mensal');
+      }
       closeProjecao();
     } catch (e) {
       console.error('Erro ao salvar projeção:', e);

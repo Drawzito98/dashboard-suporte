@@ -22,6 +22,56 @@ if (!sbClient) {
   console.warn('Supabase client não disponível');
 }
 
+// Chave para registros pendentes de sincronização
+const PENDING_SYNC_KEY = 'sistema_pending_sync';
+
+function addToPendingSync(record) {
+  try {
+    const raw = localStorage.getItem(PENDING_SYNC_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    arr.push({ ...record, _pendingAt: Date.now() });
+    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(arr));
+  } catch (e) { console.warn('Erro ao salvar pending sync:', e); }
+}
+
+function getPendingSync() {
+  try {
+    const raw = localStorage.getItem(PENDING_SYNC_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function clearPendingSync() {
+  try { localStorage.removeItem(PENDING_SYNC_KEY); } catch {}
+}
+
+async function syncPendingRecords() {
+  if (!sbClient || !requireAdmin()) return [];
+  const pending = getPendingSync();
+  if (!pending.length) return [];
+  const synced = [];
+  const failed = [];
+  for (const rec of pending) {
+    try {
+      const clean = filterRecordFields(rec);
+      const user = getCurrentUser();
+      if (user) clean.user_id = user.id;
+      const { data, error } = await sbClient.from('registros').insert(clean).select();
+      if (error) throw error;
+      if (data && data[0]) synced.push(rec);
+    } catch (e) {
+      console.warn('Falha ao sincronizar registro pendente:', e);
+      failed.push(rec);
+    }
+  }
+  if (failed.length) {
+    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(failed));
+  } else {
+    clearPendingSync();
+  }
+  return synced;
+}
+
 // Colunas permitidas na tabela (para filtrar o que enviar)
 const DB_COLUMNS = new Set([
   'id', 'user_id', 'Setor', 'Mês', 'Atendente', 'Assumidos', 'Transferidos',

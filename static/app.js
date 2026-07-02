@@ -2647,12 +2647,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Tenta carregar do Supabase primeiro
   console.log('[App] Iniciando carregamento... sbClient:', !!sbClient);
+
+  // Merge pending records (from failed Supabase inserts) into the main data
+  const pendingPreviously = getPendingSync();
+  if (pendingPreviously.length > 0) {
+    console.log('[App] Registros pendentes encontrados:', pendingPreviously.length);
+  }
+
   const supabaseRecords = await dbLoadRecords();
   console.log('[App] supabaseRecords:', supabaseRecords?.length, 'registros');
   if (supabaseRecords && supabaseRecords.length > 0) {
     console.log('[App] Usando dados do Supabase');
     rawRecords = normalizeAtendenteOnRecords(supabaseRecords);
     console.log('[App] rawRecords apos normalize:', rawRecords?.length, 'registros, primeiro:', rawRecords?.[0]);
+
+    // Merge pending records that weren't yet synced to Supabase
+    if (pendingPreviously.length > 0) {
+      const synced = await syncPendingRecords();
+      const stillPending = getPendingSync();
+      if (stillPending.length > 0) {
+        // Merge unsynced records into rawRecords
+        for (const pr of stillPending) {
+          rawRecords.push(pr);
+        }
+        showToast(`${stillPending.length} registro(s) offline restaurados. Tente salvá-los novamente mais tarde.`, 'warn', 'Sincronização');
+      }
+      if (synced.length > 0) {
+        showToast(`${synced.length} registro(s) pendentes sincronizados com sucesso.`, 'success', 'Sincronização');
+        // Reload from Supabase to get proper IDs
+        const freshData = await dbLoadRecords();
+        if (freshData && freshData.length > 0) {
+          rawRecords = normalizeAtendenteOnRecords(freshData);
+        }
+      }
+    }
+
     if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
     console.log('[App] chamando populateFilters...');
     populateFilters(rawRecords);
@@ -2677,6 +2706,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log('[App] Dados encontrados no localStorage:', saved.rawRecords?.length, 'registros');
       applySavedState(saved);
       if (sbClient) showAppScreen();
+    } else if (pendingPreviously.length > 0) {
+      // No Supabase, no saved state, but we have pending records
+      console.log('[App] Usando registros pendentes como fallback');
+      rawRecords = normalizeAtendenteOnRecords(pendingPreviously);
+      populateFilters(rawRecords);
+      updateFilterOptions();
+      try { updateView(); } catch (e) {}
+      if (sbClient) showAppScreen();
+      showToast(`${rawRecords.length} registro(s) offline carregados. Tente salvá-los novamente mais tarde.`, 'warn', 'Offline');
     } else {
       console.log('[App] Nenhum dado no localStorage');
       updateStorageUI(null);
@@ -3134,6 +3172,8 @@ async function addRow() {
     const inserted = await dbInsertRow(newRec);
     if (inserted && inserted.id) {
       newRec.id = inserted.id;
+    } else {
+      addToPendingSync(newRec);
     }
   }
   rawRecords.push(newRec);
