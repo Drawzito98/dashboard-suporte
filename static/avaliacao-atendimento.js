@@ -95,6 +95,7 @@ function renderAvaliacaoAtendimento(containerId) {
 
   container.innerHTML = html;
   bindAvaliacaoAtendEvents(containerId, saved);
+  if (typeof initVoiceFields === 'function') initVoiceFields(['avalResumoInput']);
 }
 
 function bindAvaliacaoAtendEvents(containerId, saved) {
