@@ -766,6 +766,7 @@ async function dbAvaliacaoAtendLoad() {
         nota: r.nota,
         justa: r.justa,
         resumo: r.resumo || '',
+        imagem: r.imagem || '',
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
@@ -796,6 +797,7 @@ async function dbAvaliacaoAtendSave(item) {
         nota: item.nota,
         justa: item.justa,
         resumo: item.resumo || '',
+        imagem: item.imagem || '',
         updated_at: new Date().toISOString()
       }).eq('id', item.id);
     } else {
@@ -805,7 +807,8 @@ async function dbAvaliacaoAtendSave(item) {
         colaborador: item.colaborador,
         nota: item.nota,
         justa: item.justa,
-        resumo: item.resumo || ''
+        resumo: item.resumo || '',
+        imagem: item.imagem || ''
       });
     }
   } catch (e) { console.error('[db-extra]', e); }
@@ -1166,7 +1169,8 @@ async function migrateLocalToSupabase() {
               colaborador: a.colaborador || '',
               nota: parseFloat(a.nota) || 5,
               justa: a.justa !== false,
-              resumo: a.resumo || ''
+              resumo: a.resumo || '',
+              imagem: a.imagem || ''
             });
           }
         }
