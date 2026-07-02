@@ -243,7 +243,7 @@ function renderProjecao() {
       if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
       populateFilters(rawRecords);
       updateFilterOptions();
-      const filtered = applyCurrentFilters(rawRecords);
+      const filtered = typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
       renderChart(filtered);
       renderSummary(filtered);
       saveState();
