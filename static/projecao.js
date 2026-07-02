@@ -215,6 +215,12 @@ function renderProjecao() {
 
         rec.Total = rec.Assumidos + rec.Transferidos + rec.Finalizados;
 
+        // Only add record if at least one field has meaningful data
+        const hasData = rec.Assumidos > 0 || rec.Transferidos > 0 || rec.Finalizados > 0 ||
+          rec.SCORE !== null || rec.Nota1 > 0 || rec.Nota2 > 0 || rec.Nota3 > 0 ||
+          rec.Observações !== '';
+        if (!hasData) return;
+
         records.push(rec);
       }
     });
