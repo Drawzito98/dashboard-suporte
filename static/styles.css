@@ -1325,7 +1325,7 @@ html[data-theme="dark"] .loading-overlay { background: rgba(15, 23, 42, 0.7); }
 }
 .ranking-table th {
   background: var(--bg-subtle);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 11px;
   text-transform: uppercase;
@@ -2133,7 +2133,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 }
 .rs-container .ranking-table th {
   background: var(--bg-subtle);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: 10.5px;
   padding: 10px 14px;
 }
