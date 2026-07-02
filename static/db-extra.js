@@ -824,6 +824,73 @@ async function dbAvaliacaoAtendDelete(id) {
   } catch (e) { console.error('[db-extra]', e); }
 }
 
+// ─── FÉRIAS ────────────────────────────────────────────────
+
+const FERIAS_LOCAL_KEY = 'sistema_ferias_v1';
+
+async function dbFeriasLoad() {
+  if (!sbClient) return _fallbackLoad(FERIAS_LOCAL_KEY, []);
+  try {
+    const uid = await _getUserId();
+    if (!uid) return _fallbackLoad(FERIAS_LOCAL_KEY, []);
+    const { data } = await sbClient.from('ferias').select('*').eq('user_id', uid).order('data_inicio', { ascending: false });
+    if (data && Array.isArray(data) && data.length > 0) {
+      const list = data.map(r => ({
+        id: r.id,
+        colaborador: r.colaborador,
+        data_inicio: r.data_inicio,
+        data_fim: r.data_fim,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+      }));
+      localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(list));
+      return list;
+    }
+    return _fallbackLoad(FERIAS_LOCAL_KEY, []);
+  } catch {
+    return _fallbackLoad(FERIAS_LOCAL_KEY, []);
+  }
+}
+
+async function dbFeriasSave(item) {
+  const list = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
+  const idx = list.findIndex(f => f.id === item.id);
+  if (idx >= 0) list[idx] = item;
+  else list.unshift(item);
+  localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(list));
+  if (!sbClient) return;
+  try {
+    const uid = await _getUserId();
+    if (!uid) return;
+    const existing = await sbClient.from('ferias').select('id').eq('id', item.id).maybeSingle();
+    if (existing?.data?.id) {
+      await sbClient.from('ferias').update({
+        colaborador: item.colaborador,
+        data_inicio: item.data_inicio,
+        data_fim: item.data_fim,
+        updated_at: new Date().toISOString()
+      }).eq('id', item.id);
+    } else {
+      await sbClient.from('ferias').insert({
+        user_id: uid,
+        colaborador: item.colaborador,
+        data_inicio: item.data_inicio,
+        data_fim: item.data_fim
+      });
+    }
+  } catch (e) { console.error('[db-extra]', e); }
+}
+
+async function dbFeriasDelete(id) {
+  const list = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
+  const filtered = list.filter(f => f.id !== id);
+  localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(filtered));
+  if (!sbClient) return;
+  try {
+    await sbClient.from('ferias').delete().eq('id', id);
+  } catch (e) { console.error('[db-extra]', e); }
+}
+
 // ─── COLABORADORES INFO (Cadastro) ─────────────────────────────
 
 const COLAB_INFO_LOCAL_KEY = 'sistema_colaboradores_info_v1';
@@ -1177,6 +1244,25 @@ async function migrateLocalToSupabase() {
       }
     }
 
+    // Férias
+    const ferRaw = localStorage.getItem(FERIAS_LOCAL_KEY);
+    if (ferRaw) {
+      const fer = JSON.parse(ferRaw);
+      if (Array.isArray(fer) && fer.length > 0) {
+        const { data: existing } = await sbClient.from('ferias').select('id').eq('user_id', uid).limit(1);
+        if (!existing || existing.length === 0) {
+          for (const f of fer) {
+            await sbClient.from('ferias').insert({
+              user_id: uid,
+              colaborador: f.colaborador || '',
+              data_inicio: f.data_inicio || '',
+              data_fim: f.data_fim || ''
+            });
+          }
+        }
+      }
+    }
+
     localStorage.setItem(MIGRATION_FLAG_KEY, '1');
   } catch (e) { console.warn('[db-extra] migrateLocalToSupabase error:', e); }
 }
@@ -1204,7 +1290,8 @@ async function initDbExtra() {
       typeof dbAvaliacoesLoad === 'function' ? dbAvaliacoesLoad() : Promise.resolve(),
       typeof dbReportesListar === 'function' ? dbReportesListar() : Promise.resolve(),
       dbAusenciasLoad(),
-      dbAvaliacaoAtendLoad()
+      dbAvaliacaoAtendLoad(),
+      dbFeriasLoad()
     ]);
   } catch (e) { console.error('[db-extra]', e); }
 }
