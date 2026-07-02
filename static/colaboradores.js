@@ -42,6 +42,9 @@ function renderColaboradores() {
     html += `<div style="font-size:28px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 36) : '👤'}</div>`;
     html += '<div style="flex:1;min-width:0">';
     html += `<div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:var(--s-2)">${escapeHtml(nome)}${conduta ? '<span class="conduta-badge" title="Conduta negativa">🚩</span>' : ''}</div>`;
+    if (info.nivel) {
+      html += `<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-top:1px">${escapeHtml(info.nivel)}</div>`;
+    }
     const setores = setorMap[nome];
     if (setores && setores.size) {
       html += `<div style="font-size:12px;color:var(--text-muted);margin-top:1px">🏢 ${escapeHtml([...setores].join(', '))}</div>`;
@@ -312,6 +315,16 @@ function openColabDetailOverlay(nome) {
   html += `<textarea id="ciObservacoes" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Qualquer observação adicional...">${escapeHtml(info.observacoes || '')}</textarea>`;
   html += '</div>';
 
+  html += `<div class="field" style="grid-column:1/-1"><span>Nível de Atendimento</span>`;
+  const nivelAtual = info.nivel || '';
+  html += `<select id="ciNivel" style="width:100%">
+    <option value="">Selecione...</option>
+    <option value="N1"${nivelAtual === 'N1' ? ' selected' : ''}>N1</option>
+    <option value="N2"${nivelAtual === 'N2' ? ' selected' : ''}>N2</option>
+    <option value="N3"${nivelAtual === 'N3' ? ' selected' : ''}>N3</option>
+  </select>`;
+  html += '</div>';
+
   html += '<div style="grid-column:1/-1;display:flex;gap:var(--s-2);padding-top:var(--s-2)">';
   html += `<button class="btn-primary" id="ciSalvarBtn" type="button" style="flex:1">💾 Salvar</button>`;
   html += `<button class="btn-small" id="ciLimparBtn" type="button">🗑️ Limpar dados</button>`;
@@ -357,7 +370,8 @@ function openColabDetailOverlay(nome) {
       objetivos_futuros: document.getElementById('ciObjetivos').value.trim(),
       observacoes: document.getElementById('ciObservacoes').value.trim(),
       conduta_negativa: document.getElementById('ciCondutaToggle').checked ? 'true' : '',
-      conduta_motivo: document.getElementById('ciCondutaMotivo').value.trim()
+      conduta_motivo: document.getElementById('ciCondutaMotivo').value.trim(),
+      nivel: document.getElementById('ciNivel').value
     };
     await dbColabInfoSave(nome, data);
     showToast(`Dados de ${nome} salvos!`, 'success', 'Colaboradores');
@@ -386,7 +400,7 @@ function openColabDetailOverlay(nome) {
     const data = {
       data_aniversario: '', data_admissao: '', email: '',
       tarefas_desempenhadas: '', objetivos_futuros: '', observacoes: '',
-      conduta_negativa: '', conduta_motivo: ''
+      conduta_negativa: '', conduta_motivo: '', nivel: ''
     };
     await dbColabInfoSave(nome, data);
     showToast(`Dados de ${nome} removidos!`, 'success', 'Colaboradores');

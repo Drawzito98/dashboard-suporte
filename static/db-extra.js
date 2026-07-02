@@ -891,6 +891,85 @@ async function dbFeriasDelete(id) {
   } catch (e) { console.error('[db-extra]', e); }
 }
 
+// ─── ACOMPANHAMENTO DIÁRIO ─────────────────────────────
+
+const ACOMP_DIARIO_LOCAL_KEY = 'sistema_acompanhamento_diario_v1';
+
+async function dbAcompDiarioLoad() {
+  if (!sbClient) return _fallbackLoad(ACOMP_DIARIO_LOCAL_KEY, []);
+  try {
+    const uid = await _getUserId();
+    if (!uid) return _fallbackLoad(ACOMP_DIARIO_LOCAL_KEY, []);
+    const { data } = await sbClient.from('acompanhamento_diario').select('*').eq('user_id', uid).order('data', { ascending: false });
+    if (data && Array.isArray(data) && data.length > 0) {
+      const list = data.map(r => ({
+        id: r.id,
+        colaborador: r.colaborador,
+        data: r.data,
+        setor: r.setor || '',
+        assumidos: r.assumidos || 0,
+        transferidos: r.transferidos || 0,
+        finalizados: r.finalizados || 0,
+        nota: r.nota || 0,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+      }));
+      localStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(list));
+      return list;
+    }
+    return _fallbackLoad(ACOMP_DIARIO_LOCAL_KEY, []);
+  } catch {
+    return _fallbackLoad(ACOMP_DIARIO_LOCAL_KEY, []);
+  }
+}
+
+async function dbAcompDiarioSave(item) {
+  const list = JSON.parse(localStorage.getItem(ACOMP_DIARIO_LOCAL_KEY) || '[]');
+  const idx = list.findIndex(a => a.id === item.id);
+  if (idx >= 0) list[idx] = item;
+  else list.unshift(item);
+  localStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(list));
+  if (!sbClient) return;
+  try {
+    const uid = await _getUserId();
+    if (!uid) return;
+    const existing = await sbClient.from('acompanhamento_diario').select('id').eq('id', item.id).maybeSingle();
+    if (existing?.data?.id) {
+      await sbClient.from('acompanhamento_diario').update({
+        colaborador: item.colaborador,
+        data: item.data,
+        setor: item.setor || '',
+        assumidos: item.assumidos || 0,
+        transferidos: item.transferidos || 0,
+        finalizados: item.finalizados || 0,
+        nota: item.nota || 0,
+        updated_at: new Date().toISOString()
+      }).eq('id', item.id);
+    } else {
+      await sbClient.from('acompanhamento_diario').insert({
+        user_id: uid,
+        colaborador: item.colaborador,
+        data: item.data,
+        setor: item.setor || '',
+        assumidos: item.assumidos || 0,
+        transferidos: item.transferidos || 0,
+        finalizados: item.finalizados || 0,
+        nota: item.nota || 0
+      });
+    }
+  } catch (e) { console.error('[db-extra]', e); }
+}
+
+async function dbAcompDiarioDelete(id) {
+  const list = JSON.parse(localStorage.getItem(ACOMP_DIARIO_LOCAL_KEY) || '[]');
+  const filtered = list.filter(a => a.id !== id);
+  localStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(filtered));
+  if (!sbClient) return;
+  try {
+    await sbClient.from('acompanhamento_diario').delete().eq('id', id);
+  } catch (e) { console.error('[db-extra]', e); }
+}
+
 // ─── COLABORADORES INFO (Cadastro) ─────────────────────────────
 
 const COLAB_INFO_LOCAL_KEY = 'sistema_colaboradores_info_v1';
@@ -914,6 +993,7 @@ async function dbColabInfoLoad() {
           observacoes: r.observacoes || '',
           conduta_negativa: r.conduta_negativa || '',
           conduta_motivo: r.conduta_motivo || '',
+          nivel: r.nivel || '',
           updatedAt: r.updated_at
         };
       });
@@ -946,6 +1026,7 @@ async function dbColabInfoSave(nome, data) {
         observacoes: data.observacoes || '',
         conduta_negativa: data.conduta_negativa || '',
         conduta_motivo: data.conduta_motivo || '',
+        nivel: data.nivel || '',
         updated_at: new Date().toISOString()
       }).eq('id', existing.data.id);
     } else {
@@ -959,7 +1040,8 @@ async function dbColabInfoSave(nome, data) {
         objetivos_futuros: data.objetivos_futuros || '',
         observacoes: data.observacoes || '',
         conduta_negativa: data.conduta_negativa || '',
-        conduta_motivo: data.conduta_motivo || ''
+        conduta_motivo: data.conduta_motivo || '',
+        nivel: data.nivel || ''
       });
     }
   } catch (e) { console.error('[db-extra]', e); }
@@ -1195,7 +1277,10 @@ async function migrateLocalToSupabase() {
               email: info.email || '',
               tarefas_desempenhadas: info.tarefas_desempenhadas || '',
               objetivos_futuros: info.objetivos_futuros || '',
-              observacoes: info.observacoes || ''
+              observacoes: info.observacoes || '',
+              conduta_negativa: info.conduta_negativa || '',
+              conduta_motivo: info.conduta_motivo || '',
+              nivel: info.nivel || ''
             });
           }
         }
@@ -1263,6 +1348,29 @@ async function migrateLocalToSupabase() {
       }
     }
 
+    // Acompanhamento Diário
+    const adRaw = localStorage.getItem(ACOMP_DIARIO_LOCAL_KEY);
+    if (adRaw) {
+      const ad = JSON.parse(adRaw);
+      if (Array.isArray(ad) && ad.length > 0) {
+        const { data: existing } = await sbClient.from('acompanhamento_diario').select('id').eq('user_id', uid).limit(1);
+        if (!existing || existing.length === 0) {
+          for (const a of ad) {
+            await sbClient.from('acompanhamento_diario').insert({
+              user_id: uid,
+              colaborador: a.colaborador || '',
+              data: a.data || '',
+              setor: a.setor || '',
+              assumidos: a.assumidos || 0,
+              transferidos: a.transferidos || 0,
+              finalizados: a.finalizados || 0,
+              nota: a.nota || 0
+            });
+          }
+        }
+      }
+    }
+
     localStorage.setItem(MIGRATION_FLAG_KEY, '1');
   } catch (e) { console.warn('[db-extra] migrateLocalToSupabase error:', e); }
 }
@@ -1291,7 +1399,8 @@ async function initDbExtra() {
       typeof dbReportesListar === 'function' ? dbReportesListar() : Promise.resolve(),
       dbAusenciasLoad(),
       dbAvaliacaoAtendLoad(),
-      dbFeriasLoad()
+      dbFeriasLoad(),
+      dbAcompDiarioLoad()
     ]);
   } catch (e) { console.error('[db-extra]', e); }
 }
