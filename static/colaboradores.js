@@ -311,10 +311,6 @@ function openColabDetailOverlay(nome) {
     <textarea id="ciCondutaMotivo" style="width:100%;min-height:60px;font-size:13px;line-height:1.6;border-color:var(--danger)" placeholder="Descreva o motivo do destaque...">${escapeHtml(info.conduta_motivo || '')}</textarea>
   </div>`;
 
-  html += `<div class="field" style="grid-column:1/-1"><span>Observações</span>`;
-  html += `<textarea id="ciObservacoes" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Qualquer observação adicional...">${escapeHtml(info.observacoes || '')}</textarea>`;
-  html += '</div>';
-
   html += `<div class="field" style="grid-column:1/-1"><span>Nível de Atendimento</span>`;
   const nivelAtual = info.nivel || '';
   html += `<select id="ciNivel" style="width:100%">
@@ -323,6 +319,10 @@ function openColabDetailOverlay(nome) {
     <option value="N2"${nivelAtual === 'N2' ? ' selected' : ''}>N2</option>
     <option value="N3"${nivelAtual === 'N3' ? ' selected' : ''}>N3</option>
   </select>`;
+  html += '</div>';
+
+  html += `<div class="field" style="grid-column:1/-1"><span>Observações</span>`;
+  html += `<textarea id="ciObservacoes" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Qualquer observação adicional...">${escapeHtml(info.observacoes || '')}</textarea>`;
   html += '</div>';
 
   html += '<div style="grid-column:1/-1;display:flex;gap:var(--s-2);padding-top:var(--s-2)">';
