@@ -2724,6 +2724,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   padding: var(--s-4);
   border-radius: var(--r-md);
   border: 1px solid var(--border);
+  min-width: 0;
 }
 .links-field {
   margin-bottom: var(--s-3);
@@ -2764,11 +2765,13 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   font-size: 13px;
   background: var(--bg-subtle);
   border-radius: var(--r-md);
+  min-width: 0;
 }
 .links-list {
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
+  min-width: 0;
 }
 .links-item {
   display: flex;
