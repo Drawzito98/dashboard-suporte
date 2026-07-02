@@ -1,4 +1,4 @@
-// ausencias.js — Controle de Ausências (Ponto)
+// ausencias.js — Controle de Ausências (sidebar overlay)
 
 function formatarData(d) {
   if (!d) return '';
@@ -16,8 +16,8 @@ function labelPeriodo(p) {
   return map[p] || p;
 }
 
-function renderAusencias() {
-  const container = document.getElementById('ausenciasContent');
+function renderAusencias(containerId) {
+  const container = document.getElementById(containerId);
   if (!container) return;
 
   const saved = JSON.parse(localStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
@@ -69,7 +69,6 @@ function renderAusencias() {
   html += '</div>';
   html += '</div>';
 
-  // Lista
   html += '<div class="card">';
   html += '<div class="card-header">';
   html += '<div><h3 style="font-size:16px;font-weight:600">Registros de Ausência</h3>';
@@ -98,13 +97,10 @@ function renderAusencias() {
   html += '</div>';
 
   container.innerHTML = html;
-  bindAusenciasEvents(saved);
+  bindAusenciasEvents(containerId, saved);
 }
 
-function bindAusenciasEvents(saved) {
-  const container = document.getElementById('ausenciasContent');
-  if (!container) return;
-
+function bindAusenciasEvents(containerId, saved) {
   document.getElementById('ausenciaSalvarBtn')?.addEventListener('click', async () => {
     if (!requireAdmin()) return;
     const colaborador = document.getElementById('ausenciaColabInput').value;
@@ -125,23 +121,39 @@ function bindAusenciasEvents(saved) {
     await dbAusenciasSave(ausencia);
     document.getElementById('ausenciaMotivoInput').value = '';
     showToast(`Ausência registrada para ${colaborador}!`, 'success', 'Ausências');
-    renderAusencias();
+    renderAusencias(containerId);
   });
 
+  const container = document.getElementById(containerId);
+  if (!container) return;
   container.querySelectorAll('.ausencias-del-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!requireAdmin()) return;
       const a = saved.find(x => x.id === btn.dataset.id);
       if (!a || !confirm(`Excluir ausência de ${a.colaborador} em ${formatarData(a.data)}?`)) return;
       await dbAusenciasDelete(a.id);
-      renderAusencias();
+      renderAusencias(containerId);
     });
   });
 }
 
-function onAusenciasTabActivated() {
-  const container = document.getElementById('ausenciasContent');
-  if (!container) return;
-  container.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>';
-  setTimeout(() => renderAusencias(), 50);
+function openAusenciasOverlay() {
+  const overlay = document.getElementById('ausenciasOverlay');
+  if (!overlay) return;
+  const content = document.getElementById('ausenciasOverlayContent');
+  if (!content) return;
+  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>';
+  overlay.classList.add('open');
+  setTimeout(() => renderAusencias('ausenciasOverlayContent'), 50);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('ausenciasBtn')?.addEventListener('click', openAusenciasOverlay);
+  document.getElementById('ausenciasOverlayClose')?.addEventListener('click', () => {
+    document.getElementById('ausenciasOverlay')?.classList.remove('open');
+  });
+  const overlay = document.getElementById('ausenciasOverlay');
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});

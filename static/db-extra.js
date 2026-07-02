@@ -748,6 +748,79 @@ async function dbAusenciasDelete(id) {
   } catch (e) { console.error('[db-extra]', e); }
 }
 
+// ─── AVALIAÇÃO DE ATENDIMENTOS ─────────────────────────────
+
+const AVALIACAO_ATEND_LOCAL_KEY = 'sistema_avaliacao_atendimentos_v1';
+
+async function dbAvaliacaoAtendLoad() {
+  if (!sbClient) return _fallbackLoad(AVALIACAO_ATEND_LOCAL_KEY, []);
+  try {
+    const uid = await _getUserId();
+    if (!uid) return _fallbackLoad(AVALIACAO_ATEND_LOCAL_KEY, []);
+    const { data } = await sbClient.from('avaliacao_atendimentos').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+    if (data && Array.isArray(data) && data.length > 0) {
+      const list = data.map(r => ({
+        id: r.id,
+        protocolo: r.protocolo,
+        colaborador: r.colaborador,
+        nota: r.nota,
+        justa: r.justa,
+        resumo: r.resumo || '',
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+      }));
+      localStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(list));
+      return list;
+    }
+    return _fallbackLoad(AVALIACAO_ATEND_LOCAL_KEY, []);
+  } catch {
+    return _fallbackLoad(AVALIACAO_ATEND_LOCAL_KEY, []);
+  }
+}
+
+async function dbAvaliacaoAtendSave(item) {
+  const list = JSON.parse(localStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY) || '[]');
+  const idx = list.findIndex(a => a.id === item.id);
+  if (idx >= 0) list[idx] = item;
+  else list.unshift(item);
+  localStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(list));
+  if (!sbClient) return;
+  try {
+    const uid = await _getUserId();
+    if (!uid) return;
+    const existing = await sbClient.from('avaliacao_atendimentos').select('id').eq('id', item.id).maybeSingle();
+    if (existing?.data?.id) {
+      await sbClient.from('avaliacao_atendimentos').update({
+        protocolo: item.protocolo,
+        colaborador: item.colaborador,
+        nota: item.nota,
+        justa: item.justa,
+        resumo: item.resumo || '',
+        updated_at: new Date().toISOString()
+      }).eq('id', item.id);
+    } else {
+      await sbClient.from('avaliacao_atendimentos').insert({
+        user_id: uid,
+        protocolo: item.protocolo,
+        colaborador: item.colaborador,
+        nota: item.nota,
+        justa: item.justa,
+        resumo: item.resumo || ''
+      });
+    }
+  } catch (e) { console.error('[db-extra]', e); }
+}
+
+async function dbAvaliacaoAtendDelete(id) {
+  const list = JSON.parse(localStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY) || '[]');
+  const filtered = list.filter(a => a.id !== id);
+  localStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(filtered));
+  if (!sbClient) return;
+  try {
+    await sbClient.from('avaliacao_atendimentos').delete().eq('id', id);
+  } catch (e) { console.error('[db-extra]', e); }
+}
+
 // ─── COLABORADORES INFO (Cadastro) ─────────────────────────────
 
 const COLAB_INFO_LOCAL_KEY = 'sistema_colaboradores_info_v1';
@@ -1079,6 +1152,27 @@ async function migrateLocalToSupabase() {
       }
     }
 
+    // Avaliação de Atendimentos
+    const avRaw = localStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY);
+    if (avRaw) {
+      const av = JSON.parse(avRaw);
+      if (Array.isArray(av) && av.length > 0) {
+        const { data: existing } = await sbClient.from('avaliacao_atendimentos').select('id').eq('user_id', uid).limit(1);
+        if (!existing || existing.length === 0) {
+          for (const a of av) {
+            await sbClient.from('avaliacao_atendimentos').insert({
+              user_id: uid,
+              protocolo: a.protocolo || '',
+              colaborador: a.colaborador || '',
+              nota: parseFloat(a.nota) || 5,
+              justa: a.justa !== false,
+              resumo: a.resumo || ''
+            });
+          }
+        }
+      }
+    }
+
     localStorage.setItem(MIGRATION_FLAG_KEY, '1');
   } catch (e) { console.warn('[db-extra] migrateLocalToSupabase error:', e); }
 }
@@ -1105,7 +1199,8 @@ async function initDbExtra() {
       dbColabInfoLoad(),
       typeof dbAvaliacoesLoad === 'function' ? dbAvaliacoesLoad() : Promise.resolve(),
       typeof dbReportesListar === 'function' ? dbReportesListar() : Promise.resolve(),
-      dbAusenciasLoad()
+      dbAusenciasLoad(),
+      dbAvaliacaoAtendLoad()
     ]);
   } catch (e) { console.error('[db-extra]', e); }
 }
