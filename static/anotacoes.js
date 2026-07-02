@@ -83,7 +83,6 @@ function renderAnotacoes() {
 
   container.innerHTML = html;
   bindAnotacaoEvents(saved);
-  if (typeof initVoiceFields === 'function') initVoiceFields(['anotacaoTextoInput']);
 }
 
 function bindAnotacaoEvents(saved) {

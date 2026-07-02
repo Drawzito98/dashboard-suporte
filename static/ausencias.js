@@ -98,7 +98,6 @@ function renderAusencias(containerId) {
 
   container.innerHTML = html;
   bindAusenciasEvents(containerId, saved);
-  if (typeof initVoiceFields === 'function') initVoiceFields(['ausenciaMotivoInput']);
 }
 
 function bindAusenciasEvents(containerId, saved) {

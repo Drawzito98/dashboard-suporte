@@ -359,7 +359,6 @@ function openColabDetailOverlay(nome) {
 
   content.innerHTML = html;
   overlay.classList.add('open');
-  if (typeof initVoiceFields === 'function') initVoiceFields(['ciObservacoes', 'ciTarefas', 'ciObjetivos', 'ciCondutaMotivo', 'ciEmail']);
 
   document.getElementById('ciSalvarBtn').addEventListener('click', async () => {
     if (!requireAdmin()) return;
