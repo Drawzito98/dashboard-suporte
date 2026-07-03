@@ -110,7 +110,7 @@ function renderFerias(containerId) {
       html += `<span style="font-size:12px;color:var(--text-muted)">${formatarDataBr(f.data_inicio)} → ${formatarDataBr(f.data_fim)} · ${dias} dia(s)</span>`;
       html += '</div>';
       html += '<div class="ausencias-item-actions">';
-      html += `<button class="btn-small ferias-del-btn" data-id="${f.id}" type="button" style="color:var(--danger)">Excluir</button>`;
+      html += `<button class="btn-small ferias-del-btn" data-id="${escapeHtml(f.id)}" type="button" style="color:var(--danger)">Excluir</button>`;
       html += '</div></div>';
     }
     html += '</div>';
@@ -157,9 +157,11 @@ function bindFeriasEvents(containerId, saved) {
   container.querySelectorAll('.ferias-del-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!requireAdmin()) return;
-      const f = saved.find(x => x.id === btn.dataset.id);
+      const id = btn.dataset.id;
+      // Match IDs by string to be robust to numeric/string mix from Supabase
+      const f = saved.find(x => String(x.id) === id);
       if (!f || !confirm(`Excluir férias de ${f.colaborador} (${formatarDataBr(f.data_inicio)} → ${formatarDataBr(f.data_fim)})?`)) return;
-      await dbFeriasDelete(f.id);
+      await dbFeriasDelete(id);
       renderFerias(containerId);
     });
   });
