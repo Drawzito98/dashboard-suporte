@@ -2610,6 +2610,96 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   background: var(--bg-subtle);
 }
 
+/* ===== AVALIAÇÃO — GUIDANCE ===== */
+.avaliacao-guidance {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  margin-bottom: var(--s-4);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.avaliacao-guidance-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.avaliacao-guidance strong {
+  display: block;
+  color: var(--text-strong);
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+.avaliacao-guidance p {
+  margin: 0;
+}
+
+/* ===== AVALIAÇÃO — COMENTÁRIOS IA ===== */
+.avaliacao-comentarios-ia-section {
+  margin-top: var(--s-5);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+}
+.avaliacao-comentarios-ia-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+  flex-wrap: wrap;
+}
+.avaliacao-comentarios-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+.avaliacao-comentario-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+.avaliacao-comentario-item.ia {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+}
+.avaliacao-comentario-item.final {
+  border-left: 3px solid var(--success);
+}
+.avaliacao-comentario-tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+.avaliacao-comentario-tag.final {
+  color: var(--success);
+}
+.avaliacao-comentario-texto {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.avaliacao-comentario-actions {
+  display: flex;
+  gap: var(--s-1);
+  flex-wrap: wrap;
+}
+.avaliacao-comentarios-add {
+  margin-top: var(--s-2);
+}
+
 /* ===== REPORTES ===== */
 .reportes-list {
   display: flex;
