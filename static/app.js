@@ -800,9 +800,8 @@ const valueLabelPlugin = {
         else text = showInteger ? String(Math.round(raw)) : fmt2(raw);
         ctx.save();
         ctx.font = isScore || isCount ? '500 16px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial' : '12px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
-        const _isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        ctx.fillStyle = isScore ? ((typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : (_isDark ? '#e2e8f0' : '#334155')) : ((typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : (_isDark ? '#e2e8f0' : '#334155'));
-        if (isCount) ctx.fillStyle = _isDark ? '#e2e8f0' : '#1e293b';
+        ctx.fillStyle = typeof ChartTheme !== 'undefined' ? ChartTheme.text() : (Chart.defaults && Chart.defaults.color ? Chart.defaults.color : '#1f2937');
+        if (isCount) ctx.fillStyle = typeof ChartTheme !== 'undefined' ? ChartTheme.strong() : (Chart.defaults && Chart.defaults.color ? Chart.defaults.color : '#0f172a');
         ctx.textAlign = 'center';
         ctx.textBaseline = isScore ? 'bottom' : 'bottom';
         const x = element.x !== undefined ? element.x : (element.getCenterPoint ? element.getCenterPoint().x : null);
@@ -844,8 +843,12 @@ const ctx = document.getElementById('mainChart');
 const restoreHiddenBtn = document.getElementById('restoreHiddenBtn');
 
 if (typeof Chart !== 'undefined' && Chart.defaults) {
-  const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
-  Chart.defaults.color = initialTheme === 'dark' ? '#e2e8f0' : '#1f2937';
+  if (typeof ChartTheme !== 'undefined') {
+    ChartTheme.applyDefaults();
+  } else {
+    const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    Chart.defaults.color = initialTheme === 'dark' ? '#e2e8f0' : '#1f2937';
+  }
 }
 
 // ── Removed: parseCsvFile, showImportError, importCsvFiles, onFileInputChange, normalizeRecords, isAggregateName, normalizeNumber, parseDateKey moved to static/csv-import.js ──
@@ -1877,8 +1880,9 @@ function renderChart(rows) {
   sizeChartInnerForLabels(labels.length, 110);
   const maxVal = Math.max(...finData, ...assData, 1);
   const yMax = Math.ceil(maxVal * 2.2 / 100) * 100 || 200;
-  const bgFin = labels.map((_,i) => `rgba(16,185,129,0.85)`);
-  const bgAss = labels.map((_,i) => `rgba(37,99,235,0.85)`);
+  const ct = typeof ChartTheme !== 'undefined' ? ChartTheme : null;
+  const bgFin = labels.map(() => ct ? ct.green() : 'rgba(16,185,129,0.85)');
+  const bgAss = labels.map(() => ct ? ct.blue() : 'rgba(37,99,235,0.85)');
   const cfg = {
     type: 'bar',
     data: {
@@ -1886,7 +1890,7 @@ function renderChart(rows) {
       datasets: [
         { label: 'Assumidos', data: assData, backgroundColor: bgAss, borderRadius: 3, yAxisID: 'y' },
         { label: 'Finalizados', data: finData, backgroundColor: bgFin, borderRadius: 3, yAxisID: 'y' },
-        { label: 'Score', type: 'line', data: scData, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.05)', pointBackgroundColor: '#f59e0b', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true, yAxisID: 'y1' }
+        { label: 'Score', type: 'line', data: scData, borderColor: ct ? ct.amber() : '#f59e0b', backgroundColor: ct ? ct.amber() + '14' : 'rgba(245,158,11,0.05)', pointBackgroundColor: ct ? ct.amber() : '#f59e0b', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true, yAxisID: 'y1' }
       ]
     },
     options: {
@@ -1896,12 +1900,8 @@ function renderChart(rows) {
       plugins: {
         datalabels: { display: false },
         valueLabels: { integer: false },
-        legend: { display: true, position: 'bottom', align: 'center', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 } } },
-        tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.92)',
-          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
-          borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
-          padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6,
+        legend: { display: true, position: 'bottom', align: 'center', labels: { color: ct ? ct.text() : undefined, usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 } } },
+        tooltip: Object.assign({
           callbacks: {
             label: (ctx) => {
               const v = ctx.parsed && ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.raw;
@@ -1909,12 +1909,17 @@ function renderChart(rows) {
               return `${ctx.dataset.label}: ${Math.round(v).toLocaleString('pt-BR')}`;
             }
           }
-        }
+        }, ct ? ct.tooltip({ padding: 12, cornerRadius: 10 }) : {
+          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
+          borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+          padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6
+        })
       },
       scales: {
-        y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 } } },
-        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, callback: v => Number(v).toFixed(2) } },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 } } }
+        y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: ct ? ct.grid() : 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } },
+        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined, callback: v => Number(v).toFixed(2) } },
+        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } }
       }
     }
   };
@@ -1938,14 +1943,15 @@ function renderSingleEvolutionChart(rows) {
   const maxVal = Math.max(...assData, ...finData, 1);
   const yMax = Math.ceil(maxVal * 1.4 / 100) * 100 || 200;
 
+  const ct = typeof ChartTheme !== 'undefined' ? ChartTheme : null;
   const cfg = {
     type: 'bar',
     data: {
       labels: months,
       datasets: [
-        { label: 'Assumidos', data: assData, backgroundColor: 'rgba(37,99,235,0.8)', borderRadius: 3, yAxisID: 'y' },
-        { label: 'Finalizados', data: finData, backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 3, yAxisID: 'y' },
-        { label: 'Score', type: 'line', data: scData, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.05)', pointBackgroundColor: '#f59e0b', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true, yAxisID: 'y1' }
+        { label: 'Assumidos', data: assData, backgroundColor: ct ? ct.blue() : 'rgba(37,99,235,0.8)', borderRadius: 3, yAxisID: 'y' },
+        { label: 'Finalizados', data: finData, backgroundColor: ct ? ct.green() : 'rgba(16,185,129,0.8)', borderRadius: 3, yAxisID: 'y' },
+        { label: 'Score', type: 'line', data: scData, borderColor: ct ? ct.amber() : '#f59e0b', backgroundColor: ct ? ct.amber() + '14' : 'rgba(245,158,11,0.05)', pointBackgroundColor: ct ? ct.amber() : '#f59e0b', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true, yAxisID: 'y1' }
       ]
     },
     options: {
@@ -1955,12 +1961,8 @@ function renderSingleEvolutionChart(rows) {
       plugins: {
         datalabels: { display: false },
         valueLabels: { integer: false },
-        legend: { display: true, position: 'bottom', align: 'center', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 } } },
-        tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.92)',
-          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
-          borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
-          padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6,
+        legend: { display: true, position: 'bottom', align: 'center', labels: { color: ct ? ct.text() : undefined, usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 } } },
+        tooltip: Object.assign({
           callbacks: {
             label: (ctx) => {
               const v = ctx.parsed && ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.raw;
@@ -1968,12 +1970,17 @@ function renderSingleEvolutionChart(rows) {
               return `${ctx.dataset.label}: ${Math.round(v).toLocaleString('pt-BR')}`;
             }
           }
-        }
+        }, ct ? ct.tooltip({ padding: 12, cornerRadius: 10 }) : {
+          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
+          borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+          padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6
+        })
       },
       scales: {
-        y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 } } },
-        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, callback: v => Number(v).toFixed(2) } },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 } } }
+        y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: ct ? ct.grid() : 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } },
+        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined, callback: v => Number(v).toFixed(2) } },
+        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } }
       }
     }
   };
@@ -2048,7 +2055,7 @@ function renderTimelineChart(rows) {
           position: 'bottom',
           align: 'center',
           labels: {
-            color: (typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : '#475569',
+            color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : (Chart.defaults && Chart.defaults.color ? Chart.defaults.color : '#475569'),
             usePointStyle: true, pointStyle: 'circle',
             boxWidth: 8, boxHeight: 8,
             padding: 18,
@@ -2062,12 +2069,8 @@ function renderTimelineChart(rows) {
             updateView();
           }
         },
-        tooltip: {
+        tooltip: Object.assign({
           enabled: true,
-          backgroundColor: 'rgba(15, 23, 42, 0.92)',
-          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
-          borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
-          padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6,
           titleFont: { size: 12, weight: '600' }, bodyFont: { size: 12.5 },
           callbacks: {
             label: (ctx) => {
@@ -2078,11 +2081,16 @@ function renderTimelineChart(rows) {
               return dsLabel + valTxt;
             }
           }
-        }
+        }, typeof ChartTheme !== 'undefined' ? ChartTheme.tooltip({ padding: 12, cornerRadius: 10 }) : {
+          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
+          borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+          padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6
+        })
       },
       scales: {
-        y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.14)' }, ticks: { callback: (v) => (metric !== 'Score') ? String(Math.round(v)) : Number(v).toFixed(2), font: { size: 11.5 } } },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 } } }
+        y: { beginAtZero: true, grid: { color: typeof ChartTheme !== 'undefined' ? ChartTheme.grid() : 'rgba(148,163,184,0.14)' }, ticks: { callback: (v) => (metric !== 'Score') ? String(Math.round(v)) : Number(v).toFixed(2), font: { size: 11.5 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } },
+        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } }
       }
     }
   });
@@ -2117,11 +2125,12 @@ function renderDetailedByMonthChart(rows) {
   const finalizados  = months.map(m => sumBy(m, 'Finalizados'));
   const scores       = months.map(m => avgScore(m));
 
+  const ct = typeof ChartTheme !== 'undefined' ? ChartTheme : null;
   const datasets = [
-  { type: 'bar', label: 'Assumidos', categoryPercentage: 0.7, barPercentage: 0.85,    data: assumidos,    backgroundColor: 'rgba(59,130,246,0.8)',  yAxisID: 'y',  order: 3 },
-  { type: 'bar', label: 'Transferidos', categoryPercentage: 0.7, barPercentage: 0.85, data: transferidos, backgroundColor: 'rgba(249,115,22,0.8)',  yAxisID: 'y',  order: 3 },
-  { type: 'bar', label: 'Finalizados', categoryPercentage: 0.7, barPercentage: 0.85,  data: finalizados,  backgroundColor: 'rgba(16,185,129,0.85)',  yAxisID: 'y',  order: 3 },
-  { type: 'line', label: 'Score médio', data: scores, borderColor: 'rgba(139,92,246,1)', backgroundColor: 'rgba(139,92,246,0.15)', borderWidth: 2.5, tension: 0.3, yAxisID: 'yScore', order: 1, spanGaps: true, pointRadius: 5, pointBackgroundColor: 'rgba(139,92,246,1)' }
+  { type: 'bar', label: 'Assumidos', categoryPercentage: 0.7, barPercentage: 0.85,    data: assumidos,    backgroundColor: ct ? ct.blue() : 'rgba(59,130,246,0.8)',  yAxisID: 'y',  order: 3 },
+  { type: 'bar', label: 'Transferidos', categoryPercentage: 0.7, barPercentage: 0.85, data: transferidos, backgroundColor: ct ? ct.orange() : 'rgba(249,115,22,0.8)',  yAxisID: 'y',  order: 3 },
+  { type: 'bar', label: 'Finalizados', categoryPercentage: 0.7, barPercentage: 0.85,  data: finalizados,  backgroundColor: ct ? ct.green() : 'rgba(16,185,129,0.85)',  yAxisID: 'y',  order: 3 },
+  { type: 'line', label: 'Score médio', data: scores, borderColor: ct ? ct.purple() : 'rgba(139,92,246,1)', backgroundColor: ct ? ct.purple() + '26' : 'rgba(139,92,246,0.15)', borderWidth: 2.5, tension: 0.3, yAxisID: 'yScore', order: 1, spanGaps: true, pointRadius: 5, pointBackgroundColor: ct ? ct.purple() : 'rgba(139,92,246,1)' }
   ];
 
   const ctx = document.getElementById('mainChart').getContext('2d');
@@ -2142,7 +2151,7 @@ function renderDetailedByMonthChart(rows) {
           position: 'bottom',
           align: 'center',
           labels: {
-            color: (typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : '#475569',
+            color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : (Chart.defaults && Chart.defaults.color ? Chart.defaults.color : '#475569'),
             usePointStyle: true, pointStyle: 'circle',
             boxWidth: 8, boxHeight: 8,
             padding: 18,
@@ -2156,11 +2165,7 @@ function renderDetailedByMonthChart(rows) {
             ci.update();
           }
         },
-        tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.92)',
-          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
-          borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
-          padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6,
+        tooltip: Object.assign({
           titleFont: { size: 12, weight: '600' }, bodyFont: { size: 12.5 },
           callbacks: {
             label: (c) => {
@@ -2170,12 +2175,17 @@ function renderDetailedByMonthChart(rows) {
               return `${c.dataset.label}: ${isScore ? Number(v).toFixed(2) : Math.round(v)}`;
             }
           }
-        }
+        }, typeof ChartTheme !== 'undefined' ? ChartTheme.tooltip({ padding: 12, cornerRadius: 10 }) : {
+          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
+          borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+          padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6
+        })
       },
       scales: {
-        y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(148,163,184,0.14)' }, title: { display: true, text: 'Atendimentos', font: { size: 11.5, weight: '600' } }, ticks: { callback: v => String(Math.round(v)), font: { size: 11.5 } } },
-        yScore: { beginAtZero: true, suggestedMin: 0, suggestedMax: 5, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Score médio (0–5)', font: { size: 11.5, weight: '600' } }, ticks: { callback: v => Number(v).toFixed(1), font: { size: 11.5 } } },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 } } }
+        y: { beginAtZero: true, position: 'left', grid: { color: typeof ChartTheme !== 'undefined' ? ChartTheme.grid() : 'rgba(148,163,184,0.14)' }, title: { display: true, text: 'Atendimentos', font: { size: 11.5, weight: '600' }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined }, ticks: { callback: v => String(Math.round(v)), font: { size: 11.5 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } },
+        yScore: { beginAtZero: true, suggestedMin: 0, suggestedMax: 5, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Score médio (0–5)', font: { size: 11.5, weight: '600' }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined }, ticks: { callback: v => Number(v).toFixed(1), font: { size: 11.5 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } },
+        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } }
       }
     }
   });
@@ -2197,7 +2207,8 @@ function drawBar(labels, data, label, opts = {}) {
     }
   }
 
-  const bg = labels.map((_,i) => `rgba(37,99,235,${Math.max(0.4, 0.9 - i*0.05)})`);
+  const ct = typeof ChartTheme !== 'undefined' ? ChartTheme : null;
+  const bg = labels.map((_,i) => ct ? ct.blue() : `rgba(37,99,235,${Math.max(0.4, 0.9 - i*0.05)})`);
   sizeChartInnerForLabels(labels.length, 90);
   const cfg = {
     type: 'bar',
@@ -2209,11 +2220,7 @@ function drawBar(labels, data, label, opts = {}) {
       plugins: {
         valueLabels: { integer },
         legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.92)',
-          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
-          borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
-          padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6,
+        tooltip: Object.assign({
           titleFont: { size: 12, weight: '600' }, bodyFont: { size: 12.5 },
           callbacks: {
             label: (ctx) => {
@@ -2221,15 +2228,20 @@ function drawBar(labels, data, label, opts = {}) {
               return `${ctx.dataset.label ? ctx.dataset.label + ': ' : ''}${integer ? String(Math.round(v)) : Number(v).toFixed(2)}`;
             }
           }
-        }
+        }, ct ? ct.tooltip({ padding: 12, cornerRadius: 10 }) : {
+          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          titleColor: '#f8fafc', bodyColor: '#e2e8f0',
+          borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+          padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 6
+        })
       },
       scales: {
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(148,163,184,0.14)' },
-          ticks: { callback: (v) => integer ? String(Math.round(v)) : Number(v).toFixed(2), font: { size: 11.5 } }
+          grid: { color: ct ? ct.grid() : 'rgba(148,163,184,0.14)' },
+          ticks: { callback: (v) => integer ? String(Math.round(v)) : Number(v).toFixed(2), font: { size: 11.5 }, color: ct ? ct.text() : undefined }
         },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 } } }
+        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } }
       }
     }
   };
@@ -2237,24 +2249,25 @@ function drawBar(labels, data, label, opts = {}) {
 }
 
 function drawLine(labels, data, label) {
+  const ct = typeof ChartTheme !== 'undefined' ? ChartTheme : null;
   const cfg = {
     type: 'line',
-    data: { labels, datasets: [{ label, data, borderColor: 'rgba(37,99,235,1)', backgroundColor: 'rgba(37,99,235,0.1)', tension: 0.3, fill: true, pointBackgroundColor: 'rgba(37,99,235,1)', pointRadius: 4 }] },
+    data: { labels, datasets: [{ label, data, borderColor: ct ? ct.blue() : 'rgba(37,99,235,1)', backgroundColor: ct ? ct.blue() + '1a' : 'rgba(37,99,235,0.1)', tension: 0.3, fill: true, pointBackgroundColor: ct ? ct.blue() : 'rgba(37,99,235,1)', pointRadius: 4 }] },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        tooltip: {
+        tooltip: Object.assign({
           callbacks: {
             label: (ctx) => {
               const v = ctx.parsed && ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.raw;
               return `${ctx.dataset.label ? ctx.dataset.label + ': ' : ''}${Number(v).toFixed(2)}`;
             }
           }
-        }
+        }, ct ? ct.tooltip() : {})
       },
       scales: {
-        y: { ticks: { callback: (v) => Number(v).toFixed(2) } }
+        y: { ticks: { callback: (v) => Number(v).toFixed(2), color: ct ? ct.text() : undefined } }
       }
     }
   };
@@ -3257,7 +3270,11 @@ function setCaretToEnd(el) {
     document.documentElement.setAttribute('data-theme', t);
     try { localStorage.setItem('theme', t); } catch(e) {}
     if (typeof Chart !== 'undefined' && Chart.defaults) {
-      Chart.defaults.color = t === 'dark' ? '#e2e8f0' : '#1f2937';
+      if (typeof ChartTheme !== 'undefined') {
+        ChartTheme.applyDefaults();
+      } else {
+        Chart.defaults.color = t === 'dark' ? '#e2e8f0' : '#1f2937';
+      }
     }
     updateButtons(t);
     updateChartTheme();

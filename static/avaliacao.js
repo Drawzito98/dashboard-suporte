@@ -1217,11 +1217,11 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
       datasets: [{
         label: av.colaborador,
         data: scores.map(s => s.nota),
-        backgroundColor: 'rgba(37,99,235,0.2)',
-        borderColor: '#2563eb',
+        backgroundColor: ChartTheme.accent() + '33',
+        borderColor: ChartTheme.accent(),
         borderWidth: 2,
-        pointBackgroundColor: '#2563eb',
-        pointBorderColor: '#fff',
+        pointBackgroundColor: ChartTheme.accent(),
+        pointBorderColor: ChartTheme.canvas(),
         pointBorderWidth: 1,
         pointRadius: 3
       }]
@@ -1240,13 +1240,13 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
             ticks: {
               stepSize: 1,
               backdropColor: 'transparent',
-              color: isDark ? '#94a3b8' : '#64748b',
+              color: ChartTheme.text(),
               font: { size: 10 }
             },
-            grid: { color: isDark ? '#334155' : '#e2e8f0' },
-            angleLines: { color: isDark ? '#334155' : '#e2e8f0' },
+            grid: { color: ChartTheme.border() },
+            angleLines: { color: ChartTheme.border() },
             pointLabels: {
-              color: isDark ? '#e2e8f0' : '#334155',
+              color: ChartTheme.text(),
               font: { size: 8.5 },
               padding: 16
             }

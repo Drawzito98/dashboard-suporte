@@ -196,7 +196,7 @@ function renderColabDetailChart(monthlyData) {
         {
           label: 'Finalizados',
           data: finalizados,
-          backgroundColor: 'rgba(16,185,129,0.8)',
+          backgroundColor: ChartTheme.green(),
           yAxisID: 'y',
           order: 2
         },
@@ -204,8 +204,8 @@ function renderColabDetailChart(monthlyData) {
           label: 'Score médio',
           data: scores,
           type: 'line',
-          borderColor: 'rgba(99,102,241,1)',
-          backgroundColor: 'rgba(99,102,241,0.1)',
+          borderColor: ChartTheme.indigo(),
+          backgroundColor: ChartTheme.indigo().replace('0.85)', '0.1)'),
           tension: 0.3,
           fill: true,
           pointRadius: 4,
@@ -225,7 +225,7 @@ function renderColabDetailChart(monthlyData) {
         }
       },
       scales: {
-        y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11 } } },
+        y: { beginAtZero: true, position: 'left', grid: { color: ChartTheme.grid() }, ticks: { font: { size: 11 } } },
         y1: { beginAtZero: true, suggestedMax: 5, position: 'right', grid: { display: false }, ticks: { font: { size: 11 } } },
         x: { grid: { display: false }, ticks: { font: { size: 11 } } }
       }

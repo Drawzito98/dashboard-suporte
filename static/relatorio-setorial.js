@@ -55,24 +55,24 @@ function _renderFilterBar(setores, meses) {
   const ss = __rsFilterState.sector || '';
   const ms = __rsFilterState.monthStart || '';
   const me = __rsFilterState.monthEnd || '';
-  return `<div class="rs-filter-bar" style="display:flex;gap:var(--s-3);align-items:flex-end;flex-wrap:wrap;margin-bottom:var(--s-5);padding:var(--s-4);background:var(--bg-elevated);border-radius:8px">
-    <div style="display:flex;flex-direction:column;gap:4px;min-width:180px">
-      <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase">Setor</label>
-      <select id="rsFilterSector" class="filter-select" style="padding:var(--s-2) var(--s-3);border-radius:6px;border:1px solid var(--border-color,#334155);background:var(--bg-surface,#0f172a);color:var(--text-primary);font-size:13px">
+  return `<div class="rs-filter-bar">
+    <div class="rs-filter-group sector">
+      <label>Setor</label>
+      <select id="rsFilterSector">
         <option value="">Todos os setores</option>
         ${setores.map(s => `<option value="${escapeHtml(s)}"${ss === s ? ' selected' : ''}>${escapeHtml(s)}</option>`).join('')}
       </select>
     </div>
-    <div style="display:flex;flex-direction:column;gap:4px;min-width:130px">
-      <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase">De</label>
-      <select id="rsFilterMonthStart" class="filter-select" style="padding:var(--s-2) var(--s-3);border-radius:6px;border:1px solid var(--border-color,#334155);background:var(--bg-surface,#0f172a);color:var(--text-primary);font-size:13px">
+    <div class="rs-filter-group period">
+      <label>De</label>
+      <select id="rsFilterMonthStart">
         <option value="">Selecionar</option>
         ${meses.map(m => `<option value="${escapeHtml(m)}"${ms === m ? ' selected' : ''}>${escapeHtml(m)}</option>`).join('')}
       </select>
     </div>
-    <div style="display:flex;flex-direction:column;gap:4px;min-width:130px">
-      <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase">Até</label>
-      <select id="rsFilterMonthEnd" class="filter-select" style="padding:var(--s-2) var(--s-3);border-radius:6px;border:1px solid var(--border-color,#334155);background:var(--bg-surface,#0f172a);color:var(--text-primary);font-size:13px">
+    <div class="rs-filter-group period">
+      <label>Até</label>
+      <select id="rsFilterMonthEnd">
         <option value="">Selecionar</option>
         ${meses.map(m => `<option value="${escapeHtml(m)}"${me === m ? ' selected' : ''}>${escapeHtml(m)}</option>`).join('')}
       </select>
@@ -699,19 +699,21 @@ function renderRelatorioSetorial() {
 
 function _showModalAtendentes(nomes) {
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.className = 'rs-modal-overlay';
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 
   const box = document.createElement('div');
-  box.style.cssText = 'background:var(--bg-surface,#1e293b);border-radius:8px;padding:var(--s-5,24px);max-width:420px;width:90%;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 4px 24px rgba(0,0,0,0.4)';
+  box.className = 'rs-modal-box';
 
   box.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-4,16px)">
-      <h3 style="margin:0;font-size:15px;font-weight:600;color:var(--text-strong)">Atendentes (${nomes.length})</h3>
-      <button type="button" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>
+    <div class="rs-modal-header">
+      <h3 class="rs-modal-title">Atendentes (${nomes.length})</h3>
+      <button type="button" class="rs-modal-close">&times;</button>
     </div>
-    <div style="overflow-y:auto;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2,8px)">
-      ${nomes.map(n => `<div style="font-size:13px;color:var(--text-primary);padding:var(--s-1,4px) 0">${escapeHtml ? escapeHtml(n) : n}</div>`).join('')}
+    <div class="rs-modal-body">
+      <ul class="rs-modal-list">
+        ${nomes.map(n => `<li>${escapeHtml ? escapeHtml(n) : n}</li>`).join('')}
+      </ul>
     </div>
   `;
 

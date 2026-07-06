@@ -713,9 +713,8 @@ tbody tr:nth-child(even) td { background: var(--bg-inset); }
 tbody tr:nth-child(even):hover td { background: var(--bg-subtle); }
 tbody tr:last-child td { border-bottom: none; }
 
-html[data-theme="dark"] tbody tr:nth-child(even) td { background: #1a2745; }
-html[data-theme="dark"] tbody tr td:last-child { background: #131c2f; }
-html[data-theme="dark"] tbody tr:nth-child(even) td:last-child { background: #1a2745; }
+html[data-theme="dark"] tbody tr td:last-child { background: var(--bg-surface); }
+html[data-theme="dark"] tbody tr:nth-child(even) td:last-child { background: var(--bg-inset); }
 html[data-theme="dark"] tbody tr:hover td:last-child { background: var(--bg-subtle); }
 
 #previewTable th:first-child,
@@ -2023,7 +2022,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 .rs-container .rs-kpis .kpi {
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 18px 20px;
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
@@ -2090,7 +2089,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 .rs-container .rs-people-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 18px 20px;
   text-align: center;
   box-shadow: var(--shadow-sm);
@@ -2127,7 +2126,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 .rs-container .card:hover {
   box-shadow: var(--shadow-md);
@@ -2161,6 +2160,121 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 }
 .rs-container #rsPrintBtn:hover {
   background: var(--accent-hover);
+}
+
+.rs-filter-bar {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: var(--s-4);
+  background: var(--bg-elevated, var(--bg-surface));
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  margin-bottom: var(--s-5);
+}
+.rs-filter-bar label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rs-filter-bar select,
+.rs-filter-bar .filter-select {
+  padding: var(--s-2) var(--s-3);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, var(--border-strong));
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  min-width: 0;
+  transition: border-color var(--t-fast);
+}
+.rs-filter-bar select:hover,
+.rs-filter-bar .filter-select:hover {
+  border-color: var(--accent);
+}
+.rs-filter-bar select:focus,
+.rs-filter-bar .filter-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-ring);
+}
+.rs-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rs-filter-group.sector { min-width: 200px; }
+.rs-filter-group.period { min-width: 140px; }
+
+.rs-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rs-modal-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-5);
+  max-width: 420px;
+  width: 90%;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+.rs-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--s-4);
+}
+.rs-modal-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.rs-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.rs-modal-close:hover {
+  color: var(--text-primary);
+}
+.rs-modal-body {
+  overflow-y: auto;
+  flex: 1;
+}
+.rs-modal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rs-modal-list li {
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+}
+.rs-modal-list li:last-child {
+  border-bottom: none;
 }
 
 /* ===== Responsivo: Relatório Setorial ===== */

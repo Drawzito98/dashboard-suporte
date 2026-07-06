@@ -391,7 +391,7 @@ function renderIndividualScoreChart(name, months, ranking, aliasMap) {
 
   // Determine color based on score trend
   const lastVal = scores.filter(s => s !== null).slice(-1)[0] || 0;
-  const lineColor = lastVal >= 4 ? 'rgba(16,185,129,0.9)' : (lastVal >= 3 ? 'rgba(249,115,22,0.9)' : 'rgba(239,68,68,0.9)');
+  const lineColor = lastVal >= 4 ? ChartTheme.green() : (lastVal >= 3 ? ChartTheme.orange() : ChartTheme.red());
 
   if (window.__individualEvolutionChart) {
     try { window.__individualEvolutionChart.destroy(); } catch (e) {}
@@ -419,7 +419,7 @@ function renderIndividualScoreChart(name, months, ranking, aliasMap) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          backgroundColor: ChartTheme.tooltip(),
           titleColor: '#f8fafc',
           bodyColor: '#e2e8f0',
           padding: 12,
@@ -433,7 +433,7 @@ function renderIndividualScoreChart(name, months, ranking, aliasMap) {
         y: {
           beginAtZero: true,
           suggestedMax: 5,
-          grid: { color: 'rgba(148,163,184,0.14)' },
+          grid: { color: ChartTheme.grid() },
           ticks: { font: { size: 11.5 }, stepSize: 1 }
         },
         x: {
