@@ -191,6 +191,9 @@ function renderRelatorioSetorial() {
   const fmtNum = n => (Number(n) || 0).toLocaleString('pt-BR');
   const fmtScore = n => n > 0 ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014';
   const fmtPct = n => n !== null && n !== undefined ? (n * 100).toFixed(1) + '%' : '\u2014';
+  const _isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const _chartTextColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() || (_isDark ? '#e2e8f0' : '#1f2937');
+  const _chartGridColor = _isDark ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.15)';
 
   // Métricas por setor (para análise)
   const setorMetrics = setores.map(s => {
@@ -615,8 +618,9 @@ function renderRelatorioSetorial() {
           datasets: [{
             label: 'Finalizados',
             data: monthData.map(d => d.fin),
-            backgroundColor: 'rgba(16,185,129,0.92)',
-            borderRadius: 3,
+            backgroundColor: _isDark ? 'rgba(52,211,153,0.85)' : 'rgba(16,185,129,0.92)',
+            borderRadius: 4,
+            borderSkipped: false,
             yAxisID: 'y'
           }]
         },
@@ -630,7 +634,7 @@ function renderRelatorioSetorial() {
                 value: {
                   anchor: 'center',
                   align: 'center',
-                  color: '#fff',
+                  color: _isDark ? '#0b1120' : '#fff',
                   font: { weight: 'bold', size: 10 },
                   formatter: value => value.toLocaleString('pt-BR')
                 },
@@ -641,7 +645,7 @@ function renderRelatorioSetorial() {
                   },
                   anchor: 'end',
                   align: 'end',
-                  color: () => (typeof Chart!=='undefined' && Chart.defaults && Chart.defaults.color) ? Chart.defaults.color : '#1e293b',
+                  color: _chartTextColor,
                   font: { weight: '600', size: 12 },
                   formatter: (value, ctx) => {
                     const i = ctx.dataIndex;
@@ -663,8 +667,8 @@ function renderRelatorioSetorial() {
             }
           },
           scales: {
-            y: { beginAtZero: true, grace: '20%', position: 'left', grid: { color: 'rgba(148,163,184,0.12)' }, ticks: { font: { size: 10 } } },
-            x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            y: { beginAtZero: true, grace: '20%', position: 'left', grid: { color: _chartGridColor }, ticks: { font: { size: 10 }, color: _chartTextColor } },
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, color: _chartTextColor } }
           }
         }
       });
