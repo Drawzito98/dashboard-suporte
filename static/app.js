@@ -1879,6 +1879,7 @@ function renderChart(rows) {
   }
   const aliasMap = buildAliasMap(labels);
   const displayLabels = labels.map(l => getDisplayName(l, aliasMap));
+  const firstNameLabels = displayLabels.map(l => getFirstName(l));
   const finData = labels.map(l => finMap.get(l) || 0);
   const assData = labels.map(l => assMap.get(l) || 0);
   const scData = labels.map(l => { const s = scMap.get(l), c = scCount.get(l); return c ? Number((s/c).toFixed(2)) : null; });
@@ -1924,7 +1925,7 @@ function renderChart(rows) {
       scales: {
         y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: ct ? ct.grid() : 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } },
         y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined, callback: v => Number(v).toFixed(2) } },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined, callback: function(val, idx) { return getFirstName(this.data.labels[idx]); } } }
+        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined, callback: function(val, idx) { return firstNameLabels[idx]; } } }
       }
     }
   };
