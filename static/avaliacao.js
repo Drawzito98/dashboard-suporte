@@ -151,14 +151,14 @@ function renderAvaliacao() {
         </div>
         <div class="avaliacao-form-controls">
           <label class="field">
-            <span>Colaborador <span style="color:var(--danger)">*</span></span>
+            <span>Colaborador</span>
             <select id="avaliacaoColabSelect">
               <option value="">Selecione...</option>
               ${colabs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
             </select>
           </label>
           <label class="field">
-            <span>Período <span style="color:var(--danger)">*</span></span>
+            <span>Período</span>
             <div style="display:flex;gap:6px;align-items:center">
               <select id="avaliacaoMesInicio" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"></select>
               <span style="font-size:13px;color:var(--text-secondary)">até</span>
