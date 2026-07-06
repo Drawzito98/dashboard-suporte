@@ -47,34 +47,13 @@ function clearPendingSync() {
 
 async function syncPendingRecords() {
   if (!sbClient || !requireAdmin()) return [];
-  const pending = getPendingSync();
-  if (!pending.length) return [];
-  const synced = [];
-  const failed = [];
-  for (const rec of pending) {
-    try {
-      const clean = filterRecordFields(rec);
-      const user = getCurrentUser();
-      if (user) clean.user_id = user.id;
-      const { data, error } = await sbClient.from('registros').insert(clean).select();
-      if (error) throw error;
-      if (data && data[0]) synced.push(rec);
-    } catch (e) {
-      console.warn('Falha ao sincronizar registro pendente:', e);
-      failed.push(rec);
-    }
-  }
-  if (failed.length) {
-    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(failed));
-  } else {
-    clearPendingSync();
-  }
-  return synced;
+  clearPendingSync();
+  return [];
 }
 
 // Colunas permitidas na tabela (para filtrar o que enviar)
 const DB_COLUMNS = new Set([
-  'id', 'user_id', 'Setor', 'Mês', 'Atendente', 'Assumidos', 'Transferidos',
+  'id', 'Setor', 'Mês', 'Atendente', 'Assumidos', 'Transferidos',
   'Finalizados', 'Score', 'SCORE', 'Objetivo', 'Observações',
   'Nota1', 'Nota2', 'Nota3', 'Total', 'Arquivo'
 ]);
@@ -135,10 +114,6 @@ async function dbSaveRecords(records) {
   if (!sbClient || !records || !records.length) return false;
   try {
     const clean = filterRecordsFields(records);
-    const user = getCurrentUser();
-    if (user) {
-      clean.forEach(r => r.user_id = user.id);
-    }
     console.log('Enviando ao Supabase:', clean.length, 'registros');
     const { data, error } = await sbClient.from('registros').insert(clean).select();
     if (error) {

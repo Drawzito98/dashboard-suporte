@@ -15,30 +15,6 @@ function temFeriasSobrepostas(colaborador, inicio, fim, ignoreId) {
   });
 }
 
-function feriasConfirmModal(colaborador, inicio, fim) {
-  return new Promise(resolve => {
-    const overlay = document.createElement('div');
-    overlay.className = 'mt-modal-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px';
-    overlay.innerHTML = `
-      <div style="width:100%;max-width:400px;background:var(--bg-surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:var(--r-xl,12px);box-shadow:var(--shadow-lg,0 12px 40px rgba(0,0,0,0.12));padding:24px;position:relative">
-        <h3 style="font-size:18px;font-weight:600;color:var(--text-strong);margin:0 0 12px">Excluir Férias</h3>
-        <p style="color:var(--text-secondary);font-size:14px;line-height:1.5;margin:0 0 20px">Tem certeza que deseja excluir as férias de <strong>${escapeHtml(colaborador)}</strong> (${inicio} → ${fim})?</p>
-        <div style="display:flex;justify-content:flex-end;gap:8px">
-          <button class="btn-small" id="fCancelBtn" type="button">Cancelar</button>
-          <button class="btn-primary" id="fConfirmBtn" type="button" style="background:var(--danger);border-color:var(--danger)">Excluir</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    requestAnimationFrame(() => overlay.style.display = 'flex');
-
-    const close = (result) => { overlay.remove(); resolve(result); };
-    overlay.querySelector('#fCancelBtn').onclick = () => close(false);
-    overlay.querySelector('#fConfirmBtn').onclick = () => close(true);
-    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
-  });
-}
-
 function statusFerias(data_inicio, data_fim) {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
@@ -319,18 +295,13 @@ function bindFeriasEvents(containerId, saved) {
     const delBtns = fContainer.querySelectorAll('.ferias-del-btn');
     delBtns.forEach(btn => {
       btn.addEventListener('click', async () => {
-        try {
-          if (!requireAdmin()) { showToast('Apenas administradores podem excluir férias.', 'error', 'Férias'); return; }
-          const id = btn.dataset.id;
-          const f = saved.find(x => String(x.id) === id);
-          if (!f) return;
-          const ok = confirm(`Excluir férias de ${f.colaborador} (${formatarDataBr(f.data_inicio)} → ${formatarDataBr(f.data_fim)})?`);
-          if (!ok) return;
-          await dbFeriasDelete(id);
-          renderFerias(containerId);
-        } catch (err) {
-          console.error('[Férias] delete error:', err);
-        }
+        if (!requireAdmin()) { showToast('Apenas administradores podem excluir férias.', 'error', 'Férias'); return; }
+        const id = btn.dataset.id;
+        const f = saved.find(x => String(x.id) === id);
+        if (!f) return;
+        if (!confirm(`Excluir férias de ${f.colaborador} (${formatarDataBr(f.data_inicio)} → ${formatarDataBr(f.data_fim)})?`)) return;
+        await dbFeriasDelete(id);
+        renderFerias(containerId);
       });
     });
   }
