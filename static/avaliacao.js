@@ -309,7 +309,7 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
               <div class="avaliacao-questao-inputs">
                 <div class="avaliacao-notas">
                   ${NOTAS.map(n => `
-                    <label class="avaliacao-nota-label ${Number(val) === n.valor ? 'selected' : ''}">
+                    <label class="avaliacao-nota-label ${Number(val) === n.valor ? 'selected' : ''}" title="${escapeHtml(n.label)}">
                       <input type="radio" name="score_${comp.id}" value="${n.valor}" ${Number(val) === n.valor ? 'checked' : ''} class="avaliacao-nota-radio"/>
                       <span>${n.valor}</span>
                     </label>
