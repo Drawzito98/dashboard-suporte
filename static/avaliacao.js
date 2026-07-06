@@ -148,14 +148,14 @@ function renderAvaliacao() {
         </div>
         <div class="avaliacao-form-controls">
           <label class="field">
-            <span>Colaborador</span>
+            <span>Colaborador <span style="color:var(--danger)">*</span></span>
             <select id="avaliacaoColabSelect">
               <option value="">Selecione...</option>
               ${colabs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
             </select>
           </label>
           <label class="field">
-            <span>Período</span>
+            <span>Período <span style="color:var(--danger)">*</span></span>
             <div style="display:flex;gap:6px;align-items:center">
               <select id="avaliacaoMesInicio" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"></select>
               <span style="font-size:13px;color:var(--text-secondary)">até</span>
@@ -163,7 +163,6 @@ function renderAvaliacao() {
             </div>
           </label>
           <div style="display:flex;gap:var(--s-2);margin-top:var(--s-2);flex-wrap:wrap">
-            <button class="btn-primary" id="avaliacaoCarregarBtn" type="button" disabled>📋 Carregar avaliação</button>
             <button class="btn-small" id="avaliacaoNovaBtn" type="button">➕ Nova avaliação</button>
             <button class="btn-primary" id="avaliacaoSugerirNotasBtn" type="button" style="background:#8B5CF6;font-size:12px;padding:6px 12px">🎯 Sugerir Notas Inteligentes</button>
           </div>
@@ -187,6 +186,7 @@ function renderAvaliacao() {
               ${colabs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
             </select>
           </label>
+          <button class="btn-primary" id="avaliacaoCarregarBtn" type="button" disabled style="align-self:flex-end">📋 Carregar selecionada</button>
         </div>
         <div id="avaliacaoHistoricoLista"></div>
       </div>
@@ -216,7 +216,7 @@ function renderAvaliacao() {
   }
 
   document.getElementById('avaliacaoColabSelect').addEventListener('change', () => {
-    document.getElementById('avaliacaoCarregarBtn').disabled = !document.getElementById('avaliacaoColabSelect').value;
+    document.getElementById('avaliacaoCarregarBtn').disabled = true;
   });
 
   document.getElementById('avaliacaoNovaBtn').addEventListener('click', () => {
@@ -226,16 +226,12 @@ function renderAvaliacao() {
   });
 
   document.getElementById('avaliacaoCarregarBtn').addEventListener('click', () => {
-    const colab = document.getElementById('avaliacaoColabSelect').value;
-    const ciclo = getCicloFromPeriod();
-    if (!colab) { showToast('Selecione um colaborador.', 'error'); return; }
+    const sel = document.querySelector('.avaliacao-historico-item.selected');
+    if (!sel) { showToast('Selecione uma avaliação no histórico.', 'error'); return; }
+    const colab = sel.dataset.colab;
+    const ciclo = sel.dataset.ciclo;
     const existing = avaliacoes.find(a => a.colaborador === colab && a.ciclo === ciclo);
-    if (existing) {
-      renderAvaliacaoForm(colab, ciclo, existing);
-    } else {
-      showToast('Nenhuma avaliação encontrada para este colaborador no período selecionado.', 'info');
-      renderAvaliacaoForm(colab, ciclo, null);
-    }
+    if (existing) renderAvaliacaoForm(colab, ciclo, existing);
   });
 
   const sugerirBtn = document.getElementById('avaliacaoSugerirNotasBtn');
@@ -246,6 +242,7 @@ function renderAvaliacao() {
   });
 
   document.getElementById('avaliacaoHistSelect').addEventListener('change', () => {
+    document.getElementById('avaliacaoCarregarBtn').disabled = true;
     renderHistoricoAvaliacoes();
   });
 
@@ -930,7 +927,7 @@ function renderHistoricoAvaliacoes() {
     const corMedia = media !== '—' ? (media >= 3 ? 'var(--success)' : media >= 2 ? 'var(--warning)' : 'var(--danger)') : 'var(--text-muted)';
 
     html += `
-      <div class="avaliacao-historico-item">
+      <div class="avaliacao-historico-item" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}">
         <div class="avaliacao-historico-header">
           <strong>${escapeHtml(av.colaborador)}</strong>
           <span class="avaliacao-historico-ciclo">${escapeHtml(av.ciclo)}</span>
@@ -976,6 +973,21 @@ function renderHistoricoAvaliacoes() {
       await dbAvaliacaoDelete(btn.dataset.id);
       showToast('Avaliação excluída.', 'success');
       renderAvaliacao();
+    });
+  });
+
+  container.querySelectorAll('.avaliacao-historico-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      container.querySelectorAll('.avaliacao-historico-item').forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+      document.getElementById('avaliacaoCarregarBtn').disabled = false;
+    });
+    item.addEventListener('dblclick', () => {
+      const colab = item.dataset.colab;
+      const ciclo = item.dataset.ciclo;
+      const existing = getAvaliacoesLocal().find(a => a.colaborador === colab && a.ciclo === ciclo);
+      if (existing) renderAvaliacaoForm(colab, ciclo, existing);
     });
   });
 

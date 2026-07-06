@@ -2545,6 +2545,11 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   border-color: var(--accent);
   box-shadow: 0 1px 4px var(--accent-ring);
 }
+.avaliacao-historico-item.selected {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 2px rgba(139,92,246,0.25);
+  background: rgba(139,92,246,0.05);
+}
 
 .avaliacao-historico-header {
   display: flex;
