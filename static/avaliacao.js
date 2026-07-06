@@ -162,6 +162,10 @@ function renderAvaliacao() {
               <select id="avaliacaoMesFim" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"></select>
             </div>
           </label>
+          <label class="field" style="margin-top:var(--s-2)">
+            <span>📝 Avaliação qualitativa <span style="font-size:11px;color:var(--text-muted)">(opcional — usado nas sugestões)</span></span>
+            <textarea id="avaliacaoQualitativa" rows="2" placeholder="Ex: Colaborador proativo, mas precisa melhorar organização e pontualidade..." style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:12px;resize:vertical;font-family:inherit;line-height:1.4"></textarea>
+          </label>
           <div style="display:flex;gap:var(--s-2);margin-top:var(--s-2);flex-wrap:wrap">
             <button class="btn-small" id="avaliacaoNovaBtn" type="button">➕ Nova avaliação</button>
             <button class="btn-primary" id="avaliacaoSugerirNotasBtn" type="button" style="background:#8B5CF6;font-size:12px;padding:6px 12px">🎯 Sugerir Notas Inteligentes</button>
@@ -492,11 +496,13 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
         };
         const nota = parseInt(this.value);
         const nome = nomes[compId] || '';
+        const qualEl = document.getElementById('avaliacaoQualitativa');
+        const refQual = qualEl && qualEl.value.trim() ? ` (com base na avaliação qualitativa fornecida)` : '';
         const textos = {
-          1: `O colaborador precisa desenvolver ${nome}. Recomenda-se acompanhamento próximo e feedback direcionado.`,
-          2: `O colaborador apresenta desempenho inicial em ${nome}. Pontos de melhoria podem ser trabalhados com orientação.`,
-          3: `O colaborador demonstra bom nível de ${nome}. Segue contribuindo de forma consistente.`,
-          4: `O colaborador se destaca em ${nome}, superando as expectativas de forma consistente.`
+          1: `O colaborador precisa desenvolver ${nome}. Recomenda-se acompanhamento próximo e feedback direcionado.${refQual}`,
+          2: `O colaborador apresenta desempenho inicial em ${nome}. Pontos de melhoria podem ser trabalhados com orientação.${refQual}`,
+          3: `O colaborador demonstra bom nível de ${nome}. Segue contribuindo de forma consistente.${refQual}`,
+          4: `O colaborador se destaca em ${nome}, superando as expectativas de forma consistente.${refQual}`
         };
         obsInput.value = textos[nota] || '';
       }
@@ -729,6 +735,42 @@ function gerarSugestoesIA(colaborador, ciclo, existing, replaceIndex) {
   }
 }
 
+function analisarQualitativa(texto) {
+  if (!texto || !texto.trim()) return { score: 0, mencoes: {} };
+  const t = texto.toLowerCase();
+  const positivas = ['bom','ótimo','excelente','destaca','proativo','dedicado','comprometido','eficiente','rápido','comunicativo','organizado','supera','superou','cresceu','melhorou','pontual','confiável','responsável','iniciativa','liderança','autonomia','facilidade','destaque','nota 10','parabéns'];
+  const negativas = ['precisa melhorar','fraco','dificuldade','pecou','ruim','insatisfatório','abaixo','atraso','falta','lento','desorganizado','não entrega','não cumpre','reclamação','problema','erro','descuidado','impontual','desatento','baixo desempenho','não se comunica','isolado'];
+  const compKeywords = {
+    1: ['empatia','prestativo','atendimento','cliente','ajuda','solicitação','educado','cordial'],
+    2: ['equipe','colabora','colegas','companheirismo','grupo','junto','reunião','compartilha','ajuda os colegas'],
+    3: ['resultado','meta','objetivo','indicador','performance','bateu','atingiu','cumprimento','prazo'],
+    4: ['responsabilidade','maduro','autonomia','compromisso','confiável','assume','entrega','accountability'],
+    5: ['transparência','confiança','honesto','ética','sincero','verdade','integridade','justo'],
+    6: ['aprendiz','desenvolvimento','crescimento','curso','treinamento','estudo','evolução','capacitação','aprende rápido'],
+    7: ['entrega','resultado','produção','finalização','volume','quantidade','eficiência','produtivo','execução'],
+    8: ['informação','registro','documenta','organiza','compartilha informação','relatório','dado','planilha','comunica'],
+    9: ['processo','fluxo','integrado','bpo','procedimento','norma','padrão','sistema','integração'],
+    10: ['organização','autogestão','prioridade','planeja','prazos','agenda','rotina','tempo','gerencia'],
+    11: ['solução','resolução','problema','proativo','iniciativa','proposta','melhoria','resolve','criativo']
+  };
+
+  let score = 0;
+  positivas.forEach(p => { if (t.includes(p)) score += 1; });
+  negativas.forEach(p => { if (t.includes(p)) score -= 1.5; });
+
+  const mencoes = {};
+  Object.keys(compKeywords).forEach(k => {
+    const palavras = compKeywords[k];
+    let encontrou = false;
+    for (const p of palavras) {
+      if (t.includes(p)) { encontrou = true; break; }
+    }
+    if (encontrou) mencoes[k] = true;
+  });
+
+  return { score, mencoes };
+}
+
 function sugerirNotasInteligentes(colaborador) {
   const data = typeof rawRecords !== 'undefined' ? rawRecords : [];
   const mesInicio = document.getElementById('avaliacaoMesInicio');
@@ -749,6 +791,12 @@ function sugerirNotasInteligentes(colaborador) {
       return;
     }
   }
+
+  const qualInput = document.getElementById('avaliacaoQualitativa');
+  const qualitativa = qualInput ? qualInput.value.trim() : '';
+  const qualAnalise = analisarQualitativa(qualitativa);
+  const qualForca = qualAnalise.score > 0 ? 'qualitativo_positivo' : qualAnalise.score < 0 ? 'qualitativo_negativo' : 'neutro';
+  const qualMencao = qualAnalise.mencoes;
 
   const totalFin = records.reduce((s, r) => s + (parseFloat(r['Finalizados']) || 0), 0);
   const totalAss = records.reduce((s, r) => s + (parseFloat(r['Assumidos']) || 0), 0);
@@ -794,18 +842,31 @@ function sugerirNotasInteligentes(colaborador) {
     return 2;
   }
 
+  function ajustarPorQualitativa(compId, notaBaseCalc) {
+    const mencionada = qualMencao[compId];
+    if (!mencionada && qualForca === 'neutro') return notaBaseCalc;
+    let ajuste = 0;
+    if (mencionada) {
+      ajuste += qualForca === 'qualitativo_positivo' ? 1 : qualForca === 'qualitativo_negativo' ? -1 : 0;
+    }
+    if (!mencionada && qualForca !== 'neutro') {
+      ajuste += qualForca === 'qualitativo_negativo' ? -0.5 : 0.25;
+    }
+    return Math.max(1, Math.min(4, Math.round(notaBaseCalc + ajuste)));
+  }
+
   const sugestoes = {
-    1: notaBase(highScore && transRatio < 0.2, mediumScore || transRatio < 0.3),
-    2: notaBase(transRatio < 0.1 && consistency > 0.8, transRatio < 0.25 && consistency > 0.6),
-    3: notaBase(highScore && finRatio > 0.85, mediumScore && finRatio > 0.6),
-    4: notaBase(consistency > 0.9 && !isDeclining, consistency > 0.7 && !isDeclining),
-    5: notaBase(consistency > 0.9 && transRatio < 0.15, consistency > 0.7 && transRatio < 0.3),
-    6: notaBase(isGrowing && highScore, !isDeclining && consistency > 0.6),
-    7: notaBase(highVolume && finRatio > 0.85, medVolume && finRatio > 0.65),
-    8: notaBase(consistency > 0.9 && highScore, consistency > 0.7 && mediumScore),
-    9: notaBase(highScore && transRatio < 0.15, mediumScore && transRatio < 0.3),
-    10: notaBase(consistency > 0.9 && !isDeclining && highScore, consistency > 0.7 && !isDeclining),
-    11: notaBase(highScore && finRatio > 0.8, mediumScore && finRatio > 0.6)
+    1: ajustarPorQualitativa(1, notaBase(highScore && transRatio < 0.2, mediumScore || transRatio < 0.3)),
+    2: ajustarPorQualitativa(2, notaBase(transRatio < 0.1 && consistency > 0.8, transRatio < 0.25 && consistency > 0.6)),
+    3: ajustarPorQualitativa(3, notaBase(highScore && finRatio > 0.85, mediumScore && finRatio > 0.6)),
+    4: ajustarPorQualitativa(4, notaBase(consistency > 0.9 && !isDeclining, consistency > 0.7 && !isDeclining)),
+    5: ajustarPorQualitativa(5, notaBase(consistency > 0.9 && transRatio < 0.15, consistency > 0.7 && transRatio < 0.3)),
+    6: ajustarPorQualitativa(6, notaBase(isGrowing && highScore, !isDeclining && consistency > 0.6)),
+    7: ajustarPorQualitativa(7, notaBase(highVolume && finRatio > 0.85, medVolume && finRatio > 0.65)),
+    8: ajustarPorQualitativa(8, notaBase(consistency > 0.9 && highScore, consistency > 0.7 && mediumScore)),
+    9: ajustarPorQualitativa(9, notaBase(highScore && transRatio < 0.15, mediumScore && transRatio < 0.3)),
+    10: ajustarPorQualitativa(10, notaBase(consistency > 0.9 && !isDeclining && highScore, consistency > 0.7 && !isDeclining)),
+    11: ajustarPorQualitativa(11, notaBase(highScore && finRatio > 0.8, mediumScore && finRatio > 0.6))
   };
 
   const descricoes = {
@@ -827,15 +888,15 @@ function sugerirNotasInteligentes(colaborador) {
     const mediaStr = scores.length ? avgScore.toFixed(1) : '—';
     const finStr = totalFin.toFixed(0);
     const transPct = (transRatio * 100).toFixed(0);
-
+    const refQual = qualitativa ? ` Considerando sua avaliação: "${qualitativa.slice(0, 100)}${qualitativa.length > 100 ? '…' : ''}".` : '';
     const contexto = `média de score ${mediaStr}, ${finStr} finalizações no período, ${transPct}% de transferências.`;
     if (nota >= 4) {
-      return `O colaborador demonstra ${nome} de forma consistente — ${contexto}`;
+      return `O colaborador demonstra ${nome} de forma consistente — ${contexto}${refQual}`;
     }
     if (nota >= 3) {
-      return `O colaborador apresenta bom nível de ${nome} — ${contexto} Pontos de atenção podem ser desenvolvidos.`;
+      return `O colaborador apresenta bom nível de ${nome} — ${contexto} Pontos de atenção podem ser desenvolvidos.${refQual}`;
     }
-    return `O colaborador precisa desenvolver ${nome} — ${contexto} Recomenda-se acompanhamento e feedback direcionado.`;
+    return `O colaborador precisa desenvolver ${nome} — ${contexto} Recomenda-se acompanhamento e feedback direcionado.${refQual}`;
   }
 
   const form = document.getElementById('avaliacaoForm');
@@ -851,14 +912,15 @@ function sugerirNotasInteligentes(colaborador) {
       questao.querySelectorAll('.avaliacao-nota-label').forEach(l => l.classList.remove('selected'));
       radio.closest('.avaliacao-nota-label').classList.add('selected');
     }
-    const obsInput = form.querySelector(`input[name="obs_${comp.id}"]`);
+    const obsInput = form.querySelector(`[name="obs_${comp.id}"]`);
     if (obsInput) {
       obsInput.value = gerarComentario(comp.id, nota);
     }
   });
 
   const rotulo = typeof formatMesLabel === 'function' ? `${formatMesLabel(inicio)} — ${formatMesLabel(fim)}` : `${inicio} — ${fim}`;
-  const msg = `🎯 Notas e observações sugeridas com base no período ${rotulo} (${meses.length} mês(es)). Os textos podem ser editados.`;
+  const ext = qualitativa ? ' com base nos dados técnicos e na avaliação qualitativa.' : ` com base no período ${rotulo} (${meses.length} mês(es)).`;
+  const msg = `🎯 Notas e observações sugeridas${ext} Os textos podem ser editados.`;
   showToast(msg, 'success');
 }
 
