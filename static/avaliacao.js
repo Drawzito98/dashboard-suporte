@@ -375,6 +375,7 @@ function getComentariosState() {
 
 function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
   const isEdit = !!existing;
+  const container = document.getElementById('avaliacaoFormContainer');
 
   document.getElementById('avaliacaoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -736,9 +737,6 @@ function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
   XLSX.writeFile(wb, `avaliacao_${colaborador}_${ciclo.replace(/\s/g, '_')}.xlsx`);
   showToast('Planilha exportada com sucesso!', 'success');
 }
-
-const container = { innerHTML: '' };
-const containerObj = { innerHTML: '' };
 
 function renderHistoricoAvaliacoes() {
   const container = document.getElementById('avaliacaoHistoricoLista');

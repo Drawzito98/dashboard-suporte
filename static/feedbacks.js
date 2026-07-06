@@ -205,7 +205,7 @@ function gerarSugestaoFeedback(colaborador, mes, anotacoesTexto) {
 const FB_EDITING_KEY = 'sistema_feedback_editando_v1';
 
 function renderFeedbacks() {
-  const container = document.getElementById('feedbacksContent');
+  const container = document.getElementById('feedbacksOverlayContent') || document.getElementById('feedbacksContent');
   if (!container) return;
 
   const data = _fbData();
@@ -519,11 +519,29 @@ function criarOverlay() {
   return div;
 }
 
-// ─── Hook ───────────────────────────────────────────────────────
+// ─── Overlay ────────────────────────────────────────────────────
+
+function openFeedbacksOverlay() {
+  const overlay = document.getElementById('feedbacksOverlay');
+  if (!overlay) return;
+  const content = document.getElementById('feedbacksOverlayContent');
+  if (!content) return;
+  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
+  overlay.classList.add('open');
+  setTimeout(() => renderFeedbacks(), 50);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('feedbacksBtn')?.addEventListener('click', openFeedbacksOverlay);
+  document.getElementById('feedbacksOverlayClose')?.addEventListener('click', () => {
+    document.getElementById('feedbacksOverlay')?.classList.remove('open');
+  });
+  const overlay = document.getElementById('feedbacksOverlay');
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
 
 function onFeedbacksTabActivated() {
-  const container = document.getElementById('feedbacksContent');
-  if (!container) return;
-  container.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
-  setTimeout(() => renderFeedbacks(), 50);
+  openFeedbacksOverlay();
 }

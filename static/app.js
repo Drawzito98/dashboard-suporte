@@ -2940,9 +2940,6 @@ if (!rawRecords || !rawRecords.length) {
       }
       if (tab === 'avaliacao' && typeof onAvaliacaoTabActivated === 'function') {
         onAvaliacaoTabActivated();
-        const feedbacksSection = document.getElementById('feedbacksAvaliacaoSection');
-        if (feedbacksSection) feedbacksSection.style.display = '';
-        if (typeof onFeedbacksTabActivated === 'function') onFeedbacksTabActivated();
       }
       if (tab === 'links' && typeof onLinksTabActivated === 'function') {
         onLinksTabActivated();
