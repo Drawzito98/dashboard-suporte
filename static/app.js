@@ -2929,6 +2929,9 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'colaboradores' && typeof onColaboradoresTabActivated === 'function') {
         onColaboradoresTabActivated();
       }
+      if (tab === 'mapeamento-time' && typeof onMapeamentoTimeTabActivated === 'function') {
+        onMapeamentoTimeTabActivated();
+      }
       if (tab === 'usuarios' && typeof onUsuariosTabActivated === 'function') {
         onUsuariosTabActivated();
       }

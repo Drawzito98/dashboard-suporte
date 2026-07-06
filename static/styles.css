@@ -1947,6 +1947,7 @@ html[data-theme="dark"] select option { background: var(--bg-surface); color: va
 .role-colaborador { background: var(--role-colaborador-bg); color: var(--role-colaborador-text); }
 
 /* Viewers: esconde ações de edição/admin */
+body[data-role="viewer"] .tab-btn[data-tab="mapeamento-time"],
 body[data-role="viewer"] .tab-btn[data-tab="usuarios"],
 body[data-role="viewer"] #addRowBtn,
 body[data-role="viewer"] #addRowTopBtn,
