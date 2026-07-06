@@ -507,15 +507,13 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
         };
         const nota = parseInt(this.value);
         const nome = nomes[compId] || '';
-        const qualEl = document.getElementById('avaliacaoQualitativa');
-        const refQual = qualEl && qualEl.value.trim() ? ` (com base na avaliação qualitativa fornecida)` : '';
-        const textos = {
-          1: `O colaborador precisa desenvolver ${nome}. Recomenda-se acompanhamento próximo e feedback direcionado.${refQual}`,
-          2: `O colaborador apresenta desempenho inicial em ${nome}. Pontos de melhoria podem ser trabalhados com orientação.${refQual}`,
-          3: `O colaborador demonstra bom nível de ${nome}. Segue contribuindo de forma consistente.${refQual}`,
-          4: `O colaborador se destaca em ${nome}, superando as expectativas de forma consistente.${refQual}`
+        const textosRadio = {
+          1: `O colaborador precisa melhorar em ${nome}. Recomenda-se acompanhamento e feedback direcionado.`,
+          2: `O colaborador apresenta desempenho inicial em ${nome}. Pontos de melhoria podem ser trabalhados.`,
+          3: `O colaborador demonstra bom nível de ${nome}. Segue contribuindo de forma consistente.`,
+          4: `O colaborador se destaca em ${nome}, superando as expectativas de forma consistente.`
         };
-        obsInput.value = textos[nota] || '';
+        obsInput.value = textosRadio[nota] || '';
       }
     });
     radio.addEventListener('mousedown', function () {
@@ -806,108 +804,80 @@ function sugerirNotasInteligentes(colaborador) {
   const qualInput = document.getElementById('avaliacaoQualitativa');
   const qualitativa = qualInput ? qualInput.value.trim() : '';
   const qualAnalise = analisarQualitativa(qualitativa);
-  const qualForca = qualAnalise.score > 0 ? 'qualitativo_positivo' : qualAnalise.score < 0 ? 'qualitativo_negativo' : 'neutro';
+  const qualForca = qualAnalise.score > 0 ? 'positivo' : qualAnalise.score < 0 ? 'negativo' : 'neutro';
   const qualMencao = qualAnalise.mencoes;
 
+  const scores = records.map(r => parseFloat(r['SCORE'])).filter(s => s != null && !isNaN(s));
+  const avgScore = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
   const totalFin = records.reduce((s, r) => s + (parseFloat(r['Finalizados']) || 0), 0);
   const totalAss = records.reduce((s, r) => s + (parseFloat(r['Assumidos']) || 0), 0);
   const totalTrans = records.reduce((s, r) => s + (parseFloat(r['Transferidos']) || 0), 0);
-  const scores = records.map(r => parseFloat(r['SCORE'])).filter(s => s != null && !isNaN(s));
-  const avgScore = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
   const finRatio = totalAss > 0 ? totalFin / totalAss : (totalFin > 0 ? 1 : 0);
   const transRatio = totalAss > 0 ? totalTrans / totalAss : 0;
-
   const meses = [...new Set(records.map(r => r['Mês']).filter(Boolean))].sort();
-  const mensal = meses.map(m => {
-    const ms = records.filter(r => r['Mês'] === m);
-    return {
-      fin: ms.reduce((s, r) => s + (parseFloat(r['Finalizados']) || 0), 0),
-      ass: ms.reduce((s, r) => s + (parseFloat(r['Assumidos']) || 0), 0),
-      trans: ms.reduce((s, r) => s + (parseFloat(r['Transferidos']) || 0), 0),
-      sc: ms.reduce((a, r) => { const v = parseFloat(r['SCORE']); return v != null && !isNaN(v) ? [...a, v] : a; }, [])
-    };
-  });
 
-  const trendFin = mensal.length >= 2 ? (mensal[mensal.length - 1].fin - mensal[0].fin) / mensal.length : 0;
-  const trendScore = mensal.length >= 2 && mensal.some(m => m.sc.length) ? (() => {
-    const first = mensal.find(m => m.sc.length);
-    const last = mensal.slice().reverse().find(m => m.sc.length);
-    if (!first || !last) return 0;
-    const f = first.sc.reduce((a, b) => a + b, 0) / first.sc.length;
-    const l = last.sc.reduce((a, b) => a + b, 0) / last.sc.length;
-    return l - f;
-  })() : 0;
+  const tecnicamenteOk = avgScore >= 70 && finRatio > 0.6 && transRatio < 0.3;
+  const tecnicamenteBom = avgScore >= 85 && finRatio > 0.8 && transRatio < 0.15;
+  const tecnicamenteRuim = avgScore < 60 || finRatio < 0.4 || transRatio > 0.5;
 
-  const consistency = mensal.filter(m => m.fin > 0 || m.ass > 0).length / Math.max(meses.length, 1);
-  const isGrowing = trendScore > 0.3 || trendFin > 2;
-  const isDeclining = trendScore < -0.3 || trendFin < -2;
-  const highScore = avgScore >= 85;
-  const mediumScore = avgScore >= 65 && avgScore < 85;
-  const lowScore = avgScore < 65;
-  const highVolume = totalFin > 100;
-  const medVolume = totalFin > 40;
-
-  function notaBase(cenarioAlta, cenarioMedia) {
-    if (cenarioAlta) return 4;
-    if (cenarioMedia) return 3;
-    return 2;
+  function notaTecnica(compId) {
+    const tecnicas = [7, 8, 9, 10, 11];
+    if (!tecnicas.includes(compId)) return 3;
+    if (tecnicamenteBom) return 4;
+    if (tecnicamenteOk) return 3;
+    if (tecnicamenteRuim) return 2;
+    return 3;
   }
 
-  function ajustarPorQualitativa(compId, notaBaseCalc) {
-    const mencionada = qualMencao[compId];
-    if (!mencionada && qualForca === 'neutro') return notaBaseCalc;
+  function notaComportamental() {
+    if (tecnicamenteBom) return 4;
+    if (tecnicamenteOk) return 3;
+    if (tecnicamenteRuim) return 2;
+    return 3;
+  }
+
+  function ajustarPorQualitativa(compId) {
+    const base = [7,8,9,10,11].includes(compId) ? notaTecnica(compId) : notaComportamental();
+    if (qualForca === 'neutro' && !qualMencao[compId]) return base;
     let ajuste = 0;
-    if (mencionada) {
-      ajuste += qualForca === 'qualitativo_positivo' ? 1 : qualForca === 'qualitativo_negativo' ? -1 : 0;
+    if (qualMencao[compId]) {
+      ajuste += qualForca === 'positivo' ? 1 : qualForca === 'negativo' ? -1 : 0;
+    } else {
+      ajuste += qualForca === 'positivo' ? 0.5 : qualForca === 'negativo' ? -0.5 : 0;
     }
-    if (!mencionada && qualForca !== 'neutro') {
-      ajuste += qualForca === 'qualitativo_negativo' ? -0.5 : 0.25;
-    }
-    return Math.max(1, Math.min(4, Math.round(notaBaseCalc + ajuste)));
+    return Math.max(1, Math.min(4, Math.round(base + ajuste)));
   }
 
-  const sugestoes = {
-    1: ajustarPorQualitativa(1, notaBase(highScore && transRatio < 0.2, mediumScore || transRatio < 0.3)),
-    2: ajustarPorQualitativa(2, notaBase(transRatio < 0.1 && consistency > 0.8, transRatio < 0.25 && consistency > 0.6)),
-    3: ajustarPorQualitativa(3, notaBase(highScore && finRatio > 0.85, mediumScore && finRatio > 0.6)),
-    4: ajustarPorQualitativa(4, notaBase(consistency > 0.9 && !isDeclining, consistency > 0.7 && !isDeclining)),
-    5: ajustarPorQualitativa(5, notaBase(consistency > 0.9 && transRatio < 0.15, consistency > 0.7 && transRatio < 0.3)),
-    6: ajustarPorQualitativa(6, notaBase(isGrowing && highScore, !isDeclining && consistency > 0.6)),
-    7: ajustarPorQualitativa(7, notaBase(highVolume && finRatio > 0.85, medVolume && finRatio > 0.65)),
-    8: ajustarPorQualitativa(8, notaBase(consistency > 0.9 && highScore, consistency > 0.7 && mediumScore)),
-    9: ajustarPorQualitativa(9, notaBase(highScore && transRatio < 0.15, mediumScore && transRatio < 0.3)),
-    10: ajustarPorQualitativa(10, notaBase(consistency > 0.9 && !isDeclining && highScore, consistency > 0.7 && !isDeclining)),
-    11: ajustarPorQualitativa(11, notaBase(highScore && finRatio > 0.8, mediumScore && finRatio > 0.6))
-  };
+  const sugestoes = {};
+  for (let i = 1; i <= 11; i++) sugestoes[i] = ajustarPorQualitativa(i);
 
   const descricoes = {
-    1: 'Empatia e Prestatividade',
-    2: 'Espírito de Equipe',
-    3: 'Orientação para Resultados',
-    4: 'Responsabilidade e Maturidade Profissional',
-    5: 'Transparência e Confiança',
-    6: 'Aprendizagem e Desenvolvimento',
-    7: 'Entregas e Resultados',
-    8: 'Gestão da Informação',
-    9: 'Gestão de Processos Integrados',
-    10: 'Organização e Autogestão',
-    11: 'Orientação para Soluções'
+    1: 'Empatia e Prestatividade', 2: 'Espírito de Equipe', 3: 'Orientação para Resultados',
+    4: 'Responsabilidade e Maturidade Profissional', 5: 'Transparência e Confiança',
+    6: 'Aprendizagem e Desenvolvimento', 7: 'Entregas e Resultados',
+    8: 'Gestão da Informação', 9: 'Gestão de Processos Integrados',
+    10: 'Organização e Autogestão', 11: 'Orientação para Soluções'
+  };
+
+  const textosComentario = {
+    1: (n, nome, ref) => n >= 4 ? `O colaborador se destaca em ${nome}, sendo muito prestativo e empático com colegas e clientes.${ref}` : n >= 3 ? `O colaborador demonstra ${nome} no dia a dia, com boa disposição para apoiar.${ref}` : `O colaborador precisa melhorar a ${nome}, sendo mais atento e solícito com os demais.${ref}`,
+    2: (n, nome, ref) => n >= 4 ? `O colaborador é referência em ${nome}, colabora ativamente e fortalece o time.${ref}` : n >= 3 ? `O colaborador tem boa integração com a equipe e contribui para o ambiente colaborativo.${ref}` : `O colaborador precisa desenvolver o ${nome}, buscando maior integração e colaboração com os colegas.${ref}`,
+    3: (n, nome, ref) => n >= 4 ? `O colaborador é focado em resultados, superando metas com consistência.${ref}` : n >= 3 ? `O colaborador demonstra compromisso com os resultados e metas estabelecidas.${ref}` : `O colaborador precisa melhorar a ${nome}, focando mais no cumprimento de metas e prazos.${ref}`,
+    4: (n, nome, ref) => n >= 4 ? `O colaborador é extremamente responsável e maduro profissionalmente, assumindo suas entregas com autonomia.${ref}` : n >= 3 ? `O colaborador demonstra responsabilidade e maturidade em suas atividades.${ref}` : `O colaborador precisa desenvolver maior responsabilidade e maturidade profissional.${ref}`,
+    5: (n, nome, ref) => n >= 4 ? `O colaborador atua com total transparência e confiança, sendo referência no assunto.${ref}` : n >= 3 ? `O colaborador age com transparência e é confiável em suas relações.${ref}` : `O colaborador precisa melhorar a ${nome}, sendo mais transparente em suas ações.${ref}`,
+    6: (n, nome, ref) => n >= 4 ? `O colaborador busca constantemente aprendizado e desenvolvimento, evoluindo continuamente.${ref}` : n >= 3 ? `O colaborador demonstra interesse em aprender e se desenvolver profissionalmente.${ref}` : `O colaborador precisa se dedicar mais ao ${nome}, buscando capacitação e evolução.${ref}`,
+    7: (n, nome, ref) => n >= 4 ? `O colaborador entrega resultados com excelência, superando as expectativas tecnicamente.${ref}` : n >= 3 ? `O colaborador cumpre bem suas entregas e atende aos critérios técnicos esperados.${ref}` : `O colaborador precisa melhorar as ${descricoes[7].toLowerCase()}, pois tecnicamente está abaixo do esperado.${ref}`,
+    8: (n, nome, ref) => n >= 4 ? `O colaborador é muito organizado com a informação, registrando e compartilhando com clareza.${ref}` : n >= 3 ? `O colaborador gerencia bem as informações necessárias para o trabalho.${ref}` : `O colaborador precisa melhorar a ${descricoes[8].toLowerCase()}, organizando melhor os registros e informações.${ref}`,
+    9: (n, nome, ref) => n >= 4 ? `O colaborador domina os processos integrados, executando com visão sistêmica.${ref}` : n >= 3 ? `O colaborador compreende e executa bem os processos sob sua responsabilidade.${ref}` : `O colaborador precisa se aprofundar na ${descricoes[9].toLowerCase()}, entendendo melhor o fluxo e impactos.${ref}`,
+    10: (n, nome, ref) => n >= 4 ? `O colaborador é muito organizado e gerencia seu tempo com excelência.${ref}` : n >= 3 ? `O colaborador mantém boa organização e consegue gerenciar suas prioridades.${ref}` : `O colaborador precisa desenvolver a ${descricoes[10].toLowerCase()}, melhorando planejamento e cumprimento de prazos.${ref}`,
+    11: (n, nome, ref) => n >= 4 ? `O colaborador é proativo e criativo na busca por soluções, agregando valor.${ref}` : n >= 3 ? `O colaborador demonstra capacidade de identificar e propor soluções.${ref}` : `O colaborador precisa desenvolver a ${descricoes[11].toLowerCase()}, sendo mais proativo na resolução de problemas.${ref}`
   };
 
   function gerarComentario(compId, nota) {
     const nome = descricoes[compId] || '';
-    const mediaStr = scores.length ? avgScore.toFixed(1) : '—';
-    const finStr = totalFin.toFixed(0);
-    const transPct = (transRatio * 100).toFixed(0);
-    const refQual = qualitativa ? ` Considerando sua avaliação: "${qualitativa.slice(0, 100)}${qualitativa.length > 100 ? '…' : ''}".` : '';
-    const contexto = `média de score ${mediaStr}, ${finStr} finalizações no período, ${transPct}% de transferências.`;
-    if (nota >= 4) {
-      return `O colaborador demonstra ${nome} de forma consistente — ${contexto}${refQual}`;
-    }
-    if (nota >= 3) {
-      return `O colaborador apresenta bom nível de ${nome} — ${contexto} Pontos de atenção podem ser desenvolvidos.${refQual}`;
-    }
-    return `O colaborador precisa desenvolver ${nome} — ${contexto} Recomenda-se acompanhamento e feedback direcionado.${refQual}`;
+    const refQual = qualitativa ? ` (considere: "${qualitativa.slice(0, 80)}${qualitativa.length > 80 ? '…' : ''}")` : '';
+    const fn = textosComentario[compId];
+    return fn ? fn(nota, nome, refQual) : '';
   }
 
   const form = document.getElementById('avaliacaoForm');
@@ -924,15 +894,11 @@ function sugerirNotasInteligentes(colaborador) {
       radio.closest('.avaliacao-nota-label').classList.add('selected');
     }
     const obsInput = form.querySelector(`[name="obs_${comp.id}"]`);
-    if (obsInput) {
-      obsInput.value = gerarComentario(comp.id, nota);
-    }
+    if (obsInput) obsInput.value = gerarComentario(comp.id, nota);
   });
 
-  const rotulo = typeof formatMesLabel === 'function' ? `${formatMesLabel(inicio)} — ${formatMesLabel(fim)}` : `${inicio} — ${fim}`;
-  const ext = qualitativa ? ' com base nos dados técnicos e na avaliação qualitativa.' : ` com base no período ${rotulo} (${meses.length} mês(es)).`;
-  const msg = `🎯 Notas e observações sugeridas${ext} Os textos podem ser editados.`;
-  showToast(msg, 'success');
+  const ext = qualitativa ? ' com base na sua avaliação qualitativa e nos dados técnicos de apoio.' : ' com base nos dados técnicos do período.';
+  showToast(`🎯 Notas e observações sugeridas${ext} Os textos podem ser editados.`, 'success');
 }
 
 function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
