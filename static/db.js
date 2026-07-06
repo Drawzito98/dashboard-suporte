@@ -47,8 +47,27 @@ function clearPendingSync() {
 
 async function syncPendingRecords() {
   if (!sbClient || !requireAdmin()) return [];
-  clearPendingSync();
-  return [];
+  const pending = getPendingSync();
+  if (!pending.length) return [];
+  const synced = [];
+  const failed = [];
+  for (const rec of pending) {
+    try {
+      const clean = filterRecordFields(rec);
+      const { data, error } = await sbClient.from('registros').insert(clean).select();
+      if (error) throw error;
+      if (data && data[0]) synced.push(rec);
+    } catch (e) {
+      console.warn('Falha ao sincronizar registro pendente:', e);
+      failed.push(rec);
+    }
+  }
+  if (failed.length) {
+    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(failed));
+  } else {
+    clearPendingSync();
+  }
+  return synced;
 }
 
 // Colunas permitidas na tabela (para filtrar o que enviar)
@@ -163,8 +182,6 @@ async function dbInsertRow(row) {
   if (!sbClient) return null;
   try {
     const clean = filterRecordFields(row);
-    const user = getCurrentUser();
-    if (user) clean.user_id = user.id;
     const { data, error } = await sbClient
       .from('registros')
       .insert(clean)
