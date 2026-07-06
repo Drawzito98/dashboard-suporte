@@ -48,6 +48,75 @@ function _avgScoreBySetor(rows) {
   return avgs.length ? avgs.reduce((x, y) => x + y, 0) / avgs.length : 0;
 }
 
+// ── Filtros do relatório setorial ──
+let __rsFilterState = { sector: null, monthStart: null, monthEnd: null, generated: false };
+
+function _renderFilterBar(setores, meses) {
+  const ss = __rsFilterState.sector || '';
+  const ms = __rsFilterState.monthStart || '';
+  const me = __rsFilterState.monthEnd || '';
+  return `<div class="rs-filter-bar" style="display:flex;gap:var(--s-3);align-items:flex-end;flex-wrap:wrap;margin-bottom:var(--s-5);padding:var(--s-4);background:var(--bg-elevated);border-radius:8px">
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:180px">
+      <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase">Setor</label>
+      <select id="rsFilterSector" class="filter-select" style="padding:var(--s-2) var(--s-3);border-radius:6px;border:1px solid var(--border-color,#334155);background:var(--bg-surface,#0f172a);color:var(--text-primary);font-size:13px">
+        <option value="">Todos os setores</option>
+        ${setores.map(s => `<option value="${escapeHtml(s)}"${ss === s ? ' selected' : ''}>${escapeHtml(s)}</option>`).join('')}
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:130px">
+      <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase">De</label>
+      <select id="rsFilterMonthStart" class="filter-select" style="padding:var(--s-2) var(--s-3);border-radius:6px;border:1px solid var(--border-color,#334155);background:var(--bg-surface,#0f172a);color:var(--text-primary);font-size:13px">
+        <option value="">Selecionar</option>
+        ${meses.map(m => `<option value="${escapeHtml(m)}"${ms === m ? ' selected' : ''}>${escapeHtml(m)}</option>`).join('')}
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:130px">
+      <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase">Até</label>
+      <select id="rsFilterMonthEnd" class="filter-select" style="padding:var(--s-2) var(--s-3);border-radius:6px;border:1px solid var(--border-color,#334155);background:var(--bg-surface,#0f172a);color:var(--text-primary);font-size:13px">
+        <option value="">Selecionar</option>
+        ${meses.map(m => `<option value="${escapeHtml(m)}"${me === m ? ' selected' : ''}>${escapeHtml(m)}</option>`).join('')}
+      </select>
+    </div>
+    <button id="rsGenerateBtn" type="button" class="btn-primary" style="padding:var(--s-2) var(--s-4);font-size:13px">${__rsFilterState.generated ? 'Atualizar Relatório' : 'Gerar Relatório'}</button>
+    ${__rsFilterState.generated ? '<button id="rsChangeFilterBtn" type="button" class="btn-small" style="padding:var(--s-2) var(--s-3);font-size:13px">Alterar Filtros</button>' : ''}
+  </div>`;
+}
+
+function __bindFilterEvents(container, setores, meses) {
+  const genBtn = document.getElementById('rsGenerateBtn');
+  if (genBtn) {
+    genBtn.addEventListener('click', () => {
+      const sector = document.getElementById('rsFilterSector')?.value || null;
+      const monthStart = document.getElementById('rsFilterMonthStart')?.value || null;
+      const monthEnd = document.getElementById('rsFilterMonthEnd')?.value || null;
+      if (!sector && !monthStart && !monthEnd) {
+        if (typeof showToast === 'function') showToast('Selecione ao menos um filtro.', 'warning');
+        return;
+      }
+      if ((monthStart && !monthEnd) || (!monthStart && monthEnd)) {
+        if (typeof showToast === 'function') showToast('Selecione o período completo (De e Até).', 'warning');
+        return;
+      }
+      if (monthStart && monthEnd && meses.indexOf(monthStart) > meses.indexOf(monthEnd)) {
+        if (typeof showToast === 'function') showToast('"De" deve ser anterior a "Até".', 'warning');
+        return;
+      }
+      __rsFilterState.sector = sector || null;
+      __rsFilterState.monthStart = monthStart || null;
+      __rsFilterState.monthEnd = monthEnd || null;
+      __rsFilterState.generated = true;
+      renderRelatorioSetorial();
+    });
+  }
+  const changeBtn = document.getElementById('rsChangeFilterBtn');
+  if (changeBtn) {
+    changeBtn.addEventListener('click', () => {
+      __rsFilterState.generated = false;
+      renderRelatorioSetorial();
+    });
+  }
+}
+
 function renderRelatorioSetorial() {
   const container = document.getElementById('relatorioSetorialContent');
   if (!container) return;
@@ -58,10 +127,48 @@ function renderRelatorioSetorial() {
     return;
   }
 
-  const rows = data.filter(r => r && !isAggregateName(r['Atendente']));
+  let rows = data.filter(r => r && !isAggregateName(r['Atendente']));
+  const allMeses = getFilteredMeses(rows);
+  if (!allMeses.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-title">Sem períodos</div><div class="empty-sub">Nenhum mês encontrado no filtro atual.</div></div>';
+    return;
+  }
+
+  // All setores for the filter dropdown (before filtering)
+  const bySetorAll = {};
+  rows.forEach(r => {
+    const s = String(r['Setor'] || '').trim() || '(sem setor)';
+    if (!bySetorAll[s]) bySetorAll[s] = [];
+    bySetorAll[s].push(r);
+  });
+  const allSetores = Object.keys(bySetorAll).sort();
+
+  // ── Filter bar ──
+  const filterBarHtml = _renderFilterBar(allSetores, allMeses);
+
+  if (!__rsFilterState.generated) {
+    container.innerHTML = filterBarHtml + '<div class="empty-state" style="margin-top:var(--s-6)"><div class="empty-title">Selecione um setor e período</div><div class="empty-sub">Escolha o setor e o período de análise acima e clique em "Gerar Relatório" para visualizar os dados.</div></div>';
+    __bindFilterEvents(container, allSetores, allMeses);
+    return;
+  }
+
+  // ── Apply filters ──
+  if (__rsFilterState.sector) {
+    rows = rows.filter(r => String(r['Setor'] || '').trim() === __rsFilterState.sector);
+  }
+  if (__rsFilterState.monthStart && __rsFilterState.monthEnd) {
+    const sIdx = allMeses.indexOf(__rsFilterState.monthStart);
+    const eIdx = allMeses.indexOf(__rsFilterState.monthEnd);
+    if (sIdx >= 0 && eIdx >= 0 && sIdx <= eIdx) {
+      const range = allMeses.slice(sIdx, eIdx + 1);
+      rows = rows.filter(r => range.indexOf(String(r['Mês'] || '')) >= 0);
+    }
+  }
+
   const meses = getFilteredMeses(rows);
   if (!meses.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-title">Sem períodos</div><div class="empty-sub">Nenhum mês encontrado no filtro atual.</div></div>';
+    container.innerHTML = filterBarHtml + '<div class="empty-state" style="margin-top:var(--s-6)"><div class="empty-title">Sem dados para o filtro</div><div class="empty-sub">Tente um período maior ou selecione outro setor.</div></div>';
+    __bindFilterEvents(container, allSetores, allMeses);
     return;
   }
 
@@ -99,7 +206,7 @@ function renderRelatorioSetorial() {
     return { nome: s, fin, ass, tra, scAvg, prod, taxaT, colabs };
   });
 
-  let html = '';
+  let html = filterBarHtml;
 
   // ── Header ──
   html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-5);flex-wrap:wrap;gap:var(--s-3)">
@@ -388,6 +495,7 @@ function renderRelatorioSetorial() {
   container.innerHTML = html;
 
   // ── Bind dos botões do relatório executivo ──
+  __bindFilterEvents(container, allSetores, allMeses);
   const copyBtn = document.getElementById('copyReportBtn');
   const exportPdfBtn = document.getElementById('exportPdfBtn');
   const refreshBtn = document.getElementById('refreshReportBtn');
