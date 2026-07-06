@@ -326,11 +326,8 @@ function bindFeriasEvents(containerId, saved) {
           const id = btn.dataset.id;
           const f = saved.find(x => String(x.id) === id);
           if (!f) { console.warn('[Férias] record not found for id', id); return; }
-          console.log('[Férias] calling feriasConfirmModal for', f.colaborador);
-          const ok = await feriasConfirmModal(f.colaborador, formatarDataBr(f.data_inicio), formatarDataBr(f.data_fim));
-          console.log('[Férias] modal result:', ok);
+          const ok = confirm(`Excluir férias de ${f.colaborador} (${formatarDataBr(f.data_inicio)} → ${formatarDataBr(f.data_fim)})?`);
           if (!ok) return;
-          console.log('[Férias] calling dbFeriasDelete');
           await dbFeriasDelete(id);
           renderFerias(containerId);
         } catch (err) {
