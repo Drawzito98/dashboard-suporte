@@ -272,12 +272,7 @@ async function carregarReportes() {
       const id = btn.dataset.id;
       const card = btn.closest('.reporte-card');
       const assunto = card?.querySelector('.reporte-assunto')?.textContent || '';
-      const metaEl = card?.querySelector('.reporte-meta');
-      const metaText = metaEl?.textContent || '';
-      const emailMatch = metaText.match(/<([^>]+)>/);
-      const email = emailMatch ? emailMatch[1] : '';
-      const nome = metaText.replace(/<[^>]+>/, '').trim();
-      mostrarModalResposta(id, assunto, nome, email);
+      mostrarModalResposta(id, assunto);
     });
   });
 
@@ -358,7 +353,7 @@ async function carregarReportes() {
   }
 }
 
-function mostrarModalResposta(id, assunto, nome, email) {
+function mostrarModalResposta(id, assunto) {
   const overlay = document.getElementById('reporteRespostaOverlay') || criarOverlayResposta();
   overlay.classList.remove('hidden');
   overlay.querySelector('#reporteRespostaId').value = id;
@@ -366,22 +361,8 @@ function mostrarModalResposta(id, assunto, nome, email) {
   overlay.querySelector('#reporteRespostaTexto').value = '';
   overlay.querySelector('#reporteRespostaError')?.classList.add('hidden');
   overlay.querySelector('#reporteRespostaSuccess')?.classList.add('hidden');
-  overlay.querySelector('#reporteRespostaEmail')?.remove();
-  if (email) {
-    const inp = document.createElement('input');
-    inp.type = 'hidden';
-    inp.id = 'reporteRespostaEmail';
-    inp.value = email;
-    overlay.appendChild(inp);
-  }
-  overlay.querySelector('#reporteRespostaNome')?.remove();
-  if (nome) {
-    const inp = document.createElement('input');
-    inp.type = 'hidden';
-    inp.id = 'reporteRespostaNome';
-    inp.value = nome;
-    overlay.appendChild(inp);
-  }
+  const oldCopy = overlay.querySelector('.reporte-copy-btn');
+  if (oldCopy) oldCopy.remove();
 }
 
 function criarOverlayResposta() {
@@ -421,22 +402,24 @@ function criarOverlayResposta() {
     const userId = (await sbClient.auth.getUser())?.data?.user?.id;
     const ok = await dbReportesResponder(id, texto, userId);
     if (ok) {
-      const email = document.getElementById('reporteRespostaEmail')?.value;
-      const nome = document.getElementById('reporteRespostaNome')?.value;
-      const assunto = document.getElementById('reporteRespostaAssunto')?.textContent || '';
-      if (email) {
-        fetch('/api/send-reply', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nome, email, assunto, resposta: texto })
-        }).catch(() => {});
-      }
-      okEl.textContent = 'Resposta enviada!';
+      okEl.textContent = 'Resposta salva!';
       okEl.classList.remove('hidden');
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn-small';
+      copyBtn.textContent = '📋 Copiar resposta';
+      copyBtn.style.cssText = 'margin-top:8px;width:100%;justify-content:center';
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(texto).then(() => {
+          copyBtn.textContent = '✅ Copiado!';
+          setTimeout(() => { copyBtn.textContent = '📋 Copiar resposta'; }, 2000);
+        });
+      };
+      okEl.parentNode.appendChild(copyBtn);
       setTimeout(() => {
         div.classList.add('hidden');
+        copyBtn.remove();
         carregarReportes();
-      }, 1200);
+      }, 4000);
     } else {
       errEl.textContent = 'Erro ao enviar resposta.';
       errEl.classList.remove('hidden');
