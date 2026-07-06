@@ -136,7 +136,6 @@ function renderAvaliacao() {
 
   const avaliacoes = getAvaliacoesLocal();
   const colabs = [...new Set((rawRecords || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
-  const ciclosExistentes = [...new Set(avaliacoes.map(a => a.ciclo).filter(Boolean))].sort();
 
   let html = `
     <div class="avaliacao-layout">
@@ -156,15 +155,17 @@ function renderAvaliacao() {
             </select>
           </label>
           <label class="field">
-            <span>Ciclo</span>
-            <input type="text" id="avaliacaoCicloInput" value="${escapeHtml(sugerirCiclo())}" placeholder="Ex: Jul-Out 2026" list="avaliacaoCiclosSugeridos"/>
-            <datalist id="avaliacaoCiclosSugeridos">
-              ${ciclosExistentes.map(c => `<option value="${escapeHtml(c)}">`).join('')}
-            </datalist>
+            <span>Período</span>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="avaliacaoMesInicio" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"></select>
+              <span style="font-size:13px;color:var(--text-secondary)">até</span>
+              <select id="avaliacaoMesFim" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"></select>
+            </div>
           </label>
-          <div style="display:flex;gap:var(--s-2);margin-top:var(--s-2)">
+          <div style="display:flex;gap:var(--s-2);margin-top:var(--s-2);flex-wrap:wrap">
             <button class="btn-primary" id="avaliacaoCarregarBtn" type="button" disabled>📋 Carregar avaliação</button>
             <button class="btn-small" id="avaliacaoNovaBtn" type="button">➕ Nova avaliação</button>
+            <button class="btn-primary" id="avaliacaoSugerirNotasBtn" type="button" style="background:#8B5CF6;font-size:12px;padding:6px 12px">🎯 Sugerir Notas Inteligentes</button>
           </div>
         </div>
       </div>
@@ -194,30 +195,54 @@ function renderAvaliacao() {
 
   container.innerHTML = html;
 
+  const allMonths = [...new Set((rawRecords || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
+  const mesInicio = document.getElementById('avaliacaoMesInicio');
+  const mesFim = document.getElementById('avaliacaoMesFim');
+  if (mesInicio && mesFim && allMonths.length) {
+    allMonths.forEach(m => {
+      mesInicio.innerHTML += `<option value="${escapeHtml(m)}">${typeof formatMesLabel === 'function' ? formatMesLabel(m) : m}</option>`;
+      mesFim.innerHTML += `<option value="${escapeHtml(m)}">${typeof formatMesLabel === 'function' ? formatMesLabel(m) : m}</option>`;
+    });
+    mesInicio.value = allMonths[0];
+    mesFim.value = allMonths[allMonths.length - 1];
+  }
+
+  function getCicloFromPeriod() {
+    const i = document.getElementById('avaliacaoMesInicio');
+    const f = document.getElementById('avaliacaoMesFim');
+    if (!i || !f) return '';
+    const fmt = typeof formatMesLabel === 'function' ? m => formatMesLabel(m) : m => m;
+    return `${fmt(i.value)} — ${fmt(f.value)}`;
+  }
+
   document.getElementById('avaliacaoColabSelect').addEventListener('change', () => {
     document.getElementById('avaliacaoCarregarBtn').disabled = !document.getElementById('avaliacaoColabSelect').value;
   });
 
   document.getElementById('avaliacaoNovaBtn').addEventListener('click', () => {
     const colab = document.getElementById('avaliacaoColabSelect').value;
-    const ciclo = document.getElementById('avaliacaoCicloInput').value.trim();
     if (!colab) { showToast('Selecione um colaborador.', 'error'); return; }
-    if (!ciclo) { showToast('Informe o ciclo.', 'error'); return; }
-    renderAvaliacaoForm(colab, ciclo, null);
+    renderAvaliacaoForm(colab, getCicloFromPeriod(), null);
   });
 
   document.getElementById('avaliacaoCarregarBtn').addEventListener('click', () => {
     const colab = document.getElementById('avaliacaoColabSelect').value;
-    const ciclo = document.getElementById('avaliacaoCicloInput').value.trim();
+    const ciclo = getCicloFromPeriod();
     if (!colab) { showToast('Selecione um colaborador.', 'error'); return; }
-    if (!ciclo) { showToast('Informe o ciclo.', 'error'); return; }
     const existing = avaliacoes.find(a => a.colaborador === colab && a.ciclo === ciclo);
     if (existing) {
       renderAvaliacaoForm(colab, ciclo, existing);
     } else {
-      showToast('Nenhuma avaliação encontrada para este colaborador no ciclo selecionado.', 'info');
+      showToast('Nenhuma avaliação encontrada para este colaborador no período selecionado.', 'info');
       renderAvaliacaoForm(colab, ciclo, null);
     }
+  });
+
+  const sugerirBtn = document.getElementById('avaliacaoSugerirNotasBtn');
+  if (sugerirBtn) sugerirBtn.addEventListener('click', () => {
+    const colab = document.getElementById('avaliacaoColabSelect').value;
+    if (!colab) { showToast('Selecione um colaborador.', 'error'); return; }
+    sugerirNotasInteligentes(colab);
   });
 
   document.getElementById('avaliacaoHistSelect').addEventListener('change', () => {
@@ -243,7 +268,7 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
       <div class="card-header">
         <div>
           <h2>${isEdit ? '✏️' : '➕'} ${isEdit ? 'Editar' : 'Nova'} Avaliação</h2>
-          <p><strong>${escapeHtml(colaborador)}</strong> — Ciclo <strong>${escapeHtml(ciclo)}</strong></p>
+          <p><strong>${escapeHtml(colaborador)}</strong> — Período <strong>${escapeHtml(ciclo)}</strong></p>
         </div>
         ${isEdit ? `<div style="font-size:12px;color:var(--text-muted)">Última atualização: ${existing.updatedAt ? new Date(existing.updatedAt).toLocaleString('pt-BR') : '—'}</div>` : ''}
       </div>
@@ -305,12 +330,6 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
             </div>
             <div style="display:flex;gap:var(--s-2);flex-wrap:wrap;align-items:center">
               <button class="btn-primary" id="avaliacaoGerarIaBtn" type="button" style="font-size:12px;padding:6px 12px">🤖 Gerar Sugestões com IA</button>
-              <span style="font-size:12px;color:var(--text-secondary);margin:0 4px">|</span>
-              <span style="font-size:12px;color:var(--text-secondary)">📅 Período:</span>
-              <select id="avaliacaoMesInicio" style="font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary)"></select>
-              <span style="font-size:12px;color:var(--text-secondary)">até</span>
-              <select id="avaliacaoMesFim" style="font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary)"></select>
-              <button class="btn-primary" id="avaliacaoSugerirNotasBtn" type="button" style="font-size:12px;padding:6px 12px;background:#8B5CF6">🎯 Sugerir Notas Inteligentes</button>
             </div>
           </div>
           <div id="avaliacaoComentariosIaList" class="avaliacao-comentarios-list">
@@ -471,22 +490,6 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
   });
 
   document.getElementById('avaliacaoGerarIaBtn').addEventListener('click', () => gerarSugestoesIA(colaborador, ciclo, existing));
-
-  const dataArr = typeof rawRecords !== 'undefined' ? rawRecords : [];
-  const colabMonths = [...new Set(dataArr.filter(r => r && r['Atendente'] === colaborador && r['Mês']).map(r => r['Mês']))].sort();
-  const mesInicio = document.getElementById('avaliacaoMesInicio');
-  const mesFim = document.getElementById('avaliacaoMesFim');
-  if (mesInicio && mesFim && colabMonths.length) {
-    colabMonths.forEach(m => {
-      mesInicio.innerHTML += `<option value="${escapeHtml(m)}">${typeof formatMesLabel === 'function' ? formatMesLabel(m) : m}</option>`;
-      mesFim.innerHTML += `<option value="${escapeHtml(m)}">${typeof formatMesLabel === 'function' ? formatMesLabel(m) : m}</option>`;
-    });
-    mesInicio.value = colabMonths[0];
-    mesFim.value = colabMonths[colabMonths.length - 1];
-  }
-
-  const sugerirBtn = document.getElementById('avaliacaoSugerirNotasBtn');
-  if (sugerirBtn) sugerirBtn.addEventListener('click', () => sugerirNotasInteligentes(colaborador));
 
   document.getElementById('avaliacaoAddComentarioBtn').addEventListener('click', () => {
     const input = document.getElementById('avaliacaoNovoComentarioInput');
