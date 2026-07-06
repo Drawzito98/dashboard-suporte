@@ -303,8 +303,14 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
               <h3 style="font-size:15px;font-weight:600;color:var(--text-strong)">💬 Comentários da Avaliação</h3>
               <p style="font-size:12.5px;color:var(--text-secondary)">É obrigatório registrar pelo menos um comentário antes de concluir ou publicar a avaliação.</p>
             </div>
-            <div style="display:flex;gap:var(--s-2);flex-wrap:wrap">
+            <div style="display:flex;gap:var(--s-2);flex-wrap:wrap;align-items:center">
               <button class="btn-primary" id="avaliacaoGerarIaBtn" type="button" style="font-size:12px;padding:6px 12px">🤖 Gerar Sugestões com IA</button>
+              <span style="font-size:12px;color:var(--text-secondary);margin:0 4px">|</span>
+              <span style="font-size:12px;color:var(--text-secondary)">📅 Período:</span>
+              <select id="avaliacaoMesInicio" style="font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary)"></select>
+              <span style="font-size:12px;color:var(--text-secondary)">até</span>
+              <select id="avaliacaoMesFim" style="font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary)"></select>
+              <button class="btn-primary" id="avaliacaoSugerirNotasBtn" type="button" style="font-size:12px;padding:6px 12px;background:#8B5CF6">🎯 Sugerir Notas Inteligentes</button>
             </div>
           </div>
           <div id="avaliacaoComentariosIaList" class="avaliacao-comentarios-list">
@@ -447,14 +453,40 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
   });
 
   container.querySelectorAll('.avaliacao-nota-radio').forEach(radio => {
-    radio.addEventListener('change', () => {
-      const questao = radio.closest('.avaliacao-questao');
+    radio.addEventListener('click', function (e) {
+      const questao = this.closest('.avaliacao-questao');
+      if (this.dataset.wasChecked === 'true') {
+        this.checked = false;
+        this.dataset.wasChecked = 'false';
+        questao.querySelectorAll('.avaliacao-nota-label').forEach(l => l.classList.remove('selected'));
+        e.preventDefault();
+        return;
+      }
       questao.querySelectorAll('.avaliacao-nota-label').forEach(l => l.classList.remove('selected'));
-      radio.closest('.avaliacao-nota-label').classList.add('selected');
+      this.closest('.avaliacao-nota-label').classList.add('selected');
+    });
+    radio.addEventListener('mousedown', function () {
+      this.dataset.wasChecked = this.checked ? 'true' : 'false';
     });
   });
 
   document.getElementById('avaliacaoGerarIaBtn').addEventListener('click', () => gerarSugestoesIA(colaborador, ciclo, existing));
+
+  const dataArr = typeof rawRecords !== 'undefined' ? rawRecords : [];
+  const colabMonths = [...new Set(dataArr.filter(r => r && r['Atendente'] === colaborador && r['Mês']).map(r => r['Mês']))].sort();
+  const mesInicio = document.getElementById('avaliacaoMesInicio');
+  const mesFim = document.getElementById('avaliacaoMesFim');
+  if (mesInicio && mesFim && colabMonths.length) {
+    colabMonths.forEach(m => {
+      mesInicio.innerHTML += `<option value="${escapeHtml(m)}">${typeof formatMesLabel === 'function' ? formatMesLabel(m) : m}</option>`;
+      mesFim.innerHTML += `<option value="${escapeHtml(m)}">${typeof formatMesLabel === 'function' ? formatMesLabel(m) : m}</option>`;
+    });
+    mesInicio.value = colabMonths[0];
+    mesFim.value = colabMonths[colabMonths.length - 1];
+  }
+
+  const sugerirBtn = document.getElementById('avaliacaoSugerirNotasBtn');
+  if (sugerirBtn) sugerirBtn.addEventListener('click', () => sugerirNotasInteligentes(colaborador));
 
   document.getElementById('avaliacaoAddComentarioBtn').addEventListener('click', () => {
     const input = document.getElementById('avaliacaoNovoComentarioInput');
@@ -669,6 +701,139 @@ function gerarSugestoesIA(colaborador, ciclo, existing, replaceIndex) {
     bindComentarioActions();
     showToast('Sugestões geradas com sucesso!', 'success');
   }
+}
+
+function sugerirNotasInteligentes(colaborador) {
+  const data = typeof rawRecords !== 'undefined' ? rawRecords : [];
+  const mesInicio = document.getElementById('avaliacaoMesInicio');
+  const mesFim = document.getElementById('avaliacaoMesFim');
+  const inicio = mesInicio ? mesInicio.value : null;
+  const fim = mesFim ? mesFim.value : null;
+
+  let records = data.filter(r => r && r['Atendente'] === colaborador);
+  if (!records.length) {
+    showToast('Nenhum registro encontrado para este colaborador.', 'error');
+    return;
+  }
+
+  if (inicio && fim) {
+    records = records.filter(r => r['Mês'] && r['Mês'] >= inicio && r['Mês'] <= fim);
+    if (!records.length) {
+      showToast('Nenhum registro no período selecionado.', 'error');
+      return;
+    }
+  }
+
+  const totalFin = records.reduce((s, r) => s + (parseFloat(r['Finalizados']) || 0), 0);
+  const totalAss = records.reduce((s, r) => s + (parseFloat(r['Assumidos']) || 0), 0);
+  const totalTrans = records.reduce((s, r) => s + (parseFloat(r['Transferidos']) || 0), 0);
+  const scores = records.map(r => parseFloat(r['SCORE'])).filter(s => s != null && !isNaN(s));
+  const avgScore = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  const finRatio = totalAss > 0 ? totalFin / totalAss : (totalFin > 0 ? 1 : 0);
+  const transRatio = totalAss > 0 ? totalTrans / totalAss : 0;
+
+  const meses = [...new Set(records.map(r => r['Mês']).filter(Boolean))].sort();
+  const mensal = meses.map(m => {
+    const ms = records.filter(r => r['Mês'] === m);
+    return {
+      fin: ms.reduce((s, r) => s + (parseFloat(r['Finalizados']) || 0), 0),
+      ass: ms.reduce((s, r) => s + (parseFloat(r['Assumidos']) || 0), 0),
+      trans: ms.reduce((s, r) => s + (parseFloat(r['Transferidos']) || 0), 0),
+      sc: ms.reduce((a, r) => { const v = parseFloat(r['SCORE']); return v != null && !isNaN(v) ? [...a, v] : a; }, [])
+    };
+  });
+
+  const trendFin = mensal.length >= 2 ? (mensal[mensal.length - 1].fin - mensal[0].fin) / mensal.length : 0;
+  const trendScore = mensal.length >= 2 && mensal.some(m => m.sc.length) ? (() => {
+    const first = mensal.find(m => m.sc.length);
+    const last = mensal.slice().reverse().find(m => m.sc.length);
+    if (!first || !last) return 0;
+    const f = first.sc.reduce((a, b) => a + b, 0) / first.sc.length;
+    const l = last.sc.reduce((a, b) => a + b, 0) / last.sc.length;
+    return l - f;
+  })() : 0;
+
+  const consistency = mensal.filter(m => m.fin > 0 || m.ass > 0).length / Math.max(meses.length, 1);
+  const isGrowing = trendScore > 0.3 || trendFin > 2;
+  const isDeclining = trendScore < -0.3 || trendFin < -2;
+  const highScore = avgScore >= 85;
+  const mediumScore = avgScore >= 65 && avgScore < 85;
+  const lowScore = avgScore < 65;
+  const highVolume = totalFin > 100;
+  const medVolume = totalFin > 40;
+
+  function notaBase(cenarioAlta, cenarioMedia) {
+    if (cenarioAlta) return 4;
+    if (cenarioMedia) return 3;
+    return 2;
+  }
+
+  const sugestoes = {
+    1: notaBase(highScore && transRatio < 0.2, mediumScore || transRatio < 0.3),
+    2: notaBase(transRatio < 0.1 && consistency > 0.8, transRatio < 0.25 && consistency > 0.6),
+    3: notaBase(highScore && finRatio > 0.85, mediumScore && finRatio > 0.6),
+    4: notaBase(consistency > 0.9 && !isDeclining, consistency > 0.7 && !isDeclining),
+    5: notaBase(consistency > 0.9 && transRatio < 0.15, consistency > 0.7 && transRatio < 0.3),
+    6: notaBase(isGrowing && highScore, !isDeclining && consistency > 0.6),
+    7: notaBase(highVolume && finRatio > 0.85, medVolume && finRatio > 0.65),
+    8: notaBase(consistency > 0.9 && highScore, consistency > 0.7 && mediumScore),
+    9: notaBase(highScore && transRatio < 0.15, mediumScore && transRatio < 0.3),
+    10: notaBase(consistency > 0.9 && !isDeclining && highScore, consistency > 0.7 && !isDeclining),
+    11: notaBase(highScore && finRatio > 0.8, mediumScore && finRatio > 0.6)
+  };
+
+  const descricoes = {
+    1: 'Empatia e Prestatividade',
+    2: 'Espírito de Equipe',
+    3: 'Orientação para Resultados',
+    4: 'Responsabilidade e Maturidade Profissional',
+    5: 'Transparência e Confiança',
+    6: 'Aprendizagem e Desenvolvimento',
+    7: 'Entregas e Resultados',
+    8: 'Gestão da Informação',
+    9: 'Gestão de Processos Integrados',
+    10: 'Organização e Autogestão',
+    11: 'Orientação para Soluções'
+  };
+
+  function gerarComentario(compId, nota) {
+    const nome = descricoes[compId] || '';
+    const mediaStr = scores.length ? avgScore.toFixed(1) : '—';
+    const finStr = totalFin.toFixed(0);
+    const transPct = (transRatio * 100).toFixed(0);
+
+    const contexto = `média de score ${mediaStr}, ${finStr} finalizações no período, ${transPct}% de transferências.`;
+    if (nota >= 4) {
+      return `O colaborador demonstra ${nome} de forma consistente — ${contexto}`;
+    }
+    if (nota >= 3) {
+      return `O colaborador apresenta bom nível de ${nome} — ${contexto} Pontos de atenção podem ser desenvolvidos.`;
+    }
+    return `O colaborador precisa desenvolver ${nome} — ${contexto} Recomenda-se acompanhamento e feedback direcionado.`;
+  }
+
+  const form = document.getElementById('avaliacaoForm');
+  if (!form) { showToast('Formulário não encontrado.', 'error'); return; }
+
+  getCompetencias().filter(c => c.type === 'competency').forEach(comp => {
+    const nota = sugestoes[comp.id] || 2;
+    const radio = form.querySelector(`input[name="score_${comp.id}"][value="${nota}"]`);
+    if (radio) {
+      radio.checked = true;
+      radio.dataset.wasChecked = 'false';
+      const questao = radio.closest('.avaliacao-questao');
+      questao.querySelectorAll('.avaliacao-nota-label').forEach(l => l.classList.remove('selected'));
+      radio.closest('.avaliacao-nota-label').classList.add('selected');
+    }
+    const obsInput = form.querySelector(`input[name="obs_${comp.id}"]`);
+    if (obsInput) {
+      obsInput.value = gerarComentario(comp.id, nota);
+    }
+  });
+
+  const rotulo = typeof formatMesLabel === 'function' ? `${formatMesLabel(inicio)} — ${formatMesLabel(fim)}` : `${inicio} — ${fim}`;
+  const msg = `🎯 Notas e observações sugeridas com base no período ${rotulo} (${meses.length} mês(es)). Os textos podem ser editados.`;
+  showToast(msg, 'success');
 }
 
 function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
