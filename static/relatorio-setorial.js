@@ -344,19 +344,24 @@ function renderRelatorioSetorial() {
     <div class="card" style="flex:1;min-width:280px;padding:var(--s-4)">
       <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83C\uDF7E Distribuição por Setor</h3>
       <p style="font-size:12px;color:var(--text-secondary);margin-bottom:var(--s-3)">Participação de cada setor no total de finalizados</p>
-      <div style="height:240px"><canvas id="rsPieChart"></canvas></div>
+      <div style="height:280px;position:relative"><canvas id="rsPieChart"></canvas></div>
     </div>
-    <div class="card" style="flex:1;min-width:200px;padding:var(--s-4);display:flex;flex-direction:column;justify-content:center;gap:var(--s-2)">
-      ${setorMetrics.slice().sort((a, b) => b.fin - a.fin).map(s => {
+    <div class="card" style="flex:1;min-width:220px;padding:var(--s-4);display:flex;flex-direction:column;gap:var(--s-2)">
+      <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-1)">${setorMetrics.length} setor(es)</h3>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:var(--s-2)">
+      ${setorMetrics.slice().sort((a, b) => b.fin - a.fin).map((s, i) => {
         const pct = totalFin > 0 ? ((s.fin / totalFin) * 100).toFixed(1) : 0;
-        const cor = totalFin > 0 ? `hsl(${Math.round(setorMetrics.indexOf(s) * 360 / setorMetrics.length)}, 42%, 58%)` : '#94a3b8';
+        const sorted = [...setorMetrics].sort((a, b) => b.fin - a.fin);
+        const idx = sorted.indexOf(s);
+        const cor = totalFin > 0 ? `hsl(${Math.round(idx * 360 / setorMetrics.length)}, 62%, 52%)` : '#94a3b8';
         return `<div style="display:flex;align-items:center;gap:var(--s-3);font-size:13px">
-          <span style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0"></span>
+          <span style="width:12px;height:12px;border-radius:3px;background:${cor};flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.2)"></span>
           <span style="flex:1;font-weight:500;color:var(--text-primary)">${escapeHtml(s.nome)}</span>
-          <span style="color:var(--text-secondary)">${fmtNum(s.fin)}</span>
-          <span style="font-weight:600;color:var(--text-strong);min-width:40px;text-align:right">${pct}%</span>
+          <span style="color:var(--text-secondary);font-size:12px">${fmtNum(s.fin)}</span>
+          <span style="font-weight:700;color:var(--text-strong);min-width:48px;text-align:right;font-size:13px">${pct}%</span>
         </div>`;
       }).join('')}
+      </div>
     </div>
   </div>`;
 
@@ -526,23 +531,37 @@ function renderRelatorioSetorial() {
       if (typeof ChartDataLabels !== 'undefined') {
         Chart.register(ChartDataLabels);
       }
+      const pieColors = sorted.map((s, i) => `hsl(${Math.round(i * 360 / sorted.length)}, 62%, 52%)`);
+      const pieBorder = sorted.map((s, i) => `hsl(${Math.round(i * 360 / sorted.length)}, 62%, 38%)`);
       window.__rsCharts.pieChart = new Chart(pieCanvas.getContext('2d'), {
         type: 'doughnut',
         data: {
           labels: sorted.map(s => s.nome),
           datasets: [{
             data: sorted.map(s => s.fin),
-            backgroundColor: sorted.map(s => `hsl(${Math.round(setorMetrics.indexOf(s) * 360 / setorMetrics.length)}, 42%, 58%)`),
-            borderColor: '#ffffff',
-            borderWidth: 1
+            backgroundColor: pieColors,
+            borderColor: pieBorder,
+            borderWidth: 2,
+            hoverOffset: 12
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '58%',
+          cutout: '32%',
           plugins: {
-            legend: { display: false },
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() || '#e2e8f0',
+                font: { size: 11, weight: '500' },
+                padding: 14,
+                boxWidth: 14,
+                boxHeight: 14,
+                borderRadius: 3,
+                usePointStyle: false
+              }
+            },
             tooltip: {
               callbacks: {
                 label: ctx => {
@@ -554,16 +573,22 @@ function renderRelatorioSetorial() {
             },
             datalabels: {
               color: '#fff',
-              font: { weight: 'bold', size: 11 },
+              font: { weight: 'bold', size: 12 },
               formatter: (value) => {
                 const pct = totalPie > 0 ? (value / totalPie * 100) : 0;
-                return pct >= 5 ? pct.toFixed(1) + '%' : '';
+                return pct >= 4 ? pct.toFixed(1) + '%' : '';
               },
-              offset: 2,
+              offset: 4,
               display: (ctx) => {
                 const pct = totalPie > 0 ? (ctx.dataset.data[ctx.dataIndex] / totalPie * 100) : 0;
-                return pct >= 5;
-              }
+                return pct >= 4;
+              },
+              backgroundColor: ctx => {
+                const pct = totalPie > 0 ? (ctx.dataset.data[ctx.dataIndex] / totalPie * 100) : 0;
+                return pct >= 4 ? 'rgba(0,0,0,0.5)' : 'transparent';
+              },
+              borderRadius: 4,
+              padding: { top: 3, bottom: 3, left: 5, right: 5 }
             }
           }
         }
