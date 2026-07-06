@@ -1890,7 +1890,7 @@ function renderChart(rows) {
       datasets: [
         { label: 'Assumidos', data: assData, backgroundColor: bgAss, borderRadius: 3, yAxisID: 'y' },
         { label: 'Finalizados', data: finData, backgroundColor: bgFin, borderRadius: 3, yAxisID: 'y' },
-        { label: 'Score', type: 'line', data: scData, borderColor: ct ? ct.amber() : '#f59e0b', backgroundColor: ct ? ct.amber() + '14' : 'rgba(245,158,11,0.05)', pointBackgroundColor: ct ? ct.amber() : '#f59e0b', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true, yAxisID: 'y1' }
+        { label: 'Score', type: 'line', data: scData, borderColor: ct ? ct.amber() : '#f59e0b', backgroundColor: ct ? (ct.isDark() ? 'rgba(251,191,36,0.08)' : 'rgba(245,158,11,0.05)') : 'rgba(245,158,11,0.05)', pointBackgroundColor: ct ? ct.amber() : '#f59e0b', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true, yAxisID: 'y1' }
       ]
     },
     options: {
@@ -1951,7 +1951,7 @@ function renderSingleEvolutionChart(rows) {
       datasets: [
         { label: 'Assumidos', data: assData, backgroundColor: ct ? ct.blue() : 'rgba(37,99,235,0.8)', borderRadius: 3, yAxisID: 'y' },
         { label: 'Finalizados', data: finData, backgroundColor: ct ? ct.green() : 'rgba(16,185,129,0.8)', borderRadius: 3, yAxisID: 'y' },
-        { label: 'Score', type: 'line', data: scData, borderColor: ct ? ct.amber() : '#f59e0b', backgroundColor: ct ? ct.amber() + '14' : 'rgba(245,158,11,0.05)', pointBackgroundColor: ct ? ct.amber() : '#f59e0b', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true, yAxisID: 'y1' }
+        { label: 'Score', type: 'line', data: scData, borderColor: ct ? ct.amber() : '#f59e0b', backgroundColor: ct ? (ct.isDark() ? 'rgba(251,191,36,0.08)' : 'rgba(245,158,11,0.05)') : 'rgba(245,158,11,0.05)', pointBackgroundColor: ct ? ct.amber() : '#f59e0b', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true, yAxisID: 'y1' }
       ]
     },
     options: {
@@ -2130,7 +2130,7 @@ function renderDetailedByMonthChart(rows) {
   { type: 'bar', label: 'Assumidos', categoryPercentage: 0.7, barPercentage: 0.85,    data: assumidos,    backgroundColor: ct ? ct.blue() : 'rgba(59,130,246,0.8)',  yAxisID: 'y',  order: 3 },
   { type: 'bar', label: 'Transferidos', categoryPercentage: 0.7, barPercentage: 0.85, data: transferidos, backgroundColor: ct ? ct.orange() : 'rgba(249,115,22,0.8)',  yAxisID: 'y',  order: 3 },
   { type: 'bar', label: 'Finalizados', categoryPercentage: 0.7, barPercentage: 0.85,  data: finalizados,  backgroundColor: ct ? ct.green() : 'rgba(16,185,129,0.85)',  yAxisID: 'y',  order: 3 },
-  { type: 'line', label: 'Score médio', data: scores, borderColor: ct ? ct.purple() : 'rgba(139,92,246,1)', backgroundColor: ct ? ct.purple() + '26' : 'rgba(139,92,246,0.15)', borderWidth: 2.5, tension: 0.3, yAxisID: 'yScore', order: 1, spanGaps: true, pointRadius: 5, pointBackgroundColor: ct ? ct.purple() : 'rgba(139,92,246,1)' }
+  { type: 'line', label: 'Score médio', data: scores, borderColor: ct ? ct.purple() : 'rgba(139,92,246,1)', backgroundColor: ct ? (ct.isDark() ? 'rgba(167,139,250,0.2)' : 'rgba(139,92,246,0.15)') : 'rgba(139,92,246,0.15)', borderWidth: 2.5, tension: 0.3, yAxisID: 'yScore', order: 1, spanGaps: true, pointRadius: 5, pointBackgroundColor: ct ? ct.purple() : 'rgba(139,92,246,1)' }
   ];
 
   const ctx = document.getElementById('mainChart').getContext('2d');
@@ -2252,7 +2252,7 @@ function drawLine(labels, data, label) {
   const ct = typeof ChartTheme !== 'undefined' ? ChartTheme : null;
   const cfg = {
     type: 'line',
-    data: { labels, datasets: [{ label, data, borderColor: ct ? ct.blue() : 'rgba(37,99,235,1)', backgroundColor: ct ? ct.blue() + '1a' : 'rgba(37,99,235,0.1)', tension: 0.3, fill: true, pointBackgroundColor: ct ? ct.blue() : 'rgba(37,99,235,1)', pointRadius: 4 }] },
+    data: { labels, datasets: [{ label, data, borderColor: ct ? ct.blue() : 'rgba(37,99,235,1)', backgroundColor: ct ? (ct.isDark() ? 'rgba(96,165,250,0.15)' : 'rgba(37,99,235,0.1)') : 'rgba(37,99,235,0.1)', tension: 0.3, fill: true, pointBackgroundColor: ct ? ct.blue() : 'rgba(37,99,235,1)', pointRadius: 4 }] },
     options: {
       responsive: true,
       maintainAspectRatio: false,

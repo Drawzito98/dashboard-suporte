@@ -192,7 +192,7 @@ function renderRelatorioSetorial() {
   const fmtScore = n => n > 0 ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014';
   const fmtPct = n => n !== null && n !== undefined ? (n * 100).toFixed(1) + '%' : '\u2014';
   const _isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const _chartTextColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() || (_isDark ? '#e2e8f0' : '#1f2937');
+  const _chartTextColor = typeof ChartTheme !== 'undefined' ? ChartTheme.text() : getComputedStyle(document.documentElement).getPropertyValue('--text-strong').trim() || (_isDark ? '#f8fafc' : '#0f172a');
   const _chartGridColor = _isDark ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.15)';
 
   // Métricas por setor (para análise)
@@ -556,7 +556,7 @@ function renderRelatorioSetorial() {
             legend: {
               position: 'bottom',
               labels: {
-                color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() || '#e2e8f0',
+                color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : getComputedStyle(document.documentElement).getPropertyValue('--text-strong').trim() || '#f8fafc',
                 font: { size: 11, weight: '500' },
                 padding: 14,
                 boxWidth: 14,

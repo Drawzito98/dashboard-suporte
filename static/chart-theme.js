@@ -2,7 +2,7 @@
 window.ChartTheme = {
   isDark: () => document.documentElement.getAttribute('data-theme') === 'dark',
 
-  text: () => getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() || (ChartTheme.isDark() ? '#e2e8f0' : '#1f2937'),
+  text: () => getComputedStyle(document.documentElement).getPropertyValue('--text-strong').trim() || (ChartTheme.isDark() ? '#f8fafc' : '#0f172a'),
   muted: () => getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#94a3b8',
   strong: () => getComputedStyle(document.documentElement).getPropertyValue('--text-strong').trim() || (ChartTheme.isDark() ? '#f8fafc' : '#0f172a'),
   border: () => getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || (ChartTheme.isDark() ? '#1f2a40' : '#e2e8f0'),
