@@ -424,7 +424,7 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
       } else {
         scores[comp.id] = null;
       }
-      const obsInput = form.querySelector(`input[name="obs_${comp.id}"]`);
+      const obsInput = form.querySelector(`[name="obs_${comp.id}"]`);
       if (obsInput && obsInput.value.trim()) {
         observacoes_competencias[comp.id] = obsInput.value.trim();
       }
@@ -471,6 +471,7 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
   container.querySelectorAll('.avaliacao-nota-radio').forEach(radio => {
     radio.addEventListener('click', function (e) {
       const questao = this.closest('.avaliacao-questao');
+      const compId = parseInt(questao.dataset.compId);
       if (this.dataset.wasChecked === 'true') {
         this.checked = false;
         this.dataset.wasChecked = 'false';
@@ -480,9 +481,34 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
       }
       questao.querySelectorAll('.avaliacao-nota-label').forEach(l => l.classList.remove('selected'));
       this.closest('.avaliacao-nota-label').classList.add('selected');
+      const obsInput = questao.querySelector('.avaliacao-obs-input');
+      if (obsInput && !obsInput.dataset.userEdited) {
+        const nomes = {
+          1:'Empatia e Prestatividade',2:'Espírito de Equipe',3:'Orientação para Resultados',
+          4:'Responsabilidade e Maturidade Profissional',5:'Transparência e Confiança',
+          6:'Aprendizagem e Desenvolvimento',7:'Entregas e Resultados',
+          8:'Gestão da Informação',9:'Gestão de Processos Integrados',
+          10:'Organização e Autogestão',11:'Orientação para Soluções'
+        };
+        const nota = parseInt(this.value);
+        const nome = nomes[compId] || '';
+        const textos = {
+          1: `O colaborador precisa desenvolver ${nome}. Recomenda-se acompanhamento próximo e feedback direcionado.`,
+          2: `O colaborador apresenta desempenho inicial em ${nome}. Pontos de melhoria podem ser trabalhados com orientação.`,
+          3: `O colaborador demonstra bom nível de ${nome}. Segue contribuindo de forma consistente.`,
+          4: `O colaborador se destaca em ${nome}, superando as expectativas de forma consistente.`
+        };
+        obsInput.value = textos[nota] || '';
+      }
     });
     radio.addEventListener('mousedown', function () {
       this.dataset.wasChecked = this.checked ? 'true' : 'false';
+    });
+  });
+
+  container.querySelectorAll('.avaliacao-obs-input').forEach(el => {
+    el.addEventListener('input', function () {
+      if (this.value !== this.defaultValue) this.dataset.userEdited = 'true';
     });
   });
 
