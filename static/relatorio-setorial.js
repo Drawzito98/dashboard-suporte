@@ -588,7 +588,7 @@ function renderRelatorioSetorial() {
               },
               backgroundColor: ctx => {
                 const pct = totalPie > 0 ? (ctx.dataset.data[ctx.dataIndex] / totalPie * 100) : 0;
-                return pct >= 4 ? 'rgba(0,0,0,0.5)' : 'transparent';
+                return pct >= 4 ? (typeof ChartTheme !== 'undefined' ? ChartTheme.surface() : (_isDark ? '#1e293b' : '#ffffff')) : 'transparent';
               },
               borderRadius: 4,
               padding: { top: 3, bottom: 3, left: 5, right: 5 }
