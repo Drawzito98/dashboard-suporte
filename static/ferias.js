@@ -49,6 +49,21 @@ function statusFerias(data_inicio, data_fim) {
   return { label: 'Agendada', color: '#fff', bg: '#3b82f6', border: '#3b82f6' };
 }
 
+function acharIdsDuplicados(lista) {
+  const duplicados = new Set();
+  for (let i = 0; i < lista.length; i++) {
+    for (let j = i + 1; j < lista.length; j++) {
+      const a = lista[i], b = lista[j];
+      if (a.colaborador !== b.colaborador) continue;
+      if (a.data_inicio <= b.data_fim && a.data_fim >= b.data_inicio) {
+        duplicados.add(String(a.id));
+        duplicados.add(String(b.id));
+      }
+    }
+  }
+  return duplicados;
+}
+
 function exportFeriasCSV(saved) {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
@@ -125,19 +140,28 @@ function renderFerias(containerId) {
   html += '</div>';
   html += '</div>';
 
+  const idsDuplicados = acharIdsDuplicados(saved);
+
   if (!saved.length) {
     html += '<div class="empty-state" style="padding:var(--s-5)"><div class="empty-title">Nenhum registro</div><div class="empty-sub">Registre as primeiras férias acima.</div></div>';
   } else {
+    if (idsDuplicados.size > 0) {
+      html += `<div style="padding:12px 16px;margin-bottom:var(--s-3);background:var(--danger-soft,#fee2e2);border:1px solid var(--danger,#b91c1c);border-radius:var(--r-md,8px);color:var(--danger,#b91c1c);font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ${idsDuplicados.size} registro(s) com períodos sobrepostos encontrados. Reveja os itens destacados.</div>`;
+    }
     html += '<div class="ausencias-list">';
     for (const f of saved) {
       const inicio = new Date(f.data_inicio + 'T00:00:00');
       const fim = new Date(f.data_fim + 'T00:00:00');
       const dias = Math.round((fim - inicio) / (1000 * 60 * 60 * 24)) + 1;
       const st = statusFerias(f.data_inicio, f.data_fim);
-      html += '<div class="ausencias-item">';
+      const isDup = idsDuplicados.has(String(f.id));
+      html += `<div class="ausencias-item" style="${isDup ? 'border-left:3px solid var(--danger,#b91c1c);background:var(--danger-soft,#fee2e2)' : ''}">`;
       html += '<div class="ausencias-item-info">';
       html += '<div style="display:flex;align-items:center;gap:var(--s-2);flex-wrap:wrap">';
       html += `<strong style="font-size:14px">${escapeHtml(f.colaborador)}</strong>`;
+      if (isDup) {
+        html += `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;color:#fff;background:var(--danger,#b91c1c)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> SOBREPOSTO</span>`;
+      }
       html += `<span style="display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;color:${st.color};background:${st.bg};border:1px solid ${st.border}">${st.label}</span>`;
       html += '</div>';
       html += `<span style="font-size:12px;color:var(--text-muted)">${formatarDataBr(f.data_inicio)} → ${formatarDataBr(f.data_fim)} · ${dias} dia(s)</span>`;
