@@ -60,6 +60,7 @@ async function dbAvaliacoesLoad() {
         observacoes_competencias: r.observacoes_competencias || {},
         comentarios_ia: r.comentarios_ia || [],
         comentarios_finais: r.comentarios_finais || [],
+        avaliacao_qualitativa: r.avaliacao_qualitativa || '',
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
@@ -92,6 +93,7 @@ async function dbAvaliacaoSave(avaliacao) {
         observacoes_competencias: avaliacao.observacoes_competencias || {},
         comentarios_ia: avaliacao.comentarios_ia || [],
         comentarios_finais: avaliacao.comentarios_finais || [],
+        avaliacao_qualitativa: avaliacao.avaliacao_qualitativa || '',
         updated_at: new Date().toISOString()
       }).eq('id', avaliacao.id);
     } else {
@@ -103,7 +105,8 @@ async function dbAvaliacaoSave(avaliacao) {
         observacoes_gerais: avaliacao.observacoes_gerais || '',
         observacoes_competencias: avaliacao.observacoes_competencias || {},
         comentarios_ia: avaliacao.comentarios_ia || [],
-        comentarios_finais: avaliacao.comentarios_finais || []
+        comentarios_finais: avaliacao.comentarios_finais || [],
+        avaliacao_qualitativa: avaliacao.avaliacao_qualitativa || ''
       }).then(result => {
         if (result.data && result.data[0]) {
           avaliacao.id = result.data[0].id;
@@ -262,6 +265,7 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
   const obsComp = existing ? (existing.observacoes_competencias || {}) : {};
   const comentariosIa = existing ? (existing.comentarios_ia || []) : [];
   const comentariosFinais = existing ? (existing.comentarios_finais || []) : [];
+  const qualitativa = existing ? (existing.avaliacao_qualitativa || '') : '';
   const isEdit = !!existing;
 
   let html = `
@@ -355,6 +359,8 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
   `;
 
   container.innerHTML = html;
+  const qualField = document.getElementById('avaliacaoQualitativa');
+  if (qualField && qualitativa) qualField.value = qualitativa;
   bindAvaliacaoFormEvents(colaborador, ciclo, existing);
 }
 
@@ -440,6 +446,7 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
     }
 
     const observacoes_gerais = document.getElementById('avaliacaoObsGerais').value.trim();
+    const avaliacao_qualitativa = document.getElementById('avaliacaoQualitativa')?.value.trim() || '';
 
     const avaliacaoData = {
       id: existingId || 'new_' + Date.now(),
@@ -450,6 +457,7 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
       observacoes_competencias,
       comentarios_ia,
       comentarios_finais,
+      avaliacao_qualitativa,
       updatedAt: new Date().toISOString()
     };
 
