@@ -271,8 +271,13 @@ async function carregarReportes() {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
       const card = btn.closest('.reporte-card');
-      const nome = card?.querySelector('.reporte-assunto')?.textContent || '';
-      mostrarModalResposta(id, nome);
+      const assunto = card?.querySelector('.reporte-assunto')?.textContent || '';
+      const metaEl = card?.querySelector('.reporte-meta');
+      const metaText = metaEl?.textContent || '';
+      const emailMatch = metaText.match(/<([^>]+)>/);
+      const email = emailMatch ? emailMatch[1] : '';
+      const nome = metaText.replace(/<[^>]+>/, '').trim();
+      mostrarModalResposta(id, assunto, nome, email);
     });
   });
 
@@ -353,7 +358,7 @@ async function carregarReportes() {
   }
 }
 
-function mostrarModalResposta(id, assunto) {
+function mostrarModalResposta(id, assunto, nome, email) {
   const overlay = document.getElementById('reporteRespostaOverlay') || criarOverlayResposta();
   overlay.classList.remove('hidden');
   overlay.querySelector('#reporteRespostaId').value = id;
@@ -361,6 +366,22 @@ function mostrarModalResposta(id, assunto) {
   overlay.querySelector('#reporteRespostaTexto').value = '';
   overlay.querySelector('#reporteRespostaError')?.classList.add('hidden');
   overlay.querySelector('#reporteRespostaSuccess')?.classList.add('hidden');
+  overlay.querySelector('#reporteRespostaEmail')?.remove();
+  if (email) {
+    const inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.id = 'reporteRespostaEmail';
+    inp.value = email;
+    overlay.appendChild(inp);
+  }
+  overlay.querySelector('#reporteRespostaNome')?.remove();
+  if (nome) {
+    const inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.id = 'reporteRespostaNome';
+    inp.value = nome;
+    overlay.appendChild(inp);
+  }
 }
 
 function criarOverlayResposta() {
@@ -400,6 +421,16 @@ function criarOverlayResposta() {
     const userId = (await sbClient.auth.getUser())?.data?.user?.id;
     const ok = await dbReportesResponder(id, texto, userId);
     if (ok) {
+      const email = document.getElementById('reporteRespostaEmail')?.value;
+      const nome = document.getElementById('reporteRespostaNome')?.value;
+      const assunto = document.getElementById('reporteRespostaAssunto')?.textContent || '';
+      if (email) {
+        fetch('/api/send-reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, email, assunto, resposta: texto })
+        }).catch(() => {});
+      }
       okEl.textContent = 'Resposta enviada!';
       okEl.classList.remove('hidden');
       setTimeout(() => {
