@@ -883,7 +883,7 @@ async function dbFeriasSave(item) {
 
 async function dbFeriasDelete(id) {
   const list = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
-  const filtered = list.filter(f => f.id !== id);
+  const filtered = list.filter(f => String(f.id) !== String(id));
   localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(filtered));
   if (!sbClient) return;
   try {

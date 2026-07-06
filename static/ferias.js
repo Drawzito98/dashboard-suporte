@@ -317,15 +317,13 @@ function bindFeriasEvents(containerId, saved) {
       });
     });
     const delBtns = fContainer.querySelectorAll('.ferias-del-btn');
-    console.log('[Férias] delete buttons found:', delBtns.length);
     delBtns.forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        console.log('[Férias] delete clicked', btn.dataset.id, 'saved length:', saved?.length);
+      btn.addEventListener('click', async () => {
         try {
-          if (!requireAdmin()) { console.log('[Férias] requireAdmin false'); showToast('Apenas administradores podem excluir férias.', 'error', 'Férias'); return; }
+          if (!requireAdmin()) { showToast('Apenas administradores podem excluir férias.', 'error', 'Férias'); return; }
           const id = btn.dataset.id;
           const f = saved.find(x => String(x.id) === id);
-          if (!f) { console.warn('[Férias] record not found for id', id); return; }
+          if (!f) return;
           const ok = confirm(`Excluir férias de ${f.colaborador} (${formatarDataBr(f.data_inicio)} → ${formatarDataBr(f.data_fim)})?`);
           if (!ok) return;
           await dbFeriasDelete(id);
