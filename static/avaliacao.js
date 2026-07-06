@@ -1124,10 +1124,10 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
         <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--s-4)">Ciclo <strong>${escapeHtml(av.ciclo)}</strong> · Média: <strong style="color:${media !== '—' ? (parseFloat(media) >= 3 ? 'var(--success)' : parseFloat(media) >= 2 ? 'var(--warning)' : 'var(--danger)') : 'var(--text-muted)'}">${media}</strong> · Total: <strong>${total}/${comps.length * 4}</strong></p>
 
         <div style="display:flex;gap:var(--s-6);flex-wrap:wrap;margin-bottom:var(--s-5)">
-          <div style="flex:0 0 320px">
+          <div style="flex:0 0 420px">
             <div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--s-4)">
-              <div style="position:relative;width:280px;height:280px;margin:0 auto">
-                <canvas id="avaliacaoRadarDetail" width="280" height="280"></canvas>
+              <div style="position:relative;width:360px;height:360px;margin:0 auto">
+                <canvas id="avaliacaoRadarDetail" width="360" height="360"></canvas>
               </div>
             </div>
           </div>
@@ -1247,7 +1247,8 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
             angleLines: { color: isDark ? '#334155' : '#e2e8f0' },
             pointLabels: {
               color: isDark ? '#e2e8f0' : '#334155',
-              font: { size: 10 }
+              font: { size: 8.5 },
+              padding: 16
             }
           }
         },
