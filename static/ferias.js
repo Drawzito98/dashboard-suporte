@@ -6,6 +6,39 @@ function formatarDataBr(d) {
   return `${dia}/${mes}/${ano}`;
 }
 
+function temFeriasSobrepostas(colaborador, inicio, fim, ignoreId) {
+  const saved = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
+  return saved.some(f => {
+    if (ignoreId && String(f.id) === String(ignoreId)) return false;
+    if (f.colaborador !== colaborador) return false;
+    return inicio <= f.data_fim && fim >= f.data_inicio;
+  });
+}
+
+function feriasConfirmModal(colaborador, inicio, fim) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'mt-modal-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px';
+    overlay.innerHTML = `
+      <div style="width:100%;max-width:400px;background:var(--bg-surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:var(--r-xl,12px);box-shadow:var(--shadow-lg,0 12px 40px rgba(0,0,0,0.12));padding:24px;position:relative">
+        <h3 style="font-size:18px;font-weight:600;color:var(--text-strong);margin:0 0 12px">Excluir Férias</h3>
+        <p style="color:var(--text-secondary);font-size:14px;line-height:1.5;margin:0 0 20px">Tem certeza que deseja excluir as férias de <strong>${escapeHtml(colaborador)}</strong> (${inicio} → ${fim})?</p>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn-small" id="fCancelBtn" type="button">Cancelar</button>
+          <button class="btn-primary" id="fConfirmBtn" type="button" style="background:var(--danger);border-color:var(--danger)">Excluir</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.style.display = 'flex');
+
+    const close = (result) => { overlay.remove(); resolve(result); };
+    overlay.querySelector('#fCancelBtn').onclick = () => close(false);
+    overlay.querySelector('#fConfirmBtn').onclick = () => close(true);
+    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+  });
+}
+
 function statusFerias(data_inicio, data_fim) {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
@@ -135,6 +168,10 @@ function bindFeriasEvents(containerId, saved) {
       showToast('Data de fim não pode ser anterior à data de início.', 'error', 'Férias');
       return;
     }
+    if (temFeriasSobrepostas(colaborador, data_inicio, data_fim)) {
+      showToast(`${colaborador} já possui férias neste período!`, 'error', 'Férias');
+      return;
+    }
     const item = {
       id: Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
       colaborador,
@@ -158,9 +195,10 @@ function bindFeriasEvents(containerId, saved) {
     btn.addEventListener('click', async () => {
       if (!requireAdmin()) return;
       const id = btn.dataset.id;
-      // Match IDs by string to be robust to numeric/string mix from Supabase
       const f = saved.find(x => String(x.id) === id);
-      if (!f || !confirm(`Excluir férias de ${f.colaborador} (${formatarDataBr(f.data_inicio)} → ${formatarDataBr(f.data_fim)})?`)) return;
+      if (!f) return;
+      const ok = await feriasConfirmModal(f.colaborador, formatarDataBr(f.data_inicio), formatarDataBr(f.data_fim));
+      if (!ok) return;
       await dbFeriasDelete(id);
       renderFerias(containerId);
     });
