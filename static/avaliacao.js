@@ -497,7 +497,7 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
       questao.querySelectorAll('.avaliacao-nota-label').forEach(l => l.classList.remove('selected'));
       this.closest('.avaliacao-nota-label').classList.add('selected');
       const obsInput = questao.querySelector('.avaliacao-obs-input');
-      if (obsInput && !obsInput.dataset.userEdited) {
+      if (obsInput) {
         const nomes = {
           1:'Empatia e Prestatividade',2:'Espírito de Equipe',3:'Orientação para Resultados',
           4:'Responsabilidade e Maturidade Profissional',5:'Transparência e Confiança',
@@ -518,12 +518,6 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
     });
     radio.addEventListener('mousedown', function () {
       this.dataset.wasChecked = this.checked ? 'true' : 'false';
-    });
-  });
-
-  container.querySelectorAll('.avaliacao-obs-input').forEach(el => {
-    el.addEventListener('input', function () {
-      if (this.value !== this.defaultValue) this.dataset.userEdited = 'true';
     });
   });
 
