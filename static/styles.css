@@ -2493,6 +2493,10 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   font-size: 12px;
   outline: none;
   transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  resize: vertical;
+  min-height: 38px;
+  font-family: inherit;
+  line-height: 1.4;
 }
 
 .avaliacao-obs-input:focus {

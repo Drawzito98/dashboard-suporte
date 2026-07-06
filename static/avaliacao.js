@@ -305,7 +305,7 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
                   `).join('')}
                 </div>
                 <div class="avaliacao-obs-competencia">
-                  <input type="text" class="avaliacao-obs-input" name="obs_${comp.id}" value="${escapeHtml(obs)}" placeholder="Observação específica (opcional)" maxlength="300"/>
+                  <textarea class="avaliacao-obs-input" name="obs_${comp.id}" placeholder="Observação específica (opcional)" maxlength="500" rows="2">${escapeHtml(obs)}</textarea>
                 </div>
               </div>
             </div>
