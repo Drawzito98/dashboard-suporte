@@ -165,14 +165,17 @@ function renderAvaliacao() {
               <select id="avaliacaoMesFim" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"></select>
             </div>
           </label>
-          <label class="field" style="margin-top:var(--s-2)">
-            <span>📝 Avaliação qualitativa <span style="font-size:11px;color:var(--text-muted)">(opcional — usado nas sugestões)</span></span>
-            <textarea id="avaliacaoQualitativa" rows="2" placeholder="Ex: Colaborador proativo, mas precisa melhorar organização e pontualidade..." style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:12px;resize:vertical;font-family:inherit;line-height:1.4"></textarea>
-          </label>
           <div style="display:flex;gap:var(--s-2);margin-top:var(--s-2);flex-wrap:wrap">
             <button class="btn-small" id="avaliacaoNovaBtn" type="button">➕ Nova avaliação</button>
             <button class="btn-primary" id="avaliacaoSugerirNotasBtn" type="button" style="background:#8B5CF6;font-size:12px;padding:6px 12px">🎯 Sugerir Notas Inteligentes</button>
           </div>
+        </div>
+        <div style="margin:0 var(--s-4) var(--s-3)">
+          <label class="field">
+            <span>📝 Avaliação qualitativa <span style="font-size:11px;color:var(--text-muted)">(opcional — usado nas sugestões)</span></span>
+            <textarea id="avaliacaoQualitativa" rows="3" placeholder="Ex: Colaborador proativo, mas precisa melhorar organização e pontualidade..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px;resize:vertical;font-family:inherit;line-height:1.5"></textarea>
+          </label>
+        </div>
         </div>
       </div>
 
