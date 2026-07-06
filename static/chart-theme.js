@@ -2,9 +2,9 @@
 window.ChartTheme = {
   isDark: () => document.documentElement.getAttribute('data-theme') === 'dark',
 
-  text: () => getComputedStyle(document.documentElement).getPropertyValue('--text-strong').trim() || (ChartTheme.isDark() ? '#f8fafc' : '#0f172a'),
+  text: () => ChartTheme.isDark() ? '#ffffff' : '#000000',
   muted: () => getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#94a3b8',
-  strong: () => getComputedStyle(document.documentElement).getPropertyValue('--text-strong').trim() || (ChartTheme.isDark() ? '#f8fafc' : '#0f172a'),
+  strong: () => ChartTheme.isDark() ? '#ffffff' : '#000000',
   border: () => getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || (ChartTheme.isDark() ? '#1f2a40' : '#e2e8f0'),
 
   grid: () => ChartTheme.isDark() ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.15)',
