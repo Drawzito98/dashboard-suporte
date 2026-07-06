@@ -322,12 +322,15 @@ function bindFeriasEvents(containerId, saved) {
       btn.addEventListener('click', async (e) => {
         console.log('[Férias] delete clicked', btn.dataset.id, 'saved length:', saved?.length);
         try {
-          if (!requireAdmin()) { showToast('Apenas administradores podem excluir férias.', 'error', 'Férias'); return; }
+          if (!requireAdmin()) { console.log('[Férias] requireAdmin false'); showToast('Apenas administradores podem excluir férias.', 'error', 'Férias'); return; }
           const id = btn.dataset.id;
           const f = saved.find(x => String(x.id) === id);
           if (!f) { console.warn('[Férias] record not found for id', id); return; }
+          console.log('[Férias] calling feriasConfirmModal for', f.colaborador);
           const ok = await feriasConfirmModal(f.colaborador, formatarDataBr(f.data_inicio), formatarDataBr(f.data_fim));
+          console.log('[Férias] modal result:', ok);
           if (!ok) return;
+          console.log('[Férias] calling dbFeriasDelete');
           await dbFeriasDelete(id);
           renderFerias(containerId);
         } catch (err) {
