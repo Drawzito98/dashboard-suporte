@@ -318,7 +318,7 @@ function bindFeriasEvents(containerId, saved) {
     });
     fContainer.querySelectorAll('.ferias-del-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!requireAdmin()) return;
+        if (!requireAdmin()) { showToast('Apenas administradores podem excluir férias.', 'error', 'Férias'); return; }
         const id = btn.dataset.id;
         const f = saved.find(x => String(x.id) === id);
         if (!f) return;
