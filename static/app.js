@@ -994,6 +994,11 @@ function buildAliasMap(names) {
   return map;
 }
 
+function getFirstName(name) {
+  if (!name) return '';
+  return String(name).split(' ')[0];
+}
+
 function getDisplayName(name, aliasMap) {
   if (!presentationMode) return name;
   return (aliasMap && aliasMap.get(name)) || name;
@@ -1919,7 +1924,7 @@ function renderChart(rows) {
       scales: {
         y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: ct ? ct.grid() : 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } },
         y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined, callback: v => Number(v).toFixed(2) } },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } }
+        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined, callback: function(val, idx) { return getFirstName(this.data.labels[idx]); } } }
       }
     }
   };
