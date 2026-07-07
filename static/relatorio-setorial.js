@@ -635,7 +635,7 @@ function renderRelatorioSetorial() {
                   anchor: 'center',
                   align: 'center',
                   color: _isDark ? '#0b1120' : '#fff',
-                  font: { weight: 'bold', size: 10 },
+                  font: { weight: 'bold', size: 13 },
                   formatter: value => value.toLocaleString('pt-BR')
                 },
                 score: {
@@ -646,7 +646,7 @@ function renderRelatorioSetorial() {
                   anchor: 'end',
                   align: 'end',
                   color: _chartTextColor,
-                  font: { weight: '600', size: 12 },
+                  font: { weight: '600', size: 14 },
                   formatter: (value, ctx) => {
                     const i = ctx.dataIndex;
                     const sc = monthData[i]?.sc;
@@ -667,8 +667,8 @@ function renderRelatorioSetorial() {
             }
           },
           scales: {
-            y: { beginAtZero: true, grace: '20%', position: 'left', grid: { color: _chartGridColor }, ticks: { font: { size: 10 }, color: _chartTextColor } },
-            x: { grid: { display: false }, ticks: { font: { size: 10 }, color: _chartTextColor } }
+            y: { beginAtZero: true, grace: '20%', position: 'left', grid: { color: _chartGridColor }, ticks: { font: { size: 12 }, color: _chartTextColor } },
+            x: { grid: { display: false }, ticks: { font: { size: 12 }, color: _chartTextColor } }
           }
         }
       });
