@@ -575,7 +575,7 @@ function renderRelatorioSetorial() {
               }
             },
             datalabels: {
-              color: '#fff',
+              color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : (_isDark ? '#fff' : '#0f172a'),
               font: { weight: 'bold', size: 12 },
               formatter: (value) => {
                 const pct = totalPie > 0 ? (value / totalPie * 100) : 0;
