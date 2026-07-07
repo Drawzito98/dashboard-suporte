@@ -618,7 +618,7 @@ function renderRelatorioSetorial() {
           datasets: [{
             label: 'Finalizados',
             data: monthData.map(d => d.fin),
-            backgroundColor: _isDark ? 'rgba(52,211,153,0.85)' : 'rgba(16,185,129,0.92)',
+            backgroundColor: _isDark ? 'rgba(52,211,153,0.85)' : 'rgba(4,120,87,0.92)',
             borderRadius: 4,
             borderSkipped: false,
             yAxisID: 'y'
