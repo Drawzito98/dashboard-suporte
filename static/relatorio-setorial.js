@@ -618,7 +618,7 @@ function renderRelatorioSetorial() {
           datasets: [{
             label: 'Finalizados',
             data: monthData.map(d => d.fin),
-            backgroundColor: _isDark ? 'rgba(52,211,153,0.85)' : 'rgba(6,148,102,0.92)',
+            backgroundColor: _isDark ? 'rgba(52,211,153,0.85)' : 'rgba(16,185,129,0.92)',
             borderRadius: 4,
             borderSkipped: false,
             yAxisID: 'y'
@@ -634,7 +634,7 @@ function renderRelatorioSetorial() {
                 value: {
                   anchor: 'center',
                   align: 'center',
-                  color: _isDark ? '#0b1120' : '#fff',
+                  color: _isDark ? '#fff' : '#0b1120',
                   font: { weight: 'bold', size: 13 },
                   formatter: value => value.toLocaleString('pt-BR')
                 },
