@@ -2277,6 +2277,52 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   border-bottom: none;
 }
 
+/* ===== Presentation Mode: Relatório Setorial ===== */
+.rs-container.rs-presentation-mode .btn-small,
+.rs-container.rs-presentation-mode .rs-filter-bar button,
+.rs-container.rs-presentation-mode .reportBox .btn-small {
+  display: none !important;
+}
+.rs-container.rs-presentation-mode .reportBox {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+.rs-container.rs-presentation-mode .reportText {
+  border: 1px solid var(--border) !important;
+  min-height: 120px !important;
+}
+.rs-container .rs-pres-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+/* Screenshot-friendly card styles */
+.rs-container .card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.rs-container .rs-section {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.rs-container canvas {
+  max-height: 320px;
+}
+@media print {
+  .rs-container .btn-small,
+  .rs-container #rsPrintBtn,
+  .rs-container #rsPresentationToggle {
+    display: none !important;
+  }
+}
+
 /* ===== Responsivo: Relatório Setorial ===== */
 @media (max-width: 768px) {
   .rs-container .rs-kpis {

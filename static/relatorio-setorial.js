@@ -193,7 +193,8 @@ function renderRelatorioSetorial() {
   const fmtPct = n => n !== null && n !== undefined ? (n * 100).toFixed(1) + '%' : '\u2014';
   const _isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const _chartTextColor = typeof ChartTheme !== 'undefined' ? ChartTheme.text() : getComputedStyle(document.documentElement).getPropertyValue('--text-strong').trim() || (_isDark ? '#f8fafc' : '#0f172a');
-  const _chartGridColor = _isDark ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.15)';
+  const _chartGridColor = typeof ChartTheme !== 'undefined' ? ChartTheme.grid() : (_isDark ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.15)');
+  const _chartSurface = typeof ChartTheme !== 'undefined' ? ChartTheme.surface() : (_isDark ? '#131c2f' : '#ffffff');
 
   // Métricas por setor (para análise)
   const setorMetrics = setores.map(s => {
@@ -214,10 +215,14 @@ function renderRelatorioSetorial() {
   // ── Header ──
   html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-5);flex-wrap:wrap;gap:var(--s-3)">
     <div>
-      <h2 style="font-size:18px;font-weight:700;color:var(--text-strong);margin:0">\uD83D\uDCCA Relatório Setorial</h2>
-      <p style="font-size:13px;color:var(--text-secondary);margin-top:2px">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 Rankings, análise setorial, tendências e relatório executivo</p>
+      <h2 style="font-size:20px;font-weight:700;color:var(--text-strong);margin:0">\uD83D\uDCCA Relatório Setorial</h2>
+      <p style="font-size:14px;color:var(--text-secondary);margin-top:2px">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 Rankings, análise setorial, tendências e relatório executivo</p>
     </div>
-    <button class="btn-primary" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
+    <div style="display:flex;gap:var(--s-2);align-items:center">
+      <span id="rsPresentationModeIndicator" style="font-size:12px;color:var(--text-muted);display:none">\uD83D\uDCF1 Modo apresentação</span>
+      <button id="rsPresentationToggle" class="btn-small" type="button" title="Ocultar botões de ação para captura de tela">\uD83D\uDCF1 Apresentação</button>
+      <button class="btn-primary" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
+    </div>
   </div>`;
 
   // ── Top 3 Rankings ──
@@ -356,7 +361,8 @@ function renderRelatorioSetorial() {
         const pct = totalFin > 0 ? ((s.fin / totalFin) * 100).toFixed(1) : 0;
         const sorted = [...setorMetrics].sort((a, b) => b.fin - a.fin);
         const idx = sorted.indexOf(s);
-        const cor = totalFin > 0 ? `hsl(${Math.round(idx * 360 / setorMetrics.length)}, 62%, 52%)` : '#94a3b8';
+        const neutralColors = typeof ChartTheme !== 'undefined' ? ChartTheme.neutralPalette(setorMetrics.length) : ['#2563eb','#059669','#d97706','#7c3aed','#ea580c','#0891b2','#e11d48','#8b5cf6','#16a34a','#f97316'];
+        const cor = totalFin > 0 ? (neutralColors[idx] || '#94a3b8') : '#94a3b8';
         return `<div style="display:flex;align-items:center;gap:var(--s-3);font-size:13px">
           <span style="width:12px;height:12px;border-radius:3px;background:${cor};flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.2)"></span>
           <span style="flex:1;font-weight:500;color:var(--text-primary)">${escapeHtml(s.nome)}</span>
@@ -534,8 +540,14 @@ function renderRelatorioSetorial() {
       if (typeof ChartDataLabels !== 'undefined') {
         Chart.register(ChartDataLabels);
       }
-      const pieColors = sorted.map((s, i) => `hsl(${Math.round(i * 360 / sorted.length)}, 62%, 52%)`);
-      const pieBorder = sorted.map((s, i) => `hsl(${Math.round(i * 360 / sorted.length)}, 62%, 38%)`);
+      const neutralColors = typeof ChartTheme !== 'undefined'
+        ? ChartTheme.neutralPalette(sorted.length)
+        : ['#2563eb','#059669','#d97706','#7c3aed','#ea580c','#0891b2','#e11d48','#8b5cf6','#16a34a','#f97316'];
+      const pieColors = sorted.map((_, i) => neutralColors[i] || '#94a3b8');
+      const pieBorder = sorted.map((_, i) => {
+        const c = neutralColors[i] || '#94a3b8';
+        return c + '60';
+      });
       window.__rsCharts.pieChart = new Chart(pieCanvas.getContext('2d'), {
         type: 'doughnut',
         data: {
@@ -543,29 +555,36 @@ function renderRelatorioSetorial() {
           datasets: [{
             data: sorted.map(s => s.fin),
             backgroundColor: pieColors,
-            borderColor: pieBorder,
-            borderWidth: 2,
-            hoverOffset: 12
+            borderColor: _chartSurface,
+            borderWidth: 3,
+            hoverOffset: 14
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '32%',
+          cutout: '38%',
           plugins: {
             legend: {
               position: 'bottom',
               labels: {
-                color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : getComputedStyle(document.documentElement).getPropertyValue('--text-strong').trim() || '#f8fafc',
-                font: { size: 11, weight: '500' },
-                padding: 14,
-                boxWidth: 14,
-                boxHeight: 14,
-                borderRadius: 3,
-                usePointStyle: false
+                color: _chartTextColor,
+                font: { size: 13, weight: '500' },
+                padding: 16,
+                boxWidth: 16,
+                boxHeight: 16,
+                borderRadius: 4,
+                usePointStyle: true
               }
             },
             tooltip: {
+              backgroundColor: _chartSurface,
+              titleColor: _chartTextColor,
+              bodyColor: _chartTextColor,
+              borderColor: _chartGridColor,
+              borderWidth: 1,
+              padding: 12,
+              cornerRadius: 8,
               callbacks: {
                 label: ctx => {
                   const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
@@ -575,23 +594,23 @@ function renderRelatorioSetorial() {
               }
             },
             datalabels: {
-              color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : (_isDark ? '#fff' : '#0f172a'),
-              font: { weight: 'bold', size: 12 },
+              color: '#ffffff',
+              font: { weight: 'bold', size: 13 },
               formatter: (value) => {
                 const pct = totalPie > 0 ? (value / totalPie * 100) : 0;
-                return pct >= 4 ? pct.toFixed(1) + '%' : '';
+                return pct >= 5 ? pct.toFixed(1) + '%' : '';
               },
-              offset: 4,
+              offset: 2,
               display: (ctx) => {
                 const pct = totalPie > 0 ? (ctx.dataset.data[ctx.dataIndex] / totalPie * 100) : 0;
-                return pct >= 4;
+                return pct >= 5;
               },
               backgroundColor: ctx => {
                 const pct = totalPie > 0 ? (ctx.dataset.data[ctx.dataIndex] / totalPie * 100) : 0;
-                return pct >= 4 ? (typeof ChartTheme !== 'undefined' ? ChartTheme.surface() : (_isDark ? '#1e293b' : '#ffffff')) : 'transparent';
+                return pct >= 5 ? (neutralColors[ctx.dataIndex] || '#64748b') : 'transparent';
               },
-              borderRadius: 4,
-              padding: { top: 3, bottom: 3, left: 5, right: 5 }
+              borderRadius: 6,
+              padding: { top: 4, bottom: 4, left: 8, right: 8 }
             }
           }
         }
@@ -611,6 +630,7 @@ function renderRelatorioSetorial() {
         return { label: typeof formatMesLabel === 'function' ? formatMesLabel(m) : m, fin: mFin, sc: mScAvg };
       });
 
+      const barColor = typeof ChartTheme !== 'undefined' ? ChartTheme.blue() : (_isDark ? 'rgba(96,165,250,0.8)' : 'rgba(37,99,235,0.8)');
       window.__rsCharts[`chart_${setorIdx}`] = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -618,8 +638,8 @@ function renderRelatorioSetorial() {
           datasets: [{
             label: 'Finalizados',
             data: monthData.map(d => d.fin),
-            backgroundColor: _isDark ? 'rgba(52,211,153,0.85)' : 'rgba(16,185,129,0.92)',
-            borderRadius: 4,
+            backgroundColor: barColor,
+            borderRadius: 6,
             borderSkipped: false,
             yAxisID: 'y'
           }]
@@ -634,8 +654,8 @@ function renderRelatorioSetorial() {
                 value: {
                   anchor: 'center',
                   align: 'center',
-                  color: _isDark ? '#fff' : '#0b1120',
-                  font: { weight: 'bold', size: 13 },
+                  color: '#ffffff',
+                  font: { weight: 'bold', size: 14 },
                   formatter: value => value.toLocaleString('pt-BR')
                 },
                 score: {
@@ -646,17 +666,24 @@ function renderRelatorioSetorial() {
                   anchor: 'end',
                   align: 'end',
                   color: _chartTextColor,
-                  font: { weight: '600', size: 14 },
+                  font: { weight: '700', size: 14 },
                   formatter: (value, ctx) => {
                     const i = ctx.dataIndex;
                     const sc = monthData[i]?.sc;
                     return sc > 0 ? '☆ ' + Number(sc).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
                   },
-                  offset: 4
+                  offset: 6
                 }
               }
             },
             tooltip: {
+              backgroundColor: _chartSurface,
+              titleColor: _chartTextColor,
+              bodyColor: _chartTextColor,
+              borderColor: _chartGridColor,
+              borderWidth: 1,
+              padding: 12,
+              cornerRadius: 8,
               callbacks: {
                 label: ctx => {
                   const i = ctx.dataIndex;
@@ -667,11 +694,43 @@ function renderRelatorioSetorial() {
             }
           },
           scales: {
-            y: { beginAtZero: true, grace: '20%', position: 'left', grid: { color: _chartGridColor }, ticks: { font: { size: 12 }, color: _chartTextColor } },
-            x: { grid: { display: false }, ticks: { font: { size: 12 }, color: _chartTextColor } }
+            y: {
+              beginAtZero: true,
+              grace: '20%',
+              position: 'left',
+              grid: { color: _chartGridColor },
+              ticks: { font: { size: 13, weight: '500' }, color: _chartTextColor, padding: 8 }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 13, weight: '500' }, color: _chartTextColor, padding: 8 }
+            }
           }
         }
       });
+    });
+  }
+
+  // ── Presentation Mode Toggle ──
+  const presToggle = document.getElementById('rsPresentationToggle');
+  const presIndicator = document.getElementById('rsPresentationModeIndicator');
+  if (presToggle) {
+    let presActive = false;
+    presToggle.addEventListener('click', () => {
+      presActive = !presActive;
+      if (presActive) {
+        container.classList.add('rs-presentation-mode');
+        container.querySelectorAll('button').forEach(b => { if (b.id !== 'rsPrintBtn' && b.id !== 'rsPresentationToggle') b.style.display = 'none'; });
+        container.querySelectorAll('.btn-small').forEach(b => { if (b.id !== 'rsPresentationToggle') b.style.display = 'none'; });
+        presToggle.textContent = '\uD83D\uDCF1 Modo Normal';
+        if (presIndicator) { presIndicator.style.display = 'inline'; }
+      } else {
+        container.classList.remove('rs-presentation-mode');
+        container.querySelectorAll('button').forEach(b => b.style.display = '');
+        container.querySelectorAll('.btn-small').forEach(b => b.style.display = '');
+        presToggle.textContent = '\uD83D\uDCF1 Apresentação';
+        if (presIndicator) { presIndicator.style.display = 'none'; }
+      }
     });
   }
 
@@ -679,17 +738,23 @@ function renderRelatorioSetorial() {
   const printBtn = document.getElementById('rsPrintBtn');
   if (printBtn && typeof html2canvas !== 'undefined') {
     printBtn.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       html2canvas(container, {
-        scale: 2,
-        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-surface').trim() || '#1e293b',
+        scale: 3,
+        backgroundColor: isDark ? '#0f172a' : '#ffffff',
         allowTaint: false,
         useCORS: true,
-        logging: false
+        logging: false,
+        onclone: function(doc) {
+          const cloned = doc.querySelector('.rs-container');
+          if (cloned) cloned.style.background = isDark ? '#0f172a' : '#ffffff';
+        }
       }).then(canvas => {
         const link = document.createElement('a');
         link.download = `relatorio-setorial-${meses[0]}-a-${meses[meses.length - 1]}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
+        if (typeof showToast === 'function') showToast('PNG exportado com sucesso!', 'success');
       }).catch(() => {
         if (typeof showToast === 'function') showToast('Erro ao exportar. Tente novamente.', 'error');
       });

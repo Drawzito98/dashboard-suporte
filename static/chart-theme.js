@@ -1,44 +1,40 @@
-// Centralized chart theme — reads CSS custom properties for light/dark mode
 window.ChartTheme = {
   isDark: () => document.documentElement.getAttribute('data-theme') === 'dark',
 
-  text: () => ChartTheme.isDark() ? '#ffffff' : '#000000',
-  muted: () => getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#94a3b8',
-  strong: () => ChartTheme.isDark() ? '#ffffff' : '#000000',
-  border: () => getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || (ChartTheme.isDark() ? '#1f2a40' : '#e2e8f0'),
+  text: () => ChartTheme.isDark() ? '#e2e8f0' : '#1e293b',
+  muted: () => ChartTheme.isDark() ? '#8892a6' : '#64748b',
+  strong: () => ChartTheme.isDark() ? '#f8fafc' : '#0f172a',
+  border: () => ChartTheme.isDark() ? '#1f2a40' : '#e2e8f0',
 
-  grid: () => ChartTheme.isDark() ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.15)',
-  gridStrong: () => ChartTheme.isDark() ? 'rgba(148,163,184,0.35)' : 'rgba(148,163,184,0.25)',
+  grid: () => ChartTheme.isDark() ? 'rgba(148,163,184,0.15)' : 'rgba(148,163,184,0.12)',
+  gridStrong: () => ChartTheme.isDark() ? 'rgba(148,163,184,0.28)' : 'rgba(148,163,184,0.22)',
 
-  accent: () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || (ChartTheme.isDark() ? '#60a5fa' : '#2563eb'),
-  success: () => getComputedStyle(document.documentElement).getPropertyValue('--success').trim() || (ChartTheme.isDark() ? '#34d399' : '#047857'),
-  warning: () => getComputedStyle(document.documentElement).getPropertyValue('--warning').trim() || (ChartTheme.isDark() ? '#fbbf24' : '#b45309'),
-  danger: () => getComputedStyle(document.documentElement).getPropertyValue('--danger').trim() || (ChartTheme.isDark() ? '#f87171' : '#b91c1c'),
+  accent: () => ChartTheme.isDark() ? '#60a5fa' : '#2563eb',
+  success: () => ChartTheme.isDark() ? '#34d399' : '#059669',
+  warning: () => ChartTheme.isDark() ? '#fbbf24' : '#d97706',
+  danger: () => ChartTheme.isDark() ? '#f87171' : '#dc2626',
 
-  surface: () => getComputedStyle(document.documentElement).getPropertyValue('--bg-surface').trim() || (ChartTheme.isDark() ? '#131c2f' : '#ffffff'),
-  canvas: () => getComputedStyle(document.documentElement).getPropertyValue('--bg-canvas').trim() || (ChartTheme.isDark() ? '#0f172a' : '#ffffff'),
+  surface: () => ChartTheme.isDark() ? '#131c2f' : '#ffffff',
+  canvas: () => ChartTheme.isDark() ? '#0f172a' : '#ffffff',
 
-  // Convenience: full tooltip config
   tooltip: (opts) => Object.assign({
     backgroundColor: ChartTheme.surface(),
     titleColor: ChartTheme.strong(),
     bodyColor: ChartTheme.text(),
     borderColor: ChartTheme.border(),
     borderWidth: 1,
-    padding: 8,
-    cornerRadius: 6,
-    boxPadding: 4,
+    padding: 10,
+    cornerRadius: 8,
+    boxPadding: 6,
     usePointStyle: true
   }, opts || {}),
 
-  // Chart.js defaults updater — call after theme change
   applyDefaults: function() {
     if (typeof Chart === 'undefined') return;
     Chart.defaults.color = ChartTheme.text();
     Chart.defaults.borderColor = ChartTheme.border();
   },
 
-  // Series color palettes
   datasetColors: function(count) {
     const isDark = ChartTheme.isDark();
     if (isDark) {
@@ -49,13 +45,32 @@ window.ChartTheme = {
     return palette.slice(0, count);
   },
 
-  // Specific dataset colors used across the app
-  green: () => ChartTheme.isDark() ? 'rgba(52,211,153,0.85)' : 'rgba(16,185,129,0.85)',
-  blue: () => ChartTheme.isDark() ? 'rgba(96,165,250,0.85)' : 'rgba(37,99,235,0.85)',
-  orange: () => ChartTheme.isDark() ? 'rgba(251,146,60,0.85)' : 'rgba(249,115,22,0.85)',
-  amber: () => ChartTheme.isDark() ? 'rgba(251,191,36,0.85)' : 'rgba(245,158,11,0.85)',
-  purple: () => ChartTheme.isDark() ? 'rgba(167,139,250,0.85)' : 'rgba(139,92,246,0.85)',
-  red: () => ChartTheme.isDark() ? 'rgba(248,113,113,0.85)' : 'rgba(239,68,68,0.85)',
-  teal: () => ChartTheme.isDark() ? 'rgba(45,212,191,0.85)' : 'rgba(20,184,166,0.85)',
-  indigo: () => ChartTheme.isDark() ? 'rgba(129,140,248,0.85)' : 'rgba(99,102,241,0.85)',
+  neutralPalette: function(count) {
+    const isDark = ChartTheme.isDark();
+    if (isDark) {
+      const p = ['#60a5fa', '#34d399', '#fbbf24', '#a78bfa', '#fb923c', '#67e8f9', '#fda4af', '#c4b5fd', '#86efac', '#f97316'];
+      return p.slice(0, count);
+    }
+    const p = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#ea580c', '#0891b2', '#e11d48', '#8b5cf6', '#16a34a', '#f97316'];
+    return p.slice(0, count);
+  },
+
+  dataLabelsDefaults: function() {
+    return {
+      color: ChartTheme.strong(),
+      font: { weight: 'bold', size: 12 },
+      backgroundColor: ChartTheme.surface(),
+      borderRadius: 4,
+      padding: { top: 4, bottom: 4, left: 6, right: 6 }
+    };
+  },
+
+  green: () => ChartTheme.isDark() ? 'rgba(52,211,153,0.8)' : 'rgba(5,150,105,0.8)',
+  blue: () => ChartTheme.isDark() ? 'rgba(96,165,250,0.8)' : 'rgba(37,99,235,0.8)',
+  orange: () => ChartTheme.isDark() ? 'rgba(251,146,60,0.8)' : 'rgba(234,88,12,0.8)',
+  amber: () => ChartTheme.isDark() ? 'rgba(251,191,36,0.8)' : 'rgba(217,119,6,0.8)',
+  purple: () => ChartTheme.isDark() ? 'rgba(167,139,250,0.8)' : 'rgba(124,58,237,0.8)',
+  red: () => ChartTheme.isDark() ? 'rgba(248,113,113,0.8)' : 'rgba(220,38,38,0.8)',
+  teal: () => ChartTheme.isDark() ? 'rgba(45,212,191,0.8)' : 'rgba(13,148,136,0.8)',
+  indigo: () => ChartTheme.isDark() ? 'rgba(129,140,248,0.8)' : 'rgba(99,102,241,0.8)',
 };
