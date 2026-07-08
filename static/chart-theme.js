@@ -33,6 +33,19 @@ window.ChartTheme = {
     if (typeof Chart === 'undefined') return;
     Chart.defaults.color = ChartTheme.text();
     Chart.defaults.borderColor = ChartTheme.border();
+    Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    Chart.defaults.font.size = 13;
+    Chart.defaults.plugins.legend.labels.font = { size: 13, weight: '500' };
+    Chart.defaults.plugins.legend.labels.padding = 18;
+    Chart.defaults.plugins.legend.labels.boxWidth = 10;
+    Chart.defaults.plugins.legend.labels.boxHeight = 10;
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+    Chart.defaults.plugins.tooltip.titleFont = { size: 13, weight: '600' };
+    Chart.defaults.plugins.tooltip.bodyFont = { size: 13 };
+    Chart.defaults.plugins.tooltip.padding = 12;
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
+    Chart.defaults.plugins.tooltip.displayColors = true;
+    Chart.defaults.plugins.tooltip.boxPadding = 6;
   },
 
   datasetColors: function(count) {

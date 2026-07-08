@@ -418,27 +418,22 @@ function renderIndividualScoreChart(name, months, ranking, aliasMap) {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          backgroundColor: ChartTheme.tooltip(),
-          titleColor: '#f8fafc',
-          bodyColor: '#e2e8f0',
-          padding: 12,
-          cornerRadius: 10,
+        tooltip: Object.assign({
           callbacks: {
             label: (ctx) => `Score: ${ctx.parsed.y !== null ? ctx.parsed.y.toFixed(2) : '—'}`
           }
-        }
+        }, ChartTheme.tooltip())
       },
       scales: {
         y: {
           beginAtZero: true,
           suggestedMax: 5,
           grid: { color: ChartTheme.grid() },
-          ticks: { font: { size: 11.5 }, stepSize: 1 }
+          ticks: { font: { size: 13 }, stepSize: 1, color: ChartTheme.text() }
         },
         x: {
           grid: { display: false },
-          ticks: { font: { size: 11.5 } }
+          ticks: { font: { size: 13 }, color: ChartTheme.text() }
         }
       }
     }

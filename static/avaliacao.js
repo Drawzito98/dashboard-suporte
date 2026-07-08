@@ -1241,26 +1241,26 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
               stepSize: 1,
               backdropColor: 'transparent',
               color: ChartTheme.text(),
-              font: { size: 10 }
+              font: { size: 12 }
             },
             grid: { color: ChartTheme.border() },
             angleLines: { color: ChartTheme.border() },
             pointLabels: {
               color: ChartTheme.text(),
-              font: { size: 8.5 },
-              padding: 16
+              font: { size: 11, weight: '500' },
+              padding: 18
             }
           }
         },
         plugins: {
           legend: { display: false },
-          tooltip: {
+          tooltip: Object.assign({
             callbacks: {
               label: function(ctx) {
                 return ctx.parsed.r !== null && ctx.parsed.r !== undefined ? `Nota: ${ctx.parsed.r}/4` : 'Sem nota';
               }
             }
-          }
+          }, ChartTheme.tooltip())
         }
       }
     };

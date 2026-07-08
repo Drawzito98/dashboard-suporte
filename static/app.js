@@ -1906,7 +1906,7 @@ function renderChart(rows) {
       plugins: {
         datalabels: { display: false },
         valueLabels: { integer: false },
-        legend: { display: true, position: 'bottom', align: 'center', labels: { color: ct ? ct.text() : undefined, usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 } } },
+        legend: { display: true, position: 'bottom', align: 'center', labels: { color: ct ? ct.text() : undefined, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10, padding: 18, font: { size: 13 } } },
         tooltip: Object.assign({
           callbacks: {
             label: (ctx) => {
@@ -1915,7 +1915,7 @@ function renderChart(rows) {
               return `${ctx.dataset.label}: ${Math.round(v).toLocaleString('pt-BR')}`;
             }
           }
-        }, ct ? ct.tooltip({ padding: 12, cornerRadius: 10 }) : {
+        }, ct ? ct.tooltip() : {
           backgroundColor: 'rgba(15, 23, 42, 0.92)',
           titleColor: '#f8fafc', bodyColor: '#e2e8f0',
           borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
@@ -1923,9 +1923,9 @@ function renderChart(rows) {
         })
       },
       scales: {
-        y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: ct ? ct.grid() : 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } },
-        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined, callback: v => Number(v).toFixed(2) } },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined, callback: function(val, idx) { return firstNameLabels[idx]; } } }
+        y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: ct ? ct.grid() : 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 13 }, color: ct ? ct.text() : undefined } },
+        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 13 }, color: ct ? ct.text() : undefined, callback: v => Number(v).toFixed(2) } },
+        x: { grid: { display: false }, ticks: { font: { size: 13 }, color: ct ? ct.text() : undefined, callback: function(val, idx) { return firstNameLabels[idx]; } } }
       }
     }
   };
@@ -1984,9 +1984,9 @@ function renderSingleEvolutionChart(rows) {
         })
       },
       scales: {
-        y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: ct ? ct.grid() : 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } },
-        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined, callback: v => Number(v).toFixed(2) } },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } }
+        y: { beginAtZero: true, max: yMax, position: 'left', grid: { color: ct ? ct.grid() : 'rgba(148,163,184,0.14)' }, ticks: { font: { size: 13 }, color: ct ? ct.text() : undefined } },
+        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 5.5, ticks: { font: { size: 13 }, color: ct ? ct.text() : undefined, callback: v => Number(v).toFixed(2) } },
+        x: { grid: { display: false }, ticks: { font: { size: 13 }, color: ct ? ct.text() : undefined } }
       }
     }
   };
@@ -2065,7 +2065,7 @@ function renderTimelineChart(rows) {
             usePointStyle: true, pointStyle: 'circle',
             boxWidth: 8, boxHeight: 8,
             padding: 18,
-            font: { size: 12.5, weight: '600' }
+            font: { size: 13, weight: '600' }
           },
           onClick: (e, legendItem) => {
             const label = legendItem.text;
@@ -2077,7 +2077,7 @@ function renderTimelineChart(rows) {
         },
         tooltip: Object.assign({
           enabled: true,
-          titleFont: { size: 12, weight: '600' }, bodyFont: { size: 12.5 },
+          titleFont: { size: 13, weight: '600' }, bodyFont: { size: 13 },
           callbacks: {
             label: (ctx) => {
               const v = (ctx.parsed && ctx.parsed.y !== undefined) ? ctx.parsed.y : ctx.raw;
@@ -2095,8 +2095,8 @@ function renderTimelineChart(rows) {
         })
       },
       scales: {
-        y: { beginAtZero: true, grid: { color: typeof ChartTheme !== 'undefined' ? ChartTheme.grid() : 'rgba(148,163,184,0.14)' }, ticks: { callback: (v) => (metric !== 'Score') ? String(Math.round(v)) : Number(v).toFixed(2), font: { size: 11.5 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } }
+        y: { beginAtZero: true, grid: { color: typeof ChartTheme !== 'undefined' ? ChartTheme.grid() : 'rgba(148,163,184,0.14)' }, ticks: { callback: (v) => (metric !== 'Score') ? String(Math.round(v)) : Number(v).toFixed(2), font: { size: 13 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } },
+        x: { grid: { display: false }, ticks: { font: { size: 13 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } }
       }
     }
   });
@@ -2161,7 +2161,7 @@ function renderDetailedByMonthChart(rows) {
             usePointStyle: true, pointStyle: 'circle',
             boxWidth: 8, boxHeight: 8,
             padding: 18,
-            font: { size: 12.5, weight: '600' }
+            font: { size: 13, weight: '600' }
           },
           onClick: (e, legendItem, legend) => {
             const ci = legend.chart;
@@ -2172,7 +2172,7 @@ function renderDetailedByMonthChart(rows) {
           }
         },
         tooltip: Object.assign({
-          titleFont: { size: 12, weight: '600' }, bodyFont: { size: 12.5 },
+          titleFont: { size: 13, weight: '600' }, bodyFont: { size: 13 },
           callbacks: {
             label: (c) => {
               const v = (c.parsed && c.parsed.y !== undefined) ? c.parsed.y : c.raw;
@@ -2189,9 +2189,9 @@ function renderDetailedByMonthChart(rows) {
         })
       },
       scales: {
-        y: { beginAtZero: true, position: 'left', grid: { color: typeof ChartTheme !== 'undefined' ? ChartTheme.grid() : 'rgba(148,163,184,0.14)' }, title: { display: true, text: 'Atendimentos', font: { size: 11.5, weight: '600' }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined }, ticks: { callback: v => String(Math.round(v)), font: { size: 11.5 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } },
-        yScore: { beginAtZero: true, suggestedMin: 0, suggestedMax: 5, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Score médio (0–5)', font: { size: 11.5, weight: '600' }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined }, ticks: { callback: v => Number(v).toFixed(1), font: { size: 11.5 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } }
+        y: { beginAtZero: true, position: 'left', grid: { color: typeof ChartTheme !== 'undefined' ? ChartTheme.grid() : 'rgba(148,163,184,0.14)' }, title: { display: true, text: 'Atendimentos', font: { size: 11.5, weight: '600' }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined }, ticks: { callback: v => String(Math.round(v)), font: { size: 13 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } },
+        yScore: { beginAtZero: true, suggestedMin: 0, suggestedMax: 5, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Score médio (0–5)', font: { size: 11.5, weight: '600' }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined }, ticks: { callback: v => Number(v).toFixed(1), font: { size: 13 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } },
+        x: { grid: { display: false }, ticks: { font: { size: 13 }, color: typeof ChartTheme !== 'undefined' ? ChartTheme.text() : undefined } }
       }
     }
   });
@@ -2227,7 +2227,7 @@ function drawBar(labels, data, label, opts = {}) {
         valueLabels: { integer },
         legend: { display: false },
         tooltip: Object.assign({
-          titleFont: { size: 12, weight: '600' }, bodyFont: { size: 12.5 },
+          titleFont: { size: 13, weight: '600' }, bodyFont: { size: 13 },
           callbacks: {
             label: (ctx) => {
               const v = ctx.parsed && ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.raw;
@@ -2245,9 +2245,9 @@ function drawBar(labels, data, label, opts = {}) {
         y: {
           beginAtZero: true,
           grid: { color: ct ? ct.grid() : 'rgba(148,163,184,0.14)' },
-          ticks: { callback: (v) => integer ? String(Math.round(v)) : Number(v).toFixed(2), font: { size: 11.5 }, color: ct ? ct.text() : undefined }
+          ticks: { callback: (v) => integer ? String(Math.round(v)) : Number(v).toFixed(2), font: { size: 13 }, color: ct ? ct.text() : undefined }
         },
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, color: ct ? ct.text() : undefined } }
+        x: { grid: { display: false }, ticks: { font: { size: 13 }, color: ct ? ct.text() : undefined } }
       }
     }
   };

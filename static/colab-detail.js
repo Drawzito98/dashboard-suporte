@@ -221,13 +221,14 @@ function renderColabDetailChart(monthlyData) {
         legend: {
           display: true,
           position: 'bottom',
-          labels: { usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 14, font: { size: 11.5 } }
-        }
+          labels: { color: ChartTheme.text(), usePointStyle: true, boxWidth: 10, boxHeight: 10, padding: 16, font: { size: 13, weight: '500' } }
+        },
+        tooltip: ChartTheme.tooltip()
       },
       scales: {
-        y: { beginAtZero: true, position: 'left', grid: { color: ChartTheme.grid() }, ticks: { font: { size: 11 } } },
-        y1: { beginAtZero: true, suggestedMax: 5, position: 'right', grid: { display: false }, ticks: { font: { size: 11 } } },
-        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+        y: { beginAtZero: true, position: 'left', grid: { color: ChartTheme.grid() }, ticks: { font: { size: 13 }, color: ChartTheme.text() } },
+        y1: { beginAtZero: true, suggestedMax: 5, position: 'right', grid: { display: false }, ticks: { font: { size: 13 }, color: ChartTheme.text() } },
+        x: { grid: { display: false }, ticks: { font: { size: 13 }, color: ChartTheme.text() } }
       }
     }
   });
