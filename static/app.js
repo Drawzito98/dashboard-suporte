@@ -2214,7 +2214,8 @@ function drawBar(labels, data, label, opts = {}) {
   }
 
   const ct = typeof ChartTheme !== 'undefined' ? ChartTheme : null;
-  const bg = labels.map((_,i) => ct ? ct.blue() : `rgba(37,99,235,${Math.max(0.4, 0.9 - i*0.05)})`);
+  const neutralPalette = ct ? ct.neutralPalette(labels.length) : ['#2563eb','#059669','#d97706','#7c3aed','#ea580c','#0891b2','#e11d48','#8b5cf6','#16a34a','#f97316'];
+  const bg = labels.map((_,i) => neutralPalette ? neutralPalette[i] || neutralPalette[neutralPalette.length-1] : (ct ? ct.blue() : `rgba(37,99,235,${Math.max(0.4, 0.9 - i*0.05)})`));
   sizeChartInnerForLabels(labels.length, 90);
   const cfg = {
     type: 'bar',
