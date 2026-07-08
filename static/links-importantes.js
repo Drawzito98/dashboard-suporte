@@ -93,9 +93,8 @@ async function dbLinksDeletar(id) {
 let _editingId = null;
 
 function renderLinksImportantes() {
-  const container = document.getElementById('linksContent');
+  const container = document.getElementById('linksOverlayContent');
   if (!container) return;
-  container.innerHTML = '<div style="padding:var(--s-5);text-align:center;color:var(--text-muted)">Carregando...</div>';
 
   dbLinksListar().then(links => {
     let html = '<div class="links-container">';
@@ -131,8 +130,8 @@ function renderLinksImportantes() {
         html += `<span class="links-item-url">${escapeHtml(link.url)}</span>`;
         html += '</div>';
         html += '<div class="links-item-actions">';
-        html += `<button class="btn-small links-edit-btn" data-id="${link.id}" type="button" title="Editar">✏️</button>`;
-        html += `<button class="btn-small links-del-btn" data-id="${link.id}" type="button" title="Excluir" style="color:var(--danger)">🗑️</button>`;
+        html += `<button class="btn-small links-edit-btn" data-id="${link.id}" type="button" title="Editar">Editar</button>`;
+        html += `<button class="btn-small links-del-btn" data-id="${link.id}" type="button" title="Excluir" style="color:var(--danger)">Excluir</button>`;
         html += '</div>';
         html += '</div>';
       }
@@ -190,9 +189,24 @@ async function handleDeletar(id) {
   else showToast('Erro ao excluir', 'error');
 }
 
-function onLinksTabActivated() {
-  const container = document.getElementById('linksContent');
-  if (!container) return;
-  container.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div>';
+function openLinksOverlay() {
+  const overlay = document.getElementById('linksOverlay');
+  if (!overlay) return;
+  const content = document.getElementById('linksOverlayContent');
+  if (!content) return;
+  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div>';
+  overlay.classList.add('open');
   setTimeout(() => renderLinksImportantes(), 50);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('linksBtn')?.addEventListener('click', openLinksOverlay);
+  document.getElementById('linksOverlayClose')?.addEventListener('click', () => {
+    _editingId = null;
+    document.getElementById('linksOverlay')?.classList.remove('open');
+  });
+  const overlay = document.getElementById('linksOverlay');
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) { _editingId = null; overlay.classList.remove('open'); }
+  });
+});

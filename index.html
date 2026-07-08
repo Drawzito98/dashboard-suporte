@@ -199,9 +199,7 @@
       <button class="tab-btn" data-tab="avaliacao">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg></span> Avaliação
       </button>
-      <button class="tab-btn" data-tab="links">
-        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span> Links
-      </button>
+
       <button class="tab-btn" data-tab="mapeamento-time">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Mapeamento de Time
       </button>
@@ -271,6 +269,7 @@
               <button class="btn-small" id="avaliarAtendimentoBtn" type="button" title="Avaliar atendimentos realizados"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Avaliação de Atendimentos</button>
               <button class="btn-small" id="ausenciasBtn" type="button" title="Registrar ausências de colaboradores"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg> Ausências</button>
               <button class="btn-small" id="feriasBtn" type="button" title="Registrar férias de colaboradores"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-4-4-4-7c0-2.2 1.8-4 4-4s4 1.8 4 4c0 3-4 7-4 7z"/><circle cx="12" cy="11" r="1"/><path d="M19 17.67c0-3.87-3.13-7-7-7s-7 3.13-7 7"/><path d="M8 17.67c0-3.87 3.13-7 7-7"/></svg> Férias</button>
+              <button class="btn-small" id="linksBtn" type="button" title="Links importantes"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Links</button>
               <button class="btn-small" id="feedbacksBtn" type="button" title="Gerar feedbacks por colaborador"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Feedbacks</button>
             </div>
           </div>
@@ -524,11 +523,6 @@
           <div id="mapeamentoTimeContent"></div>
         </div>
 
-        <!-- ===== TAB: LINKS ===== -->
-        <div class="tab-content" id="tab-links">
-          <div id="linksContent"></div>
-        </div>
-
         <!-- ===== TAB: USUÁRIOS ===== -->
         <div class="tab-content" id="tab-usuarios">
           <div id="usuariosContent"></div>
@@ -628,6 +622,14 @@
   <div class="colab-detail-panel" style="max-width:600px">
     <button class="colab-detail-close" id="feriasOverlayClose" type="button">✕</button>
     <div id="feriasOverlayContent"></div>
+  </div>
+</div>
+
+<!-- Links Overlay -->
+<div class="colab-detail-overlay" id="linksOverlay">
+  <div class="colab-detail-panel" style="max-width:500px">
+    <button class="colab-detail-close" id="linksOverlayClose" type="button">✕</button>
+    <div id="linksOverlayContent"></div>
   </div>
 </div>
 

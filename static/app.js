@@ -2961,9 +2961,6 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'avaliacao' && typeof onAvaliacaoTabActivated === 'function') {
         onAvaliacaoTabActivated();
       }
-      if (tab === 'links' && typeof onLinksTabActivated === 'function') {
-        onLinksTabActivated();
-      }
       if (tab === 'dashboard') {
         updateView();
       }
