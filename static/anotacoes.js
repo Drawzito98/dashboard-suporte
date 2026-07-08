@@ -13,7 +13,7 @@ function formatarData(dataStr) {
 }
 
 function renderAnotacoes() {
-  const container = document.getElementById('anotacoesContent');
+  const container = document.getElementById('anotacoesOverlayContent');
   if (!container) return;
 
   const saved = JSON.parse(localStorage.getItem(ANOTACOES_LOCAL_KEY) || '[]');
@@ -86,7 +86,7 @@ function renderAnotacoes() {
 }
 
 function bindAnotacaoEvents(saved) {
-  const container = document.getElementById('anotacoesContent');
+  const container = document.getElementById('anotacoesOverlayContent');
   if (!container) return;
   const salvarBtn = document.getElementById('anotacaoSalvarBtn');
   const textoInput = document.getElementById('anotacaoTextoInput');
@@ -194,9 +194,23 @@ function criarAnotacaoOverlay() {
   return div;
 }
 
-function onAnotacoesTabActivated() {
-  const container = document.getElementById('anotacoesContent');
-  if (!container) return;
-  container.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
+function openAnotacoesOverlay() {
+  const overlay = document.getElementById('anotacoesOverlay');
+  if (!overlay) return;
+  const content = document.getElementById('anotacoesOverlayContent');
+  if (!content) return;
+  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
+  overlay.classList.add('open');
   setTimeout(() => renderAnotacoes(), 50);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('anotacoesBtn')?.addEventListener('click', openAnotacoesOverlay);
+  document.getElementById('anotacoesOverlayClose')?.addEventListener('click', () => {
+    document.getElementById('anotacoesOverlay')?.classList.remove('open');
+  });
+  const overlay = document.getElementById('anotacoesOverlay');
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});

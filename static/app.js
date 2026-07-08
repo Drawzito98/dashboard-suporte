@@ -2937,9 +2937,6 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'insights' && typeof onInsightsTabActivated === 'function') {
         onInsightsTabActivated();
       }
-      if (tab === 'anotacoes' && typeof onAnotacoesTabActivated === 'function') {
-        onAnotacoesTabActivated();
-      }
       if (tab === 'tarefas' && typeof onTarefasTabActivated === 'function') {
         onTarefasTabActivated();
       }
