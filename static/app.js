@@ -2940,9 +2940,6 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'tarefas' && typeof onTarefasTabActivated === 'function') {
         onTarefasTabActivated();
       }
-      if (tab === 'reportes' && typeof onReportesTabActivated === 'function') {
-        onReportesTabActivated();
-      }
       if (tab === 'colaboradores' && typeof onColaboradoresTabActivated === 'function') {
         onColaboradoresTabActivated();
       }

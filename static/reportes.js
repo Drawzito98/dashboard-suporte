@@ -3,7 +3,7 @@ let reportesUnsub = null;
 let reportesPollInterval = null;
 
 function getReportesContainer() {
-  return document.getElementById('reportesContent');
+  return document.getElementById('reportesOverlayContent');
 }
 
 function getUserEmail() {
@@ -547,11 +547,11 @@ function criarOverlayPreview() {
 }
 
 function atualizarBadgeReportes(count) {
-  const badge = document.getElementById('reportesBadge');
+  const badge = document.getElementById('reportesBadgeSide');
   if (badge) {
     badge.textContent = count > 0 ? count : '';
-    badge.style.display = count > 0 ? '' : 'none';
   }
+}
 }
 
 // Notificação push via Supabase Realtime
@@ -636,9 +636,14 @@ async function exportarReportesCsv() {
   showToast('CSV exportado com sucesso!', 'success');
 }
 
-// Hook chamado pelo app.js quando a aba é ativada
-function onReportesTabActivated() {
-  renderReportes();
+function openReportesOverlay() {
+  const overlay = document.getElementById('reportesOverlay');
+  if (!overlay) return;
+  const content = document.getElementById('reportesOverlayContent');
+  if (!content) return;
+  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>';
+  overlay.classList.add('open');
+  setTimeout(() => renderReportes(), 50);
 }
 
 // Inicia notificações após auth (chamado pelo app.js)
@@ -647,3 +652,14 @@ function initReportesNotifications() {
     iniciarRealtimeReportes();
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('reportesBtn')?.addEventListener('click', openReportesOverlay);
+  document.getElementById('reportesOverlayClose')?.addEventListener('click', () => {
+    document.getElementById('reportesOverlay')?.classList.remove('open');
+  });
+  const overlay = document.getElementById('reportesOverlay');
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
