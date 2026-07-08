@@ -2952,9 +2952,6 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'mapeamento-time' && typeof onMapeamentoTimeTabActivated === 'function') {
         onMapeamentoTimeTabActivated();
       }
-      if (tab === 'usuarios' && typeof onUsuariosTabActivated === 'function') {
-        onUsuariosTabActivated();
-      }
       if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') {
         onRelatorioSetorialTabActivated();
       }

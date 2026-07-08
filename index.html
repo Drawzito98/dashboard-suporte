@@ -203,9 +203,6 @@
       <button class="tab-btn" data-tab="mapeamento-time">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Mapeamento de Time
       </button>
-      <button class="tab-btn" data-tab="usuarios">
-        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Usuários
-      </button>
     </div>
 
     <!-- Main Layout -->
@@ -285,6 +282,7 @@
             <div class="btn-row">
               <button class="btn-small" id="manageColabsBtn" type="button" title="Ativar/desativar colaboradores"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Colaboradores</button>
               <button class="btn-small" id="manageSetoresBtn" type="button" title="Ativar/desativar setores"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><line x1="8" y1="6" x2="10" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="6" x2="16" y2="6"/><line x1="14" y1="10" x2="16" y2="10"/></svg> Setores</button>
+              <button class="btn-small" id="usuariosBtn" type="button" title="Gerenciar usuários do sistema"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Usuários</button>
             </div>
           </div>
         </section>
@@ -523,11 +521,6 @@
           <div id="mapeamentoTimeContent"></div>
         </div>
 
-        <!-- ===== TAB: USUÁRIOS ===== -->
-        <div class="tab-content" id="tab-usuarios">
-          <div id="usuariosContent"></div>
-        </div>
-
         <!-- ===== SEÇÃO: Inteligência / Relatório ===== -->
         <div id="intelReportContainer" class="intel-report" style="display:none"></div>
 
@@ -630,6 +623,14 @@
   <div class="colab-detail-panel" style="max-width:500px">
     <button class="colab-detail-close" id="linksOverlayClose" type="button">✕</button>
     <div id="linksOverlayContent"></div>
+  </div>
+</div>
+
+<!-- Usuários Overlay -->
+<div class="colab-detail-overlay" id="usuariosOverlay">
+  <div class="colab-detail-panel" style="max-width:900px">
+    <button class="colab-detail-close" id="usuariosOverlayClose" type="button">✕</button>
+    <div id="usuariosOverlayContent"></div>
   </div>
 </div>
 

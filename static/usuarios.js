@@ -228,7 +228,7 @@ async function carregarUsuarios() {
 }
 
 function renderUsuariosAba() {
-  const container = document.getElementById('usuariosContent');
+  const container = document.getElementById('usuariosOverlayContent');
   if (!container) return;
 
   container.innerHTML = `
@@ -524,6 +524,23 @@ function renderUsuariosAba() {
   carregarUsuarios();
 }
 
-function onUsuariosTabActivated() {
-  renderUsuariosAba();
+function openUsuariosOverlay() {
+  const overlay = document.getElementById('usuariosOverlay');
+  if (!overlay) return;
+  const content = document.getElementById('usuariosOverlayContent');
+  if (!content) return;
+  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>';
+  overlay.classList.add('open');
+  setTimeout(() => renderUsuariosAba(), 50);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('usuariosBtn')?.addEventListener('click', openUsuariosOverlay);
+  document.getElementById('usuariosOverlayClose')?.addEventListener('click', () => {
+    document.getElementById('usuariosOverlay')?.classList.remove('open');
+  });
+  const overlay = document.getElementById('usuariosOverlay');
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
