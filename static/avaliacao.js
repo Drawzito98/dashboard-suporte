@@ -962,50 +962,59 @@ function exportarTodasAvaliacoesXLSX() {
   const wb = XLSX.utils.book_new();
 
   avaliacoes.forEach(av => {
-    const scoresArray = comps.map(c => av.scores[c.id]).filter(v => v !== null && v !== undefined);
-    const media = scoresArray.length ? (scoresArray.reduce((a, b) => a + b, 0) / scoresArray.length).toFixed(2) : '—';
-    const total = scoresArray.reduce((a, b) => a + b, 0);
-    const obsGerais = av.observacoes_gerais || '';
-    const comentariosIa = av.comentarios_ia || [];
-    const comentariosFinais = av.comentarios_finais || [];
+    try {
+      const scoresArray = comps.map(c => av.scores[c.id]).filter(v => v !== null && v !== undefined);
+      const media = scoresArray.length ? (scoresArray.reduce((a, b) => a + b, 0) / scoresArray.length).toFixed(2) : '—';
+      const total = scoresArray.reduce((a, b) => a + b, 0);
+      const obsGerais = av.observacoes_gerais || '';
+      const comentariosIa = av.comentarios_ia || [];
+      const comentariosFinais = av.comentarios_finais || [];
 
-    const rows = [
-      ['Colaborador', av.colaborador],
-      ['Ciclo', av.ciclo],
-      ['Média', media],
-      ['Total', total + '/' + (comps.length * 4)],
-      ['Atualizado em', av.updatedAt ? new Date(av.updatedAt).toLocaleString('pt-BR') : '—'],
-      [],
-      ['Competência', 'Nota', 'Observação'],
-    ];
+      const rows = [
+        ['Colaborador', av.colaborador || '—'],
+        ['Ciclo', av.ciclo || '—'],
+        ['Média', media],
+        ['Total', Number.isFinite(total) ? total + '/' + (comps.length * 4) : '—'],
+        ['Atualizado em', av.updatedAt ? new Date(av.updatedAt).toLocaleString('pt-BR') : '—'],
+        [],
+        ['Competência', 'Nota', 'Observação'],
+      ];
 
-    comps.forEach(c => {
-      const nota = av.scores[c.id] !== null && av.scores[c.id] !== undefined ? av.scores[c.id] : null;
-      const obs = av.observacoes_competencias?.[c.id] || '';
-      rows.push([c.nome, nota !== null ? String(nota) : '—', obs]);
-    });
+      comps.forEach(c => {
+        const nota = av.scores?.[c.id] != null ? av.scores[c.id] : null;
+        const obs = av.observacoes_competencias?.[c.id] || '';
+        rows.push([c.nome, nota !== null ? String(nota) : '—', obs]);
+      });
 
-    if (comentariosFinais.length) {
-      rows.push([], ['Comentários Finais', comentariosFinais.join('; ')]);
+      if (comentariosFinais.length) {
+        rows.push([], ['Comentários Finais', comentariosFinais.join('; ')]);
+      }
+
+      if (comentariosIa.length) {
+        rows.push([], ['Sugestões IA', comentariosIa.join('; ')]);
+      }
+
+      if (obsGerais) {
+        rows.push([], ['Observações Gerais', obsGerais]);
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{ wch: 45 }, { wch: 8 }, { wch: 45 }];
+
+      let sheetName = ((av.colaborador || 'Colab') + ' - ' + (av.ciclo || 'Sem ciclo')).replace(/[[\]:*?\/\\]/g, '').slice(0, 31);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Avaliação');
+    } catch (e) {
+      console.error('[avaliacao] Erro ao processar avaliação:', e, av);
     }
-
-    if (comentariosIa.length) {
-      rows.push([], ['Sugestões IA', comentariosIa.join('; ')]);
-    }
-
-    if (obsGerais) {
-      rows.push([], ['Observações Gerais', obsGerais]);
-    }
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [{ wch: 45 }, { wch: 8 }, { wch: 45 }];
-
-    let sheetName = (av.colaborador + ' - ' + av.ciclo).slice(0, 31);
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
   });
 
-  XLSX.writeFile(wb, `todas_avaliacoes_${new Date().toISOString().slice(0, 10)}.xlsx`);
-  showToast(`${avaliacoes.length} avaliações exportadas!`, 'success');
+  try {
+    XLSX.writeFile(wb, `todas_avaliacoes_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast(`${avaliacoes.length} avaliações exportadas!`, 'success');
+  } catch (e) {
+    console.error('[avaliacao] Erro ao exportar:', e);
+    showToast('Erro ao exportar: ' + e.message, 'error');
+  }
 }
 
 function renderHistoricoAvaliacoes() {
