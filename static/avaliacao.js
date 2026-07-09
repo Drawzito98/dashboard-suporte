@@ -496,25 +496,7 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
       }
       questao.querySelectorAll('.avaliacao-nota-label').forEach(l => l.classList.remove('selected'));
       this.closest('.avaliacao-nota-label').classList.add('selected');
-      const obsInput = questao.querySelector('.avaliacao-obs-input');
-      if (obsInput) {
-        const nomes = {
-          1:'Empatia e Prestatividade',2:'Espírito de Equipe',3:'Orientação para Resultados',
-          4:'Responsabilidade e Maturidade Profissional',5:'Transparência e Confiança',
-          6:'Aprendizagem e Desenvolvimento',7:'Entregas e Resultados',
-          8:'Gestão da Informação',9:'Gestão de Processos Integrados',
-          10:'Organização e Autogestão',11:'Orientação para Soluções'
-        };
-        const nota = parseInt(this.value);
-        const nome = nomes[compId] || '';
-        const textosRadio = {
-          1: `O colaborador precisa melhorar em ${nome}. Recomenda-se acompanhamento e feedback direcionado.`,
-          2: `O colaborador apresenta desempenho inicial em ${nome}. Pontos de melhoria podem ser trabalhados.`,
-          3: `O colaborador demonstra bom nível de ${nome}. Segue contribuindo de forma consistente.`,
-          4: `O colaborador se destaca em ${nome}, superando as expectativas de forma consistente.`
-        };
-        obsInput.value = textosRadio[nota] || '';
-      }
+      // Note change: no longer auto-fills observation text when score changes
     });
     radio.addEventListener('mousedown', function () {
       this.dataset.wasChecked = this.checked ? 'true' : 'false';
