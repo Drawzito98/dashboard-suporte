@@ -197,6 +197,7 @@ function renderAvaliacao() {
             </select>
           </label>
           <button class="btn-primary" id="avaliacaoCarregarBtn" type="button" disabled style="align-self:flex-end">📋 Carregar selecionada</button>
+          <button class="btn-small" id="avaliacaoExportAllBtn" type="button" style="align-self:flex-end">📊 Exportar todas</button>
         </div>
         <div id="avaliacaoHistoricoLista"></div>
       </div>
@@ -255,6 +256,9 @@ function renderAvaliacao() {
     document.getElementById('avaliacaoCarregarBtn').disabled = true;
     renderHistoricoAvaliacoes();
   });
+
+  const exportAllBtn = document.getElementById('avaliacaoExportAllBtn');
+  if (exportAllBtn) exportAllBtn.addEventListener('click', exportarTodasAvaliacoesXLSX);
 
   renderHistoricoAvaliacoes();
 }
@@ -942,6 +946,66 @@ function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
   XLSX.utils.book_append_sheet(wb, ws, 'Avaliação');
   XLSX.writeFile(wb, `avaliacao_${colaborador}_${ciclo.replace(/\s/g, '_')}.xlsx`);
   showToast('Planilha exportada com sucesso!', 'success');
+}
+
+function exportarTodasAvaliacoesXLSX() {
+  const avaliacoes = getAvaliacoesLocal();
+  if (!avaliacoes.length) {
+    showToast('Nenhuma avaliação salva para exportar.', 'error');
+    return;
+  }
+  if (typeof XLSX === 'undefined') {
+    showToast('Biblioteca XLSX não carregada.', 'error');
+    return;
+  }
+  const comps = getCompetencias();
+  const wb = XLSX.utils.book_new();
+
+  avaliacoes.forEach(av => {
+    const scoresArray = comps.map(c => av.scores[c.id]).filter(v => v !== null && v !== undefined);
+    const media = scoresArray.length ? (scoresArray.reduce((a, b) => a + b, 0) / scoresArray.length).toFixed(2) : '—';
+    const total = scoresArray.reduce((a, b) => a + b, 0);
+    const obsGerais = av.observacoes_gerais || '';
+    const comentariosIa = av.comentarios_ia || [];
+    const comentariosFinais = av.comentarios_finais || [];
+
+    const rows = [
+      ['Colaborador', av.colaborador],
+      ['Ciclo', av.ciclo],
+      ['Média', media],
+      ['Total', total + '/' + (comps.length * 4)],
+      ['Atualizado em', av.updatedAt ? new Date(av.updatedAt).toLocaleString('pt-BR') : '—'],
+      [],
+      ['Competência', 'Nota', 'Observação'],
+    ];
+
+    comps.forEach(c => {
+      const nota = av.scores[c.id] !== null && av.scores[c.id] !== undefined ? av.scores[c.id] : null;
+      const obs = av.observacoes_competencias?.[c.id] || '';
+      rows.push([c.nome, nota !== null ? String(nota) : '—', obs]);
+    });
+
+    if (comentariosFinais.length) {
+      rows.push([], ['Comentários Finais', comentariosFinais.join('; ')]);
+    }
+
+    if (comentariosIa.length) {
+      rows.push([], ['Sugestões IA', comentariosIa.join('; ')]);
+    }
+
+    if (obsGerais) {
+      rows.push([], ['Observações Gerais', obsGerais]);
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 45 }, { wch: 8 }, { wch: 45 }];
+
+    let sheetName = (av.colaborador + ' - ' + av.ciclo).slice(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  XLSX.writeFile(wb, `todas_avaliacoes_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  showToast(`${avaliacoes.length} avaliações exportadas!`, 'success');
 }
 
 function renderHistoricoAvaliacoes() {
