@@ -300,11 +300,17 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
       <div class="card-header">
         <div>
           <h2>${isEdit ? '✏️' : '➕'} ${isEdit ? 'Editar' : 'Nova'} Avaliação</h2>
-          <p><strong>${escapeHtml(colaborador)}</strong> — Período <strong>${escapeHtml(ciclo)}</strong></p>
+          <p><strong>${escapeHtml(colaborador)}</strong></p>
         </div>
-        ${isEdit ? `<div style="font-size:12px;color:var(--text-muted)">Última atualização: ${existing.updatedAt ? new Date(existing.updatedAt).toLocaleString('pt-BR') : '—'}</div>` : ''}
+        <div style="display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap;padding:0 var(--s-4)">
+          <label class="field" style="margin:0;flex:1;min-width:200px">
+            <span>Período</span>
+            <input type="text" id="avaliacaoCicloInput" value="${escapeHtml(ciclo)}" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"/>
+          </label>
+          ${isEdit ? `<span style="font-size:12px;color:var(--text-muted)">Última atualização: ${existing.updatedAt ? new Date(existing.updatedAt).toLocaleString('pt-BR') : '—'}</span>` : ''}
+        </div>
       </div>
-      <form id="avaliacaoForm" class="avaliacao-form" data-colaborador="${escapeHtml(colaborador)}" data-ciclo="${escapeHtml(ciclo)}" data-id="${isEdit ? existing.id : ''}">
+      <form id="avaliacaoForm" class="avaliacao-form" data-colaborador="${escapeHtml(colaborador)}" data-id="${isEdit ? existing.id : ''}">
         ${COMPETENCIAS.map(comp => {
           if (isGuidance(comp)) {
             return `
@@ -440,7 +446,8 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
     e.preventDefault();
     const form = e.target;
     const colab = form.dataset.colaborador;
-    const cicloForm = form.dataset.ciclo;
+    const cicloInput = document.getElementById('avaliacaoCicloInput');
+    const cicloForm = cicloInput ? cicloInput.value.trim() : form.dataset.ciclo;
     const existingId = form.dataset.id;
     const { comentarios_ia, comentarios_finais } = getComentariosState();
 
