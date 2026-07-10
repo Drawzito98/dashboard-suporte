@@ -51,20 +51,24 @@ async function dbAvaliacoesLoad() {
     if (!uid) return getAvaliacoesLocal();
     const { data } = await sbClient.from('avaliacoes').select('*').eq('user_id', uid).order('created_at', { ascending: false });
     if (data && Array.isArray(data) && data.length > 0) {
-      const list = data.map(r => ({
-        id: r.id,
-        colaborador: r.colaborador,
-        ciclo: r.ciclo,
-        scores: r.scores,
-        observacoes_gerais: r.observacoes_gerais || '',
-        observacoes_competencias: r.observacoes_competencias || {},
-        comentarios_ia: r.comentarios_ia || [],
-        comentarios_finais: r.comentarios_finais || [],
-        avaliacao_qualitativa: r.avaliacao_qualitativa || '',
-        status: r.status || 'pendente',
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
+      const localData = getAvaliacoesLocal();
+      const list = data.map(r => {
+        const local = localData.find(l => l.id === r.id);
+        return {
+          id: r.id,
+          colaborador: r.colaborador,
+          ciclo: r.ciclo,
+          scores: r.scores,
+          observacoes_gerais: r.observacoes_gerais || '',
+          observacoes_competencias: r.observacoes_competencias || {},
+          comentarios_ia: r.comentarios_ia || [],
+          comentarios_finais: r.comentarios_finais || [],
+          avaliacao_qualitativa: r.avaliacao_qualitativa || '',
+          status: r.status != null ? r.status : (local?.status || 'pendente'),
+          createdAt: r.created_at,
+          updatedAt: r.updated_at
+        };
+      });
       saveAvaliacoesLocal(list);
       return list;
     }
@@ -275,7 +279,12 @@ function renderAvaliacao() {
 
   const sortSelect = document.getElementById('avaliacaoSortSelect');
   if (sortSelect) {
-    sortSelect.addEventListener('change', () => renderHistoricoAvaliacoes());
+    const savedSort = sessionStorage.getItem('avaliacaoSort');
+    if (savedSort) sortSelect.value = savedSort;
+    sortSelect.addEventListener('change', () => {
+      sessionStorage.setItem('avaliacaoSort', sortSelect.value);
+      renderHistoricoAvaliacoes();
+    });
   }
 
   const rankingBtn = document.getElementById('avaliacaoRankingBtn');
