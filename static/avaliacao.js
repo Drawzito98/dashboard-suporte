@@ -196,6 +196,17 @@ function renderAvaliacao() {
               ${colabs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
             </select>
           </label>
+          <label class="field">
+            <span>Ordenar por</span>
+            <select id="avaliacaoSortSelect">
+              <option value="data-desc">Data (mais recente)</option>
+              <option value="data-asc">Data (mais antiga)</option>
+              <option value="media-desc">Média (maior)</option>
+              <option value="media-asc">Média (menor)</option>
+              <option value="nome-asc">Nome A-Z</option>
+              <option value="nome-desc">Nome Z-A</option>
+            </select>
+          </label>
           <button class="btn-primary" id="avaliacaoCarregarBtn" type="button" disabled style="align-self:flex-end">📋 Carregar selecionada</button>
           <button class="btn-small" id="avaliacaoExportAllBtn" type="button" style="align-self:flex-end">📊 Exportar todas</button>
         </div>
@@ -256,6 +267,11 @@ function renderAvaliacao() {
     document.getElementById('avaliacaoCarregarBtn').disabled = true;
     renderHistoricoAvaliacoes();
   });
+
+  const sortSelect = document.getElementById('avaliacaoSortSelect');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', () => renderHistoricoAvaliacoes());
+  }
 
   const exportAllBtn = document.getElementById('avaliacaoExportAllBtn');
   if (exportAllBtn) exportAllBtn.addEventListener('click', exportarTodasAvaliacoesXLSX);
@@ -1027,6 +1043,26 @@ function renderHistoricoAvaliacoes() {
   if (filtroColab) filtered = filtered.filter(a => a.colaborador === filtroColab);
 
   const comps = getCompetencias();
+  const sortBy = document.getElementById('avaliacaoSortSelect')?.value || 'data-desc';
+
+  filtered = [...filtered].sort((a, b) => {
+    if (sortBy.startsWith('media')) {
+      const comps = getCompetencias();
+      const getMedia = av => {
+        const scores = comps.map(c => av.scores[c.id]).filter(v => v !== null && v !== undefined);
+        return scores.length ? scores.reduce((s, v) => s + v, 0) / scores.length : 0;
+      };
+      const ma = getMedia(a), mb = getMedia(b);
+      return sortBy === 'media-desc' ? mb - ma : ma - mb;
+    }
+    if (sortBy.startsWith('nome')) {
+      const cmp = (a.colaborador || '').localeCompare(b.colaborador || '', 'pt-BR');
+      return sortBy === 'nome-asc' ? cmp : -cmp;
+    }
+    const da = a.createdAt || a.updatedAt || '';
+    const db = b.createdAt || b.updatedAt || '';
+    return sortBy === 'data-desc' ? db.localeCompare(da) : da.localeCompare(db);
+  });
 
   if (!filtered.length) {
     container.innerHTML = '<div class="empty-state" style="border:none"><div class="empty-title">Nenhuma avaliação encontrada</div><div class="empty-sub">As avaliações salvas aparecerão aqui.</div></div>';
