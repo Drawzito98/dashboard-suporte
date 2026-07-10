@@ -2964,6 +2964,19 @@ if (!rawRecords || !rawRecords.length) {
       // Persist active tab
       try { localStorage.setItem('sistema_active_tab', tab); } catch(e) {}
     });
+
+    // Home button — clear filters and go to dashboard
+    const homeBtn = document.getElementById('homeBtn');
+    if (homeBtn) {
+      homeBtn.addEventListener('click', () => {
+        if (typeof globalFilters !== 'undefined' && globalFilters && typeof globalFilters.limpar === 'function') {
+          globalFilters.limpar();
+        }
+        if (typeof clearFilters === 'function') clearFilters();
+        const dashboardBtn = tabBar.querySelector('.tab-btn[data-tab="dashboard"]');
+        if (dashboardBtn) dashboardBtn.click();
+      });
+    }
   }
 
   // Restore last active tab
