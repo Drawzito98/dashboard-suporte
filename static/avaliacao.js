@@ -986,13 +986,19 @@ function exportarTodasAvaliacoesXLSX() {
     const media = scoresArray.length ? (scoresArray.reduce((s, v) => s + v, 0) / scoresArray.length).toFixed(2) : '—';
     const total = scoresArray.reduce((s, v) => s + v, 0);
     const comentarios = (av.comentarios_finais || []).join('; ');
-    const notas = comps.map(c => av.scores?.[c.id] != null ? av.scores[c.id] : '—');
+    const notas = comps.map(c => {
+      const score = av.scores?.[c.id];
+      const obs = av.observacoes_competencias?.[c.id] || '';
+      if (score == null && !obs) return '—';
+      if (!obs) return score;
+      return `${score} — ${obs}`;
+    });
     rows.push([av.colaborador || '—', av.ciclo || '—', ...notas, media, Number.isFinite(total) ? total + '/' + (comps.length * 4) : '—', comentarios]);
   });
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{ wch: 28 }, { wch: 22 }, ...comps.map(() => ({ wch: 36 })), { wch: 10 }, { wch: 12 }, { wch: 50 }];
+  ws['!cols'] = [{ wch: 28 }, { wch: 22 }, ...comps.map(() => ({ wch: 42 })), { wch: 10 }, { wch: 12 }, { wch: 50 }];
   XLSX.utils.book_append_sheet(wb, ws, 'Todas as Avaliações');
 
   try {
