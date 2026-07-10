@@ -208,7 +208,7 @@ function renderAvaliacao() {
             </select>
           </label>
           <button class="btn-primary" id="avaliacaoCarregarBtn" type="button" disabled style="align-self:flex-end">📋 Carregar selecionada</button>
-          <button class="btn-small" id="avaliacaoExportAllBtn" type="button" style="align-self:flex-end">📊 Exportar todas</button>
+          <button class="btn-small" id="avaliacaoExportAllBtn" type="button" style="align-self:flex-end">📊 Consolidado</button>
         </div>
         <div id="avaliacaoHistoricoLista"></div>
       </div>
@@ -975,58 +975,28 @@ function exportarTodasAvaliacoesXLSX() {
     return;
   }
   const comps = getCompetencias();
-  const wb = XLSX.utils.book_new();
 
-  avaliacoes.forEach(av => {
-    try {
-      const scoresArray = comps.map(c => av.scores[c.id]).filter(v => v !== null && v !== undefined);
-      const media = scoresArray.length ? (scoresArray.reduce((a, b) => a + b, 0) / scoresArray.length).toFixed(2) : '—';
-      const total = scoresArray.reduce((a, b) => a + b, 0);
-      const obsGerais = av.observacoes_gerais || '';
-      const comentariosIa = av.comentarios_ia || [];
-      const comentariosFinais = av.comentarios_finais || [];
+  const headers = ['Colaborador', 'Ciclo', ...comps.map(c => c.nome), 'Média', 'Total', 'Comentários'];
+  const sorted = [...avaliacoes].sort((a, b) => (a.colaborador || '').localeCompare(b.colaborador || '', 'pt-BR') || (a.ciclo || '').localeCompare(b.ciclo || ''));
 
-      const rows = [
-        ['Colaborador', av.colaborador || '—'],
-        ['Ciclo', av.ciclo || '—'],
-        ['Média', media],
-        ['Total', Number.isFinite(total) ? total + '/' + (comps.length * 4) : '—'],
-        ['Atualizado em', av.updatedAt ? new Date(av.updatedAt).toLocaleString('pt-BR') : '—'],
-        [],
-        ['Competência', 'Nota', 'Observação'],
-      ];
-
-      comps.forEach(c => {
-        const nota = av.scores?.[c.id] != null ? av.scores[c.id] : null;
-        const obs = av.observacoes_competencias?.[c.id] || '';
-        rows.push([c.nome, nota !== null ? String(nota) : '—', obs]);
-      });
-
-      if (comentariosFinais.length) {
-        rows.push([], ['Comentários Finais', comentariosFinais.join('; ')]);
-      }
-
-      if (comentariosIa.length) {
-        rows.push([], ['Sugestões IA', comentariosIa.join('; ')]);
-      }
-
-      if (obsGerais) {
-        rows.push([], ['Observações Gerais', obsGerais]);
-      }
-
-      const ws = XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols'] = [{ wch: 45 }, { wch: 8 }, { wch: 45 }];
-
-      let sheetName = ((av.colaborador || 'Colab') + ' - ' + (av.ciclo || 'Sem ciclo')).replace(/[[\]:*?\/\\]/g, '').slice(0, 31);
-      XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Avaliação');
-    } catch (e) {
-      console.error('[avaliacao] Erro ao processar avaliação:', e, av);
-    }
+  const rows = [headers];
+  sorted.forEach(av => {
+    const scoresArray = comps.map(c => av.scores[c.id]).filter(v => v !== null && v !== undefined);
+    const media = scoresArray.length ? (scoresArray.reduce((s, v) => s + v, 0) / scoresArray.length).toFixed(2) : '—';
+    const total = scoresArray.reduce((s, v) => s + v, 0);
+    const comentarios = (av.comentarios_finais || []).join('; ');
+    const notas = comps.map(c => av.scores?.[c.id] != null ? av.scores[c.id] : '—');
+    rows.push([av.colaborador || '—', av.ciclo || '—', ...notas, media, Number.isFinite(total) ? total + '/' + (comps.length * 4) : '—', comentarios]);
   });
 
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 28 }, { wch: 22 }, ...comps.map(() => ({ wch: 10 })), { wch: 10 }, { wch: 12 }, { wch: 50 }];
+  XLSX.utils.book_append_sheet(wb, ws, 'Todas as Avaliações');
+
   try {
-    XLSX.writeFile(wb, `todas_avaliacoes_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    showToast(`${avaliacoes.length} avaliações exportadas!`, 'success');
+    XLSX.writeFile(wb, `avaliacoes_consolidadas_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast(`${avaliacoes.length} avaliações exportadas em uma única aba!`, 'success');
   } catch (e) {
     console.error('[avaliacao] Erro ao exportar:', e);
     showToast('Erro ao exportar: ' + e.message, 'error');
