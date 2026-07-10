@@ -2984,7 +2984,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 .links-container {
   padding: var(--s-5);
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 340px 1fr;
   gap: var(--s-5);
   align-items: start;
 }
@@ -3065,13 +3065,9 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   flex: 1;
 }
 .links-item-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--accent);
-  text-decoration: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 15px; font-weight: 600; color: var(--accent);
+  text-decoration: none; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
 }
 .links-item-name:hover {
   text-decoration: underline;
@@ -3088,10 +3084,10 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   gap: var(--s-1);
   flex-shrink: 0;
 }
-@media (max-width: 768px) {
-  .links-container {
-    grid-template-columns: 1fr;
-  }
+@media (max-width: 900px) {
+  .links-container { grid-template-columns: 1fr; }
+  .links-empty { grid-column: 1; }
+}
   .links-empty {
     grid-column: 1;
   }
