@@ -209,7 +209,8 @@ function renderAvaliacao() {
           </label>
           <button class="btn-primary" id="avaliacaoCarregarBtn" type="button" disabled style="align-self:flex-end">📋 Carregar selecionada</button>
           <button class="btn-small" id="avaliacaoRankingBtn" type="button" style="align-self:flex-end">🏆 Ranking</button>
-          <button class="btn-small" id="avaliacaoExportAllBtn" type="button" style="align-self:flex-end">📊 Consolidado</button>
+          <button class="btn-small" id="avaliacaoConsolidadoViewBtn" type="button" style="align-self:flex-end">👁️ Consolidado</button>
+          <button class="btn-small" id="avaliacaoExportAllBtn" type="button" style="align-self:flex-end">📊 Exportar</button>
         </div>
         <div id="avaliacaoHistoricoLista"></div>
       </div>
@@ -276,6 +277,9 @@ function renderAvaliacao() {
 
   const rankingBtn = document.getElementById('avaliacaoRankingBtn');
   if (rankingBtn) rankingBtn.addEventListener('click', mostrarRankingAvaliacoes);
+
+  const consolidadoViewBtn = document.getElementById('avaliacaoConsolidadoViewBtn');
+  if (consolidadoViewBtn) consolidadoViewBtn.addEventListener('click', mostrarConsolidado);
 
   const exportAllBtn = document.getElementById('avaliacaoExportAllBtn');
   if (exportAllBtn) exportAllBtn.addEventListener('click', exportarTodasAvaliacoesXLSX);
@@ -1104,6 +1108,132 @@ function mostrarRankingAvaliacoes() {
     });
     html += '</tbody></table>';
     container.innerHTML = html;
+  }
+}
+
+function mostrarConsolidado() {
+  const avaliacoes = getAvaliacoesLocal();
+  if (!avaliacoes.length) {
+    showToast('Nenhuma avaliação salva.', 'error');
+    return;
+  }
+
+  const comps = getCompetencias();
+  const ciclos = [...new Set(avaliacoes.map(a => a.ciclo).filter(Boolean))].sort().reverse();
+  let sortField = 'colaborador';
+  let sortDir = 'asc';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'colab-detail-overlay open';
+  overlay.style.zIndex = '2000';
+  overlay.innerHTML = `
+    <div class="colab-detail-panel" style="max-width:1200px;max-height:90vh;display:flex;flex-direction:column">
+      <button class="colab-detail-close" type="button">✕</button>
+      <div style="padding:var(--s-5);flex:1;display:flex;flex-direction:column;min-height:0">
+        <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">👁️ Consolidado de Avaliações</h2>
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--s-4)">Todas as avaliações em uma única tabela — clique nos cabeçalhos para ordenar</p>
+
+        <div style="margin-bottom:var(--s-4);display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap">
+          <label class="field" style="margin:0;min-width:200px">
+            <span>Período</span>
+            <select id="consolidadoCicloSelect" style="width:100%">
+              <option value="">Todos os períodos</option>
+              ${ciclos.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+            </select>
+          </label>
+          <span style="font-size:13px;color:var(--text-muted)" id="consolidadoCount"></span>
+        </div>
+
+        <div id="consolidadoTableWrapper" style="overflow:auto;flex:1;border:1px solid var(--border);border-radius:var(--r-md)">
+          <table id="consolidadoTable" style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
+            <thead id="consolidadoThead"></thead>
+            <tbody id="consolidadoTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('.colab-detail-close').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  document.getElementById('consolidadoCicloSelect').addEventListener('change', render);
+  render();
+
+  function getData() {
+    const ciclo = document.getElementById('consolidadoCicloSelect').value;
+    let filtered = ciclo ? avaliacoes.filter(a => a.ciclo === ciclo) : [...avaliacoes];
+    return filtered.map(av => {
+      const scoresArray = comps.map(c => av.scores[c.id]).filter(v => v !== null && v !== undefined);
+      const media = scoresArray.length ? scoresArray.reduce((s, v) => s + v, 0) / scoresArray.length : 0;
+      const total = scoresArray.reduce((s, v) => s + v, 0);
+      return { ...av, media, total };
+    });
+  }
+
+  function sortData(data) {
+    const cmp = (a, b) => {
+      let va, vb;
+      if (sortField === 'colaborador') { va = a.colaborador || ''; vb = b.colaborador || ''; return va.localeCompare(vb, 'pt-BR'); }
+      if (sortField === 'ciclo') { va = a.ciclo || ''; vb = b.ciclo || ''; return va.localeCompare(vb); }
+      if (sortField === 'media') return (a.media || 0) - (b.media || 0);
+      if (sortField === 'total') return (a.total || 0) - (b.total || 0);
+      const ci = parseInt(sortField);
+      va = a.scores?.[ci] ?? -1;
+      vb = b.scores?.[ci] ?? -1;
+      return va - vb;
+    };
+    return [...data].sort((a, b) => sortDir === 'asc' ? cmp(a, b) : cmp(b, a));
+  }
+
+  function setSort(field) {
+    if (sortField === field) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    else { sortField = field; sortDir = 'asc'; }
+    render();
+  }
+
+  function render() {
+    const data = sortData(getData());
+    const countEl = document.getElementById('consolidadoCount');
+    if (countEl) countEl.textContent = `${data.length} avaliação(ões)`;
+
+    const thead = document.getElementById('consolidadoThead');
+    const tbody = document.getElementById('consolidadoTbody');
+
+    function th(label, field, w) {
+      const isActive = sortField === field;
+      const arrow = isActive ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+      return `<th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);cursor:pointer;white-space:nowrap;min-width:${w};user-select:none;background:var(--bg-subtle);position:sticky;top:0;z-index:1" data-field="${field}">${escapeHtml(label)}${arrow}</th>`;
+    }
+
+    thead.innerHTML = `<tr>${th('Colaborador', 'colaborador', '180px')}${th('Período', 'ciclo', '160px')}${comps.map(c => th(c.nome, String(c.id), '140px')).join('')}${th('Média', 'media', '80px')}${th('Total', 'total', '80px')}</tr>`;
+
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="' + (2 + comps.length + 2) + '" style="text-align:center;padding:var(--s-8);color:var(--text-muted)">Nenhuma avaliação neste período.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(av => {
+      const cor = av.media >= 3 ? 'var(--success)' : av.media >= 2 ? 'var(--warning)' : 'var(--danger)';
+      return `<tr style="border-bottom:1px solid var(--border)">` +
+        `<td style="padding:8px 10px;font-weight:600">${escapeHtml(av.colaborador)}</td>` +
+        `<td style="padding:8px 10px;color:var(--text-secondary)">${escapeHtml(av.ciclo)}</td>` +
+        comps.map(c => {
+          const score = av.scores?.[c.id];
+          const obs = av.observacoes_competencias?.[c.id] || '';
+          if (score == null && !obs) return `<td style="padding:8px 10px;text-align:center;color:var(--text-muted)">—</td>`;
+          const txt = score != null ? (obs ? `${score} — ${obs}` : String(score)) : obs;
+          return `<td style="padding:8px 10px;max-width:300px;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(txt)}">${escapeHtml(txt)}</td>`;
+        }).join('') +
+        `<td style="padding:8px 10px;text-align:center;font-weight:700;color:${cor}">${av.media.toFixed(2)}</td>` +
+        `<td style="padding:8px 10px;text-align:center">${av.total}/${comps.length * 4}</td>` +
+        `</tr>`;
+    }).join('');
+
+    thead.querySelectorAll('th[data-field]').forEach(th => {
+      th.addEventListener('click', () => setSort(th.dataset.field));
+    });
   }
 }
 
