@@ -203,6 +203,14 @@ function renderAvaliacao() {
               ${colabs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
             </select>
           </label>
+          <label class="field" style="min-width:130px">
+            <span>Status</span>
+            <select id="avaliacaoStatusFilter">
+              <option value="">Todos</option>
+              <option value="pendente">⏳ Pendente</option>
+              <option value="revisado">✅ Revisado</option>
+            </select>
+          </label>
           <label class="field">
             <span>Ordenar por</span>
             <select id="avaliacaoSortSelect">
@@ -276,6 +284,9 @@ function renderAvaliacao() {
     document.getElementById('avaliacaoCarregarBtn').disabled = true;
     renderHistoricoAvaliacoes();
   });
+
+  const statusFilter = document.getElementById('avaliacaoStatusFilter');
+  if (statusFilter) statusFilter.addEventListener('change', () => renderHistoricoAvaliacoes());
 
   const sortSelect = document.getElementById('avaliacaoSortSelect');
   if (sortSelect) {
@@ -1254,9 +1265,11 @@ function renderHistoricoAvaliacoes() {
   if (!container) return;
 
   const filtroColab = document.getElementById('avaliacaoHistSelect')?.value || '';
+  const filtroStatus = document.getElementById('avaliacaoStatusFilter')?.value || '';
   const avaliacoes = getAvaliacoesLocal();
   let filtered = avaliacoes;
   if (filtroColab) filtered = filtered.filter(a => a.colaborador === filtroColab);
+  if (filtroStatus) filtered = filtered.filter(a => (a.status || 'pendente') === filtroStatus);
 
   const comps = getCompetencias();
   const sortBy = document.getElementById('avaliacaoSortSelect')?.value || 'data-desc';
