@@ -61,6 +61,7 @@ async function dbAvaliacoesLoad() {
         comentarios_ia: r.comentarios_ia || [],
         comentarios_finais: r.comentarios_finais || [],
         avaliacao_qualitativa: r.avaliacao_qualitativa || '',
+        status: r.status || 'pendente',
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
@@ -94,6 +95,7 @@ async function dbAvaliacaoSave(avaliacao) {
         comentarios_ia: avaliacao.comentarios_ia || [],
         comentarios_finais: avaliacao.comentarios_finais || [],
         avaliacao_qualitativa: avaliacao.avaliacao_qualitativa || '',
+        status: avaliacao.status || 'pendente',
         updated_at: new Date().toISOString()
       }).eq('id', avaliacao.id);
     } else {
@@ -106,7 +108,8 @@ async function dbAvaliacaoSave(avaliacao) {
         observacoes_competencias: avaliacao.observacoes_competencias || {},
         comentarios_ia: avaliacao.comentarios_ia || [],
         comentarios_finais: avaliacao.comentarios_finais || [],
-        avaliacao_qualitativa: avaliacao.avaliacao_qualitativa || ''
+        avaliacao_qualitativa: avaliacao.avaliacao_qualitativa || '',
+        status: avaliacao.status || 'pendente'
       }).then(result => {
         if (result.data && result.data[0]) {
           avaliacao.id = result.data[0].id;
@@ -1280,11 +1283,16 @@ function renderHistoricoAvaliacoes() {
     const total = scoresArray.reduce((a, b) => a + b, 0);
     const corMedia = media !== '—' ? (media >= 3 ? 'var(--success)' : media >= 2 ? 'var(--warning)' : 'var(--danger)') : 'var(--text-muted)';
 
+    const status = av.status || 'pendente';
+    const statusLabel = status === 'revisado' ? '✅ Revisado' : '⏳ Pendente';
+    const statusCor = status === 'revisado' ? 'var(--success)' : 'var(--warning)';
+
     html += `
       <div class="avaliacao-historico-item" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}">
         <div class="avaliacao-historico-header">
           <strong>${escapeHtml(av.colaborador)}</strong>
           <span class="avaliacao-historico-ciclo">${escapeHtml(av.ciclo)}</span>
+          <span class="avaliacao-status-tag" data-id="${av.id}" style="margin-left:auto;font-size:11px;font-weight:600;padding:2px 8px;border-radius:var(--r-sm);cursor:pointer;background:${statusCor}22;color:${statusCor};border:1px solid ${statusCor}55">${statusLabel}</span>
         </div>
         <div class="avaliacao-historico-stats">
           <span>Notas: <strong>${scoresArray.length}/${comps.length}</strong></span>
@@ -1327,6 +1335,19 @@ function renderHistoricoAvaliacoes() {
       await dbAvaliacaoDelete(btn.dataset.id);
       showToast('Avaliação excluída.', 'success');
       renderAvaliacao();
+    });
+  });
+
+  container.querySelectorAll('.avaliacao-status-tag').forEach(tag => {
+    tag.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = tag.dataset.id;
+      const list = getAvaliacoesLocal();
+      const av = list.find(a => a.id === id);
+      if (!av) return;
+      av.status = av.status === 'revisado' ? 'pendente' : 'revisado';
+      await dbAvaliacaoSave(av);
+      renderHistoricoAvaliacoes();
     });
   });
 
