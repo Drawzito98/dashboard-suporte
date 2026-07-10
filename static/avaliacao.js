@@ -977,9 +977,10 @@ function exportarTodasAvaliacoesXLSX() {
   const comps = getCompetencias();
 
   const headers = ['Colaborador', 'Ciclo', ...comps.map(c => c.nome), 'Média', 'Total', 'Comentários'];
+  const descs = ['', '', ...comps.map(c => c.descricao), '', '', ''];
   const sorted = [...avaliacoes].sort((a, b) => (a.colaborador || '').localeCompare(b.colaborador || '', 'pt-BR') || (a.ciclo || '').localeCompare(b.ciclo || ''));
 
-  const rows = [headers];
+  const rows = [headers, descs];
   sorted.forEach(av => {
     const scoresArray = comps.map(c => av.scores[c.id]).filter(v => v !== null && v !== undefined);
     const media = scoresArray.length ? (scoresArray.reduce((s, v) => s + v, 0) / scoresArray.length).toFixed(2) : '—';
@@ -991,7 +992,7 @@ function exportarTodasAvaliacoesXLSX() {
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{ wch: 28 }, { wch: 22 }, ...comps.map(() => ({ wch: 10 })), { wch: 10 }, { wch: 12 }, { wch: 50 }];
+  ws['!cols'] = [{ wch: 28 }, { wch: 22 }, ...comps.map(() => ({ wch: 36 })), { wch: 10 }, { wch: 12 }, { wch: 50 }];
   XLSX.utils.book_append_sheet(wb, ws, 'Todas as Avaliações');
 
   try {
