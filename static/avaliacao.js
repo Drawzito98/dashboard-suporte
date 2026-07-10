@@ -976,11 +976,10 @@ function exportarTodasAvaliacoesXLSX() {
   }
   const comps = getCompetencias();
 
-  const headers = ['Colaborador', 'Ciclo', ...comps.map(c => c.nome), 'Média', 'Total', 'Comentários'];
-  const descs = ['', '', ...comps.map(c => c.descricao), '', '', ''];
+  const headers = ['Colaborador', 'Ciclo', ...comps.map(c => `${c.nome}\n${c.descricao}`), 'Média', 'Total', 'Comentários'];
   const sorted = [...avaliacoes].sort((a, b) => (a.colaborador || '').localeCompare(b.colaborador || '', 'pt-BR') || (a.ciclo || '').localeCompare(b.ciclo || ''));
 
-  const rows = [headers, descs];
+  const rows = [headers];
   sorted.forEach(av => {
     const scoresArray = comps.map(c => av.scores[c.id]).filter(v => v !== null && v !== undefined);
     const media = scoresArray.length ? (scoresArray.reduce((s, v) => s + v, 0) / scoresArray.length).toFixed(2) : '—';
