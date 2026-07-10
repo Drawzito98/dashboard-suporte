@@ -2719,6 +2719,15 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--s-2);
+  overflow: hidden;
+}
+
+.avaliacao-historico-header strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .avaliacao-historico-ciclo {
@@ -2742,7 +2751,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80px;
+  min-height: 110px;
 }
 
 .avaliacao-historico-actions {

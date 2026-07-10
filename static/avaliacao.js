@@ -1314,7 +1314,7 @@ function renderHistoricoAvaliacoes() {
         <div class="avaliacao-historico-header">
           <strong>${escapeHtml(av.colaborador)}</strong>
           <span class="avaliacao-historico-ciclo">${escapeHtml(av.ciclo)}</span>
-          <span class="avaliacao-status-tag" data-id="${av.id}" style="margin-left:auto;font-size:11px;font-weight:600;padding:2px 8px;border-radius:var(--r-sm);cursor:pointer;background:${statusCor}22;color:${statusCor};border:1px solid ${statusCor}55">${statusLabel}</span>
+          <span class="avaliacao-status-tag" data-id="${av.id}" style="margin-left:auto;font-size:10px;font-weight:600;padding:1px 6px;border-radius:var(--r-sm);cursor:pointer;background:${statusCor}22;color:${statusCor};border:1px solid ${statusCor}55;white-space:nowrap">${statusLabel}</span>
         </div>
         <div class="avaliacao-historico-stats">
           <span>Notas: <strong>${scoresArray.length}/${comps.length}</strong></span>
@@ -1403,7 +1403,7 @@ function renderMiniRadars(avaliacoes) {
     const hasData = scores.some(s => s !== null);
     if (!hasData) { container.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">Sem dados</span>'; return; }
 
-    const w = 80, h = 80, cx = w / 2, cy = h / 2, r = 30;
+    const w = 110, h = 110, cx = w / 2, cy = h / 2, r = 42;
     const angleStep = (2 * Math.PI) / comps.length;
     const offset = -Math.PI / 2;
 
