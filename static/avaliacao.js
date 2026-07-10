@@ -208,6 +208,7 @@ function renderAvaliacao() {
             </select>
           </label>
           <button class="btn-primary" id="avaliacaoCarregarBtn" type="button" disabled style="align-self:flex-end">📋 Carregar selecionada</button>
+          <button class="btn-small" id="avaliacaoRankingBtn" type="button" style="align-self:flex-end">🏆 Ranking</button>
           <button class="btn-small" id="avaliacaoExportAllBtn" type="button" style="align-self:flex-end">📊 Consolidado</button>
         </div>
         <div id="avaliacaoHistoricoLista"></div>
@@ -272,6 +273,9 @@ function renderAvaliacao() {
   if (sortSelect) {
     sortSelect.addEventListener('change', () => renderHistoricoAvaliacoes());
   }
+
+  const rankingBtn = document.getElementById('avaliacaoRankingBtn');
+  if (rankingBtn) rankingBtn.addEventListener('click', mostrarRankingAvaliacoes);
 
   const exportAllBtn = document.getElementById('avaliacaoExportAllBtn');
   if (exportAllBtn) exportAllBtn.addEventListener('click', exportarTodasAvaliacoesXLSX);
@@ -1006,6 +1010,93 @@ function exportarTodasAvaliacoesXLSX() {
   } catch (e) {
     console.error('[avaliacao] Erro ao exportar:', e);
     showToast('Erro ao exportar: ' + e.message, 'error');
+  }
+}
+
+function mostrarRankingAvaliacoes() {
+  const avaliacoes = getAvaliacoesLocal();
+  if (!avaliacoes.length) {
+    showToast('Nenhuma avaliação salva para exibir o ranking.', 'error');
+    return;
+  }
+
+  const comps = getCompetencias();
+  const ciclos = [...new Set(avaliacoes.map(a => a.ciclo).filter(Boolean))].sort().reverse();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'colab-detail-overlay open';
+  overlay.innerHTML = `
+    <div class="colab-detail-panel" style="max-width:800px">
+      <button class="colab-detail-close" type="button">✕</button>
+      <div style="padding:var(--s-5)">
+        <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">🏆 Ranking de Avaliações</h2>
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--s-4)">Ranking por período — ordenado por média</p>
+
+        <div style="margin-bottom:var(--s-4);display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap">
+          <label class="field" style="margin:0;flex:1;min-width:200px">
+            <span>Período</span>
+            <select id="rankingCicloSelect" style="width:100%">
+              ${ciclos.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+            </select>
+          </label>
+          <span style="font-size:13px;color:var(--text-muted)" id="rankingCount"></span>
+        </div>
+
+        <div id="rankingTableContainer" style="overflow-x:auto"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('.colab-detail-close').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  const select = document.getElementById('rankingCicloSelect');
+  select.addEventListener('change', renderRanking);
+  renderRanking();
+
+  function renderRanking() {
+    const ciclo = select.value;
+    const filtered = avaliacoes.filter(a => a.ciclo === ciclo);
+    const countEl = document.getElementById('rankingCount');
+    if (countEl) countEl.textContent = `${filtered.length} colaborador(es)`;
+
+    const ranked = filtered.map(av => {
+      const scoresArray = comps.map(c => av.scores[c.id]).filter(v => v !== null && v !== undefined);
+      const media = scoresArray.length ? (scoresArray.reduce((s, v) => s + v, 0) / scoresArray.length) : 0;
+      const total = scoresArray.reduce((s, v) => s + v, 0);
+      return { ...av, media, total };
+    }).sort((a, b) => b.media - a.media || a.colaborador.localeCompare(b.colaborador));
+
+    const container = document.getElementById('rankingTableContainer');
+    if (!ranked.length) {
+      container.innerHTML = '<div style="text-align:center;padding:var(--s-8);color:var(--text-muted)">Nenhuma avaliação neste período.</div>';
+      return;
+    }
+
+    let html = `<table style="width:100%;border-collapse:collapse;font-size:14px">
+      <thead>
+        <tr style="background:var(--bg-subtle)">
+          <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--border);width:60px">#</th>
+          <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Colaborador</th>
+          <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--border);width:100px">Média</th>
+          <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--border);width:100px">Total</th>
+        </tr>
+      </thead>
+      <tbody>`;
+    ranked.forEach((av, i) => {
+      const pos = i + 1;
+      const cor = av.media >= 3 ? 'var(--success)' : av.media >= 2 ? 'var(--warning)' : 'var(--danger)';
+      const medalha = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}.`;
+      html += `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:10px 12px;text-align:center;font-weight:600;font-size:16px">${medalha}</td>
+        <td style="padding:10px 12px"><strong>${escapeHtml(av.colaborador)}</strong></td>
+        <td style="padding:10px 12px;text-align:center;font-weight:700;color:${cor};font-size:16px">${av.media.toFixed(2)}</td>
+        <td style="padding:10px 12px;text-align:center">${av.total}/${comps.length * 4}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
   }
 }
 
