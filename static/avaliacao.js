@@ -117,6 +117,11 @@ async function dbAvaliacaoSave(avaliacao) {
       }).then(result => {
         if (result.data && result.data[0]) {
           avaliacao.id = result.data[0].id;
+          const refreshed = getAvaliacoesLocal();
+          const ri = refreshed.findIndex(a => a.id === avaliacao.id || a.id === 'new_' + avaliacao.id);
+          if (ri >= 0) refreshed[ri].id = result.data[0].id;
+          else refreshed.unshift(avaliacao);
+          saveAvaliacoesLocal(refreshed);
         }
       });
     }
