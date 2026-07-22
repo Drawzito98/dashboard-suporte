@@ -1,9 +1,5 @@
 // Comparativos Avançados — Colaborador x Colaborador, Setor x Setor, Período x Período
 
-function _gfData() {
-  return typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
-}
-
 function renderComparativos() {
   const container = document.getElementById('comparativosContent');
   if (!container) return;

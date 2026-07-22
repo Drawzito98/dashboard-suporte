@@ -2,10 +2,6 @@
 
 let currentColabDetail = null;
 
-function _gfData() {
-  return typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
-}
-
 function openColabDetail(name) {
   currentColabDetail = name;
   const overlay = document.getElementById('colabDetailOverlay');

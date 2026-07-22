@@ -43,10 +43,6 @@ function removeMeta(id) {
   renderMetas();
 }
 
-function _gfData() {
-  return typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
-}
-
 function getMetaProgress(meta) {
   if (!rawRecords || !rawRecords.length) return 0;
   let filtered = _gfData().filter(r => r && !isAggregateName(r['Atendente']));

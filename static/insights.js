@@ -1,9 +1,5 @@
 // Central de Insights — análises automáticas de tendências
 
-function _gfData() {
-  return typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
-}
-
 function formatVar(val, suffix = '') {
   if (val === null || val === undefined) return '<span class="text-muted">—</span>';
   const cls = val >= 0 ? 'variation-pos' : 'variation-neg';

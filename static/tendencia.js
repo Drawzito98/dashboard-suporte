@@ -1,10 +1,6 @@
 // Projeções — previsões simples baseadas em histórico
 // Módulo independente, não altera lógica existente
 
-function _gfData() {
-  return typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
-}
-
 function renderProjecoes() {
   const data = _gfData();
   if (!data || !data.length) {

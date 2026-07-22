@@ -1,10 +1,6 @@
 // Conquistas — badges automáticas por desempenho
 // Módulo independente, não altera lógica existente
 
-function _gfData() {
-  return typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
-}
-
 function _buildConquistasHtml() {
   const data = _gfData();
   if (!data || !data.length) {

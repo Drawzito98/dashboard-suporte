@@ -49,10 +49,6 @@ function resetAlertasConfig() {
   renderAlertas();
 }
 
-function _gfData() {
-  return typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
-}
-
 function verificarAlertas() {
   const data = _gfData();
   if (!data || !data.length) return [];
