@@ -2,7 +2,7 @@
 function q(sel, root = document) { return root.querySelector(sel); }
 function qa(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
 
-
+const APP_VERSION = '1.1.0';
 
 // Perfis (Google Docs) — loaded from static/perfis.js (works on file://)
 const INACTIVE_COLABS_KEY = 'sistema_inactive_colabs_v1';
@@ -2573,6 +2573,8 @@ function buildReportText() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[App] DOMContentLoaded disparado! sbClient:', !!sbClient);
+  const vEl = document.getElementById('appVersion');
+  if (vEl) vEl.textContent = 'v' + APP_VERSION;
   // Aguarda autenticação (se Supabase estiver disponível)
   if (sbClient) {
     const user = await initAuth();
