@@ -2,7 +2,7 @@
 function q(sel, root = document) { return root.querySelector(sel); }
 function qa(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 // Perfis (Google Docs) — loaded from static/perfis.js (works on file://)
 const INACTIVE_COLABS_KEY = 'sistema_inactive_colabs_v1';
@@ -442,6 +442,7 @@ function showToast(message, type = 'success', title = null, timeout = 2800) {
       <p class="toast-msg">${String(message || '')}</p>
     </div>
     <button class="toast-close" type="button" aria-label="Fechar notificação">&times;</button>
+    <div class="toast-progress" style="animation-duration:${timeout}ms"></div>
   `;
   container.appendChild(toast);
   let remaining = timeout;
