@@ -399,6 +399,47 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-5) var(--s-6) var
 }
 .current-user { overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 
+/* User Menu Dropdown */
+.user-menu-wrapper { position: relative; }
+.user-menu-trigger {
+  font-size: 12px; color: var(--text-secondary);
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer; background: none; border: none; padding: 4px 8px;
+  border-radius: var(--radius-sm); transition: background 0.15s;
+}
+.user-menu-trigger:hover { background: var(--bg-elevated); }
+.user-dropdown {
+  position: absolute; top: 100%; right: 0; margin-top: 4px;
+  background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+  min-width: 180px; z-index: 1000; overflow: hidden;
+}
+.user-dropdown-header {
+  padding: 8px 12px; font-size: 11px; color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle); word-break: break-all;
+}
+.user-dropdown-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 12px; font-size: 13px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text); text-align: left;
+  transition: background 0.15s;
+}
+.user-dropdown-item:hover { background: var(--bg-hover); }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; backdrop-filter: blur(2px);
+}
+.modal-box {
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); padding: var(--s-5);
+  min-width: 320px; max-width: 90vw; box-shadow: var(--shadow-lg);
+}
+.modal-box h3 { margin: 0 0 var(--s-4); font-size: 16px; }
+
 /* Notificações */
 .notif-badge {
   position: absolute; top: -4px; right: -6px;

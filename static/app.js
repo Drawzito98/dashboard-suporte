@@ -2686,6 +2686,70 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (display) {
         display.textContent = user.user_metadata?.name || user.email;
       }
+      // Dropdown header shows email
+      const ddEmail = document.getElementById('userDropdownEmail');
+      if (ddEmail) ddEmail.textContent = user.email;
+
+      // User dropdown toggle
+      const userWrapper = document.getElementById('userMenuWrapper');
+      const userDropdown = document.getElementById('userDropdown');
+      if (display && userDropdown) {
+        display.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const open = userDropdown.style.display !== 'none';
+          userDropdown.style.display = open ? 'none' : 'block';
+          display.setAttribute('aria-expanded', !open);
+        });
+        document.addEventListener('click', () => {
+          userDropdown.style.display = 'none';
+          display.setAttribute('aria-expanded', 'false');
+        });
+      }
+
+      // Edit name modal
+      const editNameBtn = document.getElementById('editNameBtn');
+      const editNameModal = document.getElementById('editNameModal');
+      const editNameInput = document.getElementById('editNameInput');
+      const editNameSaveBtn = document.getElementById('editNameSaveBtn');
+      const editNameCancelBtn = document.getElementById('editNameCancelBtn');
+      const editNameError = document.getElementById('editNameError');
+
+      if (editNameBtn && editNameModal) {
+        editNameBtn.addEventListener('click', () => {
+          userDropdown.style.display = 'none';
+          editNameInput.value = user.user_metadata?.name || '';
+          editNameError.classList.add('hidden');
+          editNameModal.style.display = 'flex';
+          editNameInput.focus();
+        });
+        editNameCancelBtn?.addEventListener('click', () => {
+          editNameModal.style.display = 'none';
+        });
+        editNameModal.addEventListener('click', (e) => {
+          if (e.target === editNameModal) editNameModal.style.display = 'none';
+        });
+        editNameSaveBtn?.addEventListener('click', async () => {
+          const newName = editNameInput.value.trim();
+          if (!newName) { editNameError.textContent = 'Digite um nome.'; editNameError.classList.remove('hidden'); return; }
+          editNameSaveBtn.disabled = true;
+          editNameSaveBtn.textContent = 'Salvando...';
+          const { error } = await sbClient.auth.updateUser({ data: { name: newName } });
+          editNameSaveBtn.disabled = false;
+          editNameSaveBtn.textContent = 'Salvar';
+          if (error) {
+            editNameError.textContent = error.message;
+            editNameError.classList.remove('hidden');
+          } else {
+            user.user_metadata = { ...user.user_metadata, name: newName };
+            if (display) display.textContent = newName;
+            editNameModal.style.display = 'none';
+            showToast('Nome atualizado!', 'success');
+          }
+        });
+        editNameInput?.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') editNameSaveBtn?.click();
+        });
+      }
     }
   }
 
