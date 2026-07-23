@@ -346,19 +346,21 @@
 
   function showMonthlySummary() {
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    // Use mês anterior (app sempre tem dados do mês anterior)
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonth = prev.getMonth();
+    const prevYear = prev.getFullYear();
     const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
-    // Filter current month data
+    // Filter previous month data
     const monthData = (window.rawRecords || []).filter(r => {
       if (!r.data) return false;
       const d = new Date(r.data + 'T12:00:00');
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
     });
 
     if (!monthData.length) {
-      if (typeof showToast === 'function') showToast('Sem registros neste mês ainda', 'info');
+      if (typeof showToast === 'function') showToast('Sem registros do mês anterior ainda', 'info');
       return;
     }
 
@@ -381,7 +383,7 @@
 
     // Build summary text
     const lines = [];
-    lines.push(`📊 Resumo — ${monthNames[currentMonth].charAt(0).toUpperCase() + monthNames[currentMonth].slice(1)} ${currentYear}`);
+    lines.push(`📊 Resumo — ${monthNames[prevMonth].charAt(0).toUpperCase() + monthNames[prevMonth].slice(1)} ${prevYear}`);
     lines.push('');
     lines.push(`📋 Total de registros: ${total}`);
     lines.push(`⭐ Score médio: ${avgScore}`);
