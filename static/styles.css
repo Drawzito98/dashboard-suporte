@@ -2161,8 +2161,7 @@ body[data-role="viewer"] .tab-btn[data-tab="mapeamento-time"],
 body[data-role="viewer"] .tab-btn[data-tab="usuarios"],
 body[data-role="viewer"] #addRowBtn,
 body[data-role="viewer"] #addRowTopBtn,
-body[data-role="viewer"] .btn-delete,
-body[data-role="viewer"] #homeBtn {
+body[data-role="viewer"] .btn-delete {
   display: none !important;
 }
 body[data-role="viewer"] .cell-edit[contenteditable="true"] {

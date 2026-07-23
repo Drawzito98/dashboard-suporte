@@ -2845,7 +2845,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 const startBtn = document.getElementById('startBtn');
 const openSavedBtn = document.getElementById('openSavedBtn');
 const homeSavedInfo = document.getElementById('homeSavedInfo');
-const homeBtn = document.getElementById('homeBtn');
 
 const savedForHome = loadSavedState();
 if (savedForHome && openSavedBtn) {
@@ -3029,15 +3028,6 @@ if (!rawRecords || !rawRecords.length) {
       // Persist active tab
       try { localStorage.setItem('sistema_active_tab', tab); } catch(e) {}
     });
-
-    // Home button — go to home tab
-    const homeBtn = document.getElementById('homeBtn');
-    if (homeBtn) {
-      homeBtn.addEventListener('click', () => {
-        const homeTabBtn = tabBar.querySelector('.tab-btn[data-tab="home"]');
-        if (homeTabBtn) homeTabBtn.click();
-      });
-    }
 
     // Presentation exit button
     const presExitBtn = document.getElementById('presentationExitBtn');
