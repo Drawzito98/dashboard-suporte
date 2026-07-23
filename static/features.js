@@ -410,12 +410,6 @@
     if (topSetor) {
       lines.push(`🏢 Setor com mais demandas: ${topSetor[0]} (${topSetor[1]} registros)`);
     }
-    if (topMotivos.length) {
-      lines.push(`🔍 Motivos principais: ${topMotivos.map(([m, c]) => `${m} (${c})`).join(', ')}`);
-    }
-    if (topSetor) {
-      lines.push(`🏢 Setor com mais demandas: ${topSetor[0]} (${topSetor[1]})`);
-    }
 
     // Tarefas pending
     try {
