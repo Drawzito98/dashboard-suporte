@@ -405,7 +405,7 @@
     lines.push(`⭐ Score médio: ${avgScore}`);
     lines.push(`✅ Finalizados: ${totalFin}  |  📥 Assumidos: ${totalAss}`);
     if (ranking.length) {
-      lines.push(`🏆 Melhor: ${ranking[0].name} (score ${ranking[0].score})`);
+      lines.push(`🏆 Melhor: ${ranking[0].name} (score ${ranking[0].score.total})`);
     }
     if (topSetor) {
       lines.push(`🏢 Setor com mais demandas: ${topSetor[0]} (${topSetor[1]} registros)`);
