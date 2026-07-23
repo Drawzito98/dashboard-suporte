@@ -156,19 +156,19 @@ button svg, .btn-small svg, .btn-primary svg {
 
 /* ===== Dark — grafite elegante ===== */
 html[data-theme="dark"] {
-  --bg-app:        #0a0f1e;
-  --bg-canvas:     #0e1525;
-  --bg-surface:    #121a2e;
-  --bg-subtle:     #1c2640;
-  --bg-inset:      #151e35;
+  --bg-app:        #111111;
+  --bg-canvas:     #161616;
+  --bg-surface:    #1e1e1e;
+  --bg-subtle:     #2a2a2a;
+  --bg-inset:      #222222;
 
   --text-strong:   #f1f5f9;
   --text-primary:  #e2e8f0;
   --text-secondary:#94a3b8;
   --text-muted:    #64748b;
 
-  --border:        #1e293b;
-  --border-strong: #334155;
+  --border:        #2a2a2a;
+  --border-strong: #3a3a3a;
 
   --accent:        #60a5fa;
   --accent-hover:  #93c5fd;
@@ -264,7 +264,7 @@ html[data-theme="dark"] {
   --muted:          var(--text-muted);
 
   --text:              #e2e8f0;
-  --bg-card:           #1a2336;
+  --bg-card:           #1e1e1e;
 }
 
 /* ===== Reset ===== */
