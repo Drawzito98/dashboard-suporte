@@ -3486,6 +3486,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   padding: 10px var(--s-4);
   cursor: pointer;
   border-bottom: 1px solid var(--border);
+  background: var(--surface);
   transition: background 0.15s;
 }
 .global-search-item:last-child { border-bottom: none; }
