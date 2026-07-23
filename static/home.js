@@ -5,7 +5,7 @@ function renderHome() {
   if (!container) return;
 
   const records = rawRecords || [];
-  const activeColabs = records.filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']));
+  const activeColabs = records.filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']));
   const uniqueColabs = [...new Set(activeColabs.map(r => r['Atendente']))].sort();
   const meses = [...new Set(records.filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
   const lastMonth = meses[meses.length - 1] || '';
@@ -14,7 +14,7 @@ function renderHome() {
   // KPI calculations
   const totalRecords = records.length;
   const activeCount = uniqueColabs.length;
-  const lastMonthRecords = records.filter(r => r && r['Mês'] === lastMonth);
+  const lastMonthRecords = records.filter(r => r && r['Mês'] === lastMonth && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']));
   const avgScore = lastMonthRecords.length
     ? (lastMonthRecords.reduce((s, r) => s + Number(r['SCORE'] || 0), 0) / lastMonthRecords.length).toFixed(2)
     : '—';
@@ -30,7 +30,7 @@ function renderHome() {
   // Monthly trend data (last 6 months)
   const trendMonths = meses.slice(-6);
   const trendData = trendMonths.map(m => {
-    const monthRecs = records.filter(r => r && r['Mês'] === m && !isAggregateName(r['Atendente']));
+    const monthRecs = records.filter(r => r && r['Mês'] === m && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']));
     const avg = monthRecs.length
       ? monthRecs.reduce((s, r) => s + Number(r['SCORE'] || 0), 0) / monthRecs.length
       : 0;
