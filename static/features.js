@@ -392,7 +392,7 @@
       if (sc != null && !isNaN(Number(sc))) { totalScore += Number(sc); scored++; }
     });
 
-    const avgScore = scored ? (totalScore / scored).toFixed(1) : '–';
+    const avgScore = scored ? (totalScore / scored).toFixed(2) : '–';
     const topSetor = Object.entries(setores).sort((a, b) => b[1] - a[1])[0];
     const totalFin = monthData.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
     const totalAss = monthData.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
