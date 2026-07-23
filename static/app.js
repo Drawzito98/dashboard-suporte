@@ -2,7 +2,7 @@
 function q(sel, root = document) { return root.querySelector(sel); }
 function qa(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 
 // Perfis (Google Docs) — loaded from static/perfis.js (works on file://)
 const INACTIVE_COLABS_KEY = 'sistema_inactive_colabs_v1';
@@ -223,7 +223,6 @@ function migrateColabFotos() {
     }
     if (changed) {
       localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
-      console.log('[Fotos] URLs migradas para formato thumbnail:', map);
     }
   } catch (e) {
     console.warn('[Fotos] Erro na migração:', e);
@@ -232,9 +231,7 @@ function migrateColabFotos() {
 migrateColabFotos();
 
 function getColabFotoDebug(name) {
-  const url = getColabFoto(name);
-  console.log(`[Fotos] getColabFoto("${name}") =`, url);
-  return url;
+  return getColabFoto(name);
 }
 
 function openManageColabs() {
@@ -401,9 +398,10 @@ document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault();
     const avaliacaoForm = document.getElementById('avaliacaoForm');
-    if (avaliacaoForm) { avaliacaoForm.requestSubmit(); return; }
+    if (avaliacaoForm) { avaliacaoForm.requestSubmit(); showToast('Avaliação salva!', 'success'); return; }
     const fbSalvarBtn = document.getElementById('fbSalvarBtn');
-    if (fbSalvarBtn && !fbSalvarBtn.disabled) { fbSalvarBtn.click(); return; }
+    if (fbSalvarBtn && !fbSalvarBtn.disabled) { fbSalvarBtn.click(); showToast('Feedback salvo!', 'success'); return; }
+    showToast('Nenhum formulário ativo para salvar.', 'info');
   }
 });
 function _normName(s) {
@@ -439,19 +437,30 @@ function showToast(message, type = 'success', title = null, timeout = 2800) {
   toast.className = `toast ${type}`;
   toast.innerHTML = `
     <div class="dot" aria-hidden="true"></div>
-    <div>
+    <div style="flex:1;min-width:0">
       <p class="toast-title">${(title || (type === 'error' ? 'Atenção' : 'Tudo certo'))}</p>
       <p class="toast-msg">${String(message || '')}</p>
     </div>
+    <button class="toast-close" type="button" aria-label="Fechar notificação">&times;</button>
   `;
   container.appendChild(toast);
-  // auto remove
-  setTimeout(() => {
+  let remaining = timeout;
+  let start = Date.now();
+  let timer;
+  function dismiss() {
     toast.style.opacity = '0';
     toast.style.transform = 'translateY(-4px)';
     toast.style.transition = 'opacity .18s ease, transform .18s ease';
     setTimeout(() => toast.remove(), 220);
-  }, timeout);
+  }
+  function schedule() {
+    start = Date.now();
+    timer = setTimeout(dismiss, remaining);
+  }
+  toast.querySelector('.toast-close').addEventListener('click', () => { clearTimeout(timer); dismiss(); });
+  toast.addEventListener('mouseenter', () => { clearTimeout(timer); remaining -= (Date.now() - start); });
+  toast.addEventListener('mouseleave', () => { schedule(); });
+  schedule();
 }
 
 function setLoading(isOn, text = 'Processando…') {
@@ -1530,6 +1539,9 @@ function showKpiBreakdown(kpiType, rows) {
 
   const overlay = document.createElement('div');
   overlay.className = 'kpi-drill-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', title + ' por setor');
   overlay.innerHTML = `
     <div class="kpi-drill-panel">
       <div class="kpi-drill-header">
@@ -1543,8 +1555,12 @@ function showKpiBreakdown(kpiType, rows) {
     </div>
   `;
   document.body.appendChild(overlay);
-  overlay.querySelector('.kpi-drill-close').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  function closeOverlay() { overlay.remove(); document.removeEventListener('keydown', onKey); }
+  function onKey(ev) { if (ev.key === 'Escape') closeOverlay(); }
+  overlay.querySelector('.kpi-drill-close').addEventListener('click', closeOverlay);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeOverlay(); });
+  document.addEventListener('keydown', onKey);
+  overlay.querySelector('.kpi-drill-close').focus();
 }
 
 // ─── VISUAL IMPROVEMENTS: variação % + sparklines ────────────
@@ -1589,8 +1605,8 @@ function colabSparkline(colaborador) {
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
   const up = last6[last6.length - 1] >= last6[0];
-  const color = up ? '#16a34a' : '#dc2626';
-  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" points="${points}"/></svg>`;
+  const colorVar = up ? 'var(--variation-pos)' : 'var(--variation-neg)';
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="${colorVar}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" points="${points}"/></svg>`;
 }
 
 function renderPreview(rows) {
@@ -2317,8 +2333,7 @@ function replaceChart(cfg) {
   }
 }
 
-// expose for debugging
-window.__app = { rawRecords };
+// expose for debugging (removed in production)
 
 // wire preview sort buttons
 
@@ -2572,16 +2587,12 @@ function buildReportText() {
 // ── Removed: clearReportTextOnly, generateAndShowReport, copyReportToClipboard, exportReportToPDF, exportPDFcomGrafico, escapeHtml moved to static/reports.js; handleError moved to static/csv-import.js ──
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('[App] DOMContentLoaded disparado! sbClient:', !!sbClient);
   const vEl = document.getElementById('appVersion');
   if (vEl) vEl.textContent = 'v' + APP_VERSION;
   // Aguarda autenticação (se Supabase estiver disponível)
   if (sbClient) {
     const user = await initAuth();
-    console.log('[App] initAuth retornou user:', !!user);
     if (!user) {
-      // Se não logou, não carrega dados do app
-      console.log('[App] Sem usuario, abortando');
       return;
     }
   }
@@ -2704,20 +2715,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const clearSavedBtn = document.getElementById('clearSavedBtn');
 
   // Tenta carregar do Supabase primeiro
-  console.log('[App] Iniciando carregamento... sbClient:', !!sbClient);
 
   // Merge pending records (from failed Supabase inserts) into the main data
   const pendingPreviously = getPendingSync();
-  if (pendingPreviously.length > 0) {
-    console.log('[App] Registros pendentes encontrados:', pendingPreviously.length);
-  }
 
   const supabaseRecords = await dbLoadRecords();
-  console.log('[App] supabaseRecords:', supabaseRecords?.length, 'registros');
   if (supabaseRecords && supabaseRecords.length > 0) {
-    console.log('[App] Usando dados do Supabase');
     rawRecords = normalizeAtendenteOnRecords(supabaseRecords);
-    console.log('[App] rawRecords apos normalize:', rawRecords?.length, 'registros, primeiro:', rawRecords?.[0]);
 
     // Merge pending records that weren't yet synced to Supabase
     if (pendingPreviously.length > 0) {
@@ -2742,31 +2746,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     rawRecords = deduplicateRecords(rawRecords);
 
     if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
-    console.log('[App] chamando populateFilters...');
     populateFilters(rawRecords);
-    console.log('[App] chamando globalFilters.popularOptions...');
     if (typeof globalFilters !== 'undefined' && globalFilters && typeof globalFilters.popularOptions === 'function') {
       globalFilters.popularOptions();
     }
-    console.log('[App] chamando updateFilterOptions...');
     updateFilterOptions();
-    console.log('[App] chamando updateView...');
     handleError('updateView', () => updateView());
     clearSavedState();
-    console.log('[App] chamando showAppScreen...');
     showAppScreen();
-    console.log('[App] TUDO OK');
   } else {
     // Fallback: localStorage (ou dados de sessão anterior)
-    console.log('[App] Supabase vazio/indisponivel, tentando localStorage');
     syncMonthPickerVisibility();
     const saved = loadSavedState();
     if (saved) {
-      console.log('[App] Dados encontrados no localStorage:', saved.rawRecords?.length, 'registros');
       applySavedState(saved);
       if (sbClient) showAppScreen();
     } else if (pendingPreviously.length > 0) {
-      console.log('[App] Usando registros pendentes como fallback');
       rawRecords = normalizeAtendenteOnRecords(pendingPreviously);
       rawRecords = deduplicateRecords(rawRecords);
       populateFilters(rawRecords);
@@ -2775,7 +2770,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (sbClient) showAppScreen();
       showToast(`${rawRecords.length} registro(s) offline carregados. Tente salvá-los novamente mais tarde.`, 'warn', 'Offline');
     } else {
-      console.log('[App] Nenhum dado no localStorage');
       updateStorageUI(null);
       if (sbClient) showAppScreen();
     }
@@ -2920,8 +2914,9 @@ if (!rawRecords || !rawRecords.length) {
       if (!tab) return;
 
       // Update active state
-      tabBar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      tabBar.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
       tabBtn.classList.add('active');
+      tabBtn.setAttribute('aria-selected', 'true');
 
       // Show/hide tab content
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -2977,6 +2972,17 @@ if (!rawRecords || !rawRecords.length) {
         if (typeof clearFilters === 'function') clearFilters();
         const dashboardBtn = tabBar.querySelector('.tab-btn[data-tab="dashboard"]');
         if (dashboardBtn) dashboardBtn.click();
+      });
+    }
+
+    // Presentation exit button
+    const presExitBtn = document.getElementById('presentationExitBtn');
+    if (presExitBtn) {
+      presExitBtn.addEventListener('click', () => {
+        presentationMode = false;
+        if (presentationModeToggle) presentationModeToggle.checked = false;
+        updateView();
+        saveState();
       });
     }
   }

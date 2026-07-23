@@ -114,13 +114,11 @@ function filterRecordsFields(records) {
 async function dbLoadRecords() {
   if (!sbClient) { console.warn('dbLoadRecords: sbClient nulo'); return null; }
   try {
-    console.log('[DB] Buscando registros do Supabase...');
     const { data, error } = await sbClient.from('registros').select('*');
     if (error) {
       console.error('[DB] Erro na query:', error);
       throw error;
     }
-    console.log('[DB] Dados recebidos:', data?.length, 'registros');
     return (data || []).map(reverseMapRecord);
   } catch (e) {
     console.error('[DB] Erro ao carregar do Supabase:', e.message || e);
@@ -133,13 +131,11 @@ async function dbSaveRecords(records) {
   if (!sbClient || !records || !records.length) return false;
   try {
     const clean = filterRecordsFields(records);
-    console.log('Enviando ao Supabase:', clean.length, 'registros');
     const { data, error } = await sbClient.from('registros').insert(clean).select();
     if (error) {
       console.error('Erro Supabase (detalhe):', error);
       throw error;
     }
-    console.log('Supabase insert OK:', data?.length, 'registros');
     return true;
   } catch (e) {
     console.error('Erro ao salvar no Supabase:', e);

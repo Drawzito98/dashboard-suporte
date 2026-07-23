@@ -125,6 +125,10 @@
     
     <!-- Top Bar -->
     <header class="topbar">
+      <button class="presentation-exit-btn" id="presentationExitBtn" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Sair da apresentação
+      </button>
       <div class="titleblock">
         <img src="static/logo-topbar.png" alt="IXC" class="topbar-logo"/>
         <div>
@@ -168,34 +172,34 @@
     <div id="globalFilterBar" class="global-filter-bar" style="margin-bottom:var(--s-4)"></div>
 
     <!-- Tab Navigation -->
-    <div class="tab-bar" id="tabBar">
-      <button class="tab-btn" id="homeBtn" title="Limpar filtros e voltar ao início" style="font-size:18px;padding:6px 14px">🏠</button>
-      <button class="tab-btn active" data-tab="dashboard">
+    <div class="tab-bar" id="tabBar" role="tablist" aria-label="Navegação principal">
+      <button class="tab-btn" id="homeBtn" title="Limpar filtros e voltar ao início" style="font-size:18px;padding:6px 14px" role="tab" aria-selected="false">🏠</button>
+      <button class="tab-btn active" data-tab="dashboard" role="tab" aria-selected="true">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="9" width="4" height="11"/></svg></span> Dashboard
       </button>
-      <button class="tab-btn" data-tab="relatorio-setorial">
+      <button class="tab-btn" data-tab="relatorio-setorial" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="8" y="13" width="3" height="4"/><rect x="13" y="11" width="3" height="6"/></svg></span> Relatório Setorial
       </button>
-      <button class="tab-btn" data-tab="gamificacao">
+      <button class="tab-btn" data-tab="gamificacao" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><path d="M12 19v-4"/><path d="M8 5h8l-1 11H9L8 5z"/></svg></span> Gamificação
       </button>
-      <button class="tab-btn" data-tab="tarefas">
+      <button class="tab-btn" data-tab="tarefas" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Tarefas<span class="tab-badge" id="tarefasBadge"></span>
       </button>
-      <button class="tab-btn" data-tab="colaboradores">
+      <button class="tab-btn" data-tab="colaboradores" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Colaboradores
       </button>
-      <button class="tab-btn" data-tab="lider">
+      <button class="tab-btn" data-tab="lider" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span> Liderança
       </button>
-      <button class="tab-btn" data-tab="insights">
+      <button class="tab-btn" data-tab="insights" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg></span> Insights
       </button>
-      <button class="tab-btn" data-tab="avaliacao">
+      <button class="tab-btn" data-tab="avaliacao" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg></span> Avaliação
       </button>
 
-      <button class="tab-btn" data-tab="mapeamento-time">
+      <button class="tab-btn" data-tab="mapeamento-time" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Mapeamento de Time
       </button>
     </div>
@@ -308,7 +312,7 @@
       <section class="content">
 
         <!-- ===== TAB: DASHBOARD ===== -->
-        <div class="tab-content active" id="tab-dashboard">
+        <div class="tab-content active" id="tab-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
           <!-- Global Empty State -->
           <div id="globalEmptyState" class="empty-state global-empty">
             <div class="empty-title">Importe um arquivo CSV para comecar</div>
@@ -412,7 +416,7 @@
         </div>
 
         <!-- ===== TAB: GAMIFICAÇÃO ===== -->
-        <div class="tab-content" id="tab-gamificacao">
+        <div class="tab-content" id="tab-gamificacao" role="tabpanel">
           <section class="card">
             <div class="card-header">
               <div>
@@ -439,7 +443,7 @@
         </div>
 
         <!-- ===== TAB: LIDERANÇA ===== -->
-        <div class="tab-content" id="tab-lider">
+        <div class="tab-content" id="tab-lider" role="tabpanel">
           <section class="card">
             <div class="card-header">
               <div>
@@ -453,7 +457,7 @@
         </div>
 
         <!-- ===== TAB: INSIGHTS ===== -->
-        <div class="tab-content" id="tab-insights">
+        <div class="tab-content" id="tab-insights" role="tabpanel">
           <section class="card" style="margin-bottom:var(--s-4)">
             <div class="card-header">
               <div>
@@ -477,26 +481,26 @@
         </div>
 
         <!-- ===== TAB: TAREFAS ===== -->
-        <div class="tab-content" id="tab-tarefas">
+        <div class="tab-content" id="tab-tarefas" role="tabpanel">
           <div id="tarefasContent"></div>
         </div>
 
         <!-- ===== TAB: COLABORADORES ===== -->
-        <div class="tab-content" id="tab-colaboradores">
+        <div class="tab-content" id="tab-colaboradores" role="tabpanel">
           <section class="card">
             <div id="colaboradoresContent"></div>
           </section>
         </div>
 
         <!-- ===== TAB: RELATÓRIO SETORIAL ===== -->
-        <div class="tab-content" id="tab-relatorio-setorial">
+        <div class="tab-content" id="tab-relatorio-setorial" role="tabpanel">
           <section class="card">
             <div id="relatorioSetorialContent"></div>
           </section>
         </div>
 
         <!-- ===== TAB: AVALIAÇÃO DE DESEMPENHO ===== -->
-        <div class="tab-content" id="tab-avaliacao">
+        <div class="tab-content" id="tab-avaliacao" role="tabpanel">
           <section class="card">
             <div id="avaliacaoContent"></div>
           </section>
@@ -504,7 +508,7 @@
         </div>
 
         <!-- ===== TAB: MAPEAMENTO DE TIME ===== -->
-        <div class="tab-content" id="tab-mapeamento-time">
+        <div class="tab-content" id="tab-mapeamento-time" role="tabpanel">
           <div id="mapeamentoTimeContent"></div>
         </div>
 
