@@ -90,7 +90,9 @@ function renderHome() {
   // ── Section 1: Welcome + KPIs ──
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
-  const userName = document.getElementById('currentUserDisplay')?.textContent?.trim() || 'Usuário';
+  const userName = currentUser?.user_metadata?.name
+    || document.getElementById('currentUserDisplay')?.textContent?.trim()
+    || 'Usuário';
 
   html += `<div class="home-welcome">
     <h2>${greeting}, ${escapeHtml(userName)}</h2>

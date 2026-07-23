@@ -120,12 +120,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (registerBtn) {
     registerBtn.addEventListener('click', async () => {
       const email = document.getElementById('registerEmail').value.trim();
+      const name = document.getElementById('registerName')?.value.trim();
       const password = document.getElementById('registerPassword').value;
       if (!email || !password) { showAuthError('register', 'Preencha email e senha.'); return; }
       if (password.length < 6) { showAuthError('register', 'Senha deve ter no mínimo 6 caracteres.'); return; }
       setAuthLoading(true);
       showAuthError('register', '');
-      const { data, error } = await sbClient.auth.signUp({ email, password });
+      const { data, error } = await sbClient.auth.signUp({ email, password, options: { data: { name } } });
       setAuthLoading(false);
       if (error) {
         showAuthError('register', error.message);

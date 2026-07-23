@@ -2684,7 +2684,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Mostra usuário logado na topbar
       const display = document.getElementById('currentUserDisplay');
       if (display) {
-        display.textContent = user.email;
+        display.textContent = user.user_metadata?.name || user.email;
       }
     }
   }
