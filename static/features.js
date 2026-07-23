@@ -345,23 +345,44 @@
   }
 
   function showMonthlySummary() {
-    const now = new Date();
-    // Use mês anterior (app sempre tem dados do mês anterior)
-    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const prevMonth = prev.getMonth();
-    const prevYear = prev.getFullYear();
     const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
-    // Filter previous month data
+    // Use global month filter if active, otherwise use previous month
+    const activeMonths = typeof getActiveMonths === 'function' ? getActiveMonths() : [];
+    const hasFilter = activeMonths.length > 0;
+
     const monthData = (window.rawRecords || []).filter(r => {
-      if (!r.data) return false;
-      const d = new Date(r.data + 'T12:00:00');
-      return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+      if (!r.data && !r['Mês']) return false;
+      // If filter is active, match by selected months
+      if (hasFilter) {
+        if (typeof monthMatches === 'function' && !monthMatches(r['Mês'])) return false;
+        return true;
+      }
+      // Fallback: previous month
+      const now = new Date();
+      const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      if (r.data) {
+        const d = new Date(r.data + 'T12:00:00');
+        return d.getMonth() === prev.getMonth() && d.getFullYear() === prev.getFullYear();
+      }
+      return false;
     });
 
     if (!monthData.length) {
-      if (typeof showToast === 'function') showToast('Sem registros do mês anterior ainda', 'info');
+      const hint = hasFilter ? 'no filtro selecionado' : 'do mês anterior ainda';
+      if (typeof showToast === 'function') showToast('Sem registros ' + hint, 'info');
       return;
+    }
+
+    // Determine label
+    let label;
+    if (hasFilter) {
+      const sorted = activeMonths.slice().sort();
+      label = sorted.length === 1 ? sorted[0] : `${sorted[0]} → ${sorted[sorted.length - 1]}`;
+    } else {
+      const now = new Date();
+      const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      label = monthNames[prev.getMonth()].charAt(0).toUpperCase() + monthNames[prev.getMonth()].slice(1) + ' ' + prev.getFullYear();
     }
 
     // Calculate stats
@@ -383,7 +404,7 @@
 
     // Build summary text
     const lines = [];
-    lines.push(`📊 Resumo — ${monthNames[prevMonth].charAt(0).toUpperCase() + monthNames[prevMonth].slice(1)} ${prevYear}`);
+    lines.push(`📊 Resumo — ${label}`);
     lines.push('');
     lines.push(`📋 Total de registros: ${total}`);
     lines.push(`⭐ Score médio: ${avgScore}`);
