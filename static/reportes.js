@@ -552,7 +552,6 @@ function atualizarBadgeReportes(count) {
     badge.textContent = count > 0 ? count : '';
   }
 }
-}
 
 // Notificação push via Supabase Realtime
 function iniciarRealtimeReportes() {
