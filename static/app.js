@@ -2,7 +2,7 @@
 function q(sel, root = document) { return root.querySelector(sel); }
 function qa(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 
 // Perfis (Google Docs) — loaded from static/perfis.js (works on file://)
 const INACTIVE_COLABS_KEY = 'sistema_inactive_colabs_v1';
@@ -2925,6 +2925,9 @@ if (!rawRecords || !rawRecords.length) {
       if (target) target.classList.add('active');
 
       // Call per-tab initialization
+      if (tab === 'home' && typeof onHomeTabActivated === 'function') {
+        onHomeTabActivated();
+      }
       if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') {
         onGamificationTabActivated();
         if (typeof onMetasTabActivated === 'function') onMetasTabActivated();
@@ -2963,16 +2966,12 @@ if (!rawRecords || !rawRecords.length) {
       try { localStorage.setItem('sistema_active_tab', tab); } catch(e) {}
     });
 
-    // Home button — clear filters and go to dashboard
+    // Home button — go to home tab
     const homeBtn = document.getElementById('homeBtn');
     if (homeBtn) {
       homeBtn.addEventListener('click', () => {
-        if (typeof globalFilters !== 'undefined' && globalFilters && typeof globalFilters.limpar === 'function') {
-          globalFilters.limpar();
-        }
-        if (typeof clearFilters === 'function') clearFilters();
-        const dashboardBtn = tabBar.querySelector('.tab-btn[data-tab="dashboard"]');
-        if (dashboardBtn) dashboardBtn.click();
+        const homeTabBtn = tabBar.querySelector('.tab-btn[data-tab="home"]');
+        if (homeTabBtn) homeTabBtn.click();
       });
     }
 

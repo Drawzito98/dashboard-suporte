@@ -6,6 +6,7 @@
   <title>Painel de Suporte</title>
   <meta name="description" content="Painel executivo para análise de indicadores de suporte e atendimento."/>
   <link href="static/styles.css" rel="stylesheet"/>
+  <link href="static/home.css" rel="stylesheet"/>
   <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
   <link rel="apple-touch-icon" sizes="180x180" href="static/logo-topbar.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -174,7 +175,10 @@
     <!-- Tab Navigation -->
     <div class="tab-bar" id="tabBar" role="tablist" aria-label="Navegação principal">
       <button class="tab-btn" id="homeBtn" title="Limpar filtros e voltar ao início" style="font-size:18px;padding:6px 14px" role="tab" aria-selected="false">🏠</button>
-      <button class="tab-btn active" data-tab="dashboard" role="tab" aria-selected="true">
+      <button class="tab-btn active" data-tab="home" role="tab" aria-selected="true">
+        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span> Início
+      </button>
+      <button class="tab-btn" data-tab="dashboard" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="9" width="4" height="11"/></svg></span> Dashboard
       </button>
       <button class="tab-btn" data-tab="relatorio-setorial" role="tab" aria-selected="false">
@@ -311,8 +315,15 @@
       <!-- Content Area -->
       <section class="content">
 
+        <!-- ===== TAB: HOME ===== -->
+        <div class="tab-content active" id="tab-home" role="tabpanel">
+          <section class="card">
+            <div id="homeContent"></div>
+          </section>
+        </div>
+
         <!-- ===== TAB: DASHBOARD ===== -->
-        <div class="tab-content active" id="tab-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
+        <div class="tab-content" id="tab-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
           <!-- Global Empty State -->
           <div id="globalEmptyState" class="empty-state global-empty">
             <div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
@@ -708,6 +719,7 @@
 <script src="static/reports.js"></script>
 <script src="static/db-reportes.js"></script>
 <script src="static/reportes.js"></script>
+<script src="static/home.js"></script>
 <script src="static/app.js"></script>
 
 </body>
