@@ -347,29 +347,20 @@
   function showMonthlySummary() {
     const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
-    // Use global month filter if active, otherwise use previous month
+    // Use the same filtering logic as the rest of the app
     const activeMonths = typeof getActiveMonths === 'function' ? getActiveMonths() : [];
     const hasFilter = activeMonths.length > 0;
 
+    // Filter data using the same logic as updateView
     const monthData = (window.rawRecords || []).filter(r => {
       if (!r || !r['Mês']) return false;
-      // If filter is active, match by selected months
-      if (hasFilter) {
-        if (typeof monthMatches === 'function' && !monthMatches(r['Mês'])) return false;
-        return true;
-      }
-      // Fallback: previous month by 'Mês' field (e.g. "Jun/2025")
-      const now = new Date();
-      const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const prevLabel = String(prev.getMonth() + 1).padStart(2, '0') + '/' + prev.getFullYear();
-      // Match "Mês" field like "Jun/2025" or "06/2025"
-      const mes = String(r['Mês']);
-      return mes.includes(String(prev.getFullYear())) && (mes.includes(monthNames[prev.getMonth()].slice(0, 3)) || mes.includes(prevLabel.slice(0, 2)));
+      // If filter is active, only show selected months
+      if (hasFilter && !activeMonths.includes(String(r['Mês']))) return false;
+      return true;
     });
 
     if (!monthData.length) {
-      const hint = hasFilter ? 'no filtro selecionado' : 'do mês anterior ainda';
-      if (typeof showToast === 'function') showToast('Sem registros ' + hint, 'info');
+      if (typeof showToast === 'function') showToast('Sem registros para o período selecionado', 'info');
       return;
     }
 
@@ -379,9 +370,13 @@
       const sorted = activeMonths.slice().sort();
       label = sorted.length === 1 ? sorted[0] : `${sorted[0]} → ${sorted[sorted.length - 1]}`;
     } else {
-      const now = new Date();
-      const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      label = monthNames[prev.getMonth()].charAt(0).toUpperCase() + monthNames[prev.getMonth()].slice(1) + ' ' + prev.getFullYear();
+      // No filter — show all data label
+      const allMonths = [...new Set((window.rawRecords || []).map(r => r['Mês']).filter(Boolean))].sort();
+      if (allMonths.length) {
+        label = allMonths.length === 1 ? allMonths[0] : `${allMonths[0]} → ${allMonths[allMonths.length - 1]}`;
+      } else {
+        label = 'Todos os registros';
+      }
     }
 
     // Calculate stats
