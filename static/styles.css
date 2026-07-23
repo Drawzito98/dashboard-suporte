@@ -3427,7 +3427,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 .global-search-wrapper {
   position: relative;
   margin: var(--s-3) var(--s-4);
-  z-index: 50;
+  z-index: 10;
 }
 .global-search-box {
   display: flex;
@@ -3473,11 +3473,11 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   right: 0;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-  max-height: 400px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  max-height: 300px;
   overflow-y: auto;
-  z-index: 100;
+  z-index: 1000;
 }
 .global-search-item {
   display: flex;
