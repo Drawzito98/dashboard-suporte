@@ -37,10 +37,28 @@ function renderHome() {
 
   // Pending tasks
   let pendingTasks = 0;
+  let pendingTaskList = [];
   try {
     const tarefas = JSON.parse(localStorage.getItem('sistema_tarefas_v1') || '[]');
-    pendingTasks = tarefas.filter(t => t.status === 'pendente').length;
+    pendingTaskList = tarefas.filter(t => t.status === 'pendente');
+    pendingTasks = pendingTaskList.length;
   } catch (e) {}
+
+  // Score by collaborator (last month)
+  const scoreByColab = {};
+  lastMonthRecords.forEach(r => {
+    const name = r['Atendente'];
+    if (!name) return;
+    if (!scoreByColab[name]) scoreByColab[name] = [];
+    scoreByColab[name].push(Number(r['SCORE'] || 0));
+  });
+  const scoreList = Object.entries(scoreByColab)
+    .map(([name, scores]) => ({
+      name,
+      avg: (scores.reduce((a, b) => a + b, 0) / scores.length),
+      count: scores.length
+    }))
+    .sort((a, b) => b.avg - a.avg);
 
   // Monthly trend data (last 6 months)
   const trendMonths = meses.slice(-6);
@@ -87,15 +105,17 @@ function renderHome() {
       <div class="home-kpi-value">${totalRecords.toLocaleString('pt-BR')}</div>
       <div class="home-kpi-label">Registros totais</div>
     </div>
-    <div class="home-kpi">
+    <div class="home-kpi home-kpi-clickable" id="homeScoreKpi" role="button" tabindex="0" title="Clique para ver o score por colaborador">
       <div class="home-kpi-icon" style="background:var(--warning-soft);color:var(--warning)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
       <div class="home-kpi-value ${Number(avgScore) >= 4.5 ? 'score-excelente' : Number(avgScore) < 4 ? 'score-critico' : ''}">${avgScore}</div>
       <div class="home-kpi-label">Score médio · ${lastMonth || '—'}</div>
+      <div class="home-kpi-hint">clique para ver</div>
     </div>
-    <div class="home-kpi">
+    <div class="home-kpi home-kpi-clickable" id="homeTasksKpi" role="button" tabindex="0" title="Clique para ver as tarefas pendentes">
       <div class="home-kpi-icon" style="background:var(--info-soft);color:var(--info)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
       <div class="home-kpi-value">${pendingTasks}</div>
       <div class="home-kpi-label">Tarefas pendentes</div>
+      <div class="home-kpi-hint">clique para ver</div>
     </div>
   </div>`;
 
@@ -213,6 +233,83 @@ function renderHome() {
     const text = colabList.map(c => c.name).join('\n');
     navigator.clipboard.writeText(text).then(() => showToast('Nomes copiados!', 'success'));
   });
+
+  // ── Score modal ──
+  const scoreModalHtml = `
+    <div id="homeScoreModal" class="modal-overlay" style="display:none">
+      <div class="modal-box" style="max-width:480px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-4)">
+          <h3 style="margin:0">Score por colaborador · ${lastMonth || '—'}</h3>
+          <button class="btn-small home-score-modal-close" type="button" style="font-size:18px;padding:4px 8px">✕</button>
+        </div>
+        <div style="display:flex;gap:var(--s-2);margin-bottom:var(--s-3)">
+          <button class="btn-small" id="homeScoreCopyAll" type="button" style="flex:1;justify-content:center">📋 Copiar todos</button>
+        </div>
+        <div id="homeScoreList" style="max-height:400px;overflow-y:auto"></div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', scoreModalHtml);
+
+  const scoreModal = document.getElementById('homeScoreModal');
+  const scoreListEl = document.getElementById('homeScoreList');
+
+  if (scoreListEl) {
+    scoreListEl.innerHTML = scoreList.length ? scoreList.map(s => {
+      const cls = s.avg >= 4.5 ? 'score-excelente' : s.avg < 4 ? 'score-critico' : '';
+      return `<div class="home-colab-item">
+        <span class="home-colab-name">${escapeHtml(s.name)}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="home-colab-setor">${s.count} reg.</span>
+          <span class="home-score-badge ${cls}">${s.avg.toFixed(2)}</span>
+        </div>
+      </div>`;
+    }).join('') : '<div class="notif-empty">Nenhum dado de score para este mês.</div>';
+  }
+
+  document.getElementById('homeScoreKpi')?.addEventListener('click', () => { scoreModal.style.display = 'flex'; });
+  document.getElementById('homeScoreKpi')?.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scoreModal.style.display = 'flex'; } });
+  document.querySelectorAll('.home-score-modal-close').forEach(btn => btn.addEventListener('click', () => { scoreModal.style.display = 'none'; }));
+  scoreModal?.addEventListener('click', e => { if (e.target === scoreModal) scoreModal.style.display = 'none'; });
+
+  document.getElementById('homeScoreCopyAll')?.addEventListener('click', () => {
+    const text = scoreList.map(s => `${s.name} — ${s.avg.toFixed(2)}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => showToast('Scores copiados!', 'success'));
+  });
+
+  // ── Tasks modal ──
+  const tasksModalHtml = `
+    <div id="homeTasksModal" class="modal-overlay" style="display:none">
+      <div class="modal-box" style="max-width:520px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-4)">
+          <h3 style="margin:0">Tarefas pendentes (${pendingTasks})</h3>
+          <button class="btn-small home-tasks-modal-close" type="button" style="font-size:18px;padding:4px 8px">✕</button>
+        </div>
+        <div id="homeTasksList" style="max-height:400px;overflow-y:auto"></div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', tasksModalHtml);
+
+  const tasksModal = document.getElementById('homeTasksModal');
+  const tasksListEl = document.getElementById('homeTasksList');
+
+  if (tasksListEl) {
+    tasksListEl.innerHTML = pendingTaskList.length ? pendingTaskList.map(t => {
+      const prio = t.prioridade === 'alta' ? '🔴' : t.prioridade === 'media' ? '🟡' : '🟢';
+      const data = t.data ? new Date(t.data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+      return `<div class="home-colab-item">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          <span>${prio}</span>
+          <span class="home-colab-name" style="white-space:normal">${escapeHtml(t.titulo || t.descricao || 'Sem título')}</span>
+        </div>
+        <span class="home-colab-setor">${data}</span>
+      </div>`;
+    }).join('') : '<div class="notif-empty">Nenhuma tarefa pendente.</div>';
+  }
+
+  document.getElementById('homeTasksKpi')?.addEventListener('click', () => { tasksModal.style.display = 'flex'; });
+  document.getElementById('homeTasksKpi')?.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tasksModal.style.display = 'flex'; } });
+  document.querySelectorAll('.home-tasks-modal-close').forEach(btn => btn.addEventListener('click', () => { tasksModal.style.display = 'none'; }));
+  tasksModal?.addEventListener('click', e => { if (e.target === tasksModal) tasksModal.style.display = 'none'; });
 
   // Render mini trend chart
   if (trendData.length > 1) {

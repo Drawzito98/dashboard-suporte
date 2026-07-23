@@ -117,6 +117,29 @@
   white-space: nowrap;
 }
 
+/* Score badge */
+.home-score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+.home-score-badge.score-excelente {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.home-score-badge.score-critico {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
 /* Sections */
 .home-section {
   margin-bottom: var(--s-6);
