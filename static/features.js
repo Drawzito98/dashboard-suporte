@@ -352,20 +352,19 @@
     const hasFilter = activeMonths.length > 0;
 
     const monthData = (window.rawRecords || []).filter(r => {
-      if (!r.data && !r['Mês']) return false;
+      if (!r || !r['Mês']) return false;
       // If filter is active, match by selected months
       if (hasFilter) {
         if (typeof monthMatches === 'function' && !monthMatches(r['Mês'])) return false;
         return true;
       }
-      // Fallback: previous month
+      // Fallback: previous month by 'Mês' field (e.g. "Jun/2025")
       const now = new Date();
       const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      if (r.data) {
-        const d = new Date(r.data + 'T12:00:00');
-        return d.getMonth() === prev.getMonth() && d.getFullYear() === prev.getFullYear();
-      }
-      return false;
+      const prevLabel = String(prev.getMonth() + 1).padStart(2, '0') + '/' + prev.getFullYear();
+      // Match "Mês" field like "Jun/2025" or "06/2025"
+      const mes = String(r['Mês']);
+      return mes.includes(String(prev.getFullYear())) && (mes.includes(monthNames[prev.getMonth()].slice(0, 3)) || mes.includes(prevLabel.slice(0, 2)));
     });
 
     if (!monthData.length) {
@@ -388,19 +387,20 @@
     // Calculate stats
     const ranking = window.getOverallRanking ? window.getOverallRanking(monthData) : [];
     const total = monthData.length;
-    const motivos = {};
     const setores = {};
     let totalScore = 0, scored = 0;
 
     monthData.forEach(r => {
-      motivos[r.motivo || 'Outro'] = (motivos[r.motivo || 'Outro'] || 0) + 1;
-      setores[r.setor || 'Sem setor'] = (setores[r.setor || 'Sem setor'] || 0) + 1;
-      if (r.nota != null) { totalScore += Number(r.nota); scored++; }
+      const setor = r['Setor'] || 'Sem setor';
+      setores[setor] = (setores[setor] || 0) + 1;
+      const sc = r['SCORE'];
+      if (sc != null && !isNaN(Number(sc))) { totalScore += Number(sc); scored++; }
     });
 
     const avgScore = scored ? (totalScore / scored).toFixed(1) : '–';
-    const topMotivos = Object.entries(motivos).sort((a, b) => b[1] - a[1]).slice(0, 3);
     const topSetor = Object.entries(setores).sort((a, b) => b[1] - a[1])[0];
+    const totalFin = monthData.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
+    const totalAss = monthData.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
 
     // Build summary text
     const lines = [];
@@ -408,8 +408,12 @@
     lines.push('');
     lines.push(`📋 Total de registros: ${total}`);
     lines.push(`⭐ Score médio: ${avgScore}`);
+    lines.push(`✅ Finalizados: ${totalFin}  |  📥 Assumidos: ${totalAss}`);
     if (ranking.length) {
-      lines.push(`🏆 Melhor: ${ranking[0].name} (${ranking[0].score})`);
+      lines.push(`🏆 Melhor: ${ranking[0].name} (score ${ranking[0].score})`);
+    }
+    if (topSetor) {
+      lines.push(`🏢 Setor com mais demandas: ${topSetor[0]} (${topSetor[1]} registros)`);
     }
     if (topMotivos.length) {
       lines.push(`🔍 Motivos principais: ${topMotivos.map(([m, c]) => `${m} (${c})`).join(', ')}`);
