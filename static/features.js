@@ -1,5 +1,5 @@
 // ── Features Module ──
-// Keyboard shortcuts help, Global search, Export PNG, Compare months, Monthly summary
+// Keyboard shortcuts help, Export PNG, Compare months, Monthly summary
 
 (function () {
   'use strict';
@@ -74,124 +74,6 @@
   // ═══════════════════════════════════════════
   // 2. GLOBAL SEARCH
   // ═══════════════════════════════════════════
-  function initGlobalSearch() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'global-search-wrapper';
-    wrapper.innerHTML = `
-      <div class="global-search-box">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="globalSearchInput" placeholder="Buscar registros, colaboradores, tarefas... ( / )" autocomplete="off" />
-        <kbd class="global-search-hint">/</kbd>
-      </div>
-      <div class="global-search-results" id="globalSearchResults" style="display:none"></div>
-    `;
-
-    const tabBar = document.getElementById('tabBar');
-    if (tabBar) tabBar.parentNode.insertBefore(wrapper, tabBar);
-
-    const input = document.getElementById('globalSearchInput');
-    const results = document.getElementById('globalSearchResults');
-    let debounce = null;
-
-    input.addEventListener('input', function () {
-      clearTimeout(debounce);
-      debounce = setTimeout(() => doSearch(input.value.trim()), 200);
-    });
-
-    input.addEventListener('focus', function () {
-      if (input.value.trim()) doSearch(input.value.trim());
-    });
-
-    input.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        input.blur();
-        results.style.display = 'none';
-      }
-    });
-
-    document.addEventListener('click', function (e) {
-      if (!wrapper.contains(e.target)) results.style.display = 'none';
-    });
-
-    function doSearch(query) {
-      if (!query || query.length < 2) { results.style.display = 'none'; return; }
-
-      const q = query.toLowerCase();
-      const items = [];
-
-      // Search collaborators
-      if (window.rawRecords && window.getOverallRanking) {
-        const ranking = window.getOverallRanking(window.rawRecords);
-        ranking.forEach(r => {
-          if (r.name && r.name.toLowerCase().includes(q)) {
-            items.push({ type: 'collaborator', name: r.name, detail: `Score: ${r.score}`, tab: 'gamificacao' });
-          }
-        });
-      }
-
-      // Search records
-      if (window.rawRecords) {
-        window.rawRecords.forEach(rec => {
-          const searchStr = `${rec.nome || ''} ${rec.setor || ''} ${rec.cliente || ''} ${rec.numero || ''} ${rec.motivo || ''} ${rec.submotivo || ''}`.toLowerCase();
-          if (searchStr.includes(q)) {
-            items.push({
-              type: 'record',
-              name: rec.numero || rec.cliente || 'Registro',
-              detail: `${rec.nome || '–'} · ${rec.setor || '–'} · ${rec.motivo || '–'}`,
-              tab: 'dashboard'
-            });
-          }
-        });
-      }
-
-      // Search tasks
-      try {
-        const raw = localStorage.getItem('sistema_tarefas_v1');
-        if (raw) {
-          const tasks = JSON.parse(raw);
-          tasks.forEach(t => {
-            const searchStr = `${t.titulo || ''} ${t.descricao || ''} ${t.prioridade || ''}`.toLowerCase();
-            if (searchStr.includes(q)) {
-              items.push({ type: 'task', name: t.titulo || t.descricao || 'Tarefa', detail: `${t.prioridade || '–'} · ${t.status || '–'}`, tab: 'tarefas' });
-            }
-          });
-        }
-      } catch (e) {}
-
-      if (!items.length) {
-        results.innerHTML = '<div class="global-search-empty">Nenhum resultado para "' + escapeH(query) + '"</div>';
-        results.style.display = 'block';
-        return;
-      }
-
-      const typeIcons = { collaborator: '👤', record: '📋', task: '📌' };
-      const typeLabels = { collaborator: 'Colaborador', record: 'Registro', task: 'Tarefa' };
-
-      results.innerHTML = items.slice(0, 20).map(item => `
-        <div class="global-search-item" data-tab="${item.tab}">
-          <span class="global-search-item-type">${typeIcons[item.type]}</span>
-          <div class="global-search-item-info">
-            <div class="global-search-item-name">${escapeH(item.name)}</div>
-            <div class="global-search-item-detail">${escapeH(item.detail)}</div>
-          </div>
-          <span class="global-search-item-label">${typeLabels[item.type]}</span>
-        </div>
-      `).join('');
-
-      results.style.display = 'block';
-
-      results.querySelectorAll('.global-search-item').forEach(el => {
-        el.addEventListener('click', function () {
-          const tab = el.dataset.tab;
-          const tabBtn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
-          if (tabBtn) tabBtn.click();
-          results.style.display = 'none';
-          input.value = '';
-        });
-      });
-    }
-  }
-
   function escapeH(str) {
     const d = document.createElement('div');
     d.textContent = str;
@@ -575,7 +457,6 @@
   // INIT
   // ═══════════════════════════════════════════
   function init() {
-    initGlobalSearch();
     initExportButton();
     initCompareMonths();
     initMonthlySummary();

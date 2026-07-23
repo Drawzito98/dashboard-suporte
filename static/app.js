@@ -418,13 +418,6 @@ document.addEventListener('keydown', (e) => {
       if (typeof showShortcutsHelp === 'function') showShortcutsHelp();
       return;
     }
-    // / focuses global search
-    if (e.key === '/') {
-      e.preventDefault();
-      const searchInput = document.getElementById('globalSearchInput');
-      if (searchInput) searchInput.focus();
-      return;
-    }
   }
 
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
