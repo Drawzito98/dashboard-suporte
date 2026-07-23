@@ -7,6 +7,21 @@ function renderHome() {
   const records = rawRecords || [];
   const activeColabs = records.filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']));
   const uniqueColabs = [...new Set(activeColabs.map(r => r['Atendente']))].sort();
+
+  // Map: collaborator → setores
+  const colabSetores = {};
+  activeColabs.forEach(r => {
+    const name = r['Atendente'];
+    const setor = String(r['Setor'] || '').trim();
+    if (name && setor) {
+      if (!colabSetores[name]) colabSetores[name] = new Set();
+      colabSetores[name].add(setor);
+    }
+  });
+  const colabList = uniqueColabs.map(name => ({
+    name,
+    setores: colabSetores[name] ? [...colabSetores[name]].sort().join(', ') : '—'
+  }));
   const meses = [...new Set(records.filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
   const lastMonth = meses[meses.length - 1] || '';
   const prevMonth = meses.length > 1 ? meses[meses.length - 2] : '';
@@ -61,10 +76,11 @@ function renderHome() {
   </div>`;
 
   html += `<div class="home-kpi-grid">
-    <div class="home-kpi">
+    <div class="home-kpi home-kpi-clickable" id="homeColabsKpi" role="button" tabindex="0" title="Clique para ver os colaboradores">
       <div class="home-kpi-icon" style="background:var(--accent-soft);color:var(--accent)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div class="home-kpi-value">${activeCount}</div>
       <div class="home-kpi-label">Colaboradores ativos</div>
+      <div class="home-kpi-hint">clique para ver</div>
     </div>
     <div class="home-kpi">
       <div class="home-kpi-icon" style="background:var(--success-soft);color:var(--success)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
@@ -143,6 +159,60 @@ function renderHome() {
   }
 
   container.innerHTML = html;
+
+  // Colabs modal
+  const modalHtml = `
+    <div id="homeColabsModal" class="modal-overlay" style="display:none">
+      <div class="modal-box" style="max-width:480px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-4)">
+          <h3 style="margin:0">Colaboradores ativos (${activeCount})</h3>
+          <button class="btn-small" id="homeColabsModalClose" type="button" style="font-size:18px;padding:4px 8px">✕</button>
+        </div>
+        <div style="display:flex;gap:var(--s-2);margin-bottom:var(--s-3)">
+          <button class="btn-small" id="homeColabsCopyAll" type="button" style="flex:1;justify-content:center">📋 Copiar todos</button>
+          <button class="btn-small" id="homeColabsCopyNames" type="button" style="flex:1;justify-content:center">📝 Só nomes</button>
+        </div>
+        <div id="homeColabsList" style="max-height:400px;overflow-y:auto"></div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  const modal = document.getElementById('homeColabsModal');
+  const listEl = document.getElementById('homeColabsList');
+
+  // Render list
+  if (listEl) {
+    listEl.innerHTML = colabList.map(c => `
+      <div class="home-colab-item">
+        <span class="home-colab-name">${escapeHtml(c.name)}</span>
+        <span class="home-colab-setor">${escapeHtml(c.setores)}</span>
+      </div>
+    `).join('');
+  }
+
+  // Open modal
+  const kpiBtn = document.getElementById('homeColabsKpi');
+  if (kpiBtn && modal) {
+    const openModal = () => { modal.style.display = 'flex'; };
+    kpiBtn.addEventListener('click', openModal);
+    kpiBtn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(); } });
+  }
+
+  // Close modal
+  document.getElementById('homeColabsModalClose')?.addEventListener('click', () => { modal.style.display = 'none'; });
+  modal?.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+
+  // Copy all (name + sector)
+  document.getElementById('homeColabsCopyAll')?.addEventListener('click', () => {
+    const text = colabList.map(c => `${c.name} — ${c.setores}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => showToast('Lista copiada!', 'success'));
+  });
+
+  // Copy names only
+  document.getElementById('homeColabsCopyNames')?.addEventListener('click', () => {
+    const text = colabList.map(c => c.name).join('\n');
+    navigator.clipboard.writeText(text).then(() => showToast('Nomes copiados!', 'success'));
+  });
 
   // Render mini trend chart
   if (trendData.length > 1) {

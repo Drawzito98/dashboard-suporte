@@ -63,6 +63,60 @@
   letter-spacing: 0.06em;
 }
 
+/* Clickable KPI */
+.home-kpi-clickable {
+  cursor: pointer;
+  position: relative;
+}
+.home-kpi-clickable:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px -4px rgba(37,99,235,0.15);
+}
+.home-kpi-clickable:active {
+  transform: scale(0.98);
+}
+.home-kpi-hint {
+  font-size: 10px;
+  color: var(--accent);
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity var(--t-fast);
+  margin-top: 2px;
+}
+.home-kpi-clickable:hover .home-kpi-hint {
+  opacity: 1;
+}
+
+/* Colab list modal */
+.home-colab-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  transition: background var(--t-fast);
+}
+.home-colab-item:hover {
+  background: var(--bg-subtle);
+}
+.home-colab-item + .home-colab-item {
+  border-top: 1px solid var(--border);
+}
+.home-colab-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.home-colab-setor {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Sections */
 .home-section {
   margin-bottom: var(--s-6);
