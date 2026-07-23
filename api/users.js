@@ -57,7 +57,7 @@ module.exports = async (req, res) => {
 
     // POST: criar usuário
     if (req.method === 'POST') {
-      const { email, password, role, csv_nome, csv_setor } = req.body || {};
+      const { email, password, role, csv_nome, csv_setor, name } = req.body || {};
       if (!email || !password) {
         return res.status(400).json({ error: 'Email e senha obrigatórios' });
       }
@@ -65,6 +65,7 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
       }
       const user_metadata = { role: role || 'viewer' };
+      if (name) user_metadata.name = name;
       if (csv_nome) user_metadata.csv_nome = csv_nome;
       if (csv_setor) user_metadata.csv_setor = csv_setor;
       const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
@@ -87,7 +88,7 @@ module.exports = async (req, res) => {
 
     // PUT/PATCH: atualizar senha, cargo e/ou status
     if (req.method === 'PUT' || req.method === 'PATCH') {
-      const { id, password, role, ativo } = req.body || {};
+      const { id, password, role, ativo, name } = req.body || {};
       if (!id) {
         return res.status(400).json({ error: 'ID do usuário obrigatório' });
       }
@@ -113,6 +114,7 @@ module.exports = async (req, res) => {
       const newMeta = { ...currentMeta };
       if (role !== undefined) newMeta.role = role;
       if (ativo !== undefined) newMeta.ativo = ativo;
+      if (name !== undefined) newMeta.name = name;
 
       const body = { user_metadata: newMeta };
       if (password) body.password = password;

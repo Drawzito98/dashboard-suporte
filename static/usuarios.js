@@ -46,11 +46,12 @@ async function carregarUsuarios() {
 
     const html = [
       '<div class="table-wrap"><table><thead><tr>',
-      '<th>Email</th><th>Cargo</th><th>Criado em</th><th>Ações</th>',
+      '<th>Nome</th><th>Email</th><th>Cargo</th><th>Criado em</th><th>Ações</th>',
       '</tr></thead><tbody>',
       ...users.map(u => {
         const created = u.created_at ? new Date(u.created_at).toLocaleString('pt-BR') : '-';
         const email = u.email || u.id;
+        const name = u.user_metadata?.name || '';
         const role = u.user_metadata?.role || 'admin';
         const isYou = email === currentEmail;
         const roleLabel = role === 'admin' ? 'Admin' : role === 'colaborador' ? 'Colaborador' : 'Visualizador';
@@ -59,10 +60,12 @@ async function carregarUsuarios() {
         const csvSetor = u.user_metadata?.csv_setor || '';
 
         return `<tr>
+          <td>${escapeHtml(name) || '<span style="color:var(--text-muted);font-style:italic">—</span>'}</td>
           <td>${escapeHtml(email)}${isYou ? ' <strong>(você)</strong>' : ''}</td>
           <td><span class="role-badge role-${role}">${roleLabel}</span></td>
           <td>${created}</td>
           <td style="display:flex;gap:4px;flex-wrap:wrap">
+            <button class="btn-small btn-edit-name" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-name="${escapeHtml(name)}" style="font-size:11px">✏️ Nome</button>
             <button class="btn-small btn-reset-pwd" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔑 Senha</button>
             ${role === 'colaborador' && !isSelf ? `<button class="btn-small btn-csv-map" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-csv-nome="${escapeHtml(csvNome)}" data-csv-setor="${escapeHtml(csvSetor)}" style="font-size:11px">📋 Vincular CSV</button>` : ''}
             ${!isSelf ? `<button class="btn-small btn-reset-default" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔢 Padrão</button>` : ''}
@@ -77,6 +80,37 @@ async function carregarUsuarios() {
     ].join('');
 
     container.innerHTML = html;
+
+    // Edit name
+    container.querySelectorAll('.btn-edit-name').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!requireAdmin()) return;
+        const id = btn.dataset.id;
+        const currentName = btn.dataset.name || '';
+        const newName = prompt('Nome do usuário:', currentName);
+        if (newName === null) return;
+        if (!newName.trim()) { showToast('Nome não pode ficar vazio.', 'error'); return; }
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/users', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
+            body: JSON.stringify({ id, name: newName.trim() })
+          });
+          if (res.ok) {
+            showToast('Nome atualizado!', 'success');
+            carregarUsuarios();
+          } else {
+            const d = await res.json();
+            showToast(d.error || 'Erro ao atualizar nome', 'error');
+            btn.disabled = false;
+          }
+        } catch (e) {
+          showToast('Erro de conexão', 'error');
+          btn.disabled = false;
+        }
+      });
+    });
 
     // Password reset default
     container.querySelectorAll('.btn-reset-default').forEach(btn => {
@@ -234,6 +268,10 @@ function renderUsuariosAba() {
   container.innerHTML = `
     <div class="form-stack" style="max-width:500px;margin-bottom:var(--s-6)">
       <h3 style="margin:0 0 var(--s-3)">Criar novo usuário</h3>
+      <label class="field">
+        <span>Nome</span>
+        <input id="novoUserName" type="text" placeholder="Nome do usuário" />
+      </label>
       <label class="field">
         <span>Email</span>
         <input id="novoUserEmail" type="email" placeholder="email@exemplo.com" />
@@ -399,7 +437,9 @@ function renderUsuariosAba() {
     btn.textContent = 'Criando...';
 
     try {
+      const name = document.getElementById('novoUserName')?.value.trim() || '';
       const body = { email, password, role };
+      if (name) body.name = name;
       if (role === 'colaborador') {
         const csvNome = document.getElementById('novoUserCsvColab')?.value || '';
         if (csvNome) body.csv_nome = csvNome;
@@ -415,6 +455,7 @@ function renderUsuariosAba() {
         okEl.classList.remove('hidden');
         document.getElementById('novoUserEmail').value = '';
         document.getElementById('novoUserPassword').value = '';
+        document.getElementById('novoUserName').value = '';
         document.getElementById('novoUserCsvColab').value = '';
         carregarUsuarios();
       } else {
