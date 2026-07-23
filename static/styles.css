@@ -16,22 +16,22 @@ button svg, .btn-small svg, .btn-primary svg {
 
 /* ===== Tokens ===== */
 :root {
-  /* Surfaces — neutros suaves */
-  --bg-app:        #f4f6fb;
-  --bg-canvas:     #ffffff;
-  --bg-surface:    #ffffff;
-  --bg-subtle:     #f1f4f9;
-  --bg-inset:      #f8fafc;
+  /* Surfaces — neutros suaves (warm tint) */
+  --bg-app:        #f5f3ef;
+  --bg-canvas:     #fdfcf9;
+  --bg-surface:    #fdfcf9;
+  --bg-subtle:     #f0ede8;
+  --bg-inset:      #f7f5f1;
 
   /* Texto */
-  --text-strong:   #0f172a;
-  --text-primary:  #1f2937;
-  --text-secondary:#334155;
-  --text-muted:    #94a3b8;
+  --text-strong:   #1a1814;
+  --text-primary:  #2c2924;
+  --text-secondary:#4a4540;
+  --text-muted:    #9c9590;
 
   /* Bordas */
-  --border:        #e2e8f0;
-  --border-strong: #cbd5e1;
+  --border:        #e4e0da;
+  --border-strong: #ccc7bf;
 
   /* Accent único */
   --accent:        #2563eb;
@@ -150,8 +150,8 @@ button svg, .btn-small svg, .btn-primary svg {
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "ss01", "cv11";
 
-  --text:              #1f2937;
-  --bg-card:           #ffffff;
+  --text:              #2c2924;
+  --bg-card:           #fdfcf9;
 }
 
 /* ===== Dark — grafite elegante ===== */
@@ -1026,7 +1026,7 @@ html[data-theme="dark"] .kpi-drill-overlay { background: rgba(0,0,0,0.55); }
 .loading-overlay {
   position: fixed; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(245, 247, 250, 0.7);
+  background: rgba(245, 243, 239, 0.7);
   backdrop-filter: blur(4px);
   z-index: 9998;
 }
