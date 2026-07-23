@@ -188,8 +188,8 @@
 
     // Get available months from data
     const months = new Set();
-    if (window.rawRecords) {
-      window.rawRecords.forEach(r => {
+    if (rawRecords) {
+      rawRecords.forEach(r => {
         if (r.data) {
           const d = new Date(r.data + 'T12:00:00');
           months.add(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
@@ -199,9 +199,9 @@
     const sorted = Array.from(months).sort().reverse();
 
     function getDataForMonth(ym) {
-      if (!window.rawRecords) return null;
+      if (!rawRecords) return null;
       const [y, m] = ym.split('-').map(Number);
-      return window.rawRecords.filter(r => {
+      return rawRecords.filter(r => {
         if (!r.data) return false;
         const d = new Date(r.data + 'T12:00:00');
         return d.getFullYear() === y && (d.getMonth() + 1) === m;
@@ -352,7 +352,7 @@
     const hasFilter = activeMonths.length > 0;
 
     // Filter data using the same logic as updateView
-    const monthData = (window.rawRecords || []).filter(r => {
+    const monthData = (rawRecords || []).filter(r => {
       if (!r || !r['Mês']) return false;
       // If filter is active, only show selected months
       if (hasFilter && !activeMonths.includes(String(r['Mês']))) return false;
@@ -371,7 +371,7 @@
       label = sorted.length === 1 ? sorted[0] : `${sorted[0]} → ${sorted[sorted.length - 1]}`;
     } else {
       // No filter — show all data label
-      const allMonths = [...new Set((window.rawRecords || []).map(r => r['Mês']).filter(Boolean))].sort();
+      const allMonths = [...new Set((rawRecords || []).map(r => r['Mês']).filter(Boolean))].sort();
       if (allMonths.length) {
         label = allMonths.length === 1 ? allMonths[0] : `${allMonths[0]} → ${allMonths[allMonths.length - 1]}`;
       } else {
