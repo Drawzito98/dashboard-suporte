@@ -27,31 +27,6 @@ function renderHome() {
     pendingTasks = tarefas.filter(t => t.status === 'pendente').length;
   } catch (e) {}
 
-  // Top 3 ranking
-  let top3 = [];
-  try {
-    if (typeof getOverallRanking === 'function' && records.length) {
-      const ranking = getOverallRanking(records.filter(r => !isAggregateName(r['Atendente'])));
-      top3 = ranking.slice(0, 3);
-    }
-  } catch (e) {}
-
-  // Alerts: colabs with score < 4.5 last month
-  const alerts = [];
-  if (lastMonth) {
-    const colabScores = {};
-    lastMonthRecords.forEach(r => {
-      const name = r['Atendente'];
-      if (!name || isAggregateName(name)) return;
-      if (!colabScores[name]) colabScores[name] = [];
-      colabScores[name].push(Number(r['SCORE'] || 0));
-    });
-    Object.entries(colabScores).forEach(([name, scores]) => {
-      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-      if (avg > 0 && avg < 4.5) alerts.push({ name, avg: avg.toFixed(2) });
-    });
-  }
-
   // Monthly trend data (last 6 months)
   const trendMonths = meses.slice(-6);
   const trendData = trendMonths.map(m => {
@@ -61,20 +36,6 @@ function renderHome() {
       : 0;
     return { month: m, avg: Number(avg.toFixed(2)), total: monthRecs.reduce((s, r) => s + Number(r['Finalizados'] || 0), 0) };
   });
-
-  // Best improver: biggest score increase from prev to last month
-  let bestImprover = null;
-  if (lastMonth && prevMonth) {
-    let maxDelta = -Infinity;
-    uniqueColabs.forEach(name => {
-      const cur = lastMonthRecords.filter(r => r['Atendente'] === name);
-      const prev = records.filter(r => r['Mês'] === prevMonth && r['Atendente'] === name);
-      const curAvg = cur.length ? cur.reduce((s, r) => s + Number(r['SCORE'] || 0), 0) / cur.length : 0;
-      const prevAvg = prev.length ? prev.reduce((s, r) => s + Number(r['SCORE'] || 0), 0) / prev.length : 0;
-      const delta = curAvg - prevAvg;
-      if (delta > maxDelta && curAvg > 0) { maxDelta = delta; bestImprover = { name, delta: delta.toFixed(2) }; }
-    });
-  }
 
   // Recent activity from historico
   let recentActivity = [];
@@ -153,59 +114,7 @@ function renderHome() {
     </div>
   </div>`;
 
-  // ── Section 3: Monthly Highlights ──
-  if (top3.length > 0 || bestImprover || alerts.length > 0) {
-    html += `<div class="home-section">
-      <h3 class="home-section-title">Destaques do mês · ${lastMonth || '—'}</h3>
-      <div class="home-highlights-grid">`;
-
-    // Mini podium
-    if (top3.length > 0) {
-      html += `<div class="home-highlight-card home-podium-card">
-        <div class="home-highlight-header">🏆 Ranking</div>
-        <div class="home-mini-podium">`;
-      const medals = ['🥇', '🥈', '🥉'];
-      const medalClasses = ['gold', 'silver', 'bronze'];
-      top3.forEach((item, i) => {
-        html += `<div class="home-mini-podium-item ${medalClasses[i]}">
-          <span class="home-mini-medal">${medals[i]}</span>
-          <span class="home-mini-name">${escapeHtml(item.name)}</span>
-          <span class="home-mini-score">${item.score.total.toFixed(1)} pts</span>
-        </div>`;
-      });
-      html += `</div></div>`;
-    }
-
-    // Best improver
-    if (bestImprover && Number(bestImprover.delta) > 0) {
-      html += `<div class="home-highlight-card home-improver-card">
-        <div class="home-highlight-header">📈 Maior melhoria</div>
-        <div class="home-improver-content">
-          <span class="home-improver-name">${escapeHtml(bestImprover.name)}</span>
-          <span class="home-improver-delta">+${bestImprover.delta} pts</span>
-        </div>
-      </div>`;
-    }
-
-    // Alerts
-    if (alerts.length > 0) {
-      html += `<div class="home-highlight-card home-alert-card">
-        <div class="home-highlight-header">⚠️ Atenção</div>
-        <div class="home-alert-list">`;
-      alerts.slice(0, 3).forEach(a => {
-        html += `<div class="home-alert-item">
-          <span class="home-alert-name">${escapeHtml(a.name)}</span>
-          <span class="home-alert-score score-critico">★ ${a.avg}</span>
-        </div>`;
-      });
-      if (alerts.length > 3) html += `<div class="home-alert-more">+${alerts.length - 3} mais</div>`;
-      html += `</div></div>`;
-    }
-
-    html += `</div></div>`;
-  }
-
-  // ── Section 4: Recent Activity ──
+  // ── Section 3: Recent Activity ──
   if (recentActivity.length > 0) {
     html += `<div class="home-section">
       <h3 class="home-section-title">Atividade recente</h3>
