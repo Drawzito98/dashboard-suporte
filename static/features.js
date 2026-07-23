@@ -380,7 +380,6 @@
     }
 
     // Calculate stats
-    const ranking = window.getOverallRanking ? window.getOverallRanking(monthData) : [];
     const total = monthData.length;
     const setores = {};
     let totalScore = 0, scored = 0;
@@ -397,6 +396,21 @@
     const totalFin = monthData.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
     const totalAss = monthData.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
 
+    // Best collaborator by average SCORE
+    const colabScores = {};
+    monthData.forEach(r => {
+      const name = r['Atendente'];
+      const sc = r['SCORE'];
+      if (name && sc != null && !isNaN(Number(sc))) {
+        if (!colabScores[name]) colabScores[name] = { total: 0, count: 0 };
+        colabScores[name].total += Number(sc);
+        colabScores[name].count++;
+      }
+    });
+    const colabAvg = Object.entries(colabScores)
+      .map(([name, s]) => ({ name, avg: s.total / s.count }))
+      .sort((a, b) => b.avg - a.avg);
+
     // Build summary text
     const lines = [];
     lines.push(`📊 Resumo — ${label}`);
@@ -404,8 +418,8 @@
     lines.push(`📋 Total de registros: ${total}`);
     lines.push(`⭐ Score médio: ${avgScore}`);
     lines.push(`✅ Finalizados: ${totalFin}  |  📥 Assumidos: ${totalAss}`);
-    if (ranking.length) {
-      lines.push(`🏆 Melhor: ${ranking[0].name} (score ${ranking[0].score.total})`);
+    if (colabAvg.length) {
+      lines.push(`🏆 Melhor score: ${colabAvg[0].name} (${colabAvg[0].avg.toFixed(2)})`);
     }
     if (topSetor) {
       lines.push(`🏢 Setor com mais demandas: ${topSetor[0]} (${topSetor[1]} registros)`);
