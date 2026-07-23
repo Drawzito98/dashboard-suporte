@@ -3418,3 +3418,174 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   height: 18px;
   accent-color: var(--accent);
 }
+
+/* ═══════════════════════════════════════════
+   FEATURES: Search, Export, Compare, Summary
+   ═══════════════════════════════════════════ */
+
+/* Global Search */
+.global-search-wrapper {
+  position: relative;
+  margin: var(--s-3) var(--s-4);
+  z-index: 50;
+}
+.global-search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 var(--s-3);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.global-search-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
+}
+.global-search-box svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.global-search-box input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 0;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+}
+.global-search-box input::placeholder { color: var(--muted); }
+.global-search-hint {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--muted);
+}
+.global-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.global-search-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 10px var(--s-4);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.global-search-item:last-child { border-bottom: none; }
+.global-search-item:hover { background: var(--bg); }
+.global-search-item-type { font-size: 18px; flex-shrink: 0; }
+.global-search-item-info { flex: 1; min-width: 0; }
+.global-search-item-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.global-search-item-detail { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.global-search-item-label { font-size: 11px; color: var(--muted); background: var(--bg); padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+.global-search-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Action buttons in toolbar (export, compare, summary) */
+.export-png-btn,
+.compare-months-btn,
+.monthly-summary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.export-png-btn:hover,
+.compare-months-btn:hover,
+.monthly-summary-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.15);
+}
+.export-png-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+.export-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Compare months modal */
+.compare-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.compare-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.compare-stat:last-child { border-bottom: none; }
+.compare-stat span { color: var(--muted); }
+.compare-stat strong { color: var(--text); }
+.compare-diff-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.compare-diff-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Monthly summary modal */
+.summary-text {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+}

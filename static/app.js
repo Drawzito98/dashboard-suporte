@@ -2,7 +2,7 @@
 function q(sel, root = document) { return root.querySelector(sel); }
 function qa(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
 
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.6.0';
 
 // Perfis (Google Docs) — loaded from static/perfis.js (works on file://)
 const INACTIVE_COLABS_KEY = 'sistema_inactive_colabs_v1';
@@ -381,6 +381,10 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
+  // Ignore when typing in inputs
+  const tag = e.target.tagName;
+  const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable;
+
   if (e.key === 'Escape') {
     closeManageColabs(); closeManageSetores();
     if (typeof closeHistorico === 'function') closeHistorico();
@@ -394,7 +398,35 @@ document.addEventListener('keydown', (e) => {
     if (colabOverlay) colabOverlay.style.display = 'none';
     const reportOverlay = document.getElementById('colabReportOverlay');
     if (reportOverlay) reportOverlay.style.display = 'none';
+    // Close any open modal
+    document.querySelectorAll('.modal-overlay').forEach(m => { m.style.display = 'none'; });
   }
+
+  // Keyboard shortcuts (only when not in input)
+  if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    const tabOrder = ['home','dashboard','relatorio-setorial','gamificacao','tarefas','colaboradores','lider','insights','avaliacao'];
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= tabOrder.length) {
+      e.preventDefault();
+      const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabOrder[num - 1]}"]`);
+      if (tabBtn) tabBtn.click();
+      return;
+    }
+    // ? opens help
+    if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+      e.preventDefault();
+      if (typeof showShortcutsHelp === 'function') showShortcutsHelp();
+      return;
+    }
+    // / focuses global search
+    if (e.key === '/') {
+      e.preventDefault();
+      const searchInput = document.getElementById('globalSearchInput');
+      if (searchInput) searchInput.focus();
+      return;
+    }
+  }
+
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault();
     const avaliacaoForm = document.getElementById('avaliacaoForm');
@@ -3375,9 +3407,18 @@ function setCaretToEnd(el) {
     else setTheme('light');
     document.querySelectorAll('.theme-toggle').forEach(function(btn){
       btn.addEventListener('click', function(){
+        // Manual toggle — save preference
         setTheme(getTheme() === 'dark' ? 'light' : 'dark');
       });
     });
+    // Auto-switch: follow system when no manual preference saved
+    if (window.matchMedia) {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      mq.addEventListener('change', function(ev) {
+        const savedNow = localStorage.getItem('theme');
+        if (!savedNow) setTheme(ev.matches ? 'dark' : 'light');
+      });
+    }
     setTimeout(updateTarefasBadge, 100);
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
