@@ -1,141 +1,10 @@
-// DOM helpers (hoisted)
-function q(sel, root = document) { return root.querySelector(sel); }
-function qa(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
+// DOM helpers, escapeHtml → static/dom-helpers.js
+// Inactive colabs/setores → static/inactive-state.js
+// Colab fotos/avatar → static/colab-fotos.js
 
 const APP_VERSION = '1.7.0';
 
-// Perfis (Google Docs) — loaded from static/perfis.js (works on file://)
-const INACTIVE_COLABS_KEY = 'sistema_inactive_colabs_v1';
-const DEFAULT_INACTIVE = ['Caio', 'Carina', 'Diogo', 'Gabriel', 'Jessé', 'Joyce', 'Maxsuel', 'Victor'];
-
-function getInactiveColabs() {
-  if (!window.__inactiveColabs) {
-    try {
-      const raw = localStorage.getItem(INACTIVE_COLABS_KEY);
-      if (raw) {
-        window.__inactiveColabs = new Set(JSON.parse(raw));
-      } else {
-        window.__inactiveColabs = new Set(DEFAULT_INACTIVE);
-        localStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify(DEFAULT_INACTIVE));
-      }
-    } catch (e) {
-      window.__inactiveColabs = new Set(DEFAULT_INACTIVE);
-    }
-  }
-  return window.__inactiveColabs;
-}
-
-function saveInactiveColabs() {
-  try {
-    localStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify([...getInactiveColabs()]));
-  } catch (e) {}
-  if (typeof dbInativosSave === 'function') {
-    dbInativosSave(getInactiveColabs());
-  }
-}
-
-function setColabActive(name, active) {
-  if (!requireAdmin()) return;
-  const set = getInactiveColabs();
-  if (active) set.delete(name);
-  else set.add(name);
-  saveInactiveColabs();
-}
-
-function isColabActive(name) {
-  return !getInactiveColabs().has(name);
-}
-
-// ─── SETORES INATIVOS ─────────────────────────────────────
-
-const INACTIVE_SETORES_KEY = 'sistema_inactive_setores_v1';
-
-function getInactiveSetores() {
-  if (!window.__inactiveSetores) {
-    try {
-      const raw = localStorage.getItem(INACTIVE_SETORES_KEY);
-      if (raw) {
-        window.__inactiveSetores = new Set(JSON.parse(raw));
-      } else {
-        window.__inactiveSetores = new Set();
-        localStorage.setItem(INACTIVE_SETORES_KEY, JSON.stringify([]));
-      }
-    } catch (e) {
-      window.__inactiveSetores = new Set();
-    }
-  }
-  return window.__inactiveSetores;
-}
-
-function saveInactiveSetores() {
-  try {
-    localStorage.setItem(INACTIVE_SETORES_KEY, JSON.stringify([...getInactiveSetores()]));
-  } catch (e) {}
-  if (typeof dbSetorInativosSave === 'function') {
-    dbSetorInativosSave(getInactiveSetores());
-  }
-}
-
-function setSetorActive(name, active) {
-  if (!requireAdmin()) return;
-  const set = getInactiveSetores();
-  if (active) set.delete(name);
-  else set.add(name);
-  saveInactiveSetores();
-}
-
-function isSetorActive(name) {
-  return !getInactiveSetores().has(name);
-}
-
-// Foto do colaborador (URL-based, localStorage)
-const COLAB_FOTOS_KEY = 'sistema_colab_fotos_v1';
-
-function getColabFoto(name) {
-  if (!name) return '';
-  try {
-    const raw = localStorage.getItem(COLAB_FOTOS_KEY);
-    const map = raw ? JSON.parse(raw) : {};
-    const url = map[name] || '';
-    return normalizeFotoUrl(url);
-  } catch (e) { return ''; }
-}
-
-function normalizeFotoUrl(url) {
-  if (!url) return '';
-  // Google Drive: /file/d/XXXX/view
-  let m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`;
-  // Google Drive: uc?export=view&id=XXXX (already converted)
-  m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`;
-  return url;
-}
-
-function setColabFoto(name, url) {
-  try {
-    const raw = localStorage.getItem(COLAB_FOTOS_KEY);
-    const map = raw ? JSON.parse(raw) : {};
-    if (url) map[name] = normalizeFotoUrl(url);
-    else delete map[name];
-    localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
-  } catch (e) {}
-  if (typeof dbFotoSave === 'function') {
-    const finalUrl = url ? normalizeFotoUrl(url) : '';
-    dbFotoSave(name, finalUrl);
-  }
-}
-
-function colabAvatarHtml(name, size = 32) {
-  if (!name) return '';
-  const foto = getColabFoto(name);
-  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-  const initialsHtml = `<span style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:var(--bg-inset);color:var(--text-secondary);font-size:${size * 0.4}px;font-weight:600;vertical-align:middle;flex-shrink:0">${escapeHtml(initials)}</span>`;
-  if (foto) {
-    return `<span style="display:inline-flex;position:relative;vertical-align:middle">${initialsHtml}<img src="${escapeHtml(foto)}" alt="${escapeHtml(name)}" style="position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.style.display='none'"/></span>`;
-  }
-  return initialsHtml;
-}
+// Foto do colaborador → static/colab-fotos.js
 
 async function cleanDuplicates() {
   const seen = new Map();
@@ -454,66 +323,7 @@ function getPerfilDocsLink(nomeAtendente) {
   return "";
 }
 
-// UX helpers: toast + loading + empty state
-function showToast(message, type = 'success', title = null, timeout = 2800) {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `
-    <div class="dot" aria-hidden="true"></div>
-    <div style="flex:1;min-width:0">
-      <p class="toast-title">${(title || (type === 'error' ? 'Atenção' : 'Tudo certo'))}</p>
-      <p class="toast-msg">${String(message || '')}</p>
-    </div>
-    <button class="toast-close" type="button" aria-label="Fechar notificação">&times;</button>
-    <div class="toast-progress" style="animation-duration:${timeout}ms"></div>
-  `;
-  container.appendChild(toast);
-  let remaining = timeout;
-  let start = Date.now();
-  let timer;
-  function dismiss() {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(-4px)';
-    toast.style.transition = 'opacity .18s ease, transform .18s ease';
-    setTimeout(() => toast.remove(), 220);
-  }
-  function schedule() {
-    start = Date.now();
-    timer = setTimeout(dismiss, remaining);
-  }
-  toast.querySelector('.toast-close').addEventListener('click', () => { clearTimeout(timer); dismiss(); });
-  toast.addEventListener('mouseenter', () => { clearTimeout(timer); remaining -= (Date.now() - start); });
-  toast.addEventListener('mouseleave', () => { schedule(); });
-  schedule();
-}
-
-function setLoading(isOn, text = 'Processando…') {
-  const overlay = document.getElementById('loadingOverlay');
-  if (!overlay) return;
-  const label = overlay.querySelector('.loading-text');
-  if (label) label.textContent = text || 'Processando…';
-  overlay.classList.toggle('hidden', !isOn);
-}
-
-function setGlobalEmpty(isEmpty) {
-  const el = document.getElementById('globalEmptyState');
-  if (!el) return;
-  el.classList.toggle('hidden', !isEmpty);
-}
-
-
-let __isImporting = false;
-function setImportStatus(msg) {
-  const el = q('#importStatus');
-  if (!el) return;
-  el.textContent = msg || '';
-}
-
-function isChartAvailable() {
-  return (typeof Chart !== 'undefined') && Chart && (typeof Chart === 'function' || typeof Chart === 'object');
-}
+// UX helpers (toast, loading, empty) → static/ux-helpers.js
 
 // App logic: parse CSV, populate filters, draw chart
 let rawRecords = [];
@@ -949,78 +759,7 @@ function normalizeNameForDedup(n) {
 }
 
 
-function getActiveMonths() {
-  if (mesSelect && mesSelect.value === '__multi__') {
-    return Array.isArray(selectedMonths) ? selectedMonths.filter(Boolean) : [];
-  }
-  if (mesSelect && mesSelect.value && mesSelect.value !== 'all') return [mesSelect.value];
-  return [];
-}
-
-function monthFilterActive() {
-  return getActiveMonths().length > 0;
-}
-
-function monthMatches(value) {
-  const months = getActiveMonths();
-  if (!months.length) return true;
-  return months.includes(String(value));
-}
-
-function getMonthScopeLabel() {
-  const months = getActiveMonths().slice().sort();
-  if (!months.length) return 'Todos';
-  if (months.length === 1) return months[0];
-  return `${months[0]} → ${months[months.length - 1]} (${months.length} meses)`;
-}
-
-function syncMonthPickerVisibility() {
-  if (!monthPicker || !mesSelect) return;
-  monthPicker.classList.toggle('hidden', mesSelect.value !== '__multi__');
-}
-
-function renderMonthChips() {
-  if (!monthChips) return;
-  if (!selectedMonths.length) {
-    monthChips.innerHTML = '<span class="badge">Nenhum mês marcado</span>';
-    return;
-  }
-  monthChips.innerHTML = selectedMonths.slice().sort().map(m => `<span class="chip">${escapeHtml(m)} <button data-month="${escapeHtml(m)}" class="chip-remove">×</button></span>`).join(' ');
-  Array.from(monthChips.querySelectorAll('.chip-remove')).forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const val = e.target.getAttribute('data-month');
-      selectedMonths = selectedMonths.filter(m => m !== val);
-      const checkbox = monthChecklist && monthChecklist.querySelector(`input[value="${CSS.escape(val)}"]`);
-      if (checkbox) checkbox.checked = false;
-      renderMonthChips();
-      updateFilterOptions();
-      updateView();
-    });
-  });
-}
-
-function renderMonthPickerOptions() {
-  if (!monthChecklist) return;
-  const meses = uniqueSorted(rawRecords.map(r => r['Mês']));
-  monthChecklist.innerHTML = meses.map(m => `
-<label class="month-option"><input type="checkbox" class="month-checkbox" value="${escapeHtml(m)}" ${selectedMonths.includes(m) ? 'checked' : ''}/><span>${escapeHtml(m)}</span></label>`).join('');
-  monthChecklist.querySelectorAll('.month-checkbox').forEach(chk => {
-    chk.addEventListener('change', (e) => {
-      const val = String(e.target.value);
-      if (e.target.checked) {
-        if (!selectedMonths.includes(val)) selectedMonths.push(val);
-      } else {
-        selectedMonths = selectedMonths.filter(m => m !== val);
-      }
-      selectedMonths.sort();
-      renderMonthChips();
-      updateFilterOptions();
-      updateView();
-    });
-  });
-  renderMonthChips();
-  syncMonthPickerVisibility();
-}
+// Month filters → static/month-filters.js
 
 function buildAliasMap(names) {
   const uniq = Array.from(new Set((names || []).filter(Boolean).map(n => String(n)))).sort((a,b) => a.localeCompare(b, 'pt-BR'));
@@ -1176,16 +915,7 @@ function fillSelect(select, values, opts = {}) {
 }
 
 
-function escapeHtml(s) {
-  if (s == null) return '';
-  // Important: this is used both for HTML text and for attribute values.
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+// escapeHtml → static/dom-helpers.js
 
 /**
  * Bridge: sincroniza globalFilters → elementos legados da sidebar + estado
