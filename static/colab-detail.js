@@ -181,7 +181,7 @@ function renderColabDetailChart(monthlyData) {
   const scores = monthlyData.map(m => m.score);
 
   if (window.__colabDetailChart) {
-    try { window.__colabDetailChart.destroy(); } catch (e) {}
+    try { window.__colabDetailChart.destroy(); } catch (e) { console.warn('[ColabDetail] Erro ao destruir chart:', e); }
   }
 
   window.__colabDetailChart = new Chart(ctx, {

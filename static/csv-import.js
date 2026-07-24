@@ -183,6 +183,44 @@ async function importCsvFiles(fileList) {
       return;
     }
 
+    // Validate before import
+    if (typeof CSVValidator !== 'undefined') {
+      const allFields = [];
+      for (const item of parsed) {
+        const fields = item.results?.meta?.fields || [];
+        fields.forEach(f => { if (!allFields.includes(f)) allFields.push(f); });
+      }
+      const valResult = CSVValidator.validate(merged, allFields);
+      const reportHtml = CSVValidator.formatReport(valResult);
+
+      if (!valResult.valid) {
+        showImportError('Validação falhou:<br><br>' + reportHtml);
+        return;
+      }
+
+      // Show validation report and ask for confirmation if there are warnings
+      if (valResult.warnings.length > 0) {
+        const confirmed = await new Promise(resolve => {
+          const overlay = document.createElement('div');
+          overlay.className = 'modal-overlay';
+          overlay.innerHTML = `
+            <div class="modal-box csv-validation-modal">
+              <h3>Validação do CSV</h3>
+              <div class="csv-validation-report">${reportHtml}</div>
+              <div class="modal-actions">
+                <button class="btn-cancel" id="csvValCancel">Cancelar</button>
+                <button class="btn-primary" id="csvValConfirm">Importar Mesmo Assim</button>
+              </div>
+            </div>`;
+          document.body.appendChild(overlay);
+          overlay.querySelector('#csvValCancel').onclick = () => { overlay.remove(); resolve(false); };
+          overlay.querySelector('#csvValConfirm').onclick = () => { overlay.remove(); resolve(true); };
+          overlay.addEventListener('click', e => { if (e.target === overlay) { overlay.remove(); resolve(false); } });
+        });
+        if (!confirmed) return;
+      }
+    }
+
     rawRecords = normalizeAtendenteOnRecords(merged);
     if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
     setGlobalEmpty(false);

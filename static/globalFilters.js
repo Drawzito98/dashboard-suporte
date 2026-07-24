@@ -83,7 +83,7 @@ const globalFilters = {
         mesesSelecionados: this.mesesSelecionados
       };
       localStorage.setItem(GLOBAL_FILTERS_KEY, JSON.stringify(obj));
-    } catch (e) {}
+    } catch (e) { console.warn('[GlobalFilters] Erro:', e); }
   },
 
   carregar() {
@@ -95,7 +95,7 @@ const globalFilters = {
           if (k in this) this[k] = obj[k];
         });
       }
-    } catch (e) {}
+    } catch (e) { console.warn('[GlobalFilters] Erro:', e); }
   },
 
   limpar() {

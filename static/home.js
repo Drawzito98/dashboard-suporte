@@ -42,7 +42,7 @@ function renderHome() {
     const tarefas = JSON.parse(localStorage.getItem('sistema_tarefas_v1') || '[]');
     pendingTaskList = tarefas.filter(t => t.status === 'pendente');
     pendingTasks = pendingTaskList.length;
-  } catch (e) {}
+  } catch (e) { console.error('[Home] Erro:', e); }
 
   // Score by collaborator (last month)
   const scoreByColab = {};
@@ -76,7 +76,7 @@ function renderHome() {
     if (typeof dbHistoricoLoad === 'function') {
       recentActivity = dbHistoricoLoad().slice(-5).reverse();
     }
-  } catch (e) {}
+  } catch (e) { console.error('[Home] Erro:', e); }
 
   // Build HTML
   let html = '';

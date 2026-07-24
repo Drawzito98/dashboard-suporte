@@ -34,8 +34,8 @@
   }
 
   function salvarEstado() {
-    try { localStorage.setItem('mapeamento_time_dados', JSON.stringify(colaboradores)); } catch (e) {}
-    try { localStorage.setItem('mapeamento_time_next_id', String(proximoId)); } catch (e) {}
+    try { localStorage.setItem('mapeamento_time_dados', JSON.stringify(colaboradores)); } catch (e) { console.warn('[Mapeamento] Erro ao salvar dados:', e); }
+    try { localStorage.setItem('mapeamento_time_next_id', String(proximoId)); } catch (e) { console.warn('[Mapeamento] Erro ao salvar ID:', e); }
   }
 
   function carregarEstado() {
@@ -49,7 +49,7 @@
           if (nid) proximoId = parseInt(nid, 10) || colaboradores.length + 1;
         }
       }
-    } catch (e) {}
+    } catch (e) { console.error('[Mapeamento] Erro:', e); }
   }
 
   function render() {

@@ -156,7 +156,7 @@ async function exportPDFcomGrafico() {
         const imgH2 = (summaryCanvas.height / summaryCanvas.width) * imgW2;
         doc.addImage(imgData, 'PNG', 10, y, imgW2, Math.min(imgH2, 80));
         y += Math.min(imgH2, 80) + 5;
-      } catch (e) {}
+      } catch (e) { console.error('[Reports] Erro:', e); }
     }
 
     // Abre em nova aba para preview (não baixa automaticamente)

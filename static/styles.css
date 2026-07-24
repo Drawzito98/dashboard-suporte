@@ -190,6 +190,13 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-5) var(--s-6) var
   animation: tabFadeIn 0.2s ease;
 }
 .modal-box h3 { margin: 0 0 var(--s-4); font-size: 16px; }
+.modal-actions { display: flex; gap: var(--s-3); justify-content: flex-end; margin-top: var(--s-5); }
+.modal-actions .btn-cancel { background: var(--bg-hover); color: var(--text); border: 1px solid var(--border); padding: 6px 14px; border-radius: var(--r-md); cursor: pointer; font-size: 13px; }
+.modal-actions .btn-primary { background: var(--accent); color: var(--text-on-accent); border: none; padding: 6px 14px; border-radius: var(--r-md); cursor: pointer; font-size: 13px; }
+.csv-validation-modal { max-width: 560px; }
+.csv-validation-report { font-size: 13px; line-height: 1.6; max-height: 45vh; overflow-y: auto; padding: var(--s-3); background: var(--bg-surface); border-radius: var(--r-md); border: 1px solid var(--border); }
+.csv-val-error { color: var(--danger); font-weight: 600; display: block; margin-top: 4px; }
+.csv-val-warn { color: var(--warn-fg, #c98a1e); display: block; margin-top: 2px; }
 
 /* Notificações */
 .notif-badge {

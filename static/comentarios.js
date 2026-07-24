@@ -9,7 +9,7 @@ function getComentarios() {
 }
 
 function saveComentarios(map) {
-  try { localStorage.setItem(COMENTARIOS_KEY, JSON.stringify(map)); } catch (e) {}
+  try { localStorage.setItem(COMENTARIOS_KEY, JSON.stringify(map)); } catch (e) { console.warn('[Comentarios] Erro ao salvar:', e); }
 }
 
 function addComentario(mes, texto) {

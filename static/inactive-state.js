@@ -22,7 +22,7 @@ function getInactiveColabs() {
 function saveInactiveColabs() {
   try {
     localStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify([...getInactiveColabs()]));
-  } catch (e) {}
+  } catch (e) { console.error('[Inactive] Erro ao carregar estado:', e); }
   if (typeof dbInativosSave === 'function') {
     dbInativosSave(getInactiveColabs());
   }
@@ -63,7 +63,7 @@ function getInactiveSetores() {
 function saveInactiveSetores() {
   try {
     localStorage.setItem(INACTIVE_SETORES_KEY, JSON.stringify([...getInactiveSetores()]));
-  } catch (e) {}
+  } catch (e) { console.error('[Inactive] Erro ao salvar estado:', e); }
   if (typeof dbSetorInativosSave === 'function') {
     dbSetorInativosSave(getInactiveSetores());
   }

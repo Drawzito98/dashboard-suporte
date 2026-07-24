@@ -33,14 +33,14 @@ function loadScoringRules() {
         return;
       }
     }
-  } catch (e) {}
+  } catch (e) { console.error('[Scoring] Erro:', e); }
   scoringRules = JSON.parse(JSON.stringify(DEFAULT_SCORING_RULES));
 }
 
 function saveScoringRules() {
   try {
     localStorage.setItem(SCORING_STORAGE_KEY, JSON.stringify(scoringRules));
-  } catch (e) {}
+  } catch (e) { console.error('[Scoring] Erro:', e); }
   if (typeof dbScoringSave === 'function') {
     dbScoringSave(scoringRules);
   }

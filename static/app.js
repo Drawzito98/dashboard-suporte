@@ -441,7 +441,7 @@ function clearVisualsOnly() {
 
   // Destrói o gráfico para limpar a área
   if (chart) {
-    try { chart.destroy(); } catch (e) {}
+    try { chart.destroy(); } catch (e) { console.warn('[App] Erro ao destruir chart:', e); }
     chart = null;
   }
   // limpa canvas (fallback)
@@ -499,7 +499,7 @@ function getStateSnapshot() {
   // Compute scoring totals for cache
   let gamificationCacheData = null;
   if (typeof getOverallRanking === 'function' && rawRecords && rawRecords.length) {
-    try { gamificationCacheData = getOverallRanking(rawRecords).map(r => ({ name: r.name, score: r.score.total })); } catch(e) {}
+    try { gamificationCacheData = getOverallRanking(rawRecords).map(r => ({ name: r.name, score: r.score.total })); } catch(e) { console.error('[App] Erro ao atualizar cache gamificação:', e); }
   }
   return {
     version: 2,
@@ -543,7 +543,7 @@ function saveState() {
 }
 
 function clearSavedState() {
-  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) { console.warn('[App] Erro ao limpar storage:', e); }
   updateStorageUI(null);
 }
 
@@ -618,7 +618,7 @@ function sizeChartInnerForLabels(labelCount, perLabelPx){
     inner.style.minWidth = target + 'px';
     var cnv = document.getElementById('mainChart');
     if (cnv) { cnv.style.width = target + 'px'; }
-  }catch(e){}
+  }catch(e){ console.error('[App] Erro:', e); }
 }
 
 const valueLabelPlugin = {
@@ -710,7 +710,7 @@ if (emptyImportBtn) {
     try {
       const picker = document.getElementById('fileInput');
       picker && picker.click();
-    } catch (e) {}
+    } catch (e) { console.error('[App] Erro ao processar dados:', e); }
   });
 }
 
@@ -991,7 +991,7 @@ function updateView() {
     previewRows = [];
     setChartEmpty(true, 'Nenhum filtro aplicado ainda. Selecione um ou mais filtros para visualizar os indicadores.');
     if (chart) {
-      try { chart.destroy(); } catch (e) {}
+      try { chart.destroy(); } catch (e) { console.warn('[App] Erro ao destruir chart:', e); }
       chart = null;
     }
     return;
@@ -2370,9 +2370,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           await fetch('/api/users', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: user.id, role: 'viewer' })
-          });
-        } catch (e) {}
+          body: JSON.stringify({ id: user.id, role: 'viewer' })
+        });
+      } catch (e) { console.error('[App] Erro:', e); }
       }
       // Bloqueio: usuário não-admin com ativo=false não acessa o app
       if (user.user_metadata?.ativo === false && role !== 'admin') {
@@ -2586,7 +2586,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       rawRecords = deduplicateRecords(rawRecords);
       populateFilters(rawRecords);
       updateFilterOptions();
-      try { updateView(); } catch (e) {}
+      try { updateView(); } catch (e) { console.error('[App] Erro ao atualizar view:', e); }
       if (sbClient) showAppScreen();
       showToast(`${rawRecords.length} registro(s) offline carregados. Tente salvá-los novamente mais tarde.`, 'warn', 'Offline');
     } else {
@@ -2635,7 +2635,7 @@ if (openSavedBtn) openSavedBtn.addEventListener('click', async () => {
     setGlobalEmpty(false);
     populateFilters(rawRecords);
     updateFilterOptions();
-    try { updateView(); } catch (e) {}
+    try { updateView(); } catch (e) { console.error('[App] Erro ao atualizar view:', e); }
     clearSavedState();
     updateStorageUI('ok', null);
     showAppScreen();
@@ -2777,11 +2777,11 @@ if (!rawRecords || !rawRecords.length) {
 
       // Refresh chart if chart canvas was resized/hidden
       if (tab === 'dashboard' && chart) {
-        try { chart.resize(); } catch(e) {}
+        try { chart.resize(); } catch(e) { console.warn('[App] Erro ao redimensionar chart:', e); }
       }
 
       // Persist active tab
-      try { localStorage.setItem('sistema_active_tab', tab); } catch(e) {}
+      try { localStorage.setItem('sistema_active_tab', tab); } catch(e) { console.warn('[App] Erro ao salvar aba:', e); }
     });
 
     // Presentation exit button
@@ -2911,7 +2911,7 @@ if (!rawRecords || !rawRecords.length) {
         if (btn) btn.click();
       }
     }
-  } catch(e) {}
+  } catch(e) { console.error('[App] Erro:', e); }
 
   // ===== Initialize Scoring Rules UI =====
   if (typeof renderScoringRules === 'function') {
@@ -3093,7 +3093,7 @@ function setCaretToEnd(el) {
   }
   function setTheme(t){
     document.documentElement.setAttribute('data-theme', t);
-    try { localStorage.setItem('theme', t); } catch(e) {}
+    try { localStorage.setItem('theme', t); } catch(e) { console.warn('[App] Erro ao salvar tema:', e); }
     if (typeof Chart !== 'undefined' && Chart.defaults) {
       if (typeof ChartTheme !== 'undefined') {
         ChartTheme.applyDefaults();
@@ -3114,14 +3114,14 @@ function setCaretToEnd(el) {
     if(typeof Chart === 'undefined') return;
     try {
       if(Chart.instances) {
-        Object.values(Chart.instances).forEach(function(c){ try { c.update(); } catch(e){} });
+        Object.values(Chart.instances).forEach(function(c){ try { c.update(); } catch(e){ console.warn('[App] Erro ao atualizar chart:', e); } });
       } else if(Chart.registry){
         document.querySelectorAll('canvas').forEach(function(canvas){
           const inst = Chart.getChart(canvas);
-          if(inst) try { inst.update(); } catch(e){}
+          if(inst) try { inst.update(); } catch(e){ console.warn('[App] Erro ao atualizar chart:', e); }
         });
       }
-    } catch(e) {}
+    } catch(e) { console.error('[App] Erro ao alternar tema:', e); }
   }
   function init(){
     const saved = localStorage.getItem('theme');

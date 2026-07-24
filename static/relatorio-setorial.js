@@ -529,7 +529,7 @@ function renderRelatorioSetorial() {
   // ── Renderizar gráficos ──
   if (typeof Chart !== 'undefined') {
     if (!window.__rsCharts) window.__rsCharts = {};
-    Object.values(window.__rsCharts).forEach(c => { try { c.destroy(); } catch (e) {} });
+    Object.values(window.__rsCharts).forEach(c => { try { c.destroy(); } catch (e) { console.warn('[RelatorioSetorial] Erro ao destruir chart:', e); } });
     window.__rsCharts = {};
 
     // Pie chart — distribuição por setor

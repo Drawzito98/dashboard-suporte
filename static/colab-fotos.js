@@ -27,7 +27,7 @@ function setColabFoto(name, url) {
     if (url) map[name] = normalizeFotoUrl(url);
     else delete map[name];
     localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
-  } catch (e) {}
+  } catch (e) { console.warn('[ColabFotos] Erro ao obter URL foto:', e); }
   if (typeof dbFotoSave === 'function') {
     const finalUrl = url ? normalizeFotoUrl(url) : '';
     dbFotoSave(name, finalUrl);

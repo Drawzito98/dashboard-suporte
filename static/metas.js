@@ -9,7 +9,7 @@ function loadMetas() {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) { goals = parsed; return; }
     }
-  } catch (e) {}
+  } catch (e) { console.warn('[Metas] Erro ao ler metas:', e); }
   goals = [];
   if (typeof dbMetasLoad === 'function') {
     dbMetasLoad().then(loaded => {
@@ -23,7 +23,7 @@ function loadMetas() {
 }
 
 function saveMetas() {
-  try { localStorage.setItem(METAS_STORAGE_KEY, JSON.stringify(goals)); } catch (e) {}
+  try { localStorage.setItem(METAS_STORAGE_KEY, JSON.stringify(goals)); } catch (e) { console.warn('[Metas] Erro ao salvar metas:', e); }
   if (typeof dbMetasSave === 'function') {
     dbMetasSave(goals);
   }

@@ -394,7 +394,7 @@ function renderIndividualScoreChart(name, months, ranking, aliasMap) {
   const lineColor = lastVal >= 4 ? ChartTheme.green() : (lastVal >= 3 ? ChartTheme.orange() : ChartTheme.red());
 
   if (window.__individualEvolutionChart) {
-    try { window.__individualEvolutionChart.destroy(); } catch (e) {}
+    try { window.__individualEvolutionChart.destroy(); } catch (e) { console.warn('[Gamificacao] Erro ao destruir chart:', e); }
   }
 
   window.__individualEvolutionChart = new Chart(ctx, {

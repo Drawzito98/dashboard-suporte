@@ -433,7 +433,7 @@
         const pending = tasks.filter(t => t.status !== 'concluida');
         if (pending.length) lines.push(`📌 Tarefas pendentes: ${pending.length}`);
       }
-    } catch (e) {}
+    } catch (e) { console.error('[Features] Erro:', e); }
 
     const text = lines.join('\n');
 

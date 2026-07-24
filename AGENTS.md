@@ -27,7 +27,7 @@
 
 ## Estrutura de Scripts (ordem de carregamento)
 ```
-auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring.js → gamificacao.js → metas.js → comparativos.js → colab-detail.js → painelLider.js → insights.js → alertas.js → conquistas.js → projecao.js → historico.js → comentarios.js → notificacoes.js → feedbacks.js → anotacoes.js → tarefas.js → bonus.js → relatorio-setorial.js → avaliacao.js → colaboradores.js → usuarios.js → csv-import.js → reports.js → app.js
+auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring.js → gamificacao.js → metas.js → comparativos.js → colab-detail.js → painelLider.js → insights.js → alertas.js → conquistas.js → projecao.js → historico.js → comentarios.js → notificacoes.js → feedbacks.js → anotacoes.js → tarefas.js → bonus.js → relatorio-setorial.js → avaliacao.js → colaboradores.js → usuarios.js → csv-validator.js → csv-import.js → reports.js → app.js
 ```
 
 ## Tabelas Supabase
@@ -110,6 +110,9 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 ```bash
 # Deploy
 git add -A && git commit -m "mensagem" && git push && npx vercel --prod
+
+# Testes
+node tests/runner.js
 
 # Ver status
 git status

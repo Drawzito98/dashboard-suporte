@@ -24,7 +24,7 @@ function loadAlertasConfig() {
         return;
       }
     }
-  } catch (e) {}
+  } catch (e) { console.warn('[Alertas] Erro ao ler config:', e); }
   alertasConfig = JSON.parse(JSON.stringify(DEFAULT_ALERTAS));
   if (typeof dbAlertasLoad === 'function') {
     dbAlertasLoad().then(loaded => {
@@ -37,7 +37,7 @@ function loadAlertasConfig() {
 }
 
 function saveAlertasConfig() {
-  try { localStorage.setItem(ALERTAS_STORAGE_KEY, JSON.stringify(alertasConfig)); } catch (e) {}
+  try { localStorage.setItem(ALERTAS_STORAGE_KEY, JSON.stringify(alertasConfig)); } catch (e) { console.warn('[Alertas] Erro ao salvar config:', e); }
   if (typeof dbAlertasSave === 'function') {
     dbAlertasSave(alertasConfig);
   }
