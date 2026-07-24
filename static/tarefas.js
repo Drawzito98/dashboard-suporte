@@ -51,11 +51,11 @@ function renderTarefas() {
   html += '<p style="font-size:13px;color:var(--text-secondary)">Cadastre atividades e compromissos.</p>';
   html += '</div>';
 
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3);margin-bottom:var(--s-3)">';
+  html += '<div class="grid-2col" style="margin-bottom:var(--s-3)">';
   html += '<div class="field"><span>Título</span>';
   html += '<input type="text" id="tarefaTituloInput" placeholder="Ex: Reunião de alinhamento" value="">';
   html += '</div>';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3)">';
+  html += '<div class="grid-2col">';
   html += '<div class="field"><span>Data</span>';
   html += `<input type="date" id="tarefaDataInput" value="${hoje()}">`;
   html += '</div>';

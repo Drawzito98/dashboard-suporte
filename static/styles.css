@@ -16,6 +16,9 @@ button svg, .btn-small svg, .btn-primary svg {
 
 /* Tokens (custom properties + dark theme) → static/css/tokens.css */
 
+/* ===== Utility grid classes ===== */
+.grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+
 /* ===== Reset ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -179,7 +182,7 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-5) var(--s-6) var
 
 /* Modal */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  position: fixed; inset: 0; background: var(--overlay);
   display: flex; align-items: center; justify-content: center;
   z-index: 9999; backdrop-filter: blur(2px);
 }
@@ -202,7 +205,7 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-5) var(--s-6) var
 .notif-badge {
   position: absolute; top: -4px; right: -6px;
   background: var(--danger); color: var(--text-on-danger);
-  font-size: 10px; font-weight: 700;
+  font-size: 11px; font-weight: 700;
   min-width: 16px; height: 16px;
   border-radius: 8px; display: flex; align-items: center; justify-content: center;
   padding: 0 4px; line-height: 1;
@@ -294,7 +297,7 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-5) var(--s-6) var
 .app-version {
   margin-top: auto;
   padding: var(--s-2) var(--s-3);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
   opacity: 0.6;
   user-select: none;
@@ -345,7 +348,7 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-5) var(--s-6) var
 }
 .panel-collapsible .panel-chevron {
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 .panel-collapsible.collapsed .panel-chevron {
@@ -626,7 +629,7 @@ body.table-compact td {
   font-size: 12px;
 }
 body.table-compact thead th {
-  font-size: 10px;
+  font-size: 11px;
   padding: 4px 8px;
 }
 body.table-compact .cell-atendente { min-width: 140px; }
@@ -657,14 +660,14 @@ tbody tr:last-child td { border-bottom: none; }
   position: sticky; right: 0;
   z-index: 3;
   background: var(--bg-surface);
-  box-shadow: -6px 0 10px -8px rgba(0,0,0,0.08);
+  box-shadow: -6px 0 10px -8px var(--overlay-table);
 }
 .preview .table-wrap table th:last-child {
   z-index: 4;
 }
 html[data-theme="dark"] .preview .table-wrap table th:last-child,
 html[data-theme="dark"] .preview .table-wrap table td:last-child {
-  box-shadow: -6px 0 10px -8px rgba(0,0,0,0.3);
+  box-shadow: -6px 0 10px -8px var(--overlay-table);
 }
 .preview .table-wrap table th:last-child {
   background: var(--bg-subtle);
@@ -709,12 +712,12 @@ td.score-cell.score-neutro    { color: var(--score-neutro); }
 .kpi-drill-overlay {
   position: fixed; inset: 0; z-index: 200;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.35);
+  background: var(--overlay-soft);
   backdrop-filter: blur(8px) saturate(1.2);
   -webkit-backdrop-filter: blur(8px) saturate(1.2);
   padding: var(--s-5);
 }
-html[data-theme="dark"] .kpi-drill-overlay { background: rgba(0,0,0,0.55); }
+html[data-theme="dark"] .kpi-drill-overlay { background: var(--overlay-soft); }
 .kpi-drill-panel {
   background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
   backdrop-filter: blur(12px);
@@ -739,7 +742,7 @@ html[data-theme="dark"] .kpi-drill-overlay { background: rgba(0,0,0,0.55); }
 .kpi-drill-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .kpi-drill-table th {
   text-align: left; padding: 8px 10px;
-  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
   letter-spacing: 0.06em; color: var(--text-muted);
   border-bottom: 1px solid var(--border);
 }
@@ -841,7 +844,7 @@ html[data-theme="dark"] .kpi-drill-overlay { background: rgba(0,0,0,0.55); }
   background: transparent;
   font-size: 12px; color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--t-fast);
+  transition: background-color var(--t-fast), color var(--t-fast), border-color var(--t-fast);
 }
 .presentation-toggle:hover { color: var(--text-primary); }
 .presentation-toggle input { position: absolute; opacity: 0; pointer-events: none; }
@@ -907,11 +910,11 @@ html[data-theme="dark"] .kpi-drill-overlay { background: rgba(0,0,0,0.55); }
 .loading-overlay {
   position: fixed; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(245, 243, 239, 0.7);
+  background: var(--overlay);
   backdrop-filter: blur(4px);
   z-index: 9998;
 }
-html[data-theme="dark"] .loading-overlay { background: rgba(15, 23, 42, 0.7); }
+html[data-theme="dark"] .loading-overlay { background: var(--overlay); }
 .loading-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -987,7 +990,7 @@ html[data-theme="dark"] .skeleton::after {
   margin-left: var(--s-2);
   padding: 1px 8px;
   border-radius: 999px;
-  font-size: 10px; font-weight: 600;
+  font-size: 11px; font-weight: 600;
   text-transform: uppercase; letter-spacing: 0.04em;
   white-space: nowrap;
   vertical-align: middle;
@@ -1030,7 +1033,7 @@ tbody .cell-ferias  { background: var(--info-soft); }
   .colab-detail-panel { padding: var(--s-4); }
 
   /* Tarefas form grids empilham */
-  #tarefasContent > div > .card:first-child > div[style*="grid-template-columns"] {
+  #tarefasContent .grid-2col {
     grid-template-columns: 1fr !important;
   }
 
@@ -1045,7 +1048,7 @@ tbody .cell-ferias  { background: var(--info-soft); }
   .kpi-grid { grid-template-columns: 1fr 1fr; gap: var(--s-2); }
   .kpi { padding: 10px 12px; }
   .kpi .value { font-size: 18px; }
-  .kpi .label { font-size: 9px; }
+  .kpi .label { font-size: 11px; }
   .chart-scroll .chart-inner { height: 340px; }
   canvas { max-height: 340px; }
   .tab-btn { padding: 5px 8px; font-size: 11px; }
@@ -1094,7 +1097,7 @@ tbody .cell-ferias  { background: var(--info-soft); }
   min-width: 110px;
 }
 .global-filter-field > span {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1114,7 +1117,7 @@ tbody .cell-ferias  { background: var(--info-soft); }
 .global-filter-field input[type="text"] {
   min-width: 120px;
 }
-.global-filter-field[style*="flex:1"] {
+.global-filter-field--flex {
   flex: 0 1 auto !important;
   min-width: 140px !important;
   max-width: 260px;
@@ -1132,7 +1135,7 @@ tbody .cell-ferias  { background: var(--info-soft); }
   min-height: 20px;
 }
 .global-filter-chips .chip {
-  font-size: 10px;
+  font-size: 11px;
   padding: 1px 6px;
 }
 .global-filter-multi {
@@ -1213,7 +1216,7 @@ html[data-theme="dark"] .tab-btn.active {
   display: none;
   margin-left: 3px;
   padding: 1px 5px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1.4;
   color: var(--text-on-danger);
@@ -1411,10 +1414,10 @@ html[data-theme="dark"] .tab-btn.active {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
-  transition: all var(--t-fast);
+  transition: background-color var(--t-fast), color var(--t-fast), border-color var(--t-fast);
 }
 .streak-day.active {
   background: var(--streak-active-bg);
@@ -1458,7 +1461,7 @@ html[data-theme="dark"] .tab-btn.active {
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   cursor: pointer;
-  transition: all var(--t-fast);
+  transition: background-color var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
 }
 .heatmap-cell:hover { transform: scale(1.2); }
 .heatmap-cell.level-0 { background: var(--bg-subtle); border-color: var(--border); }
@@ -1572,7 +1575,7 @@ html[data-theme="dark"] .tab-btn.active {
 .colab-detail-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.4);
+  background: var(--overlay);
   backdrop-filter: blur(8px) saturate(1.2);
   -webkit-backdrop-filter: blur(8px) saturate(1.2);
   z-index: 100;
@@ -1614,7 +1617,7 @@ html[data-theme="dark"] .colab-detail-overlay {
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
-  transition: all var(--t-fast);
+  transition: background-color var(--t-fast), color var(--t-fast);
 }
 .colab-detail-close:hover { background: var(--bg-subtle); color: var(--text-primary); }
 .colab-detail-print {
@@ -1632,7 +1635,7 @@ html[data-theme="dark"] .colab-detail-overlay {
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
-  transition: all var(--t-fast);
+  transition: background-color var(--t-fast), color var(--t-fast);
 }
 .colab-detail-print:hover { background: var(--bg-subtle); color: var(--text-primary); }
 .colab-detail-header {
@@ -1917,7 +1920,7 @@ html[data-theme="dark"] select option { background: var(--bg-surface); color: va
 .auth-title p { font-size: 13px; color: var(--text-secondary); margin: 0; }
 
 .auth-toggle { display: flex; border: 1.5px solid var(--border); border-radius: var(--r-md); overflow: hidden; margin-bottom: var(--s-4); }
-.auth-tab { flex: 1; padding: var(--s-2) var(--s-3); border: none; background: transparent; cursor: pointer; font-weight: 500; font-size: 13px; color: var(--text-secondary); transition: all var(--t-fast); }
+.auth-tab { flex: 1; padding: var(--s-2) var(--s-3); border: none; background: transparent; cursor: pointer; font-weight: 500; font-size: 13px; color: var(--text-secondary); transition: background-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast); }
 .auth-tab.active { background: var(--accent); color: var(--text-on-accent); box-shadow: 0 1px 3px rgba(37,99,235,0.2); }
 .auth-tab:not(.active):hover { background: var(--bg-subtle); }
 
@@ -1997,7 +2000,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 
 /* Responsivo: split layout feedbacks empilha em tela estreita */
 @media (max-width: 900px) {
-  #tab-feedbacks > div[style*="grid-template-columns"] {
+  #tab-feedbacks .grid-2col {
     grid-template-columns: 1fr !important;
   }
 }
@@ -2216,7 +2219,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 .rs-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: var(--overlay);
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -2466,7 +2469,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   border-radius: var(--r-sm);
   background: var(--bg-surface);
   cursor: pointer;
-  transition: all var(--t-fast);
+  transition: background-color var(--t-fast), color var(--t-fast), border-color var(--t-fast);
   line-height: 1;
 }
 .btn-report:hover {
@@ -2489,7 +2492,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   opacity: 0.8;
 }
 .panel-chevron {
-  font-size: 10px;
+  font-size: 11px;
   transition: transform 0.2s ease;
   margin-left: auto;
 }
@@ -2620,7 +2623,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   font-weight: 600;
   font-size: 14px;
   color: var(--text-secondary);
-  transition: all var(--t-fast);
+  transition: background-color var(--t-fast), color var(--t-fast), border-color var(--t-fast), box-shadow var(--t-fast);
   user-select: none;
 }
 

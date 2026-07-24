@@ -225,7 +225,7 @@ function renderFeedbacks() {
 
   // ── Split layout: form (left) + saved list (right) ──
   const filtroColab = sessionStorage.getItem('fb_filtro_colab') || '';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-5);align-items:start">';
+  html += '<div class="grid-2col" style="gap:var(--s-5);align-items:start">';
 
   // ── LEFT: Formulário ──
   html += '<div class="card">';

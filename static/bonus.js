@@ -26,7 +26,7 @@ function renderBonus() {
   html += '<div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--s-4);margin-bottom:var(--s-4)">';
   const formTitle = editing?.id ? '✏️ Editar' : '➕ Novo';
   html += `<div style="font-size:13px;font-weight:600;margin-bottom:var(--s-3)">${formTitle}</div>`;
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3);margin-bottom:var(--s-3)">';
+  html += '<div class="grid-2col" style="margin-bottom:var(--s-3)">;
   html += '<div class="field"><span>Colaborador</span>';
   html += `<select id="bonusColaboradorInput">`;
   html += `<option value="">Selecione...</option>`;

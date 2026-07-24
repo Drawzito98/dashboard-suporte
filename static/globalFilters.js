@@ -125,7 +125,7 @@ const globalFilters = {
             <span>Setor</span>
             <select id="gfSetor"><option value="all">Todos</option></select>
           </label>
-          <label class="global-filter-field" style="flex:1;min-width:180px">
+          <label class="global-filter-field global-filter-field--flex" style="min-width:180px">
             <span>Colaborador / Busca</span>
             <input type="text" id="gfPesquisa" placeholder="Digite um nome ou busque..." list="gfColabList" autocomplete="off" style="padding:6px 10px;font-size:12px"/>
             <datalist id="gfColabList"></datalist>
