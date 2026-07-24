@@ -3313,8 +3313,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 }
 .links-item-name {
   font-size: 15px; font-weight: 600; color: var(--accent);
-  text-decoration: none; overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap;
+  text-decoration: none; word-break: break-word;
 }
 .links-item-name:hover {
   text-decoration: underline;
