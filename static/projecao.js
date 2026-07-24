@@ -232,23 +232,31 @@ function renderProjecao() {
 
     setLoading(true, 'Salvando registros…');
     try {
-      // Save each to Supabase
       let savedCount = 0;
       let pendingCount = 0;
-      for (const rec of records) {
-        if (sbClient) {
-          const inserted = await dbInsertRow(rec);
-          if (inserted && inserted.id) {
-            rec.id = inserted.id;
-          } else {
-            addToPendingSync(rec);
-            pendingCount++;
-          }
+
+      if (sbClient && records.length) {
+        const result = await dbSaveRecords(records);
+        if (result && Array.isArray(result)) {
+          result.forEach((row, i) => {
+            if (row && row.id && records[i]) records[i].id = row.id;
+          });
+          savedCount = result.length;
+        } else if (result === true) {
+          savedCount = records.length;
+        } else {
+          records.forEach(rec => addToPendingSync(rec));
+          pendingCount = records.length;
         }
+      } else {
+        records.forEach(rec => addToPendingSync(rec));
+        pendingCount = records.length;
+      }
+
+      records.forEach(rec => {
         rawRecords.push(rec);
         if (typeof logHistorico === 'function') logHistorico('add', rec, { detalhes: 'Adicionado via novo registro mensal' });
-        savedCount++;
-      }
+      });
 
       if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
       populateFilters(rawRecords);

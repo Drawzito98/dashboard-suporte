@@ -136,7 +136,7 @@ async function dbSaveRecords(records) {
       console.error('Erro Supabase (detalhe):', error);
       throw error;
     }
-    return true;
+    return data || true;
   } catch (e) {
     console.error('Erro ao salvar no Supabase:', e);
     return false;

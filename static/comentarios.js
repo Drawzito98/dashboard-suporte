@@ -140,3 +140,5 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeComentarios();
 });
+
+document.getElementById('comentariosBtn')?.addEventListener('click', openComentarios);
