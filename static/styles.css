@@ -489,7 +489,7 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-5) var(--s-6) var
   padding: var(--s-6); text-align: center; color: var(--text-secondary); font-size: 13px;
 }
 @media (max-width: 768px) {
-  .current-user { display: none !important; }
+  .topbar-right .current-user { display: none; }
 }
 
 /* ===== Layout ===== */
@@ -941,8 +941,8 @@ td.score-cell.score-neutro    { color: var(--score-neutro); }
 .text-muted { color: var(--text-muted); }
 .colab-info-btn { background: none; border: none; cursor: pointer; padding: 2px 6px; border-radius: var(--r-sm); font-size: 14px; line-height: 1; }
 .colab-info-btn:hover { background: var(--bg-subtle); }
-.colab-card-conduta { border-color: var(--danger) !important; background: linear-gradient(135deg, var(--danger-soft) 0%, var(--bg-surface) 4px); }
-.colab-card-conduta:hover { box-shadow: 0 0 0 2px var(--danger-ring, rgba(220,38,38,0.3)) !important; }
+.colab-card-conduta { border-color: var(--danger); background: linear-gradient(135deg, var(--danger-soft) 0%, var(--bg-surface) 4px); }
+.colab-card-conduta:hover { box-shadow: 0 0 0 2px var(--danger-ring, rgba(220,38,38,0.3)); }
 .conduta-badge { font-size: 14px; line-height: 1; animation: conduta-pulse 2s infinite; }
 @keyframes conduta-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
@@ -1042,7 +1042,7 @@ html[data-theme="dark"] .kpi-drill-overlay { background: rgba(0,0,0,0.55); }
 .global-empty { margin-bottom: var(--s-4); }
 .empty-visuals-card { min-height: 200px; display: flex; align-items: center; justify-content: center; }
 #chartEmpty { padding: 56px 24px; }
-#summaryContent:empty { display: none !important; }
+#summaryContent:empty { display: none; }
 
 /* ===== Month picker ===== */
 .month-picker {
@@ -1240,7 +1240,7 @@ html[data-theme="dark"] .skeleton::after {
 .cell-obs { min-width: 260px; max-width: 400px; white-space: normal; }
 .badge-ferias { background: var(--info-soft);    color: var(--info); }
 .badge-multi  { background: var(--warning-soft); color: var(--warning); }
-.cell-ferias  { background: var(--info-soft) !important; }
+tbody .cell-ferias  { background: var(--info-soft); }
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
@@ -2231,12 +2231,12 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 }
 .cell-edit[contenteditable="true"]:hover {
   box-shadow: inset 0 -2px 0 var(--accent);
-  background: var(--accent-soft) !important;
+  background: var(--accent-soft);
 }
 .cell-edit[contenteditable="true"]:focus {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
-  background: var(--bg-surface) !important;
+  background: var(--bg-surface);
 }
 
 /* Responsivo: split layout feedbacks empilha em tela estreita */
