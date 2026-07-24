@@ -2,12 +2,13 @@
 
 App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer), gamificação, relatórios inteligentes, e deploy no Vercel.
 
-**Versão atual:** `1.7.0` (constante `APP_VERSION` em `static/app.js`)
+**Versão atual:** `1.7.1` (constante `APP_VERSION` em `static/app.js`)
 
 ## Changelog
 
 | Versão | Data | Alterações |
 |--------|------|------------|
+| 1.7.1 | 24/07/2026 | CSS: contraste `--text-muted` corrigido (WCAG AA), `@keyframes spin` duplicado removido, `var(--radius)`/`var(--surface)` indefinidos corrigidos, `transition: all` substituída por específicas, auth padronizado de `rem` para `px`. HTML: `aria-label="Fechar"` em 17 overlays, `<meta robots>`, typos corrigidos (acentos). |
 | 1.7.0 | 24/07/2026 | CSS: fontes aumentadas ~1-2px em todo o app para legibilidade em Full HD (root 14→15px, KPIs 24→26px, labels 10→11px, badges 11→12px, tabs 12→13px, forms/btns 13→14px) |
 | 1.1.0 | 22/07/2026 | CSS: variáveis quebradas definidas (`--primary`, `--bg`, `--bg-elevated`, `--border-color`); syntax error corrigido;6 regras `!important` eliminadas; font sizes fracionários padronizados; label de versão discreto na sidebar |
 | 1.0.0 | — | Versão inicial |

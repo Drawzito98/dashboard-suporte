@@ -5,6 +5,7 @@
   <meta content="width=device-width, initial-scale=1" name="viewport"/>
   <title>Painel de Suporte</title>
   <meta name="description" content="Painel executivo para análise de indicadores de suporte e atendimento."/>
+  <meta name="robots" content="noindex, nofollow"/>
   <link href="static/css/tokens.css" rel="stylesheet"/>
   <link href="static/styles.css" rel="stylesheet"/>
   <link href="static/home.css" rel="stylesheet"/>
@@ -115,7 +116,7 @@
         <input id="homeFileInput" type="file" accept=".csv" multiple class="fileOverlayInput" />
       </div>
       <div id="importStatus" class="hint" aria-live="polite"></div>
-      <button class="btn-small hidden" id="openSavedBtn" type="button">Restaurar sessao anterior</button>
+      <button class="btn-small hidden" id="openSavedBtn" type="button">Restaurar sessão anterior</button>
       <button class="btn-small theme-toggle" id="themeToggleHome" type="button" aria-label="Alternar tema">
         <span class="theme-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
         <span class="theme-label">Modo escuro</span>
@@ -154,7 +155,7 @@
           </div>
         </div>
         <div class="seg-toggles" role="group" aria-label="Modos de visualização">
-          <label class="presentation-toggle" title="Oculta nomes para apresentacao aos colaboradores">
+          <label class="presentation-toggle" title="Oculta nomes para apresentação aos colaboradores">
             <input id="presentationModeToggle" type="checkbox"/>
             <span>Apresentação</span>
           </label>
@@ -308,7 +309,7 @@
         <!-- Elementos de filtro legados (ocultos, mantidos para compatibilidade do Dashboard) -->
         <div id="legacySidebarFilters" style="display:none">
           <select id="setorSelect"><option value="all">Todos os setores</option></select>
-          <select id="mesSelect"><option value="all">Todos os meses</option><option value="__multi__">Selecao multipla</option></select>
+          <select id="mesSelect"><option value="all">Todos os meses</option><option value="__multi__">Seleção múltipla</option></select>
           <div id="monthPicker" class="month-picker">
             <div class="month-picker-actions">
               <button class="btn-small" id="selectAllMonthsBtn" type="button">Marcar todos</button>
@@ -340,7 +341,7 @@
           <!-- Global Empty State -->
           <div id="globalEmptyState" class="empty-state global-empty">
             <div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-            <div class="empty-title">Importe um arquivo CSV para comecar</div>
+            <div class="empty-title">Importe um arquivo CSV para começar</div>
             <div class="empty-sub">Seus dados permanecem apenas no seu navegador. Use o painel ao lado para importar arquivos e aplicar filtros.</div>
             <div class="empty-actions">
               <button id="emptyImportBtn" type="button" class="btn-primary" style="max-width: 280px; margin: 0 auto;">
@@ -360,7 +361,7 @@
             <div class="empty-state" style="border: none; background: transparent;">
               <div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
               <div class="empty-title">Selecione filtros para visualizar</div>
-              <div class="empty-sub">Escolha periodo, setor ou atendente para exibir os indicadores e graficos.</div>
+              <div class="empty-sub">Escolha período, setor ou atendente para exibir os indicadores e gráficos.</div>
             </div>
           </section>
 
@@ -368,7 +369,7 @@
           <section class="card chart-card" id="chartCard">
             <div class="card-header">
               <div>
-                <h2>Grafico de Desempenho</h2>
+                <h2>Gráfico de Desempenho</h2>
                 <p>Clique na legenda para ocultar/mostrar series</p>
               </div>
               <div class="chart-toolbar">
@@ -550,7 +551,7 @@
 <!-- Colaborador Detail Overlay -->
 <div class="colab-detail-overlay" id="colabDetailOverlay">
   <div class="colab-detail-panel">
-    <button class="colab-detail-close" id="colabDetailClose" type="button">✕</button>
+    <button class="colab-detail-close" id="colabDetailClose" type="button" aria-label="Fechar">✕</button>
     <div id="colabDetailContent"></div>
   </div>
 </div>
@@ -558,7 +559,7 @@
 <!-- Colaborador Report Overlay -->
 <div class="colab-detail-overlay" id="colabReportOverlay">
   <div class="colab-detail-panel" style="max-width:680px">
-    <button class="colab-detail-close" id="colabReportClose" type="button">✕</button>
+    <button class="colab-detail-close" id="colabReportClose" type="button" aria-label="Fechar">✕</button>
     <button class="colab-detail-print" id="colabReportPrint" type="button" title="Imprimir"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1.2em" height="1.2em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
     <div id="colabReportContent"></div>
   </div>
@@ -567,7 +568,7 @@
 <!-- Projeção Mensal Overlay -->
 <div class="colab-detail-overlay" id="projecaoOverlay">
   <div class="colab-detail-panel" style="max-width:800px">
-    <button class="colab-detail-close" id="projecaoClose" type="button">✕</button>
+    <button class="colab-detail-close" id="projecaoClose" type="button" aria-label="Fechar">✕</button>
     <div id="projecaoContent"></div>
   </div>
 </div>
@@ -575,7 +576,7 @@
 <!-- Gerenciar Colaboradores Overlay -->
 <div class="colab-detail-overlay" id="manageColabsOverlay">
   <div class="colab-detail-panel" style="max-width:600px">
-    <button class="colab-detail-close" id="manageColabsClose" type="button">✕</button>
+    <button class="colab-detail-close" id="manageColabsClose" type="button" aria-label="Fechar">✕</button>
     <div id="manageColabsContent"></div>
   </div>
 </div>
@@ -583,7 +584,7 @@
 <!-- Gerenciar Setores Overlay -->
 <div class="colab-detail-overlay" id="manageSetoresOverlay">
   <div class="colab-detail-panel" style="max-width:600px">
-    <button class="colab-detail-close" id="manageSetoresClose" type="button">✕</button>
+    <button class="colab-detail-close" id="manageSetoresClose" type="button" aria-label="Fechar">✕</button>
     <div id="manageSetoresContent"></div>
   </div>
 </div>
@@ -591,7 +592,7 @@
 <!-- Histórico Overlay -->
 <div class="colab-detail-overlay" id="historicoOverlay">
   <div class="colab-detail-panel" style="max-width:900px">
-    <button class="colab-detail-close" id="historicoClose" type="button">✕</button>
+    <button class="colab-detail-close" id="historicoClose" type="button" aria-label="Fechar">✕</button>
     <div id="historicoContent"></div>
   </div>
 </div>
@@ -599,7 +600,7 @@
 <!-- Comentários Overlay -->
 <div class="colab-detail-overlay" id="comentariosOverlay">
   <div class="colab-detail-panel" style="max-width:800px">
-    <button class="colab-detail-close" id="comentariosClose" type="button">✕</button>
+    <button class="colab-detail-close" id="comentariosClose" type="button" aria-label="Fechar">✕</button>
     <div id="comentariosContent"></div>
   </div>
 </div>
@@ -607,7 +608,7 @@
 <!-- Bônus Overlay -->
 <div class="colab-detail-overlay" id="bonusOverlay">
   <div class="colab-detail-panel" style="max-width:700px">
-    <button class="colab-detail-close" id="bonusOverlayClose" type="button">✕</button>
+    <button class="colab-detail-close" id="bonusOverlayClose" type="button" aria-label="Fechar">✕</button>
     <div id="bonusContent"></div>
   </div>
 </div>
@@ -615,7 +616,7 @@
 <!-- Ausências Overlay -->
 <div class="colab-detail-overlay" id="ausenciasOverlay">
   <div class="colab-detail-panel" style="max-width:750px">
-    <button class="colab-detail-close" id="ausenciasOverlayClose" type="button">✕</button>
+    <button class="colab-detail-close" id="ausenciasOverlayClose" type="button" aria-label="Fechar">✕</button>
     <div id="ausenciasOverlayContent"></div>
   </div>
 </div>
@@ -623,7 +624,7 @@
 <!-- Avaliar Atendimento Overlay -->
 <div class="colab-detail-overlay" id="avaliarAtendimentoOverlay">
   <div class="colab-detail-panel" style="max-width:750px">
-    <button class="colab-detail-close" id="avaliarAtendimentoOverlayClose" type="button">✕</button>
+    <button class="colab-detail-close" id="avaliarAtendimentoOverlayClose" type="button" aria-label="Fechar">✕</button>
     <div id="avaliarAtendimentoOverlayContent"></div>
   </div>
 </div>
@@ -631,7 +632,7 @@
 <!-- Férias Overlay -->
 <div class="colab-detail-overlay" id="feriasOverlay">
   <div class="colab-detail-panel" style="max-width:600px">
-    <button class="colab-detail-close" id="feriasOverlayClose" type="button">✕</button>
+    <button class="colab-detail-close" id="feriasOverlayClose" type="button" aria-label="Fechar">✕</button>
     <div id="feriasOverlayContent"></div>
   </div>
 </div>
@@ -639,7 +640,7 @@
 <!-- Links Overlay -->
 <div class="colab-detail-overlay" id="linksOverlay">
   <div class="colab-detail-panel" style="max-width:750px">
-    <button class="colab-detail-close" id="linksOverlayClose" type="button">✕</button>
+    <button class="colab-detail-close" id="linksOverlayClose" type="button" aria-label="Fechar">✕</button>
     <div id="linksOverlayContent"></div>
   </div>
 </div>
@@ -647,7 +648,7 @@
 <!-- Usuários Overlay -->
 <div class="colab-detail-overlay" id="usuariosOverlay">
   <div class="colab-detail-panel" style="max-width:900px">
-    <button class="colab-detail-close" id="usuariosOverlayClose" type="button">✕</button>
+    <button class="colab-detail-close" id="usuariosOverlayClose" type="button" aria-label="Fechar">✕</button>
     <div id="usuariosOverlayContent"></div>
   </div>
 </div>
@@ -655,7 +656,7 @@
 <!-- Anotações Overlay -->
 <div class="colab-detail-overlay" id="anotacoesOverlay">
   <div class="colab-detail-panel" style="max-width:700px">
-    <button class="colab-detail-close" id="anotacoesOverlayClose" type="button">✕</button>
+    <button class="colab-detail-close" id="anotacoesOverlayClose" type="button" aria-label="Fechar">✕</button>
     <div id="anotacoesOverlayContent"></div>
   </div>
 </div>
@@ -663,7 +664,7 @@
 <!-- Reportes Overlay -->
 <div class="colab-detail-overlay" id="reportesOverlay">
   <div class="colab-detail-panel" style="max-width:1000px">
-    <button class="colab-detail-close" id="reportesOverlayClose" type="button">✕</button>
+    <button class="colab-detail-close" id="reportesOverlayClose" type="button" aria-label="Fechar">✕</button>
     <div id="reportesOverlayContent"></div>
   </div>
 </div>
@@ -671,7 +672,7 @@
 <!-- Feedbacks Overlay -->
 <div class="colab-detail-overlay" id="feedbacksOverlay">
   <div class="colab-detail-panel" style="max-width:900px">
-    <button class="colab-detail-close" id="feedbacksOverlayClose" type="button">✕</button>
+    <button class="colab-detail-close" id="feedbacksOverlayClose" type="button" aria-label="Fechar">✕</button>
     <div id="feedbacksOverlayContent"></div>
   </div>
 </div>
@@ -679,7 +680,7 @@
 <!-- Acompanhamento Diário Overlay -->
 <div class="colab-detail-overlay" id="acompDiarioOverlay">
   <div class="colab-detail-panel" style="max-width:800px">
-    <button class="colab-detail-close" id="acompDiarioOverlayClose" type="button">✕</button>
+    <button class="colab-detail-close" id="acompDiarioOverlayClose" type="button" aria-label="Fechar">✕</button>
     <div id="acompDiarioOverlayContent"></div>
   </div>
 </div>

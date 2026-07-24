@@ -16,7 +16,7 @@
   --text-strong:   #1a1814;
   --text-primary:  #2c2924;
   --text-secondary:#4a4540;
-  --text-muted:    #9c9590;
+  --text-muted:    #6d6861;
 
   /* Bordas */
   --border:        #e4e0da;
@@ -42,7 +42,7 @@
   --score-excelente: #16a34a;
   --score-atencao:   #d97706;
   --score-critico:   #dc2626;
-  --score-neutro:    #6b7280;
+  --score-neutro:    #5b6572;
 
   /* Variações */
   --variation-pos:  #16a34a;
@@ -89,7 +89,7 @@
   --role-admin-bg:    #dbeafe;
   --role-admin-text:  #1e40af;
   --role-viewer-bg:   #f3f4f6;
-  --role-viewer-text: #6b7280;
+  --role-viewer-text: #5b6572;
   --role-colaborador-bg:  #fef3c7;
   --role-colaborador-text:#92400e;
 
@@ -154,7 +154,7 @@ html[data-theme="dark"] {
   --text-strong:   #f1f5f9;
   --text-primary:  #e2e8f0;
   --text-secondary:#94a3b8;
-  --text-muted:    #64748b;
+  --text-muted:    #8494a7;
 
   --border:        #2a2a2a;
   --border-strong: #3a3a3a;
@@ -229,7 +229,7 @@ html[data-theme="dark"] {
   --role-admin-bg:    #1e3a5f;
   --role-admin-text:  #93c5fd;
   --role-viewer-bg:   #374151;
-  --role-viewer-text: #9ca3af;
+  --role-viewer-text: #b0bac6;
   --role-colaborador-bg:  #451a03;
   --role-colaborador-text:#fbbf24;
 

@@ -1913,27 +1913,27 @@ html[data-theme="dark"] select option { background: var(--bg-surface); color: va
 }
 
 .auth-title { text-align: center; margin-bottom: var(--s-6); }
-.auth-title h1 { font-size: 1.5rem; margin: 0 0 var(--s-1); color: var(--text-strong); letter-spacing: -0.02em; }
-.auth-title p { font-size: 0.875rem; color: var(--text-secondary); margin: 0; }
+.auth-title h1 { font-size: 22px; margin: 0 0 var(--s-1); color: var(--text-strong); letter-spacing: -0.02em; }
+.auth-title p { font-size: 13px; color: var(--text-secondary); margin: 0; }
 
 .auth-toggle { display: flex; border: 1.5px solid var(--border); border-radius: var(--r-md); overflow: hidden; margin-bottom: var(--s-4); }
-.auth-tab { flex: 1; padding: var(--s-2) var(--s-3); border: none; background: transparent; cursor: pointer; font-weight: 500; font-size: 0.875rem; color: var(--text-secondary); transition: all var(--t-fast); }
+.auth-tab { flex: 1; padding: var(--s-2) var(--s-3); border: none; background: transparent; cursor: pointer; font-weight: 500; font-size: 13px; color: var(--text-secondary); transition: all var(--t-fast); }
 .auth-tab.active { background: var(--accent); color: var(--text-on-accent); box-shadow: 0 1px 3px rgba(37,99,235,0.2); }
 .auth-tab:not(.active):hover { background: var(--bg-subtle); }
 
 .auth-form .field { margin-bottom: var(--s-3); }
-.auth-form .field span { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: var(--s-1); text-transform: uppercase; letter-spacing: 0.03em; }
-.auth-form .field input { width: 100%; padding: var(--s-2) var(--s-3); border: 1.5px solid var(--border); border-radius: var(--r-md); font-size: 0.9rem; background: var(--bg-canvas); color: var(--text-primary); transition: border-color var(--t-fast), box-shadow var(--t-fast); }
+.auth-form .field span { display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: var(--s-1); text-transform: uppercase; letter-spacing: 0.03em; }
+.auth-form .field input { width: 100%; padding: var(--s-2) var(--s-3); border: 1.5px solid var(--border); border-radius: var(--r-md); font-size: 14px; background: var(--bg-canvas); color: var(--text-primary); transition: border-color var(--t-fast), box-shadow var(--t-fast); }
 .auth-form .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring), 0 1px 4px rgba(37,99,235,0.08); outline: none; }
 
-.auth-error { color: var(--danger); font-size: 0.8rem; margin-top: var(--s-2); padding: var(--s-1) var(--s-2); background: var(--danger-soft); border-radius: var(--r-sm); }
-.auth-success { color: var(--success); font-size: 0.8rem; margin-top: var(--s-2); padding: var(--s-1) var(--s-2); background: var(--success-soft); border-radius: var(--r-sm); }
+.auth-error { color: var(--danger); font-size: 12px; margin-top: var(--s-2); padding: var(--s-1) var(--s-2); background: var(--danger-soft); border-radius: var(--r-sm); }
+.auth-success { color: var(--success); font-size: 12px; margin-top: var(--s-2); padding: var(--s-1) var(--s-2); background: var(--success-soft); border-radius: var(--r-sm); }
 
 .auth-loading { text-align: center; padding: var(--s-4); }
 .auth-loading .spinner { margin: 0 auto var(--s-2); }
 
 /* Role badges */
-.role-badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:0.7rem; font-weight:600; letter-spacing:0.02em; }
+.role-badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600; letter-spacing:0.02em; }
 .role-admin { background: var(--role-admin-bg); color: var(--role-admin-text); }
 .role-viewer { background: var(--role-viewer-bg); color: var(--role-viewer-text); }
 .role-colaborador { background: var(--role-colaborador-bg); color: var(--role-colaborador-text); }
@@ -3187,13 +3187,13 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   gap: 6px;
   padding: 6px 14px;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color var(--t-fast), border-color var(--t-fast), color var(--t-fast), transform var(--t-fast);
   white-space: nowrap;
 }
 .export-png-btn:hover,
@@ -3218,15 +3218,12 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
 
 /* Compare months modal */
 .compare-card {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--r-md);
   padding: 16px;
 }
 .compare-stat {
@@ -3255,7 +3252,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 .summary-text {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--r-md);
   padding: 16px;
   font-family: inherit;
   font-size: 14px;
