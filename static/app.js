@@ -2,7 +2,7 @@
 function q(sel, root = document) { return root.querySelector(sel); }
 function qa(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
 
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.7.0';
 
 // Perfis (Google Docs) — loaded from static/perfis.js (works on file://)
 const INACTIVE_COLABS_KEY = 'sistema_inactive_colabs_v1';
