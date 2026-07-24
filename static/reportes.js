@@ -409,9 +409,13 @@ function criarOverlayResposta() {
       copyBtn.textContent = '📋 Copiar resposta';
       copyBtn.style.cssText = 'margin-top:8px;width:100%;justify-content:center';
       copyBtn.onclick = () => {
-        navigator.clipboard.writeText(texto).then(() => {
-          copyBtn.textContent = '✅ Copiado!';
-          setTimeout(() => { copyBtn.textContent = '📋 Copiar resposta'; }, 2000);
+        copyToClipboard(texto).then(ok => {
+          if (ok) {
+            copyBtn.textContent = '✅ Copiado!';
+            setTimeout(() => { copyBtn.textContent = '📋 Copiar resposta'; }, 2000);
+          } else {
+            showToast('Erro ao copiar.', 'error');
+          }
         });
       };
       okEl.parentNode.appendChild(copyBtn);
@@ -480,17 +484,22 @@ function criarOverlayLink() {
   document.getElementById('reporteLinkCopiarBtn').addEventListener('click', () => {
     const input = document.getElementById('reporteLinkUrl');
     input.select();
-    try {
-      navigator.clipboard?.writeText(input.value);
-    } catch {}
-    document.getElementById('reporteLinkCopiado').classList.remove('hidden');
-    setTimeout(() => document.getElementById('reporteLinkCopiado').classList.add('hidden'), 2000);
+    copyToClipboard(input.value).then(ok => {
+      if (ok) {
+        document.getElementById('reporteLinkCopiado').classList.remove('hidden');
+        setTimeout(() => document.getElementById('reporteLinkCopiado').classList.add('hidden'), 2000);
+      } else {
+        showToast('Erro ao copiar.', 'error');
+      }
+    });
   });
 
   document.getElementById('reporteLinkEmbedCopiarBtn')?.addEventListener('click', () => {
     const input = document.getElementById('reporteLinkEmbed');
-    if (input) { input.select(); try { navigator.clipboard?.writeText(input.value); } catch {} }
-    showToast('Embed code copiado!', 'success');
+    if (input) {
+      input.select();
+      copyToClipboard(input.value).then(ok => ok ? showToast('Embed code copiado!', 'success') : showToast('Erro ao copiar.', 'error'));
+    }
   });
 
   document.getElementById('reporteLinkFecharBtn').addEventListener('click', () => {
@@ -538,8 +547,7 @@ function criarOverlayPreview() {
   document.getElementById('reporteEmbedCopiarBtn')?.addEventListener('click', () => {
     const input = document.getElementById('reporteEmbedCode');
     input.select();
-    try { navigator.clipboard?.writeText(input.value); } catch {}
-    showToast('Embed code copiado!', 'success');
+    copyToClipboard(input.value).then(ok => ok ? showToast('Embed code copiado!', 'success') : showToast('Erro ao copiar.', 'error'));
   });
 
   div.addEventListener('click', (e) => { if (e.target === div) div.classList.add('hidden'); });

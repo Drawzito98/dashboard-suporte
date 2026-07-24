@@ -56,16 +56,9 @@ async function copyReportToClipboard() {
   const ta = document.getElementById('reportText');
   const text = ta ? ta.value : (window.__lastReportText || '');
   if (!text) return;
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch (e) {
-    // fallback
-    const temp = document.createElement('textarea');
-    temp.value = text;
-    document.body.appendChild(temp);
-    temp.select();
-    document.execCommand('copy');
-    temp.remove();
+  const ok = await copyToClipboard(text);
+  if (!ok) {
+    showToast('Erro ao copiar.', 'error');
   }
 }
 function exportReportToPDF() {
@@ -322,8 +315,7 @@ function generateIntelReport() {
       const copyBtn = document.getElementById('copyIntelReportBtn');
       if (copyBtn) {
         copyBtn.addEventListener('click', () => {
-          navigator.clipboard.writeText(reportText).catch(() => {});
-          showToast('Relatório copiado!', 'success');
+          copyToClipboard(reportText).then(ok => ok ? showToast('Relatório copiado!', 'success') : showToast('Erro ao copiar.', 'error'));
         });
       }
 

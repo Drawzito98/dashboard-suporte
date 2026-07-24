@@ -468,17 +468,8 @@
     document.body.appendChild(overlay);
 
     overlay.querySelector('.summary-copy-btn').addEventListener('click', function () {
-      navigator.clipboard.writeText(text).then(function () {
-        if (typeof showToast === 'function') showToast('Resumo copiado!', 'success');
-      }).catch(function () {
-        // Fallback
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        if (typeof showToast === 'function') showToast('Resumo copiado!', 'success');
+      copyToClipboard(text).then(function (ok) {
+        if (typeof showToast === 'function') showToast(ok ? 'Resumo copiado!' : 'Erro ao copiar.', ok ? 'success' : 'error');
       });
     });
   }

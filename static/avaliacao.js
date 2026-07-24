@@ -619,7 +619,7 @@ function bindComentarioActions() {
 
 function handleCopiar(e) {
   const texto = e.target.closest('.avaliacao-comentario-item').querySelector('.avaliacao-comentario-texto').textContent;
-  navigator.clipboard.writeText(texto).then(() => showToast('Comentário copiado!', 'success')).catch(() => showToast('Erro ao copiar.', 'error'));
+  copyToClipboard(texto).then(ok => ok ? showToast('Comentário copiado!', 'success') : showToast('Erro ao copiar.', 'error'));
 }
 
 function handleUsar(e) {
@@ -1538,11 +1538,7 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
       linhas.push('', 'Comentários finais:');
       comentariosFinais.forEach(c => linhas.push(`- ${c}`));
     }
-    navigator.clipboard.writeText(linhas.join('\n')).then(() => {
-      showToast('Texto copiado!', 'success');
-    }).catch(() => {
-      showToast('Erro ao copiar.', 'error');
-    });
+    copyToClipboard(linhas.join('\n')).then(ok => ok ? showToast('Texto copiado!', 'success') : showToast('Erro ao copiar.', 'error'));
   });
 
   overlay.querySelector('#avaliacaoDetailExportarXlsx').addEventListener('click', () => {

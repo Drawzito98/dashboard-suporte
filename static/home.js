@@ -225,13 +225,13 @@ function renderHome() {
   // Copy all (name + sector)
   document.getElementById('homeColabsCopyAll')?.addEventListener('click', () => {
     const text = colabList.map(c => `${c.name} — ${c.setores}`).join('\n');
-    navigator.clipboard.writeText(text).then(() => showToast('Lista copiada!', 'success'));
+    copyToClipboard(text).then(ok => ok ? showToast('Lista copiada!', 'success') : showToast('Erro ao copiar.', 'error'));
   });
 
   // Copy names only
   document.getElementById('homeColabsCopyNames')?.addEventListener('click', () => {
     const text = colabList.map(c => c.name).join('\n');
-    navigator.clipboard.writeText(text).then(() => showToast('Nomes copiados!', 'success'));
+    copyToClipboard(text).then(ok => ok ? showToast('Nomes copiados!', 'success') : showToast('Erro ao copiar.', 'error'));
   });
 
   // ── Score modal ──
@@ -273,7 +273,7 @@ function renderHome() {
 
   document.getElementById('homeScoreCopyAll')?.addEventListener('click', () => {
     const text = scoreList.map(s => `${s.name} — ${s.avg.toFixed(2)}`).join('\n');
-    navigator.clipboard.writeText(text).then(() => showToast('Scores copiados!', 'success'));
+    copyToClipboard(text).then(ok => ok ? showToast('Scores copiados!', 'success') : showToast('Erro ao copiar.', 'error'));
   });
 
   // ── Tasks modal ──
