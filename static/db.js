@@ -51,17 +51,17 @@ async function syncPendingRecords() {
   if (!pending.length) return [];
   const synced = [];
   const failed = [];
-  for (const rec of pending) {
-    try {
-      const clean = filterRecordFields(rec);
-      const { data, error } = await sbClient.from('registros').insert(clean).select();
-      if (error) throw error;
-      if (data && data[0]) synced.push(rec);
-    } catch (e) {
-      console.warn('Falha ao sincronizar registro pendente:', e);
-      failed.push(rec);
-    }
+
+  const clean = pending.map(filterRecordFields);
+  try {
+    const { data, error } = await sbClient.from('registros').insert(clean).select();
+    if (error) throw error;
+    synced.push(...pending);
+  } catch (e) {
+    console.warn('Falha ao sincronizar pendentes em batch:', e);
+    failed.push(...pending);
   }
+
   if (failed.length) {
     localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(failed));
   } else {
@@ -147,18 +147,12 @@ async function dbDeleteAll() {
   if (!requireAdmin()) return false;
   if (!sbClient) return false;
   try {
-    const { error } = await sbClient.from('registros').delete().neq('id', -1);
+    const { error } = await sbClient.from('registros').delete().neq('id', 0);
     if (error) throw error;
     return true;
   } catch (e) {
-    try {
-      const { error: e2 } = await sbClient.from('registros').delete().neq('created_at', '');
-      if (e2) throw e2;
-      return true;
-    } catch (e2) {
-      console.error('Erro ao limpar tabela:', e2);
-      return false;
-    }
+    console.error('Erro ao limpar tabela:', e);
+    return false;
   }
 }
 
@@ -166,6 +160,10 @@ async function dbReplaceAll(records) {
   if (!requireAdmin()) return false;
   if (!sbClient) return false;
   try {
+    const deleted = await dbDeleteAll();
+    if (!deleted) {
+      console.warn('[dbReplaceAll] Falha ao limpar registros antigos, inserindo novos por cima');
+    }
     return await dbSaveRecords(records);
   } catch (e) {
     console.error('Erro ao substituir registros:', e);

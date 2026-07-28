@@ -1,1 +1,8 @@
 local-proxy.js
+node_modules/
+.env
+.env.*
+.vercel/
+*.log
+npm-debug.log*
+.DS_Store

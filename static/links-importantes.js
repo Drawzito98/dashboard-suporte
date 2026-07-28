@@ -163,7 +163,7 @@ function renderLinksImportantes() {
     document.getElementById('linkUrlInput')?.addEventListener('keydown', e => {
       if (e.key === 'Enter') handleSalvar();
     });
-  });
+  }).catch(e => console.warn('[Links] Erro ao renderizar:', e));
 }
 
 async function handleSalvar() {

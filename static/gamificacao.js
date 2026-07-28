@@ -3,7 +3,7 @@ const GAMIFICATION_CACHE_KEY = 'sistema_gamification_cache_v1';
 let gamificationCache = null;
 
 function _gfData() {
-  return typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
+  return typeof getDataFiltered === 'function' ? getDataFiltered() : (typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []));
 }
 
 function getGamificationData() {

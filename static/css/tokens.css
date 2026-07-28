@@ -27,6 +27,12 @@
   --accent-hover:  #1d4ed8;
   --accent-soft:   #eff4ff;
   --accent-ring:   rgba(37, 99, 235, 0.18);
+  --accent-rgb:    37, 99, 235;
+  --warn-fg:       #c98a1e;
+  --danger-ring:   rgba(220, 38, 38, 0.3);
+  --accent-selected:       #8B5CF6;
+  --accent-selected-ring:  rgba(139, 92, 246, 0.25);
+  --accent-selected-soft:  rgba(139, 92, 246, 0.05);
 
   /* Status (uso parcimonioso) */
   --success:       #047857;
@@ -168,6 +174,12 @@ html[data-theme="dark"] {
   --accent-hover:  #93c5fd;
   --accent-soft:   rgba(96, 165, 250, 0.12);
   --accent-ring:   rgba(96, 165, 250, 0.30);
+  --accent-rgb:    96, 165, 250;
+  --warn-fg:       #fbbf24;
+  --danger-ring:   rgba(248, 113, 113, 0.3);
+  --accent-selected:       #a78bfa;
+  --accent-selected-ring:  rgba(167, 139, 250, 0.25);
+  --accent-selected-soft:  rgba(167, 139, 250, 0.12);
 
   --success:       #34d399;
   --success-soft:  rgba(52, 211, 153, 0.12);

@@ -10,11 +10,15 @@ async function initAuth() {
   if (!sbClient) return null;
 
   // Verifica sessão existente
-  const { data: { session } } = await sbClient.auth.getSession();
-  if (session?.user) {
-    currentUser = session.user;
-    hideAuthOverlay();
-    return currentUser;
+  try {
+    const { data: { session } } = await sbClient.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+      hideAuthOverlay();
+      return currentUser;
+    }
+  } catch (e) {
+    console.warn('[Auth] Erro ao verificar sessão:', e);
   }
 
   // Cria uma Promise que resolve quando o usuário fizer login
@@ -106,12 +110,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!email || !password) { showAuthError('login', 'Preencha email e senha.'); return; }
       setAuthLoading(true);
       showAuthError('login', '');
-      const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
-      setAuthLoading(false);
-      if (error) {
-        showAuthError('login', error.message === 'Invalid login credentials'
-          ? 'Email ou senha incorretos.'
-          : error.message);
+      try {
+        const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+        setAuthLoading(false);
+        if (error) {
+          showAuthError('login', error.message === 'Invalid login credentials'
+            ? 'Email ou senha incorretos.'
+            : error.message);
+        }
+      } catch (e) {
+        setAuthLoading(false);
+        showAuthError('login', 'Erro de conexão. Tente novamente.');
+        console.warn('[Auth] Erro no login:', e);
       }
     });
   }
@@ -126,14 +136,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (password.length < 6) { showAuthError('register', 'Senha deve ter no mínimo 6 caracteres.'); return; }
       setAuthLoading(true);
       showAuthError('register', '');
-      const { data, error } = await sbClient.auth.signUp({ email, password, options: { data: { name } } });
-      setAuthLoading(false);
-      if (error) {
-        showAuthError('register', error.message);
-      } else if (data?.user?.identities?.length === 0) {
-        showAuthError('register', 'Este email já está cadastrado.');
-      } else {
-        showAuthSuccess('Conta criada! Verifique seu email para confirmar o cadastro.');
+      try {
+        const { data, error } = await sbClient.auth.signUp({ email, password, options: { data: { name } } });
+        setAuthLoading(false);
+        if (error) {
+          showAuthError('register', error.message);
+        } else if (data?.user?.identities?.length === 0) {
+          showAuthError('register', 'Este email já está cadastrado.');
+        } else {
+          showAuthSuccess('Conta criada! Verifique seu email para confirmar o cadastro.');
+        }
+      } catch (e) {
+        setAuthLoading(false);
+        showAuthError('register', 'Erro de conexão. Tente novamente.');
+        console.warn('[Auth] Erro no cadastro:', e);
       }
     });
   }
@@ -141,7 +157,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
-      await sbClient.auth.signOut();
+      try {
+        await sbClient.auth.signOut();
+      } catch (e) {
+        console.warn('[Auth] Erro no logout:', e);
+      }
       currentUser = null;
       window.location.reload();
     });
@@ -175,17 +195,23 @@ document.addEventListener('DOMContentLoaded', () => {
       if (errEl) errEl.classList.add('hidden');
       if (sucEl) sucEl.classList.add('hidden');
       setAuthLoading(true);
-      const { error } = await sbClient.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin
-      });
-      setAuthLoading(false);
-      if (error) {
-        if (errEl) { errEl.textContent = error.message; errEl.classList.remove('hidden'); }
-      } else {
-        if (sucEl) {
-          sucEl.textContent = 'Email de recuperação enviado! Verifique sua caixa de entrada.';
-          sucEl.classList.remove('hidden');
+      try {
+        const { error } = await sbClient.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin
+        });
+        setAuthLoading(false);
+        if (error) {
+          if (errEl) { errEl.textContent = error.message; errEl.classList.remove('hidden'); }
+        } else {
+          if (sucEl) {
+            sucEl.textContent = 'Email de recuperação enviado! Verifique sua caixa de entrada.';
+            sucEl.classList.remove('hidden');
+          }
         }
+      } catch (e) {
+        setAuthLoading(false);
+        if (errEl) { errEl.textContent = 'Erro de conexão. Tente novamente.'; errEl.classList.remove('hidden'); }
+        console.warn('[Auth] Erro na recuperação de senha:', e);
       }
     });
   }

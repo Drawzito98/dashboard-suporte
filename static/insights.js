@@ -10,9 +10,9 @@ function formatVar(val, suffix = '') {
 function renderInsights() {
   const container = document.getElementById('insightsContent');
   if (!container) return;
-  const data = _gfData();
+  const data = typeof getDataFiltered === 'function' ? getDataFiltered() : _gfData();
   if (!data || !data.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado carregado</div><div class="empty-sub">Importe um CSV para gerar insights.</div></div>';
+    container.innerHTML = typeof emptyStateHtml === 'function' ? emptyStateHtml('Nenhum dado carregado', 'Importe um CSV para gerar insights.') : '<div class="empty-state"><div class="empty-title">Nenhum dado carregado</div><div class="empty-sub">Importe um CSV para gerar insights.</div></div>';
     return;
   }
 

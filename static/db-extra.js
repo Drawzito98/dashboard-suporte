@@ -2,14 +2,14 @@
 // Tabelas: metas, comentarios, historico, scoring_config, alertas_config, colaborador_fotos, colab_inativos
 
 // ─── Helpers internos ────────────────────────────────────────────
+// _uid() e _email() mantidos como fallback; _getUserId/_getUserEmail são usados no resto do arquivo
+
 async function _uid() {
-  try { const u = await sbClient?.auth?.getUser(); return u?.data?.user?.id ?? null; }
-  catch { return null; }
+  return typeof _getUserId === 'function' ? _getUserId() : (async () => { try { const u = await sbClient?.auth?.getUser(); return u?.data?.user?.id ?? null; } catch { return null; } })();
 }
 
 async function _email() {
-  try { const u = await sbClient?.auth?.getUser(); return u?.data?.user?.email ?? null; }
-  catch { return null; }
+  return typeof _getUserEmail === 'function' ? _getUserEmail() : (async () => { try { const u = await sbClient?.auth?.getUser(); return u?.data?.user?.email ?? null; } catch { return null; } })();
 }
 
 async function _getUserId() {
@@ -1086,11 +1086,13 @@ async function migrateLocalToSupabase() {
       if (typeof com === 'object' && Object.keys(com).length > 0) {
         const { data: existing } = await sbClient.from('comentarios').select('id').limit(1);
         if (!existing || existing.length === 0) {
+          const rows = [];
           for (const mes of Object.keys(com)) {
             for (const c of com[mes]) {
-              await sbClient.from('comentarios').insert({ mes, texto: c.texto, user_email: c.user || '' });
+              rows.push({ mes, texto: c.texto, user_email: c.user || '' });
             }
           }
+          if (rows.length) await sbClient.from('comentarios').insert(rows);
         }
       }
     }
@@ -1102,18 +1104,17 @@ async function migrateLocalToSupabase() {
       if (Array.isArray(hist) && hist.length > 0) {
         const { data: existing } = await sbClient.from('historico').select('id').limit(1);
         if (!existing || existing.length === 0) {
-          for (const h of hist) {
-            await sbClient.from('historico').insert({
-              action: h.action || '',
-              colaborador: h.colaborador || '',
-              mes: h.mes || '',
-              campo: h.campo || '',
-              before_value: h.before || '',
-              after_value: h.after || '',
-              detalhes: h.detalhes || '',
-              user_email: h.user || ''
-            });
-          }
+          const rows = hist.map(h => ({
+            action: h.action || '',
+            colaborador: h.colaborador || '',
+            mes: h.mes || '',
+            campo: h.campo || '',
+            before_value: h.before || '',
+            after_value: h.after || '',
+            detalhes: h.detalhes || '',
+            user_email: h.user || ''
+          }));
+          if (rows.length) await sbClient.from('historico').insert(rows);
         }
       }
     }

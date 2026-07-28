@@ -1,7 +1,7 @@
 // Painel do Líder — resumo executivo da equipe
 
 function _liderData() {
-  return typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
+  return typeof getDataFiltered === 'function' ? getDataFiltered() : (typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []));
 }
 
 function renderPainelLider() {

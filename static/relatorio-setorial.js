@@ -3,6 +3,7 @@
 function _rsData() {
   let data;
   if (typeof getCurrentFilteredRows === 'function') data = getCurrentFilteredRows();
+  else if (typeof getDataFiltered === 'function') data = getDataFiltered();
   else if (typeof globalFilters !== 'undefined' && globalFilters) data = globalFilters.aplicar(rawRecords || []);
   else data = rawRecords || [];
   if (typeof isSetorActive === 'function') {

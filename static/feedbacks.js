@@ -3,9 +3,7 @@
 // ─── Helpers ────────────────────────────────────────────────────
 
 function _fbData() {
-  return typeof globalFilters !== 'undefined' && globalFilters
-    ? globalFilters.aplicar(rawRecords)
-    : (rawRecords || []);
+  return typeof getDataFiltered === 'function' ? getDataFiltered() : (typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []));
 }
 
 function _uniqueMonths(data) {
@@ -473,7 +471,7 @@ function bindFbEvents(colabs, meses, saved) {
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => {
       if (typeof dbFeedbacksLoad === 'function') {
-        dbFeedbacksLoad().then(() => renderFeedbacks());
+        dbFeedbacksLoad().then(() => renderFeedbacks()).catch(() => {});
       } else {
         renderFeedbacks();
       }

@@ -4,15 +4,9 @@
 
 const GLOBAL_FILTERS_KEY = 'sistema_global_filters_v1';
 
-// Normaliza nome para deduplicação: trim + lowercase + remove acentos + remove tags/símbolos
+// Normaliza nome para deduplicação: usa normalizeNameShared (helpers.js)
 function _normalizeName(n) {
-  return String(n || '').trim()
-    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
-    .replace(/\s*[^\p{L}\p{N}\s]\s*(?:multi[\s\-]?setor)?\s*$/ui, '')
-    .replace(/\s*(?:multi[\s\-]?setor)\s*$/i, '')
-    .replace(/[^\p{L}\p{N}\s]/gu, '')
-    .trim()
-    .toLowerCase();
+  return typeof normalizeNameShared === 'function' ? normalizeNameShared(n) : String(n || '').trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s*[^\p{L}\p{N}\s]\s*(?:multi[\s\-]?setor)?\s*$/ui, '').replace(/\s*(?:multi[\s\-]?setor)\s*$/i, '').replace(/[^\p{L}\p{N}\s]/gu, '').trim().toLowerCase();
 }
 
 const globalFilters = {

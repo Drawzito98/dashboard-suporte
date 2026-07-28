@@ -28,11 +28,11 @@ function loadAlertasConfig() {
   alertasConfig = JSON.parse(JSON.stringify(DEFAULT_ALERTAS));
   if (typeof dbAlertasLoad === 'function') {
     dbAlertasLoad().then(loaded => {
-      if (loaded && Array.isArray(loaded) && loaded.length) {
+      if (loaded && Array.isArray(loaded)) {
         alertasConfig = loaded;
         saveAlertasConfig();
       }
-    });
+    }).catch(() => {});
   }
 }
 

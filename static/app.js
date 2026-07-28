@@ -299,15 +299,13 @@ document.addEventListener('keydown', (e) => {
   }
 });
 function _normName(s) {
-  try {
-    return (s || "")
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  } catch (e) {
-    return (s || "").toLowerCase().replace(/\s+/g, " ").trim();
-  }
+  return typeof normalizeNameShared === 'function' ? normalizeNameShared(s) : (function() {
+    try {
+      return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+    } catch (e) {
+      return (s || "").toLowerCase().replace(/\s+/g, " ").trim();
+    }
+  })();
 }
 
 function getPerfilDocsLink(nomeAtendente) {
@@ -390,10 +388,11 @@ function deduplicateRecords(records) {
     if (sbClient && idsToRemove.length > 0 && requireAdmin()) {
       sbClient.from('registros').delete().in('id', idsToRemove).then(({ error }) => {
         if (error) console.warn('Erro ao limpar duplicatas no Supabase:', error);
-        else console.log(`[Dedup] ${idsToRemove.length} duplicatas removidas do Supabase`);
       });
     }
   }
+
+  // Atualiza a interface com os dados limpos
   return records;
 }
 
@@ -749,13 +748,7 @@ function uniqueSorted(arr) {
 }
 
 function normalizeNameForDedup(n) {
-  return String(n || '').trim()
-    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
-    .replace(/\s*[^\p{L}\p{N}\s]\s*(?:multi[\s\-]?setor)?\s*$/ui, '')
-    .replace(/\s*(?:multi[\s\-]?setor)\s*$/i, '')
-    .replace(/[^\p{L}\p{N}\s]/gu, '')
-    .trim()
-    .toLowerCase();
+  return typeof normalizeNameShared === 'function' ? normalizeNameShared(n) : String(n || '').trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s*[^\p{L}\p{N}\s]\s*(?:multi[\s\-]?setor)?\s*$/ui, '').replace(/\s*(?:multi[\s\-]?setor)\s*$/i, '').replace(/[^\p{L}\p{N}\s]/gu, '').trim().toLowerCase();
 }
 
 
@@ -1535,7 +1528,7 @@ function renderPreviewDisplay(rows) {
         const payload = { [key]: rec[key] };
         dbUpdateRecord(rec.id, payload).then(ok => {
           if (!ok) showToast('Erro ao salvar alteração no banco.', 'error');
-        });
+        }).catch(() => {});
       }
       if (rec[key] !== oldVal) {
         logHistorico('edit', rec, { campo: key, before: String(oldVal ?? ''), after: String(rec[key] ?? '') });
@@ -2513,9 +2506,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     setLoading(true, 'Carregando dados...');
     initDbExtra().then(() => {
       setLoading(false);
-      console.log('[App] db-extra carregado do Supabase');
       if (isAdmin() && typeof dbNotificacoesLoad === 'function') {
-        dbNotificacoesLoad().then(initNotificacoesUI);
+            dbNotificacoesLoad().then(initNotificacoesUI).catch(() => {});
       }
       if (typeof initReportesNotifications === 'function') {
         initReportesNotifications();
@@ -3188,7 +3180,7 @@ function initNotificacoesUI() {
     body.querySelectorAll('.notif-item').forEach(el => {
       el.addEventListener('click', () => {
         const id = el.dataset.id;
-        marcarNotificacaoLida(id).then(atualizarUI);
+        marcarNotificacaoLida(id).then(atualizarUI).catch(() => {});
       });
     });
   }
@@ -3202,7 +3194,7 @@ function initNotificacoesUI() {
 
   if (marcarTodas) {
     marcarTodas.addEventListener('click', () => {
-      marcarTodasNotificacoesLidas().then(atualizarUI);
+      marcarTodasNotificacoesLidas().then(atualizarUI).catch(() => {});
     });
   }
 

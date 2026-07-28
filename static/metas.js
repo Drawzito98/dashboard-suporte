@@ -18,7 +18,7 @@ function loadMetas() {
         saveMetas();
         if (document.querySelector('#tab-gamificacao.active')) renderMetas();
       }
-    });
+    }).catch(() => {});
   }
 }
 

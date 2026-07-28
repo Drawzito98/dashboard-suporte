@@ -3,10 +3,11 @@
 const ANOTACOES_EDITING_KEY = 'sistema_anotacao_editando_v1';
 
 function hoje() {
-  return new Date().toISOString().slice(0, 10);
+  return typeof hojeShared === 'function' ? hojeShared() : new Date().toISOString().slice(0, 10);
 }
 
 function formatarData(dataStr) {
+  if (typeof formatarDataShared === 'function') return formatarDataShared(dataStr);
   if (!dataStr) return '';
   const [ano, mes, dia] = dataStr.split('-');
   return `${dia}/${mes}/${ano}`;
@@ -177,7 +178,7 @@ function bindAnotacaoEvents(saved) {
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => {
       if (typeof dbAnotacoesLoad === 'function') {
-        dbAnotacoesLoad().then(() => renderAnotacoes());
+        dbAnotacoesLoad().then(() => renderAnotacoes()).catch(() => {});
       } else {
         renderAnotacoes();
       }

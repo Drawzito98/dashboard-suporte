@@ -56,7 +56,7 @@ function renderComentarios() {
   const container = document.getElementById('comentariosContent');
   if (!container) return;
 
-  const data = typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
+  const data = typeof getDataFiltered === 'function' ? getDataFiltered() : (typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []));
   const meses = [...new Set((data || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
   const map = getComentarios();
 

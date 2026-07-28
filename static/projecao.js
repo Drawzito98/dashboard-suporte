@@ -14,7 +14,7 @@ function closeProjecao() {
 function renderProjecao() {
   const container = document.getElementById('projecaoContent');
   if (!container) return;
-  const data = typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
+  const data = typeof getDataFiltered === 'function' ? getDataFiltered() : (typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []));
   const names = [...new Set((data || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
   const setores = [...new Set((data || []).filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
   const months = [...new Set((data || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
@@ -261,7 +261,7 @@ function renderProjecao() {
       if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
       populateFilters(rawRecords);
       updateFilterOptions();
-      const filtered = typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []);
+      const filtered = typeof getDataFiltered === 'function' ? getDataFiltered() : (typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []));
       renderChart(filtered);
       renderSummary(filtered);
       saveState();

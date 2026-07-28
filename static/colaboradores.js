@@ -89,7 +89,7 @@ function openColabReport(nome) {
   if (!overlay || !content) return;
 
   // Get filtered data from current filters
-  const filteredData = typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords || []) : (rawRecords || []);
+  const filteredData = typeof getDataFiltered === 'function' ? getDataFiltered() : (typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords || []) : (rawRecords || []));
   const colabRows = filteredData.filter(r => r && String(r['Atendente']) === nome);
   const allRows = filteredData.filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']));
 

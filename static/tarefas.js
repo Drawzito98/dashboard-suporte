@@ -3,7 +3,7 @@
 let inlineEditingId = null;
 
 function hoje() {
-  return new Date().toISOString().slice(0, 10);
+  return typeof hojeShared === 'function' ? hojeShared() : new Date().toISOString().slice(0, 10);
 }
 
 function updateTarefasBadge() {
@@ -27,6 +27,7 @@ function updateTarefasBadge() {
 }
 
 function formatarData(dataStr) {
+  if (typeof formatarDataShared === 'function') return formatarDataShared(dataStr);
   if (!dataStr) return '';
   const [ano, mes, dia] = dataStr.split('-');
   return `${dia}/${mes}/${ano}`;
@@ -263,7 +264,7 @@ function bindTarefaEvents(saved) {
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => {
       if (typeof dbTarefasLoad === 'function') {
-        dbTarefasLoad().then(() => renderTarefas());
+        dbTarefasLoad().then(() => renderTarefas()).catch(() => {});
       } else {
         renderTarefas();
       }
