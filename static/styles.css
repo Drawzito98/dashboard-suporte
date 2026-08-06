@@ -1002,6 +1002,8 @@ html[data-theme="dark"] .skeleton::after {
 .badge-ferias { background: var(--info-soft);    color: var(--info); }
 .badge-multi  { background: var(--warning-soft); color: var(--warning); }
 tbody .cell-ferias  { background: var(--info-soft); }
+.proj-exists { color: var(--success); font-size: 13px; margin-left: 4px; }
+.proj-inactive { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; background: var(--muted-soft, rgba(128,128,128,.15)); color: var(--text-muted); }
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {

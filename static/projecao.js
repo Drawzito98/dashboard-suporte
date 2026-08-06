@@ -1,4 +1,4 @@
-// Projeção Mensal — adicionar resultados previstos para meses futuros
+// Projeção Mensal — adicionar/editar resultados de um mês para colaboradores
 function openProjecaoOverlay() {
   const overlay = document.getElementById('projecaoOverlay');
   if (!overlay) return;
@@ -14,13 +14,14 @@ function closeProjecao() {
 function renderProjecao() {
   const container = document.getElementById('projecaoContent');
   if (!container) return;
-  const data = typeof getDataFiltered === 'function' ? getDataFiltered() : (typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []));
-  const names = [...new Set((data || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
+  const data = rawRecords || [];
+
+  // Usa TODOS os registros (não filtrados) e não exclui inativos — o admin
+  // precisa lançar/editar resultados de qualquer colaborador do time.
+  const names = [...new Set((data || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente'])).map(r => r['Atendente']))].sort();
   const setores = [...new Set((data || []).filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
   const months = [...new Set((data || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
   const lastMonth = months.length ? months[months.length - 1] : '';
-
-  // Suggest next month
   const nextMonth = suggestNextMonth(months);
 
   // Build setor map for each collaborator (use most recent setor)
@@ -50,10 +51,10 @@ function renderProjecao() {
     });
   }
 
-  let html = `
+  container.innerHTML = `
     <div style="padding:var(--s-5)">
       <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--s-1)">📅 Novo Registro Mensal</h2>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">Adicione registros de resultados para colaboradores em um novo mês.</p>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">Adicione ou edite os resultados do time para o mês selecionado. Registros já existentes no mês são <strong>atualizados</strong> (não duplicados).</p>
 
       <div style="display:flex;gap:var(--s-3);margin-bottom:var(--s-4);flex-wrap:wrap;align-items:end">
         <label class="field" style="flex:1;min-width:180px">
@@ -70,6 +71,11 @@ function renderProjecao() {
         <button class="btn-small" id="projecaoCopyBtn" type="button" ${lastMonth ? '' : 'disabled'}>
           📋 Copiar do mês anterior
         </button>
+      </div>
+
+      <div id="projecaoEmpty" class="empty-state" style="display:${names.length ? 'none' : 'block'}">
+        <div class="empty-title">Nenhum colaborador encontrado</div>
+        <div class="empty-sub">Importe um CSV com os colaboradores antes de lançar resultados.</div>
       </div>
 
       <div style="overflow-x:auto;max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md)">
@@ -89,101 +95,122 @@ function renderProjecao() {
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Observação</th>
             </tr>
           </thead>
-          <tbody>
-            ${names.map((n, i) => {
-              const setor = colabSetor[n] || '';
-              return `<tr>
-                <td style="font-weight:500;white-space:nowrap">${escapeHtml(n)}</td>
-                <td><select class="proj-setor" data-idx="${i}" style="width:100%;padding:3px 6px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-size:12px">
-                  ${setores.map(s => `<option value="${escapeHtml(s)}" ${s === setor ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
-                </select></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Assumidos" value="0" min="0" style="width:55px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Finalizados" value="0" min="0" style="width:55px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Transferidos" value="0" min="0" style="width:55px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="SCORE" value="" min="0" max="5" step="0.1" style="width:55px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Nota1" value="0" min="0" max="5" step="0.1" style="width:55px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Nota2" value="0" min="0" max="5" step="0.1" style="width:55px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Nota3" value="0" min="0" max="5" step="0.1" style="width:55px"/></td>
-                <td><input type="number" class="proj-input" data-idx="${i}" data-field="Total" value="0" min="0" style="width:55px"/></td>
-                <td><input type="text" class="proj-input" data-idx="${i}" data-field="Observações" value="" placeholder="Férias/ausente..." style="width:100px;font-size:11px"/></td>
-              </tr>`;
-            }).join('')}
-            }).join('')}
-          </tbody>
+          <tbody id="projecaoTbody"></tbody>
         </table>
       </div>
 
       <div style="display:flex;gap:var(--s-3);margin-top:var(--s-4);justify-content:flex-end">
         <button class="btn-small" id="projecaoCancelBtn" type="button">Cancelar</button>
-        <button class="btn-primary" id="projecaoSaveBtn" type="button">💾 Salvar registros (${names.length} colaboradores)</button>
+        <button class="btn-primary" id="projecaoSaveBtn" type="button">💾 Salvar registros</button>
       </div>
     </div>
   `;
 
-  container.innerHTML = html;
+  const mesInput = document.getElementById('projecaoMes');
+  const setorInput = document.getElementById('projecaoSetor');
+  const tbody = document.getElementById('projecaoTbody');
 
-  document.getElementById('projecaoClose').addEventListener('click', closeProjecao);
-  document.getElementById('projecaoCancelBtn').addEventListener('click', closeProjecao);
+  function existingForMonth(mes) {
+    const map = new Map();
+    (data || []).filter(r => r && r['Mês'] === mes && r['Atendente']).forEach(r => {
+      map.set(r['Atendente'], r);
+    });
+    return map;
+  }
+
+  function renderRows() {
+    const mes = mesInput ? mesInput.value : '';
+    const selSetor = setorInput ? setorInput.value : '';
+    const existing = existingForMonth(mes);
+    let visible = 0;
+
+    tbody.innerHTML = names.map(n => {
+      const setor = colabSetor[n] || '';
+      if (selSetor && setor !== selSetor) return '';
+      visible++;
+      const prev = existing.get(n);
+      const isInactive = typeof isColabActive === 'function' && !isColabActive(n);
+      const value = (field, dflt) => (prev && prev[field] !== undefined && prev[field] !== null ? prev[field] : dflt);
+      const obs = (prev && prev['Observações']) ? String(prev['Observações']) : '';
+      const setorVal = (prev && prev['Setor']) ? prev['Setor'] : setor;
+      const marker = prev
+        ? ' <span class="proj-exists" title="Já existe registro para este mês — será atualizado">●</span>'
+        : (isInactive ? ' <span class="proj-inactive" title="Marcado como inativo no app — registros ainda podem ser lançados">inativo</span>' : '');
+
+      return `<tr data-name="${escapeHtml(n)}">
+        <td style="font-weight:500;white-space:nowrap">${escapeHtml(n)}${marker}</td>
+        <td><select class="proj-setor" style="width:100%;padding:3px 6px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-size:12px">
+          ${setores.map(s => `<option value="${escapeHtml(s)}" ${s === setorVal ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
+        </select></td>
+        <td><input type="number" class="proj-input" data-field="Assumidos" value="${value('Assumidos', 0)}" min="0" style="width:55px"/></td>
+        <td><input type="number" class="proj-input" data-field="Finalizados" value="${value('Finalizados', 0)}" min="0" style="width:55px"/></td>
+        <td><input type="number" class="proj-input" data-field="Transferidos" value="${value('Transferidos', 0)}" min="0" style="width:55px"/></td>
+        <td><input type="number" class="proj-input" data-field="SCORE" value="${value('SCORE', '')}" min="0" max="5" step="0.1" style="width:55px"/></td>
+        <td><input type="number" class="proj-input" data-field="Nota1" value="${value('Nota1', 0)}" min="0" max="5" step="0.1" style="width:55px"/></td>
+        <td><input type="number" class="proj-input" data-field="Nota2" value="${value('Nota2', 0)}" min="0" max="5" step="0.1" style="width:55px"/></td>
+        <td><input type="number" class="proj-input" data-field="Nota3" value="${value('Nota3', 0)}" min="0" max="5" step="0.1" style="width:55px"/></td>
+        <td><input type="number" class="proj-input" data-field="Total" value="${value('Total', 0)}" min="0" style="width:55px"/></td>
+        <td><input type="text" class="proj-input" data-field="Observações" value="${escapeHtml(obs)}" placeholder="Férias/ausente..." style="width:100px;font-size:11px"/></td>
+      </tr>`;
+    }).join('');
+
+    const emptyEl = document.getElementById('projecaoEmpty');
+    if (emptyEl) emptyEl.style.display = names.length ? 'none' : 'block';
+
+    const saveBtn = document.getElementById('projecaoSaveBtn');
+    if (saveBtn) saveBtn.textContent = visible ? `💾 Salvar registros (${visible} colaboradores)` : '💾 Salvar registros';
+  }
+
+  renderRows();
+
+  const closeBtn = document.getElementById('projecaoClose');
+  if (closeBtn && !closeBtn.dataset.bound) {
+    closeBtn.dataset.bound = '1';
+    closeBtn.addEventListener('click', closeProjecao);
+  }
+  const cancelBtn = document.getElementById('projecaoCancelBtn');
+  if (cancelBtn) cancelBtn.addEventListener('click', closeProjecao);
+
+  if (mesInput) mesInput.addEventListener('change', renderRows);
+  if (setorInput) setorInput.addEventListener('change', renderRows);
 
   // Copy from last month
   const copyBtn = document.getElementById('projecaoCopyBtn');
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
       if (!lastMonth) return;
-      const inputs = container.querySelectorAll('.proj-input');
-      inputs.forEach(inp => {
-        const idx = parseInt(inp.dataset.idx);
-        const field = inp.dataset.field;
-        const name = names[idx];
-        if (name && lastMonthData[name] && lastMonthData[name][field] !== undefined) {
-          inp.value = lastMonthData[name][field];
-        }
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const name = tr.dataset.name;
+        if (!name || !lastMonthData[name]) return;
+        tr.querySelectorAll('.proj-input').forEach(inp => {
+          const field = inp.dataset.field;
+          if (lastMonthData[name][field] !== undefined) inp.value = lastMonthData[name][field];
+        });
       });
       showToast('Dados copiados do mês anterior.', 'ok');
     });
   }
 
-  // Filter by setor
-  const setorSelect = document.getElementById('projecaoSetor');
-  if (setorSelect) {
-    setorSelect.addEventListener('change', () => {
-      const selected = setorSelect.value;
-      const rows = container.querySelectorAll('tbody tr');
-      rows.forEach((row, idx) => {
-        const name = names[idx];
-        const setor = colabSetor[name] || '';
-        row.style.display = selected && setor !== selected ? 'none' : '';
-      });
-    });
-  }
+  // Save (upsert: atualiza registros existentes do mês, insere novos)
+  const saveBtn = document.getElementById('projecaoSaveBtn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+      if (!requireAdmin()) return;
+      const mes = mesInput ? mesInput.value : '';
+      if (!mes) {
+        showToast('Selecione um mês.', 'warn');
+        return;
+      }
 
-  // Save
-  document.getElementById('projecaoSaveBtn').addEventListener('click', async () => {
-    if (!requireAdmin()) return;
-    const mesInput = document.getElementById('projecaoMes');
-    const mes = mesInput ? mesInput.value : '';
-    if (!mes) {
-      showToast('Selecione um mês.', 'warn');
-      return;
-    }
+      const toInsert = [];
+      const toUpdate = [];
 
-    const inputs = container.querySelectorAll('.proj-input');
-    const records = [];
-    const seen = new Set();
-
-    inputs.forEach(inp => {
-      const idx = parseInt(inp.dataset.idx);
-      const field = inp.dataset.field;
-      const name = names[idx];
-      if (!name) return;
-      const key = `${name}_${idx}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        const setorSelects = container.querySelectorAll('.proj-setor');
-        const setor = setorSelects[idx] ? setorSelects[idx].value : (colabSetor[name] || '');
-
+      tbody.querySelectorAll('tr').forEach(tr => {
+        if (tr.style.display === 'none') return;
+        const name = tr.dataset.name;
+        if (!name) return;
         const rec = {
-          Setor: setor,
+          Setor: '',
           Mês: mes,
           Atendente: name,
           Assumidos: 0,
@@ -196,12 +223,9 @@ function renderProjecao() {
           Total: 0,
           Observações: ''
         };
-
-        // Collect all values for this name
-        const nameInputs = container.querySelectorAll(`.proj-input[data-idx="${idx}"]`);
-        nameInputs.forEach(ni => {
-          const f = ni.dataset.field;
-          const val = ni.value.trim();
+        tr.querySelectorAll('.proj-input').forEach(inp => {
+          const f = inp.dataset.field;
+          const val = inp.value.trim();
           if (f === 'SCORE') {
             rec.SCORE = val !== '' ? parseFloat(val) : null;
           } else if (f === 'Nota1' || f === 'Nota2' || f === 'Nota3') {
@@ -212,73 +236,85 @@ function renderProjecao() {
             rec[f] = val;
           }
         });
-
+        const setorSel = tr.querySelector('.proj-setor');
+        rec.Setor = setorSel ? setorSel.value : (colabSetor[name] || '');
         rec.Total = rec.Assumidos + rec.Transferidos + rec.Finalizados;
 
-        // Only add record if at least one field has meaningful data
+        // Only include row if at least one field has meaningful data
         const hasData = rec.Assumidos > 0 || rec.Transferidos > 0 || rec.Finalizados > 0 ||
           rec.SCORE !== null || rec.Nota1 > 0 || rec.Nota2 > 0 || rec.Nota3 > 0 ||
           rec.Observações !== '';
         if (!hasData) return;
 
-        records.push(rec);
-      }
-    });
-
-    if (!records.length) {
-      showToast('Nenhum registro para salvar.', 'warn');
-      return;
-    }
-
-    setLoading(true, 'Salvando registros…');
-    try {
-      let savedCount = 0;
-      let pendingCount = 0;
-
-      if (sbClient && records.length) {
-        const result = await dbSaveRecords(records);
-        if (result && Array.isArray(result)) {
-          result.forEach((row, i) => {
-            if (row && row.id && records[i]) records[i].id = row.id;
-          });
-          savedCount = result.length;
-        } else if (result === true) {
-          savedCount = records.length;
-        } else {
-          records.forEach(rec => addToPendingSync(rec));
-          pendingCount = records.length;
-        }
-      } else {
-        records.forEach(rec => addToPendingSync(rec));
-        pendingCount = records.length;
-      }
-
-      records.forEach(rec => {
-        rawRecords.push(rec);
-        if (typeof logHistorico === 'function') logHistorico('add', rec, { detalhes: 'Adicionado via novo registro mensal' });
+        const existingRec = (rawRecords || []).find(r => r && r['Atendente'] === name && String(r['Mês']) === mes);
+        if (existingRec) toUpdate.push({ rec, existingRec });
+        else toInsert.push(rec);
       });
 
-      if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
-      populateFilters(rawRecords);
-      updateFilterOptions();
-      const filtered = typeof getDataFiltered === 'function' ? getDataFiltered() : (typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []));
-      renderChart(filtered);
-      renderSummary(filtered);
-      saveState();
-
-      if (pendingCount > 0) {
-        showToast(`${savedCount} registro(s) adicionados para ${mes}. ${pendingCount} pendente(s) de sincronização (serão restaurados ao recarregar).`, 'warn', 'Registro Mensal');
-      } else {
-        showToast(`${savedCount} registro(s) adicionados para ${mes}.`, 'success', 'Registro Mensal');
+      if (!toInsert.length && !toUpdate.length) {
+        showToast('Nenhum registro para salvar.', 'warn');
+        return;
       }
-      closeProjecao();
-    } catch (e) {
-      console.error('Erro ao salvar projeção:', e);
-      showToast('Erro ao salvar. Veja o Console (F12).', 'error');
-    } finally {
-      setLoading(false);
-    }
-  });
+
+      setLoading(true, 'Salvando registros…');
+      try {
+        let inserted = 0;
+        let updated = 0;
+        let pending = 0;
+
+        if (toInsert.length) {
+          if (sbClient) {
+            const result = await dbSaveRecords(toInsert);
+            if (result && Array.isArray(result)) {
+              result.forEach((row, i) => { if (row && row.id && toInsert[i]) toInsert[i].id = row.id; });
+              inserted = result.length;
+            } else if (result === true) {
+              inserted = toInsert.length;
+            } else {
+              toInsert.forEach(rec => addToPendingSync(rec));
+              pending += toInsert.length;
+            }
+          } else {
+            toInsert.forEach(rec => addToPendingSync(rec));
+            pending += toInsert.length;
+          }
+          toInsert.forEach(rec => {
+            rawRecords.push(rec);
+            if (typeof logHistorico === 'function') logHistorico('add', rec, { detalhes: 'Adicionado via novo registro mensal' });
+          });
+        }
+
+        for (const { rec, existingRec } of toUpdate) {
+          const before = Object.assign({}, existingRec);
+          Object.assign(existingRec, rec);
+          if (existingRec.id != null) {
+            const ok = await dbUpdateRecord(existingRec.id, rec);
+            if (!ok) pending++;
+          }
+          if (typeof logHistorico === 'function') logHistorico('edit', existingRec, { campo: 'Registro mensal', before: JSON.stringify(before), after: JSON.stringify(rec) });
+          updated++;
+        }
+
+        if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
+        populateFilters(rawRecords);
+        updateFilterOptions();
+        try { updateView(); } catch (e) { console.error('[Projecao] Erro ao atualizar view:', e); }
+        saveState();
+
+        const parts = [];
+        if (updated) parts.push(`${updated} atualizado(s)`);
+        if (inserted) parts.push(`${inserted} adicionado(s)`);
+        if (pending) parts.push(`${pending} pendente(s)`);
+        showToast(`${parts.join(', ')} para ${mes}.`, pending ? 'warn' : 'success', 'Registro Mensal');
+        closeProjecao();
+      } catch (e) {
+        console.error('Erro ao salvar projeção:', e);
+        showToast('Erro ao salvar. Veja o Console (F12).', 'error');
+      } finally {
+        setLoading(false);
+      }
+    });
+  }
 }
 
 function suggestNextMonth(months) {
