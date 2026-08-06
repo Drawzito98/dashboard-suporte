@@ -16,9 +16,22 @@ function renderProjecao() {
   if (!container) return;
   const data = rawRecords || [];
 
-  // Usa TODOS os registros (não filtrados) e não exclui inativos — o admin
-  // precisa lançar/editar resultados de qualquer colaborador do time.
-  const names = [...new Set((data || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente'])).map(r => r['Atendente']))].sort();
+  // Lista completa do time: todos os registros (sem filtros globais/setor) +
+  // cadastros (colaboradores_info) + metas. Exclui apenas colaboradores
+  // marcados como INATIVOS (isColabActive).
+  const fromRecords = (data || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente'])).map(r => r['Atendente']);
+  let extraNames = [];
+  try {
+    const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+    extraNames.push(...Object.keys(colabInfo || {}));
+  } catch (e) {}
+  try {
+    const metas = JSON.parse(localStorage.getItem('sistema_metas_v1') || '[]');
+    if (Array.isArray(metas)) extraNames.push(...metas.map(m => m && m.collaborator).filter(Boolean));
+  } catch (e) {}
+  const names = [...new Set([...fromRecords, ...extraNames])]
+    .filter(n => typeof isColabActive !== 'function' || isColabActive(n))
+    .sort();
   const setores = [...new Set((data || []).filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
   const months = [...new Set((data || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
   const lastMonth = months.length ? months[months.length - 1] : '';
@@ -75,7 +88,7 @@ function renderProjecao() {
 
       <div id="projecaoEmpty" class="empty-state" style="display:${names.length ? 'none' : 'block'}">
         <div class="empty-title">Nenhum colaborador encontrado</div>
-        <div class="empty-sub">Importe um CSV com os colaboradores antes de lançar resultados.</div>
+        <div class="empty-sub">Importe um CSV ou cadastre colaboradores na aba Colaboradores antes de lançar resultados.</div>
       </div>
 
       <div style="overflow-x:auto;max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md)">
@@ -129,13 +142,12 @@ function renderProjecao() {
       if (selSetor && setor !== selSetor) return '';
       visible++;
       const prev = existing.get(n);
-      const isInactive = typeof isColabActive === 'function' && !isColabActive(n);
       const value = (field, dflt) => (prev && prev[field] !== undefined && prev[field] !== null ? prev[field] : dflt);
       const obs = (prev && prev['Observações']) ? String(prev['Observações']) : '';
       const setorVal = (prev && prev['Setor']) ? prev['Setor'] : setor;
       const marker = prev
         ? ' <span class="proj-exists" title="Já existe registro para este mês — será atualizado">●</span>'
-        : (isInactive ? ' <span class="proj-inactive" title="Marcado como inativo no app — registros ainda podem ser lançados">inativo</span>' : '');
+        : '';
 
       return `<tr data-name="${escapeHtml(n)}">
         <td style="font-weight:500;white-space:nowrap">${escapeHtml(n)}${marker}</td>
