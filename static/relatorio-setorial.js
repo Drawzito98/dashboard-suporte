@@ -191,7 +191,7 @@ function renderRelatorioSetorial() {
 
   const fmtNum = n => (Number(n) || 0).toLocaleString('pt-BR');
   const fmtScore = n => n > 0 ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014';
-  const fmtPct = n => n !== null && n !== undefined ? (n * 100).toFixed(1) + '%' : '\u2014';
+  const fmtPct = n => n !== null && n !== undefined ? (n * 100).toFixed(1).replace('.', ',') + '%' : '\u2014';
   const _isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const _chartTextColor = typeof ChartTheme !== 'undefined' ? ChartTheme.text() : getComputedStyle(document.documentElement).getPropertyValue('--text-strong').trim() || (_isDark ? '#f8fafc' : '#0f172a');
   const _chartGridColor = typeof ChartTheme !== 'undefined' ? ChartTheme.grid() : (_isDark ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.15)');
@@ -267,7 +267,7 @@ function renderRelatorioSetorial() {
     if (d === null || d === undefined || isNaN(d)) return '';
     const cls = _arrowCls(invert ? -d : d);
     const arrow = _arrow(d);
-    return `<span class="${cls}">${arrow} ${d > 0 ? '+' : ''}${Math.abs(d).toFixed(1)}%</span>`;
+    return `<span class="${cls}">${arrow} ${d > 0 ? '+' : ''}${Math.abs(d).toFixed(1).replace('.', ',')}%</span>`;
   };
   const kpiCards = [
     { label: 'Assumidos', value: fmtNum(totalAss), sub: _deltaSpan(_calcDeltaPct(prevAss, totalAss)) },
@@ -878,7 +878,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   const now = new Date().toLocaleString('pt-BR', { hour12: false });
   const fmtInt = n => (Number(n) || 0).toLocaleString('pt-BR');
   const fmtScore = n => n > 0 ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014';
-  const fmtPct = n => n !== null && n !== undefined && !isNaN(n) ? (n * 100).toFixed(1) + '%' : '\u2014';
+  const fmtPct = n => n !== null && n !== undefined && !isNaN(n) ? (n * 100).toFixed(1).replace('.', ',') + '%' : '\u2014';
   const setFont = (style, size) => doc.setFont('helvetica', style).setFontSize(size);
 
   const totalFin = opts.totalFin !== undefined ? opts.totalFin : setorMetrics.reduce((s, m) => s + m.fin, 0);
@@ -890,20 +890,20 @@ function exportSetorPdf(setorMetrics, meses, opts) {
 
   function drawHeader(y) {
     doc.setFillColor(accent);
-    doc.rect(0, 0, pageW, 24, 'F');
+    doc.rect(0, 0, pageW, 26, 'F');
     doc.setTextColor(white);
-    setFont('bold', 15); doc.text('Resumo por Setor', M, 10);
-    setFont('normal', 10); doc.text('IXC CG \u00B7 Painel de Suporte', M, 17);
-    setFont('bold', 11); doc.text(`Período: ${period}`, pageW - M, 10, { align: 'right' });
-    setFont('normal', 8); doc.text(`Gerado em ${now}`, pageW - M, 17, { align: 'right' });
+    setFont('bold', 17); doc.text('Resumo por Setor', M, 11);
+    setFont('normal', 10.5); doc.text('IXC CG \u00B7 Painel de Suporte', M, 18.5);
+    setFont('bold', 12); doc.text(`Período: ${period}`, pageW - M, 11, { align: 'right' });
+    setFont('normal', 8.5); doc.text(`Gerado em ${now}`, pageW - M, 18.5, { align: 'right' });
     return y;
   }
 
   function drawFooter(page) {
     doc.setPage(page);
-    doc.setFontSize(7);
+    doc.setFontSize(7.5);
     doc.setTextColor(muted);
-    doc.text('Métricas por setor \u00B7 sem identificação individual de colaboradores', pageW / 2, pageH - 4, { align: 'center' });
+    doc.text('Métricas por setor \u00B7 sem identificação individual de colaboradores', pageW / 2, pageH - 5, { align: 'center' });
   }
 
   const hasPrev = !!opts.hasPrev;
@@ -914,11 +914,11 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   const neutral = '#64748b';
 
   const pctDelta = (p, c) => (p === 0 ? null : _calcDeltaPct(p, c));
-  const fmtDeltaPct = d => d === null || d === undefined || isNaN(d) ? '' : `${d > 0 ? '+' : ''}${Math.abs(d).toFixed(1)}%`;
+  const fmtDeltaPct = d => d === null || d === undefined || isNaN(d) ? '' : `${d > 0 ? '+' : ''}${Math.abs(d).toFixed(1).replace('.', ',')}%`;
   const deltaColor = d => d > 0 ? green : (d < 0 ? red : neutral);
   const dirOf = d => d === null || d === undefined || isNaN(d) ? null : (d > 0 ? 'up' : (d < 0 ? 'down' : 'flat'));
 
-  function drawDelta(x, yBase, dir, color, txt) {
+  function drawDelta(x, yBase, dir, color, txt, size) {
     if (!dir || !txt) return;
     doc.setTextColor(color);
     doc.setFillColor(color);
@@ -927,7 +927,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     if (dir === 'up') doc.triangle(x - 1.7, cy + 1.1, x + 1.7, cy + 1.1, x, cy - 1.8, 'F');
     else if (dir === 'down') doc.triangle(x - 1.7, cy - 1.1, x + 1.7, cy - 1.1, x, cy + 1.8, 'F');
     else { doc.setLineWidth(0.5); doc.line(x - 1.7, cy, x + 1.7, cy); }
-    setFont('bold', 7);
+    setFont('bold', size || 7);
     doc.text(txt, x + 4.3, yBase, { align: 'left' });
   }
 
@@ -977,27 +977,27 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     { key: 'prod', label: 'Produtividade', value: fmtPct(prodGeral), txt: gText.prod },
     { key: 'traG', label: 'Taxa Transferência', value: fmtPct(traGeral), txt: gText.traG }
   ];
-  const gap = 6;
+  const gap = 7;
   const cardW = (pageW - M * 2 - gap * (kpis.length - 1)) / kpis.length;
-  const cardH = 26;
-  y = 32;
+  const cardH = 28;
+  y = 34;
   kpis.forEach((k, i) => {
     const x = M + i * (cardW + gap);
     doc.setFillColor(light);
     doc.setDrawColor(border);
     doc.roundedRect(x, y, cardW, cardH, 2.5, 2.5, 'FD');
-    doc.setTextColor(muted); setFont('bold', 7); doc.text(String(k.label).toUpperCase(), x + 4, y + 7);
-    doc.setTextColor(fg); setFont('bold', 15); doc.text(k.value, x + 4, y + 17);
+    doc.setTextColor(muted); setFont('bold', 7.5); doc.text(String(k.label).toUpperCase(), x + 4, y + 8);
+    doc.setTextColor(fg); setFont('bold', 16); doc.text(k.value, x + 4, y + 19);
     if (k.txt) {
-      drawDelta(x + 5.5, y + 23, gDir[k.key], gColor[k.key], k.txt);
+      drawDelta(x + 5.5, y + 25, gDir[k.key], gColor[k.key], k.txt, 8);
     }
   });
-  y += cardH + 6;
+  y += cardH + 8;
 
   if (hasPrev && prevLabel) {
-    doc.setTextColor(muted); setFont('normal', 7.5);
+    doc.setTextColor(muted); setFont('normal', 8.5);
     doc.text(`Variação vs período anterior (${prevLabel})`, M, y);
-    y += 5;
+    y += 6;
   }
 
   // Table — Setor | Assumidos | Transferidos | Finalizados | Score | Produtividade | Tx Transf. (+ delta em cada célula)
@@ -1010,7 +1010,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     { label: 'Produtividade', w: 38, align: 'left' },
     { label: 'Tx Transf.', w: 34, align: 'left' }
   ];
-  const rowH = 12;
+  const rowH = 15;
   const tableW = cols.reduce((s, c) => s + c.w, 0);
   const startX = (pageW - tableW) / 2;
 
@@ -1018,10 +1018,10 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.setFillColor(accent);
     doc.rect(startX, y, tableW, rowH, 'F');
     doc.setTextColor(white);
-    setFont('bold', 8);
+    setFont('bold', 9.5);
     let cx = startX;
     cols.forEach(c => {
-      doc.text(c.label, cx + 4, y + 6, { align: 'left' });
+      doc.text(c.label, cx + 4, y + 7, { align: 'left' });
       cx += c.w;
     });
     y += rowH;
@@ -1031,7 +1031,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
 
   const sorted = setorMetrics.slice().sort((a, b) => b.fin - a.fin);
   sorted.forEach((m, i) => {
-    if (y + rowH > pageH - 10) {
+    if (y + rowH > pageH - 12) {
       doc.addPage('l', 'mm', 'a4');
       page += 1;
       y = 16;
@@ -1066,8 +1066,8 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.setFillColor(i % 2 ? light : white);
     doc.rect(startX, y, tableW, rowH, 'F');
     doc.setTextColor(fg);
-    setFont('normal', 9);
-    doc.text(m.nome, startX + 4, y + 6, { align: 'left' });
+    setFont('normal', 10);
+    doc.text(m.nome, startX + 4, y + 6.5, { align: 'left' });
     const cells = [
       { v: fmtInt(m.ass), dv: d.ass, dc: dCol.ass, dir: dDir.ass },
       { v: fmtInt(m.tra), dv: d.tra, dc: dCol.tra, dir: dDir.tra },
@@ -1080,9 +1080,9 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     cells.forEach((c, ci) => {
       const w = cols[ci + 1].w;
       doc.setTextColor(fg);
-      doc.text(c.v, cx + 4, y + 5.5, { align: 'left' });
+      doc.text(c.v, cx + 4, y + 6.5, { align: 'left' });
       if (c.dv) {
-        drawDelta(cx + 5.5, y + 11.5, c.dir, c.dc, c.dv);
+        drawDelta(cx + 5.5, y + 13, c.dir, c.dc, c.dv, 8);
       }
       cx += w;
     });
