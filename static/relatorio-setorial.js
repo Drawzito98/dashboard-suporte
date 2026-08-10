@@ -1080,9 +1080,9 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     cells.forEach((c, ci) => {
       const w = cols[ci + 1].w;
       doc.setTextColor(fg);
-      doc.text(c.v, cx + 4, y + 6, { align: 'left' });
+      doc.text(c.v, cx + 4, y + 5.5, { align: 'left' });
       if (c.dv) {
-        drawDelta(cx + 5.5, y + 12.5, c.dir, c.dc, c.dv);
+        drawDelta(cx + 5.5, y + 11.5, c.dir, c.dc, c.dv);
       }
       cx += w;
     });
