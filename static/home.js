@@ -4,7 +4,7 @@ function renderHome() {
   const container = document.getElementById('homeContent');
   if (!container) return;
 
-  const records = rawRecords || [];
+  const records = (typeof getDataFiltered === 'function' ? getDataFiltered() : rawRecords) || [];
   const activeColabs = records.filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']));
   const uniqueColabs = [...new Set(activeColabs.map(r => r['Atendente']))].sort();
 

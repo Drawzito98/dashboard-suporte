@@ -719,7 +719,8 @@ function _rerenderActiveNonDashboardTab() {
   const active = document.querySelector('.tab-btn.active');
   if (!active) return;
   const tab = active.getAttribute('data-tab');
-  if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
+  if (tab === 'home' && typeof onHomeTabActivated === 'function') onHomeTabActivated();
+  else if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
   else if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') { onGamificationTabActivated(); if (typeof onMetasTabActivated === 'function') onMetasTabActivated(); }
   else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();
   else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
@@ -1311,22 +1312,23 @@ function showKpiBreakdown(kpiType, rows) {
 
   function deltaHTML(cur, prev) {
     if (cur === null || cur === undefined || Number.isNaN(cur) || prev === null || prev === undefined || Number.isNaN(prev)) return null;
-    let txt, cls;
+    let d, txt, cls;
     if (kpiType === 'score') {
-      const d = cur - prev;
-      if (Math.abs(d) < 0.005) return '<span class="variation-neutro">=</span>';
-      txt = `${d > 0 ? '▲' : '▼'} ${d > 0 ? '+' : ''}${d.toFixed(2)}`;
-      cls = d >= 0 ? 'variation-pos' : 'variation-neg';
+      d = Math.round(cur * 100) - Math.round(prev * 100);
+      if (d === 0) return '<span class="variation-neutro">=</span>';
+      txt = `${d > 0 ? '▲' : '▼'} ${d > 0 ? '+' : ''}${(Math.abs(d) / 100).toFixed(2)}`;
+      cls = d > 0 ? 'variation-pos' : 'variation-neg';
     } else if (kpiType === 'produtividade') {
-      const pp = (cur - prev) * 100;
-      if (Math.abs(pp) < 0.05) return '<span class="variation-neutro">=</span>';
-      txt = `${pp > 0 ? '▲' : '▼'} ${pp > 0 ? '+' : ''}${pp.toFixed(1)} pp`;
-      cls = pp >= 0 ? 'variation-pos' : 'variation-neg';
+      d = Math.round(cur * 1000) - Math.round(prev * 1000);
+      if (d === 0) return '<span class="variation-neutro">=</span>';
+      txt = `${d > 0 ? '▲' : '▼'} ${d > 0 ? '+' : ''}${(Math.abs(d) / 10).toFixed(1)} pp`;
+      cls = d > 0 ? 'variation-pos' : 'variation-neg';
     } else {
       if (prev === 0) return cur === 0 ? null : '<span class="variation-neutro">▲ novo</span>';
       const pct = ((cur - prev) / prev) * 100;
-      txt = `${pct >= 0 ? '▲' : '▼'} ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
-      cls = pct >= 0 ? 'variation-pos' : 'variation-neg';
+      if (pct === 0) return '<span class="variation-neutro">=</span>';
+      txt = `${pct > 0 ? '▲' : '▼'} ${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`;
+      cls = pct > 0 ? 'variation-pos' : 'variation-neg';
     }
     return `<span class="${cls}">${txt}</span>`;
   }
@@ -3148,7 +3150,8 @@ if (!rawRecords || !rawRecords.length) {
       const activeTab = document.querySelector('.tab-btn.active');
       if (activeTab) {
         const tab = activeTab.getAttribute('data-tab');
-        if (tab === 'dashboard') { updateView(); const compSec = document.getElementById('comparativosDashboardSection'); if (compSec && compSec.style.display !== 'none' && typeof renderComparativos === 'function') renderComparativos(); }
+        if (tab === 'home' && typeof onHomeTabActivated === 'function') onHomeTabActivated();
+        else if (tab === 'dashboard') { updateView(); const compSec = document.getElementById('comparativosDashboardSection'); if (compSec && compSec.style.display !== 'none' && typeof renderComparativos === 'function') renderComparativos(); }
         else if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') { onGamificationTabActivated(); if (typeof onMetasTabActivated === 'function') onMetasTabActivated(); }
         else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();
         else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
