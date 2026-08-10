@@ -1234,18 +1234,6 @@ function showKpiBreakdown(kpiType, rows) {
   const filtered = rows.filter(r => r && !isAggregateName(r['Atendente']));
   if (!filtered.length) return;
 
-  const sectors = {};
-  filtered.forEach(r => {
-    const s = r['Setor'] || 'Sem setor';
-    if (!sectors[s]) sectors[s] = { count: 0, assumidos: 0, transferidos: 0, finalizados: 0, scores: [] };
-    sectors[s].count++;
-    sectors[s].assumidos += parseInt(r['Assumidos']) || 0;
-    sectors[s].transferidos += parseInt(r['Transferidos']) || 0;
-    sectors[s].finalizados += parseInt(r['Finalizados']) || 0;
-    const sc = parseFloat(r['SCORE']);
-    if (!isNaN(sc)) sectors[s].scores.push(sc);
-  });
-
   const labels = {
     assumidos: 'Assumidos',
     transferidos: 'Transferidos',
@@ -1255,52 +1243,174 @@ function showKpiBreakdown(kpiType, rows) {
     atendentes: 'Atendentes',
     setores: 'Setores'
   };
+  const title = labels[kpiType] || kpiType;
 
-  const entries = Object.entries(sectors).sort((a, b) => a[0].localeCompare(b[0]));
-
-  let tableRows = '';
-  let total = 0;
-
-  entries.forEach(([setor, data]) => {
-    let value = data[kpiType];
-    if (kpiType === 'score') {
-      value = data.scores.length ? (data.scores.reduce((a, b) => a + b, 0) / data.scores.length).toFixed(2) : '—';
-    } else if (kpiType === 'produtividade') {
-      value = data.assumidos > 0 ? ((data.finalizados / data.assumidos) * 100).toFixed(1) + '%' : '—';
-    } else if (kpiType === 'atendentes') {
-      value = data.count;
-    } else if (kpiType === 'setores') {
-      value = 1;
-    }
-
-    if (typeof value === 'number') total += value;
-    const display = typeof value === 'number' ? value.toLocaleString('pt-BR', { minimumFractionDigits: kpiType === 'score' ? 2 : 0, maximumFractionDigits: kpiType === 'score' ? 2 : 0 }) : value;
-    tableRows += `<tr><td>${escapeHtml(setor)}</td><td>${display}</td></tr>`;
-  });
-
-  // Total row (skip for score, produtividade ratio)
-  if (kpiType !== 'score' && kpiType !== 'produtividade' && kpiType !== 'setores') {
-    const totalDisplay = total.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    tableRows += `<tr class="kpi-drill-total"><td>Total</td><td>${totalDisplay}</td></tr>`;
+  // Mesmo escopo (filtros legados) com mês forçado — para comparar com o mês anterior
+  function rowsForMonth(month) {
+    const setorVal = setorSelect.value;
+    const arquivoVal = arquivoSelect ? arquivoSelect.value : 'all';
+    const selectedAt = getSelectedAtendentes();
+    const qLower = (searchAtendenteInput?.value || '').trim().toLowerCase();
+    return (rawRecords || []).filter(r => {
+      if (!r) return false;
+      if (String(r['Mês']) !== String(month)) return false;
+      if (isAggregateName(r['Atendente'])) return false;
+      if (setorVal !== 'all' && String(r['Setor']) !== setorVal) return false;
+      if (setorVal === 'all' && typeof isSetorActive === 'function' && !isSetorActive(String(r['Setor']).trim())) return false;
+      if (arquivoVal !== 'all' && String(r['Arquivo']) !== arquivoVal) return false;
+      if (qLower && !String(r['Atendente'] || '').toLowerCase().includes(qLower)) return false;
+      if (selectedAt && selectedAt.length && !selectedAt.includes('all')) {
+        if (!selectedAt.includes(String(r['Atendente']))) return false;
+      } else if (atendenteSelect && atendenteSelect.value !== 'all') {
+        if (String(r['Atendente']) !== atendenteSelect.value) return false;
+      }
+      return true;
+    });
   }
 
-  const title = labels[kpiType] || kpiType;
+  function aggregate(recs) {
+    const m = {};
+    recs.forEach(r => {
+      const s = String(r['Setor'] || '').trim() || 'Sem setor';
+      if (!m[s]) m[s] = { count: 0, assumidos: 0, transferidos: 0, finalizados: 0, scores: [] };
+      m[s].count++;
+      m[s].assumidos += parseInt(r['Assumidos']) || 0;
+      m[s].transferidos += parseInt(r['Transferidos']) || 0;
+      m[s].finalizados += parseInt(r['Finalizados']) || 0;
+      const sc = parseFloat(r['SCORE']);
+      if (!isNaN(sc)) m[s].scores.push(sc);
+    });
+    return m;
+  }
+
+  function aggregateTotal(agg) {
+    return Object.values(agg).reduce((t, d) => {
+      t.count += d.count;
+      t.assumidos += d.assumidos;
+      t.transferidos += d.transferidos;
+      t.finalizados += d.finalizados;
+      t.scores = t.scores.concat(d.scores);
+      return t;
+    }, { count: 0, assumidos: 0, transferidos: 0, finalizados: 0, scores: [] });
+  }
+
+  function metricValue(data) {
+    if (kpiType === 'score') return data.scores.length ? data.scores.reduce((a, b) => a + b, 0) / data.scores.length : null;
+    if (kpiType === 'produtividade') return data.assumidos > 0 ? data.finalizados / data.assumidos : null;
+    if (kpiType === 'atendentes') return data.count;
+    if (kpiType === 'setores') return 1;
+    return data[kpiType];
+  }
+
+  function fmtVal(v) {
+    if (v === null || v === undefined || Number.isNaN(v)) return '—';
+    if (kpiType === 'score') return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (kpiType === 'produtividade') return (Number(v) * 100).toFixed(1) + '%';
+    return Number(v).toLocaleString('pt-BR');
+  }
+
+  function deltaHTML(cur, prev) {
+    if (cur === null || cur === undefined || Number.isNaN(cur) || prev === null || prev === undefined || Number.isNaN(prev)) return null;
+    let txt, cls;
+    if (kpiType === 'score') {
+      const d = cur - prev;
+      if (Math.abs(d) < 0.005) return '<span class="variation-neutro">=</span>';
+      txt = `${d > 0 ? '▲' : '▼'} ${d > 0 ? '+' : ''}${d.toFixed(2)}`;
+      cls = d >= 0 ? 'variation-pos' : 'variation-neg';
+    } else if (kpiType === 'produtividade') {
+      const pp = (cur - prev) * 100;
+      if (Math.abs(pp) < 0.05) return '<span class="variation-neutro">=</span>';
+      txt = `${pp > 0 ? '▲' : '▼'} ${pp > 0 ? '+' : ''}${pp.toFixed(1)} pp`;
+      cls = pp >= 0 ? 'variation-pos' : 'variation-neg';
+    } else {
+      if (prev === 0) return cur === 0 ? null : '<span class="variation-neutro">▲ novo</span>';
+      const pct = ((cur - prev) / prev) * 100;
+      txt = `${pct >= 0 ? '▲' : '▼'} ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+      cls = pct >= 0 ? 'variation-pos' : 'variation-neg';
+    }
+    return `<span class="${cls}">${txt}</span>`;
+  }
+
+  const scopeMonths = [...new Set(filtered.map(r => String(r['Mês'])).filter(Boolean))].sort();
+  const periodoTxt = !scopeMonths.length ? 'Sem período' : (scopeMonths.length === 1 ? scopeMonths[0] : `${scopeMonths[0]} → ${scopeMonths[scopeMonths.length - 1]}`);
+
+  // ── Por mês (evolução, ignorando o filtro de mês) ──
+  let monthSection = '';
+  if (kpiType !== 'setores') {
+    const allMonths = [...new Set((rawRecords || []).map(r => String(r['Mês'])).filter(Boolean))].sort().filter(m => rowsForMonth(m).length);
+    const monthRows = [];
+    let prevVal = null;
+    allMonths.forEach(m => {
+      const val = metricValue(aggregateTotal(aggregate(rowsForMonth(m))));
+      const d = deltaHTML(val, prevVal);
+      monthRows.push(`<tr><td>${escapeHtml(m)}</td><td class="kpi-drill-value">${fmtVal(val)}</td><td class="kpi-drill-delta">${d || '<span class="variation-neutro">—</span>'}</td></tr>`);
+      prevVal = val;
+    });
+    monthSection = `
+      <h3 class="kpi-drill-sub">Por mês — qual mês subiu ou desceu</h3>
+      <table class="kpi-drill-table">
+        <thead><tr><th>Mês</th><th class="kpi-drill-value">${title}</th><th class="kpi-drill-delta">Δ mês ant.</th></tr></thead>
+        <tbody>${monthRows.join('')}</tbody>
+      </table>`;
+  }
+
+  // ── Por setor (com Δ vs mês anterior quando há mês único selecionado) ──
+  const singleMonth = scopeMonths.length === 1 ? scopeMonths[0] : null;
+  let prevMonthKey = null;
+  if (singleMonth) {
+    const m = String(singleMonth).match(/(\d{4})-(\d{2})/);
+    if (m) {
+      let y = parseInt(m[1]); let mo = parseInt(m[2]);
+      mo -= 1;
+      if (mo === 0) { mo = 12; y -= 1; }
+      prevMonthKey = `${y}-${String(mo).padStart(2, '0')}`;
+    }
+  }
+  const prevAgg = prevMonthKey ? aggregate(rowsForMonth(prevMonthKey)) : null;
+  const showDelta = !!(prevMonthKey && prevAgg);
+
+  const sectorAgg = aggregate(filtered);
+  const entries = Object.entries(sectorAgg).sort((a, b) => a[0].localeCompare(b[0]));
+  let sectorRows = '';
+  let total = 0;
+  const isCount = kpiType === 'assumidos' || kpiType === 'transferidos' || kpiType === 'finalizados' || kpiType === 'atendentes';
+  entries.forEach(([setor, data]) => {
+    const val = metricValue(data);
+    const prevVal = prevAgg && prevAgg[setor] ? metricValue(prevAgg[setor]) : null;
+    const d = showDelta ? deltaHTML(val, prevVal) : null;
+    const deltaTd = showDelta
+      ? `<td class="kpi-drill-delta">${d || '<span class="variation-neutro">—</span>'}</td>`
+      : '';
+    if (typeof val === 'number') total += val;
+    sectorRows += `<tr><td>${escapeHtml(setor)}</td><td class="kpi-drill-value">${fmtVal(val)}</td>${deltaTd}</tr>`;
+  });
+  if (isCount) {
+    sectorRows += `<tr class="kpi-drill-total"><td>Total</td><td class="kpi-drill-value">${total.toLocaleString('pt-BR')}</td>${showDelta ? '<td class="kpi-drill-delta"></td>' : ''}</tr>`;
+  }
+
+  const sectorSection = `
+    <h3 class="kpi-drill-sub">Por setor${showDelta ? ' — Δ vs ' + escapeHtml(prevMonthKey) : ''}</h3>
+    <table class="kpi-drill-table">
+      <thead><tr><th>Setor</th><th class="kpi-drill-value">${title}</th>${showDelta ? '<th class="kpi-drill-delta">Δ mês ant.</th>' : ''}</tr></thead>
+      <tbody>${sectorRows}</tbody>
+    </table>`;
 
   const overlay = document.createElement('div');
   overlay.className = 'kpi-drill-overlay';
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
-  overlay.setAttribute('aria-label', title + ' por setor');
+  overlay.setAttribute('aria-label', title);
   overlay.innerHTML = `
-    <div class="kpi-drill-panel">
+    <div class="kpi-drill-panel kpi-drill-panel--wide">
       <div class="kpi-drill-header">
-        <h2>${title} por setor</h2>
+        <div>
+          <h2>${title} — detalhamento</h2>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Período: ${escapeHtml(periodoTxt)}</div>
+        </div>
         <button class="kpi-drill-close" type="button">✕</button>
       </div>
-      <table class="kpi-drill-table">
-        <thead><tr><th>Setor</th><th>${title}</th></tr></thead>
-        <tbody>${tableRows}</tbody>
-      </table>
+      ${monthSection}
+      ${sectorSection}
     </div>
   `;
   document.body.appendChild(overlay);

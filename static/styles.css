@@ -759,6 +759,15 @@ html[data-theme="dark"] .kpi-drill-overlay { background: var(--overlay-soft); }
   border-top: 2px solid var(--border-strong);
   font-weight: 700; color: var(--text-strong);
 }
+.kpi-drill-panel--wide { max-width: 760px; }
+.kpi-drill-sub {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-muted);
+  margin: var(--s-4) 0 var(--s-2);
+}
+.kpi-drill-value, .kpi-drill-delta { text-align: right; font-variant-numeric: tabular-nums; }
+.kpi-drill-value { font-weight: 600; }
+.kpi-drill-delta { white-space: nowrap; font-size: 12px; }
 
 .score-excelente { color: var(--score-excelente); font-weight: 700; }
 .score-atencao   { color: var(--score-atencao); font-weight: 700; }
