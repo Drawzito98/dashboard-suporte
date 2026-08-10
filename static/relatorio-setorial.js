@@ -880,12 +880,12 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   // Table — Setor | Finalizados | Assumidos | Transferidos | Score | Produtividade | Tx Transf.
   const cols = [
     { label: 'Setor', w: 52, align: 'left' },
-    { label: 'Finalizados', w: 34, align: 'right' },
-    { label: 'Assumidos', w: 30, align: 'right' },
-    { label: 'Transferidos', w: 30, align: 'right' },
-    { label: 'Score', w: 26, align: 'right' },
-    { label: 'Produtividade', w: 34, align: 'right' },
-    { label: 'Tx Transf.', w: 30, align: 'right' }
+    { label: 'Assumidos', w: 34, align: 'left' },
+    { label: 'Transferidos', w: 34, align: 'left' },
+    { label: 'Finalizados', w: 36, align: 'left' },
+    { label: 'Score', w: 30, align: 'left' },
+    { label: 'Produtividade', w: 38, align: 'left' },
+    { label: 'Tx Transf.', w: 34, align: 'left' }
   ];
   const rowH = 8;
   const tableW = cols.reduce((s, c) => s + c.w, 0);
@@ -918,7 +918,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.setFillColor(i % 2 ? light : white);
     doc.rect(startX, y, tableW, rowH, 'F');
     doc.setTextColor(fg);
-    const vals = [m.nome, fmtInt(m.fin), fmtInt(m.ass), fmtInt(m.tra), fmtScore(m.scAvg), fmtPct(m.prod), fmtPct(m.taxaT)];
+    const vals = [m.nome, fmtInt(m.ass), fmtInt(m.tra), fmtInt(m.fin), fmtScore(m.scAvg), fmtPct(m.prod), fmtPct(m.taxaT)];
     let cx = startX;
     for (let ci = 0; ci < cols.length; ci++) {
       doc.text(String(vals[ci]), cols[ci].align === 'right' ? cx + cols[ci].w - 4 : cx + 4, y + 5.5, { align: cols[ci].align });
