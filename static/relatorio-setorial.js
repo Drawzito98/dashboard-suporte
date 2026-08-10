@@ -263,18 +263,20 @@ function renderRelatorioSetorial() {
   const _arrowCls = v => v > 0 ? 'trend-up' : (v < 0 ? 'trend-down' : 'trend-neutral');
   const _arrow = v => v > 0 ? '\u25B2' : (v < 0 ? '\u25BC' : '\u2192');
   const _prevLabel = hasPrev ? `vs ${prevRange[0]}${prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : ''}` : 'sem período anterior';
-  const _deltaPct = (p, c) => _deltaHtml(_calcDeltaPct(p, c));
-  const _deltaAbs = (v, unit) => v === null ? '' : `<span class="${_arrowCls(v)}">${_arrow(v)} ${v > 0 ? '+' : ''}${v.toFixed(unit === 'score' ? 2 : 1)}${unit === 'pp' ? ' pp' : ''}</span>`;
-  const _sDelta = hasPrev && prevAvg > 0 ? avgScore - prevAvg : null;
-  const _pDelta = hasPrev ? (prodGeral - prevProd) * 100 : null;
-  const _tDelta = hasPrev ? (traGeral - prevTraG) * 100 : null;
+  const _deltaSpan = (d, invert) => {
+    if (d === null || d === undefined || isNaN(d)) return '';
+    const sign = invert ? -d : d;
+    const cls = _arrowCls(sign);
+    const arrow = _arrow(sign);
+    return `<span class="${cls}">${arrow} ${d > 0 ? '+' : ''}${Math.abs(d).toFixed(1)}%</span>`;
+  };
   const kpiCards = [
-    { label: 'Assumidos', value: fmtNum(totalAss), sub: hasPrev ? _deltaPct(prevAss, totalAss) : '' },
-    { label: 'Transferidos', value: fmtNum(totalTra), sub: hasPrev ? _deltaPct(prevTra, totalTra) : '' },
-    { label: 'Finalizados', value: fmtNum(totalFin), sub: hasPrev ? _deltaPct(prevFin, totalFin) : '' },
-    { label: 'Score médio', value: fmtScore(avgScore), sub: _deltaAbs(_sDelta, 'score') },
-    { label: 'Produtividade', value: fmtPct(prodGeral), sub: _deltaAbs(_pDelta, 'pp') },
-    { label: 'Taxa Transferência', value: fmtPct(traGeral), sub: _deltaAbs(_tDelta, 'pp') }
+    { label: 'Assumidos', value: fmtNum(totalAss), sub: _deltaSpan(_calcDeltaPct(prevAss, totalAss)) },
+    { label: 'Transferidos', value: fmtNum(totalTra), sub: _deltaSpan(_calcDeltaPct(prevTra, totalTra)) },
+    { label: 'Finalizados', value: fmtNum(totalFin), sub: _deltaSpan(_calcDeltaPct(prevFin, totalFin)) },
+    { label: 'Score médio', value: fmtScore(avgScore), sub: _deltaSpan(_calcDeltaPct(prevAvg, avgScore)) },
+    { label: 'Produtividade', value: fmtPct(prodGeral), sub: _deltaSpan(_calcDeltaPct(prevProd, prodGeral)) },
+    { label: 'Taxa Transferência', value: fmtPct(traGeral), sub: _deltaSpan(_calcDeltaPct(prevTraG, traGeral), true) }
   ];
   html += `<div class="kpi-grid" style="margin:0 0 var(--s-5)">
     ${kpiCards.map(c => `<div class="kpi"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
