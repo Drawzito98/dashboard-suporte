@@ -74,7 +74,8 @@ async function syncPendingRecords() {
 const DB_COLUMNS = new Set([
   'id', 'Setor', 'Mês', 'Atendente', 'Assumidos', 'Transferidos',
   'Finalizados', 'Score', 'SCORE', 'Objetivo', 'Observações',
-  'Nota1', 'Nota2', 'Nota3', 'Total', 'Arquivo'
+  'Nota1', 'Nota2', 'Nota3', 'Total', 'Arquivo',
+  'TMA', 'TMR'
 ]);
 
 // Mapeamento de nomes de colunas do app → banco de dados

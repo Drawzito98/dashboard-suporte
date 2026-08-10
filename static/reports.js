@@ -370,7 +370,7 @@ function backupCsv() {
   if (typeof setLoading === 'function') setLoading(true, 'Exportando backup...');
   setTimeout(() => {
     try {
-      const preferred = ['Setor','Mês','Atendente','Assumidos','Transferidos','Finalizados','SCORE','Nota1','Nota2','Nota3','Total','Objetivo'];
+      const preferred = ['Setor','Mês','Atendente','Assumidos','Transferidos','Finalizados','TMA','TMR','SCORE','Nota1','Nota2','Nota3','Total','Objetivo'];
       const keys = Array.from(new Set([...(data[0] ? Object.keys(data[0]) : []), ...preferred]));
       const orderedKeys = preferred.concat(keys.filter(k => !preferred.includes(k)));
       const rows = [orderedKeys.join(',')];
@@ -412,7 +412,7 @@ function exportCsv() {
     showToast('Nenhum dado no escopo atual para exportar.', 'error');
     return;
   }
-  const preferred = ['Setor','Mês','Atendente','Assumidos','Transferidos','Finalizados','SCORE','Nota1','Nota2','Nota3','Total','Objetivo'];
+  const preferred = ['Setor','Mês','Atendente','Assumidos','Transferidos','Finalizados','TMA','TMR','SCORE','Nota1','Nota2','Nota3','Total','Objetivo'];
   const keys = Array.from(new Set([...(data[0] ? Object.keys(data[0]) : []), ...preferred]));
   const orderedKeys = preferred.concat(keys.filter(k => !preferred.includes(k)));
   const rows = [orderedKeys.join(',')];

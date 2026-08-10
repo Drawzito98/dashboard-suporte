@@ -19,6 +19,8 @@ function normalizeRecords(rows, fields, sourceName) {
     else if (lower.includes('assumid')) headerMap[f] = 'Assumidos';
     else if (lower.includes('transfer')) headerMap[f] = 'Transferidos';
     else if (lower.includes('finaliz')) headerMap[f] = 'Finalizados';
+    else if (lower.includes('tma') || (lower.includes('atendimento') && lower.includes('tempo'))) headerMap[f] = 'TMA';
+    else if (lower.includes('tmr') || (lower.includes('resposta') && lower.includes('tempo'))) headerMap[f] = 'TMR';
     else if (lower === 'score' || lower.includes('score')) headerMap[f] = 'SCORE';
     else if (lower === 'total' || lower.includes('total')) headerMap[f] = 'Total';
     else if (lower.includes('nota1')) headerMap[f] = 'Nota1';

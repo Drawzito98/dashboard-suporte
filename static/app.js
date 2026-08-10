@@ -1580,24 +1580,58 @@ function renderPreviewDisplay(rows) {
   syncScrollbar();
 }
 
+function parseDurationToSeconds(v) {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim().toLowerCase();
+  if (!s) return null;
+  let total = 0;
+  let matched = false;
+  const d = s.match(/(\d+(?:[.,]\d+)?)\s*d/);
+  if (d) { total += parseFloat(d[1].replace(',', '.')) * 86400; matched = true; }
+  const h = s.match(/(\d+(?:[.,]\d+)?)\s*h/);
+  if (h) { total += parseFloat(h[1].replace(',', '.')) * 3600; matched = true; }
+  const mi = s.match(/(\d+(?:[.,]\d+)?)\s*m(?!s)/);
+  if (mi) { total += parseFloat(mi[1].replace(',', '.')) * 60; matched = true; }
+  const sec = s.match(/(\d+(?:[.,]\d+)?)\s*s/);
+  if (sec) { total += parseFloat(sec[1].replace(',', '.')); matched = true; }
+  if (matched) return total;
+  const c = s.split(':');
+  if (c.length >= 2 && c.every(x => x.trim() !== '' && !isNaN(parseFloat(x.trim())))) {
+    const nums = c.map(x => parseFloat(x.trim()));
+    if (c.length === 2) return nums[0] * 60 + nums[1];
+    if (c.length === 3) return nums[0] * 3600 + nums[1] * 60 + nums[2];
+  }
+  const n = parseFloat(s.replace(/,/g, '.'));
+  return isNaN(n) ? null : n;
+}
+
 function sortRows(rows, key, desc=true) {
   // Separate aggregate rows from regular rows
   const aggregates = rows.filter(r => r && isAggregateName(r['Atendente']));
   const regular = rows.filter(r => r && !isAggregateName(r['Atendente']));
-  
+
+  const isDuration = key === 'TMA' || key === 'TMR';
   // Sort only regular rows
   regular.sort((a,b) => {
     const va = a && a[key];
     const vb = b && b[key];
-    const na = (va === null || va === undefined || va === '') ? -Infinity : Number(String(va).replace(/[^0-9.-]/g, ''));
-    const nb = (vb === null || vb === undefined || vb === '') ? -Infinity : Number(String(vb).replace(/[^0-9.-]/g, ''));
+    let na, nb;
+    if (isDuration) {
+      na = parseDurationToSeconds(va);
+      nb = parseDurationToSeconds(vb);
+      if (na === null) na = -Infinity;
+      if (nb === null) nb = -Infinity;
+    } else {
+      na = (va === null || va === undefined || va === '') ? -Infinity : Number(String(va).replace(/[^0-9.-]/g, ''));
+      nb = (vb === null || vb === undefined || vb === '') ? -Infinity : Number(String(vb).replace(/[^0-9.-]/g, ''));
+    }
     if (isNaN(na) || isNaN(nb)) {
       const sa = String(va || '').localeCompare(String(vb || ''), 'pt');
       return desc ? -sa : sa;
     }
     return desc ? (nb - na) : (na - nb);
   });
-  
+
   // Return sorted regular rows + aggregates at the end
   return [...regular, ...aggregates];
 }

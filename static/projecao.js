@@ -53,6 +53,8 @@ function renderProjecao() {
         Assumidos: parseInt(r['Assumidos']) || 0,
         Finalizados: parseInt(r['Finalizados']) || 0,
         Transferidos: parseInt(r['Transferidos']) || 0,
+        TMA: r['TMA'] || '',
+        TMR: r['TMR'] || '',
         SCORE: r['SCORE'] !== null && r['SCORE'] !== undefined ? Number(r['SCORE']) : '',
         Nota1: parseInt(r['Nota1']) || 0,
         Nota2: parseInt(r['Nota2']) || 0,
@@ -92,7 +94,7 @@ function renderProjecao() {
       </div>
 
       <div style="overflow-x:auto;max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md)">
-        <table class="ranking-table" style="min-width:1100px">
+        <table class="ranking-table" style="min-width:1320px">
           <thead>
             <tr>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Colaborador</th>
@@ -100,6 +102,8 @@ function renderProjecao() {
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Assumidos</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Finalizados</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Transferidos</th>
+              <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">TMA</th>
+              <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">TMR</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Score</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Nota1</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Nota2</th>
@@ -157,6 +161,8 @@ function renderProjecao() {
         <td><input type="number" class="proj-input" data-field="Assumidos" value="${value('Assumidos', 0)}" min="0" style="width:55px"/></td>
         <td><input type="number" class="proj-input" data-field="Finalizados" value="${value('Finalizados', 0)}" min="0" style="width:55px"/></td>
         <td><input type="number" class="proj-input" data-field="Transferidos" value="${value('Transferidos', 0)}" min="0" style="width:55px"/></td>
+        <td><input type="text" class="proj-input" data-field="TMA" value="${escapeHtml(value('TMA', ''))}" placeholder="1d 2h 18m 20s" style="width:110px;font-size:11px"/></td>
+        <td><input type="text" class="proj-input" data-field="TMR" value="${escapeHtml(value('TMR', ''))}" placeholder="1d 2h 18m 20s" style="width:110px;font-size:11px"/></td>
         <td><input type="number" class="proj-input" data-field="SCORE" value="${value('SCORE', '')}" min="0" max="5" step="0.1" style="width:55px"/></td>
         <td><input type="number" class="proj-input" data-field="Nota1" value="${value('Nota1', 0)}" min="0" max="5" step="0.1" style="width:55px"/></td>
         <td><input type="number" class="proj-input" data-field="Nota2" value="${value('Nota2', 0)}" min="0" max="5" step="0.1" style="width:55px"/></td>
@@ -228,6 +234,8 @@ function renderProjecao() {
           Assumidos: 0,
           Transferidos: 0,
           Finalizados: 0,
+          TMA: '',
+          TMR: '',
           SCORE: null,
           Nota1: 0,
           Nota2: 0,
@@ -244,6 +252,8 @@ function renderProjecao() {
             rec[f] = val !== '' ? parseFloat(val) : 0;
           } else if (f === 'Assumidos' || f === 'Finalizados' || f === 'Transferidos' || f === 'Total') {
             rec[f] = parseInt(val) || 0;
+          } else if (f === 'TMA' || f === 'TMR') {
+            rec[f] = val;
           } else if (f === 'Observações') {
             rec[f] = val;
           }
@@ -255,6 +265,7 @@ function renderProjecao() {
         // Only include row if at least one field has meaningful data
         const hasData = rec.Assumidos > 0 || rec.Transferidos > 0 || rec.Finalizados > 0 ||
           rec.SCORE !== null || rec.Nota1 > 0 || rec.Nota2 > 0 || rec.Nota3 > 0 ||
+          rec.TMA !== '' || rec.TMR !== '' ||
           rec.Observações !== '';
         if (!hasData) return;
 
