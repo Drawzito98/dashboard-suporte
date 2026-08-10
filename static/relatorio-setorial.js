@@ -34,6 +34,27 @@ function _deltaHtml(delta) {
   return ` <span class="${cls}" style="font-size:11px;white-space:nowrap" title="Variação vs mês anterior">${arrow} ${abs.toFixed(1)}%</span>`;
 }
 
+function _avgDuration(rows, key) {
+  if (typeof parseDurationToSeconds !== 'function') return null;
+  const vals = [];
+  (rows || []).forEach(r => {
+    const s = parseDurationToSeconds(r && r[key]);
+    if (s !== null && s !== undefined && !isNaN(s)) vals.push(s);
+  });
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+}
+
+function _fmtDuration(sec) {
+  if (sec === null || sec === undefined || isNaN(sec) || sec <= 0) return '\u2014';
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.round((sec % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return `${Math.round(sec)}s`;
+}
+
 // Média de scores por setor (cada setor pesa igual)
 function _avgScoreBySetor(rows) {
   const bySetor = {};
@@ -188,6 +209,11 @@ function renderRelatorioSetorial() {
   const prodGeral = totalAss > 0 ? totalFin / totalAss : 0;
   const traGeral = totalAss > 0 ? totalTra / totalAss : 0;
   const totalAtendentes = [...new Set(rows.map(r => r['Atendente']))].filter(Boolean).length;
+  const tmaGeral = _avgDuration(rows, 'TMA');
+  const tmrGeral = _avgDuration(rows, 'TMR');
+  const hasTma = tmaGeral !== null;
+  const hasTmr = tmrGeral !== null;
+  const hasDur = hasTma || hasTmr;
 
   const fmtNum = n => (Number(n) || 0).toLocaleString('pt-BR');
   const fmtScore = n => n > 0 ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014';
@@ -208,7 +234,7 @@ function renderRelatorioSetorial() {
     const prod = ass > 0 ? fin / ass : 0;
     const taxaT = ass > 0 ? tra / ass : 0;
     const colabs = [...new Set(recs.map(r => r['Atendente']))].filter(Boolean).length;
-    return { nome: s, fin, ass, tra, scAvg, prod, taxaT, colabs };
+    return { nome: s, fin, ass, tra, scAvg, prod, taxaT, colabs, tma: _avgDuration(recs, 'TMA'), tmr: _avgDuration(recs, 'TMR') };
   });
 
   let html = filterBarHtml;
@@ -277,6 +303,8 @@ function renderRelatorioSetorial() {
     { label: 'Produtividade', value: fmtPct(prodGeral), sub: _deltaSpan(_calcDeltaPct(prevProd, prodGeral)) },
     { label: 'Taxa Transferência', value: fmtPct(traGeral), sub: _deltaSpan(_calcDeltaPct(prevTraG, traGeral), true) }
   ];
+  if (hasTma) kpiCards.push({ label: 'TMA médio', value: _fmtDuration(tmaGeral), sub: '<span class="trend-neutral">Tempo médio de atendimento</span>' });
+  if (hasTmr) kpiCards.push({ label: 'TMR médio', value: _fmtDuration(tmrGeral), sub: '<span class="trend-neutral">Tempo médio de resposta</span>' });
   html += `<div class="kpi-grid" style="margin:0 0 var(--s-5)">
     ${kpiCards.map(c => `<div class="kpi"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
   </div>`;
@@ -433,7 +461,7 @@ function renderRelatorioSetorial() {
   // ── Tabela comparativa entre setores ──
   html += `<h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83D\uDD01 Comparativo entre Setores</h3>`;
   html += `<div style="overflow-x:auto;margin-bottom:var(--s-5)"><table class="ranking-table">
-    <thead><tr><th>Setor</th><th>Finalizados</th><th>Assumidos</th><th>Transferidos</th><th>Score</th><th>Prod.</th><th>Colabs</th></tr></thead>
+    <thead><tr><th>Setor</th><th>Finalizados</th><th>Assumidos</th><th>Transferidos</th><th>Score</th><th>Prod.</th>${hasTma ? '<th>TMA</th>' : ''}${hasTmr ? '<th>TMR</th>' : ''}<th>Colabs</th></tr></thead>
     <tbody>${setorMetrics.map(s => {
       const classeSc = s.scAvg > 0 ? getClasseScore(s.scAvg) : '';
       return `<tr>
@@ -443,6 +471,8 @@ function renderRelatorioSetorial() {
         <td>${fmtNum(s.tra)}</td>
         <td class="score-cell ${classeSc}">${fmtScore(s.scAvg)}</td>
         <td>${fmtPct(s.prod)}</td>
+        ${hasTma ? `<td>${s.tma !== null ? _fmtDuration(s.tma) : '\u2014'}</td>` : ''}
+        ${hasTmr ? `<td>${s.tmr !== null ? _fmtDuration(s.tmr) : '\u2014'}</td>` : ''}
         <td>${s.colabs}</td>
       </tr>`;
     }).join('')}</tbody>
@@ -469,7 +499,7 @@ function renderRelatorioSetorial() {
       const mScAvg = mSc.length ? mSc.reduce((a, b) => a + Number(b), 0) / mSc.length : 0;
       const mProd = mAss > 0 ? mFin / mAss : 0;
       const mCols = [...new Set(mRecs.map(r => r['Atendente']))].filter(Boolean).length;
-      return { mes: m, fin: mFin, ass: mAss, tra: mTra, scAvg: mScAvg, prod: mProd, cols: mCols, hasData: mRecs.length > 0 };
+      return { mes: m, fin: mFin, ass: mAss, tra: mTra, scAvg: mScAvg, prod: mProd, cols: mCols, hasData: mRecs.length > 0, tma: _avgDuration(mRecs, 'TMA'), tmr: _avgDuration(mRecs, 'TMR') };
     });
 
     html += `<div class="card" style="margin-bottom:var(--s-4);padding:var(--s-5)">
@@ -487,10 +517,12 @@ function renderRelatorioSetorial() {
           <th style="position:sticky;top:0;background:var(--bg-elevated)">Finalizados</th>
           <th style="position:sticky;top:0;background:var(--bg-elevated)">Score</th>
           <th style="position:sticky;top:0;background:var(--bg-elevated)">Prod.</th>
+          ${hasTma ? '<th style="position:sticky;top:0;background:var(--bg-elevated)">TMA</th>' : ''}
+          ${hasTmr ? '<th style="position:sticky;top:0;background:var(--bg-elevated)">TMR</th>' : ''}
           <th style="position:sticky;top:0;background:var(--bg-elevated)">Colabs</th>
         </tr></thead>
         <tbody>${monthData.map((md, mi) => {
-          if (!md.hasData) return `<tr><td><strong>${md.mes}</strong></td><td colspan="6" style="color:var(--text-muted);font-size:12px">Sem dados</td></tr>`;
+          if (!md.hasData) return `<tr><td><strong>${md.mes}</strong></td><td colspan="${6 + (hasTma ? 1 : 0) + (hasTmr ? 1 : 0)}" style="color:var(--text-muted);font-size:12px">Sem dados</td></tr>`;
           const cls = md.scAvg > 0 ? getClasseScore(md.scAvg) : '';
           const prev = mi > 0 ? monthData[mi - 1] : null;
           const dFin = prev && prev.hasData ? _deltaHtml(_calcDeltaPct(prev.fin, md.fin)) : '';
@@ -505,6 +537,8 @@ function renderRelatorioSetorial() {
             <td>${fmtNum(md.fin)}${dFin}</td>
             <td class="score-cell ${cls}">${fmtScore(md.scAvg)}${dSc}</td>
             <td>${fmtPct(md.prod)}${dProd}</td>
+            ${hasTma ? `<td>${md.tma !== null ? _fmtDuration(md.tma) : '\u2014'}</td>` : ''}
+            ${hasTmr ? `<td>${md.tmr !== null ? _fmtDuration(md.tmr) : '\u2014'}</td>` : ''}
             <td>${md.cols}</td>
           </tr>`;
         }).join('')}</tbody>
@@ -917,15 +951,15 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.rect(0, 0, pageW, 26, 'F');
     doc.setTextColor(white);
     setFont('bold', 17); doc.text('Resumo por Setor', M, 11);
-    setFont('normal', 10.5); doc.text('IXC CG \u00B7 Painel de Suporte', M, 18.5);
-    setFont('bold', 12); doc.text(`Período: ${period}`, pageW - M, 11, { align: 'right' });
-    setFont('normal', 8.5); doc.text(`Gerado em ${now}`, pageW - M, 18.5, { align: 'right' });
+    setFont('normal', 10); doc.text('IXC CG \u00B7 Painel de Suporte', M, 18.5);
+    setFont('bold', 11); doc.text(`Período: ${period}`, pageW - M, 11, { align: 'right' });
+    setFont('normal', 9); doc.text(`Gerado em ${now}`, pageW - M, 18.5, { align: 'right' });
     return y;
   }
 
   function drawFooter(page) {
     doc.setPage(page);
-    doc.setFontSize(7.5);
+    doc.setFontSize(8);
     doc.setTextColor(muted);
     doc.text('Métricas por setor \u00B7 sem identificação individual de colaboradores', pageW / 2, pageH - 5, { align: 'center' });
   }
@@ -1012,7 +1046,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.setFillColor(light);
     doc.setDrawColor(border);
     doc.roundedRect(x, y, cardW, cardH, 2.5, 2.5, 'FD');
-    doc.setTextColor(muted); setFont('bold', 7.5); doc.text(String(k.label).toUpperCase(), x + 4, y + 8);
+    doc.setTextColor(muted); setFont('bold', 8); doc.text(String(k.label).toUpperCase(), x + 4, y + 8);
     doc.setTextColor(fg); setFont('bold', 16); doc.text(k.value, x + 4, y + 19);
     if (k.txt) {
       drawDelta(x + 5.5, y + 25, gDir[k.key], gColor[k.key], k.txt, 8);
@@ -1021,7 +1055,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   y += cardH + 8;
 
   if (hasPrev && prevLabel) {
-    doc.setTextColor(muted); setFont('normal', 8.5);
+    doc.setTextColor(muted); setFont('normal', 9);
     doc.text(`Variação vs período anterior (${prevLabel})`, M, y);
     y += 6;
   }
@@ -1044,7 +1078,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.setFillColor(accent);
     doc.rect(startX, y, tableW, rowH, 'F');
     doc.setTextColor(white);
-    setFont('bold', 9.5);
+    setFont('bold', 10);
     let cx = startX;
     cols.forEach(c => {
       doc.text(c.label, cx + 4, y + 7, { align: 'left' });
@@ -1119,7 +1153,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
 
   y += 8;
   if (y > pageH - 14) { doc.addPage('l', 'mm', 'a4'); page += 1; y = 16; doc.setFillColor(C.page); doc.rect(0, 0, pageW, pageH, 'F'); }
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.setTextColor(muted);
   doc.text(`Total: ${setorMetrics.length} setor(es) \u00B7 ${opts.totalAtendentes !== undefined ? fmtInt(opts.totalAtendentes) + ' atendente(s)' : ''} \u00B7 ${meses ? meses.length : 0} mês(es)`.replace(/\s*\u00B7\s*/g, ' \u00B7 '), M, y);
 
