@@ -914,26 +914,32 @@ function exportSetorPdf(setorMetrics, meses, opts) {
 
   const pctDelta = (p, c) => (p === 0 ? null : _calcDeltaPct(p, c));
   const fmtDeltaPct = d => d === null ? '' : `${d > 0 ? '\u25B2 +' : (d < 0 ? '\u25BC ' : '\u2192 ')}${Math.abs(d).toFixed(1)}%`;
-  const fmtDeltaScore = d => d === null ? '' : `${d > 0 ? '\u25B2 +' : (d < 0 ? '\u25BC ' : '\u2192 ')}${Math.abs(d).toFixed(2)}`;
-  const fmtDeltaPp = d => d === null ? '' : `${d > 0 ? '\u25B2 +' : (d < 0 ? '\u25BC ' : '\u2192 ')}${Math.abs(d).toFixed(1)} pp`;
   const deltaColor = d => d > 0 ? green : (d < 0 ? red : neutral);
 
-  // Deltas gerais (cards)
+  // Deltas gerais (cards) — sempre em % de variação
   const g = {
     ass: hasPrev ? pctDelta(opts.totalAssPrev, totalAss) : null,
     tra: hasPrev ? pctDelta(opts.totalTraPrev, totalTra) : null,
     fin: hasPrev ? pctDelta(opts.totalFinPrev, totalFin) : null,
-    score: hasPrev ? (opts.avgScorePrev > 0 ? avgScore - opts.avgScorePrev : null) : null,
-    prod: hasPrev ? ((prodGeral - opts.prodGeralPrev) * 100) : null,
-    traG: hasPrev ? ((traGeral - opts.traGeralPrev) * 100) : null
+    score: hasPrev ? pctDelta(opts.avgScorePrev, avgScore) : null,
+    prod: hasPrev ? pctDelta(opts.prodGeralPrev, prodGeral) : null,
+    traG: hasPrev ? pctDelta(opts.traGeralPrev, traGeral) : null
   };
   const gText = {
     ass: fmtDeltaPct(g.ass),
     tra: fmtDeltaPct(g.tra),
     fin: fmtDeltaPct(g.fin),
-    score: fmtDeltaScore(g.score),
-    prod: fmtDeltaPp(g.prod),
-    traG: fmtDeltaPp(g.traG)
+    score: fmtDeltaPct(g.score),
+    prod: fmtDeltaPct(g.prod),
+    traG: fmtDeltaPct(g.traG)
+  };
+  const gColor = {
+    ass: deltaColor(g.ass),
+    tra: deltaColor(g.tra),
+    fin: deltaColor(g.fin),
+    score: deltaColor(g.score),
+    prod: deltaColor(g.prod),
+    traG: deltaColor(g.traG === null ? null : -g.traG)
   };
 
   let page = 1;
@@ -941,12 +947,12 @@ function exportSetorPdf(setorMetrics, meses, opts) {
 
   // KPI cards (com variação vs período anterior)
   const kpis = [
-    { label: 'Assumidos', value: fmtInt(totalAss), delta: g.ass, txt: gText.ass },
-    { label: 'Transferidos', value: fmtInt(totalTra), delta: g.tra, txt: gText.tra },
-    { label: 'Finalizados', value: fmtInt(totalFin), delta: g.fin, txt: gText.fin },
-    { label: 'Score Médio', value: fmtScore(avgScore), delta: g.score, txt: gText.score },
-    { label: 'Produtividade', value: fmtPct(prodGeral), delta: g.prod, txt: gText.prod },
-    { label: 'Taxa Transferência', value: fmtPct(traGeral), delta: g.traG, txt: gText.traG }
+    { key: 'ass', label: 'Assumidos', value: fmtInt(totalAss), txt: gText.ass },
+    { key: 'tra', label: 'Transferidos', value: fmtInt(totalTra), txt: gText.tra },
+    { key: 'fin', label: 'Finalizados', value: fmtInt(totalFin), txt: gText.fin },
+    { key: 'score', label: 'Score Médio', value: fmtScore(avgScore), txt: gText.score },
+    { key: 'prod', label: 'Produtividade', value: fmtPct(prodGeral), txt: gText.prod },
+    { key: 'traG', label: 'Taxa Transferência', value: fmtPct(traGeral), txt: gText.traG }
   ];
   const gap = 6;
   const cardW = (pageW - M * 2 - gap * (kpis.length - 1)) / kpis.length;
@@ -960,7 +966,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.setTextColor(muted); setFont('bold', 7); doc.text(String(k.label).toUpperCase(), x + 4, y + 7);
     doc.setTextColor(fg); setFont('bold', 15); doc.text(k.value, x + 4, y + 17);
     if (k.txt) {
-      doc.setTextColor(deltaColor(k.delta)); setFont('bold', 6.5); doc.text(k.txt, x + 4, y + 23);
+      doc.setTextColor(gColor[k.key]); setFont('bold', 6.5); doc.text(k.txt, x + 4, y + 23);
     }
   });
   y += cardH + 6;
@@ -1014,17 +1020,17 @@ function exportSetorPdf(setorMetrics, meses, opts) {
       ass: hasPrev && p ? fmtDeltaPct(pct(p.ass, m.ass)) : '',
       tra: hasPrev && p ? fmtDeltaPct(pct(p.tra, m.tra)) : '',
       fin: hasPrev && p ? fmtDeltaPct(pct(p.fin, m.fin)) : '',
-      score: hasPrev && p && p.scAvg > 0 ? fmtDeltaScore(m.scAvg - p.scAvg) : '',
-      prod: hasPrev && p ? fmtDeltaPp((m.prod - p.prod) * 100) : '',
-      traG: hasPrev && p ? fmtDeltaPp((m.taxaT - p.taxaT) * 100) : ''
+      score: hasPrev && p && p.scAvg > 0 ? fmtDeltaPct(pct(p.scAvg, m.scAvg)) : '',
+      prod: hasPrev && p && p.prod > 0 ? fmtDeltaPct(pct(p.prod, m.prod)) : '',
+      traG: hasPrev && p && p.taxaT > 0 ? fmtDeltaPct(pct(p.taxaT, m.taxaT)) : ''
     };
     const dCol = {
       ass: hasPrev && p ? deltaColor(m.ass - p.ass) : neutral,
       tra: hasPrev && p ? deltaColor(m.tra - p.tra) : neutral,
       fin: hasPrev && p ? deltaColor(m.fin - p.fin) : neutral,
       score: hasPrev && p && p.scAvg > 0 ? deltaColor(m.scAvg - p.scAvg) : neutral,
-      prod: hasPrev && p ? deltaColor((m.prod - p.prod) * 100) : neutral,
-      traG: hasPrev && p ? deltaColor((m.taxaT - p.taxaT) * 100) : neutral
+      prod: hasPrev && p && p.prod > 0 ? deltaColor(m.prod - p.prod) : neutral,
+      traG: hasPrev && p && p.taxaT > 0 ? deltaColor(-(m.taxaT - p.taxaT)) : neutral
     };
     doc.setFillColor(i % 2 ? light : white);
     doc.rect(startX, y, tableW, rowH, 'F');
