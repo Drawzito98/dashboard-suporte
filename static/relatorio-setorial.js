@@ -227,6 +227,43 @@ function renderRelatorioSetorial() {
     </div>
   </div>`;
 
+  // ── KPI cards com variação vs período anterior ──
+  const baseData = _rsData();
+  let prevRange = [];
+  if (meses.length) {
+    const firstIdx = allMeses.indexOf(meses[0]);
+    if (firstIdx > 0) prevRange = allMeses.slice(Math.max(0, firstIdx - meses.length), firstIdx);
+  }
+  const prevRows = baseData.filter(r => r && !isAggregateName(r['Atendente']))
+      .filter(r => !__rsFilterState.sector || String(r['Setor'] || '').trim() === __rsFilterState.sector)
+      .filter(r => prevRange.indexOf(String(r['Mês'] || '')) >= 0);
+  const prevFin = prevRows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
+  const prevAss = prevRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
+  const prevTra = prevRows.reduce((s, r) => s + (parseInt(r['Transferidos']) || 0), 0);
+  const prevAvg = _avgScoreBySetor(prevRows);
+  const prevProd = prevAss > 0 ? prevFin / prevAss : 0;
+  const prevTraG = prevAss > 0 ? prevTra / prevAss : 0;
+  const hasPrev = !!prevRows.length;
+  const _arrowCls = v => v > 0 ? 'trend-up' : (v < 0 ? 'trend-down' : 'trend-neutral');
+  const _arrow = v => v > 0 ? '\u25B2' : (v < 0 ? '\u25BC' : '\u2192');
+  const _prevLabel = hasPrev ? `vs ${prevRange[0]}${prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : ''}` : 'sem período anterior';
+  const _deltaPct = (p, c) => _deltaHtml(_calcDeltaPct(p, c));
+  const _deltaAbs = (v, unit) => v === null ? '' : `<span class="${_arrowCls(v)}">${_arrow(v)} ${v > 0 ? '+' : ''}${v.toFixed(unit === 'score' ? 2 : 1)}${unit === 'pp' ? ' pp' : ''}</span>`;
+  const _sDelta = hasPrev && prevAvg > 0 ? avgScore - prevAvg : null;
+  const _pDelta = hasPrev ? (prodGeral - prevProd) * 100 : null;
+  const _tDelta = hasPrev ? (traGeral - prevTraG) * 100 : null;
+  const kpiCards = [
+    { label: 'Assumidos', value: fmtNum(totalAss), sub: hasPrev ? _deltaPct(prevAss, totalAss) : '' },
+    { label: 'Transferidos', value: fmtNum(totalTra), sub: hasPrev ? _deltaPct(prevTra, totalTra) : '' },
+    { label: 'Finalizados', value: fmtNum(totalFin), sub: hasPrev ? _deltaPct(prevFin, totalFin) : '' },
+    { label: 'Score médio', value: fmtScore(avgScore), sub: _deltaAbs(_sDelta, 'score') },
+    { label: 'Produtividade', value: fmtPct(prodGeral), sub: _deltaAbs(_pDelta, 'pp') },
+    { label: 'Taxa Transferência', value: fmtPct(traGeral), sub: _deltaAbs(_tDelta, 'pp') }
+  ];
+  html += `<div class="kpi-grid" style="margin:0 0 var(--s-5)">
+    ${kpiCards.map(c => `<div class="kpi"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
+  </div>`;
+
   // ── Top 3 Rankings ──
   const colabData = {};
   rows.forEach(r => {
