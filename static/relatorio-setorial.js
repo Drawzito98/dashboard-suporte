@@ -867,12 +867,36 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   const pageW = 297;
   const pageH = 210;
   const M = 14;
-  const accent = '#2563eb';
-  const fg = '#0f172a';
-  const muted = '#64748b';
-  const light = '#f1f5f9';
-  const border = '#e2e8f0';
-  const white = '#ffffff';
+  const isDark = opts.isDark !== undefined ? opts.isDark : (typeof document !== 'undefined' && document.documentElement && document.documentElement.getAttribute('data-theme') === 'dark');
+  const C = isDark ? {
+    page: '#0f172a',
+    fg: '#f1f5f9',
+    muted: '#94a3b8',
+    rowAlt: '#1e293b',
+    border: '#334155',
+    accent: '#3b82f6',
+    white: '#ffffff',
+    green: '#34d399',
+    red: '#f87171',
+    neutral: '#94a3b8'
+  } : {
+    page: '#ffffff',
+    fg: '#0f172a',
+    muted: '#64748b',
+    rowAlt: '#f1f5f9',
+    border: '#e2e8f0',
+    accent: '#2563eb',
+    white: '#ffffff',
+    green: '#059669',
+    red: '#dc2626',
+    neutral: '#64748b'
+  };
+  const accent = C.accent;
+  const fg = C.fg;
+  const muted = C.muted;
+  const light = C.rowAlt;
+  const border = C.border;
+  const white = C.white;
 
   const period = meses && meses.length ? (meses.length === 1 ? String(meses[0]) : `${meses[0]} \u2013 ${meses[meses.length - 1]}`) : '—';
   const now = new Date().toLocaleString('pt-BR', { hour12: false });
@@ -909,9 +933,9 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   const hasPrev = !!opts.hasPrev;
   const prevLabel = opts.prevLabel || '';
   const prevMap = opts.setorMetricsPrev || {};
-  const green = '#059669';
-  const red = '#dc2626';
-  const neutral = '#64748b';
+  const green = C.green;
+  const red = C.red;
+  const neutral = C.neutral;
 
   const pctDelta = (p, c) => (p === 0 ? null : _calcDeltaPct(p, c));
   const fmtDeltaPct = d => d === null || d === undefined || isNaN(d) ? '' : `${d > 0 ? '+' : ''}${Math.abs(d).toFixed(1).replace('.', ',')}%`;
@@ -966,6 +990,8 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   };
 
   let page = 1;
+  doc.setFillColor(C.page);
+  doc.rect(0, 0, pageW, pageH, 'F');
   let y = drawHeader(0);
 
   // KPI cards (com variação vs período anterior)
@@ -1035,6 +1061,8 @@ function exportSetorPdf(setorMetrics, meses, opts) {
       doc.addPage('l', 'mm', 'a4');
       page += 1;
       y = 16;
+      doc.setFillColor(C.page);
+      doc.rect(0, 0, pageW, pageH, 'F');
       drawTableHeader();
     }
     const p = prevMap[m.nome];
@@ -1063,7 +1091,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
       prod: hasPrev && p && p.prod > 0 ? deltaColor(m.prod - p.prod) : neutral,
       traG: hasPrev && p && p.taxaT > 0 ? deltaColor(-(m.taxaT - p.taxaT)) : neutral
     };
-    doc.setFillColor(i % 2 ? light : white);
+    doc.setFillColor(i % 2 ? light : C.page);
     doc.rect(startX, y, tableW, rowH, 'F');
     doc.setTextColor(fg);
     setFont('normal', 10);
@@ -1090,7 +1118,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   });
 
   y += 8;
-  if (y > pageH - 14) { doc.addPage('l', 'mm', 'a4'); page += 1; y = 16; }
+  if (y > pageH - 14) { doc.addPage('l', 'mm', 'a4'); page += 1; y = 16; doc.setFillColor(C.page); doc.rect(0, 0, pageW, pageH, 'F'); }
   doc.setFontSize(8);
   doc.setTextColor(muted);
   doc.text(`Total: ${setorMetrics.length} setor(es) \u00B7 ${opts.totalAtendentes !== undefined ? fmtInt(opts.totalAtendentes) + ' atendente(s)' : ''} \u00B7 ${meses ? meses.length : 0} mês(es)`.replace(/\s*\u00B7\s*/g, ' \u00B7 '), M, y);
