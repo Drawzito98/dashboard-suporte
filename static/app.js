@@ -1336,14 +1336,14 @@ function showKpiBreakdown(kpiType, rows) {
   const scopeMonths = [...new Set(filtered.map(r => String(r['Mês'])).filter(Boolean))].sort();
   const periodoTxt = !scopeMonths.length ? 'Sem período' : (scopeMonths.length === 1 ? scopeMonths[0] : `${scopeMonths[0]} → ${scopeMonths[scopeMonths.length - 1]}`);
 
-  // ── Por mês (evolução, ignorando o filtro de mês) ──
+  // ── Por mês (evolução só quando há mais de um mês no escopo) ──
   let monthSection = '';
-  if (kpiType !== 'setores') {
-    const allMonths = [...new Set((rawRecords || []).map(r => String(r['Mês'])).filter(Boolean))].sort().filter(m => rowsForMonth(m).length);
+  if (kpiType !== 'setores' && scopeMonths.length > 1) {
     const monthRows = [];
     let prevVal = null;
-    allMonths.forEach(m => {
-      const val = metricValue(aggregateTotal(aggregate(rowsForMonth(m))));
+    scopeMonths.forEach(m => {
+      const monthRecs = filtered.filter(r => String(r['Mês']) === m);
+      const val = metricValue(aggregateTotal(aggregate(monthRecs)));
       const d = deltaHTML(val, prevVal);
       monthRows.push(`<tr><td>${escapeHtml(m)}</td><td class="kpi-drill-value">${fmtVal(val)}</td><td class="kpi-drill-delta">${d || '<span class="variation-neutro">—</span>'}</td></tr>`);
       prevVal = val;
