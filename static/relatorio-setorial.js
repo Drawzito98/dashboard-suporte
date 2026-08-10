@@ -855,7 +855,7 @@ function renderRelatorioSetorial() {
   const pdfBtn = document.getElementById('rsPdfBtn');
   if (pdfBtn) {
     pdfBtn.addEventListener('click', () => {
-      exportSetorPdf(setorMetrics, meses, { avgScore, prodGeral, traGeral, totalAtendentes, totalAss, totalFin, totalTra, hasPrev, prevLabel: prevRange.length ? prevRange[0] + (prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : '') : '', setorMetricsPrev: prevSetorMap, totalFinPrev: prevFin, totalAssPrev: prevAss, totalTraPrev: prevTra, avgScorePrev: prevAvg, prodGeralPrev: prevProd, traGeralPrev: prevTraG });
+      exportSetorPdf(setorMetrics, meses, { avgScore, prodGeral, traGeral, totalAtendentes, totalAss, totalFin, totalTra, hasPrev, prevLabel: prevRange.length ? prevRange[0] + (prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : '') : '', setorMetricsPrev: prevSetorMap, totalFinPrev: prevFin, totalAssPrev: prevAss, totalTraPrev: prevTra, avgScorePrev: prevAvg, prodGeralPrev: prevProd, traGeralPrev: prevTraG, hasTma, hasTmr, tmaGeral, tmrGeral });
     });
   }
 }
@@ -1054,22 +1054,45 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   });
   y += cardH + 8;
 
+  if (opts.hasTma || opts.hasTmr) {
+    const parts = [];
+    if (opts.hasTma) parts.push(`TMA m\u00E9dio: ${_fmtDuration(opts.tmaGeral)}`);
+    if (opts.hasTmr) parts.push(`TMR m\u00E9dio: ${_fmtDuration(opts.tmrGeral)}`);
+    doc.setTextColor(fg); setFont('bold', 9);
+    doc.text(parts.join('   \u00B7   '), M, y);
+    y += 6;
+  }
+
   if (hasPrev && prevLabel) {
     doc.setTextColor(muted); setFont('normal', 9);
     doc.text(`Variação vs período anterior (${prevLabel})`, M, y);
     y += 6;
   }
 
-  // Table — Setor | Assumidos | Transferidos | Finalizados | Score | Produtividade | Tx Transf. (+ delta em cada célula)
-  const cols = [
-    { label: 'Setor', w: 52, align: 'left' },
-    { label: 'Assumidos', w: 34, align: 'left' },
-    { label: 'Transferidos', w: 34, align: 'left' },
-    { label: 'Finalizados', w: 36, align: 'left' },
-    { label: 'Score', w: 30, align: 'left' },
-    { label: 'Produtividade', w: 38, align: 'left' },
-    { label: 'Tx Transf.', w: 34, align: 'left' }
-  ];
+  // Table — Setor | Assumidos | Transferidos | Finalizados | Score | Produtividade | Tx Transf. | TMA? | TMR? (+ delta em cada célula)
+  const hasDur = opts.hasTma || opts.hasTmr;
+  const durCols = (opts.hasTma ? 1 : 0) + (opts.hasTmr ? 1 : 0);
+  const cols = hasDur
+    ? [
+        { label: 'Setor', w: 38, align: 'left' },
+        { label: 'Assumidos', w: 27, align: 'left' },
+        { label: 'Transferidos', w: 27, align: 'left' },
+        { label: 'Finalizados', w: 29, align: 'left' },
+        { label: 'Score', w: 25, align: 'left' },
+        { label: 'Produtividade', w: 30, align: 'left' },
+        { label: 'Tx Transf.', w: 26, align: 'left' },
+        ...(opts.hasTma ? [{ label: 'TMA', w: 30, align: 'left' }] : []),
+        ...(opts.hasTmr ? [{ label: 'TMR', w: 30, align: 'left' }] : [])
+      ]
+    : [
+        { label: 'Setor', w: 52, align: 'left' },
+        { label: 'Assumidos', w: 34, align: 'left' },
+        { label: 'Transferidos', w: 34, align: 'left' },
+        { label: 'Finalizados', w: 36, align: 'left' },
+        { label: 'Score', w: 30, align: 'left' },
+        { label: 'Produtividade', w: 38, align: 'left' },
+        { label: 'Tx Transf.', w: 34, align: 'left' }
+      ];
   const rowH = 15;
   const tableW = cols.reduce((s, c) => s + c.w, 0);
   const startX = (pageW - tableW) / 2;
@@ -1136,7 +1159,9 @@ function exportSetorPdf(setorMetrics, meses, opts) {
       { v: fmtInt(m.fin), dv: d.fin, dc: dCol.fin, dir: dDir.fin },
       { v: fmtScore(m.scAvg), dv: d.score, dc: dCol.score, dir: dDir.score },
       { v: fmtPct(m.prod), dv: d.prod, dc: dCol.prod, dir: dDir.prod },
-      { v: fmtPct(m.taxaT), dv: d.traG, dc: dCol.traG, dir: dDir.traG }
+      { v: fmtPct(m.taxaT), dv: d.traG, dc: dCol.traG, dir: dDir.traG },
+      ...(opts.hasTma ? [{ v: m.tma !== null && m.tma !== undefined ? _fmtDuration(m.tma) : '\u2014', dv: '', dc: neutral, dir: null }] : []),
+      ...(opts.hasTmr ? [{ v: m.tmr !== null && m.tmr !== undefined ? _fmtDuration(m.tmr) : '\u2014', dv: '', dc: neutral, dir: null }] : [])
     ];
     let cx = startX + cols[0].w;
     cells.forEach((c, ci) => {
