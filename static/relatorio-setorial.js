@@ -223,6 +223,7 @@ function renderRelatorioSetorial() {
       <span id="rsPresentationModeIndicator" style="font-size:12px;color:var(--text-muted);display:none">\uD83D\uDCF1 Modo apresentação</span>
       <button id="rsPresentationToggle" class="btn-small" type="button" title="Ocultar botões de ação para captura de tela">\uD83D\uDCF1 Apresentação</button>
       <button class="btn-primary" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
+      <button class="btn-primary" id="rsPdfBtn" type="button">\uD83D\uDCC4 PDF (equipe)</button>
     </div>
   </div>`;
 
@@ -761,6 +762,14 @@ function renderRelatorioSetorial() {
       });
     });
   }
+
+  // ── Exportar PDF (equipe) — somente métricas por setor, sem nomes ──
+  const pdfBtn = document.getElementById('rsPdfBtn');
+  if (pdfBtn) {
+    pdfBtn.addEventListener('click', () => {
+      exportSetorPdf(setorMetrics, meses, { avgScore, prodGeral, traGeral, totalAtendentes, totalAss, totalFin, totalTra });
+    });
+  }
 }
 
 function _showModalAtendentes(nomes) {
@@ -790,4 +799,141 @@ function _showModalAtendentes(nomes) {
 
 function onRelatorioSetorialTabActivated() {
   renderRelatorioSetorial();
+}
+
+// Exporta PDF em paisagem A4 com métricas agregadas por setor (sem nomes de colaboradores).
+function exportSetorPdf(setorMetrics, meses, opts) {
+  if (typeof window.jspdf === 'undefined') {
+    if (typeof showToast === 'function') showToast('Biblioteca de PDF não carregada.', 'error');
+    return;
+  }
+  opts = opts || {};
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('l', 'mm', 'a4');
+  const pageW = 297;
+  const pageH = 210;
+  const M = 14;
+  const accent = '#2563eb';
+  const fg = '#0f172a';
+  const muted = '#64748b';
+  const light = '#f1f5f9';
+  const border = '#e2e8f0';
+  const white = '#ffffff';
+
+  const period = meses && meses.length ? (meses.length === 1 ? String(meses[0]) : `${meses[0]} → ${meses[meses.length - 1]}`) : '—';
+  const now = new Date().toLocaleString('pt-BR', { hour12: false });
+  const fmtInt = n => (Number(n) || 0).toLocaleString('pt-BR');
+  const fmtScore = n => n > 0 ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014';
+  const fmtPct = n => n !== null && n !== undefined && !isNaN(n) ? (n * 100).toFixed(1) + '%' : '\u2014';
+  const setFont = (style, size) => doc.setFont('helvetica', style).setFontSize(size);
+
+  const totalFin = opts.totalFin !== undefined ? opts.totalFin : setorMetrics.reduce((s, m) => s + m.fin, 0);
+  const totalAss = opts.totalAss !== undefined ? opts.totalAss : setorMetrics.reduce((s, m) => s + m.ass, 0);
+  const totalTra = opts.totalTra !== undefined ? opts.totalTra : setorMetrics.reduce((s, m) => s + m.tra, 0);
+  const avgScore = opts.avgScore !== undefined ? opts.avgScore : (setorMetrics.length ? setorMetrics.reduce((s, m) => s + m.scAvg, 0) / setorMetrics.length : 0);
+  const prodGeral = opts.prodGeral !== undefined ? opts.prodGeral : (totalAss > 0 ? totalFin / totalAss : 0);
+  const traGeral = opts.traGeral !== undefined ? opts.traGeral : (totalAss > 0 ? totalTra / totalAss : 0);
+
+  function drawHeader(y) {
+    doc.setFillColor(accent);
+    doc.rect(0, 0, pageW, 24, 'F');
+    doc.setTextColor(white);
+    setFont('bold', 15); doc.text('Resumo por Setor', M, 10);
+    setFont('normal', 10); doc.text('IXC CG \u00B7 Painel de Suporte', M, 17);
+    setFont('bold', 11); doc.text(`Período: ${period}`, pageW - M, 10, { align: 'right' });
+    setFont('normal', 8); doc.text(`Gerado em ${now}`, pageW - M, 17, { align: 'right' });
+    return y;
+  }
+
+  function drawFooter(page) {
+    doc.setPage(page);
+    doc.setFontSize(7);
+    doc.setTextColor(muted);
+    doc.text('Métricas por setor \u00B7 sem identificação individual de colaboradores', pageW / 2, pageH - 4, { align: 'center' });
+  }
+
+  let page = 1;
+  let y = drawHeader(0);
+
+  // KPI cards
+  const kpis = [
+    ['Finalizados', fmtInt(totalFin)],
+    ['Assumidos', fmtInt(totalAss)],
+    ['Transferidos', fmtInt(totalTra)],
+    ['Score Médio', fmtScore(avgScore)],
+    ['Produtividade', fmtPct(prodGeral)],
+    ['Taxa Transferência', fmtPct(traGeral)]
+  ];
+  const gap = 6;
+  const cardW = (pageW - M * 2 - gap * (kpis.length - 1)) / kpis.length;
+  y = 32;
+  kpis.forEach((k, i) => {
+    const x = M + i * (cardW + gap);
+    doc.setFillColor(light);
+    doc.setDrawColor(border);
+    doc.roundedRect(x, y, cardW, 22, 2.5, 2.5, 'FD');
+    doc.setTextColor(muted); setFont('bold', 7); doc.text(String(k[0]).toUpperCase(), x + 4, y + 7);
+    doc.setTextColor(fg); setFont('bold', 15); doc.text(k[1], x + 4, y + 18);
+  });
+  y += 30;
+
+  // Table — Setor | Finalizados | Assumidos | Transferidos | Score | Produtividade | Tx Transf.
+  const cols = [
+    { label: 'Setor', w: 52, align: 'left' },
+    { label: 'Finalizados', w: 34, align: 'right' },
+    { label: 'Assumidos', w: 30, align: 'right' },
+    { label: 'Transferidos', w: 30, align: 'right' },
+    { label: 'Score', w: 26, align: 'right' },
+    { label: 'Produtividade', w: 34, align: 'right' },
+    { label: 'Tx Transf.', w: 30, align: 'right' }
+  ];
+  const rowH = 8;
+  const tableW = cols.reduce((s, c) => s + c.w, 0);
+  const startX = (pageW - tableW) / 2;
+
+  function drawTableHeader() {
+    doc.setFillColor(accent);
+    doc.rect(startX, y, tableW, rowH, 'F');
+    doc.setTextColor(white);
+    setFont('bold', 9);
+    let cx = startX;
+    cols.forEach(c => {
+      doc.text(c.label, c.align === 'right' ? cx + c.w - 4 : cx + 4, y + 5.5, { align: c.align });
+      cx += c.w;
+    });
+    y += rowH;
+  }
+
+  drawTableHeader();
+
+  const sorted = setorMetrics.slice().sort((a, b) => b.fin - a.fin);
+  setFont('normal', 9);
+  sorted.forEach((m, i) => {
+    if (y + rowH > pageH - 10) {
+      doc.addPage('l', 'mm', 'a4');
+      page += 1;
+      y = 16;
+      drawTableHeader();
+    }
+    doc.setFillColor(i % 2 ? light : white);
+    doc.rect(startX, y, tableW, rowH, 'F');
+    doc.setTextColor(fg);
+    const vals = [m.nome, fmtInt(m.fin), fmtInt(m.ass), fmtInt(m.tra), fmtScore(m.scAvg), fmtPct(m.prod), fmtPct(m.taxaT)];
+    let cx = startX;
+    for (let ci = 0; ci < cols.length; ci++) {
+      doc.text(String(vals[ci]), cols[ci].align === 'right' ? cx + cols[ci].w - 4 : cx + 4, y + 5.5, { align: cols[ci].align });
+      cx += cols[ci].w;
+    }
+    y += rowH;
+  });
+
+  y += 8;
+  if (y > pageH - 14) { doc.addPage('l', 'mm', 'a4'); page += 1; y = 16; }
+  doc.setFontSize(8);
+  doc.setTextColor(muted);
+  doc.text(`Total: ${setorMetrics.length} setor(es) \u00B7 ${opts.totalAtendentes !== undefined ? fmtInt(opts.totalAtendentes) + ' atendente(s)' : ''} \u00B7 ${meses ? meses.length : 0} mês(es)`.replace(/\s*\u00B7\s*/g, ' \u00B7 '), M, y);
+
+  for (let p = 1; p <= page; p++) drawFooter(p);
+  doc.save(`resumo-por-setor-${String(period).replace(/[^\w\-]+/g, '-')}.pdf`);
+  if (typeof showToast === 'function') showToast('PDF exportado com sucesso!', 'success');
 }
