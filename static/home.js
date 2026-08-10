@@ -324,6 +324,8 @@ function renderHomeTrendChart(data) {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
   const textColor = isDark ? '#b0bcd4' : '#4a4540';
+  const surfaceColor = isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.92)';
+  const labelBorderColor = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.08)';
 
   const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2563eb';
   const successColor = getComputedStyle(document.documentElement).getPropertyValue('--success').trim() || '#047857';
@@ -343,7 +345,8 @@ function renderHomeTrendChart(data) {
           pointRadius: 4,
           pointHoverRadius: 6,
           borderWidth: 2,
-          yAxisID: 'y'
+          yAxisID: 'y',
+          datalabels: { align: 'bottom' }
         },
         {
           label: 'Finalizados',
@@ -355,7 +358,8 @@ function renderHomeTrendChart(data) {
           pointRadius: 3,
           pointHoverRadius: 5,
           borderWidth: 2,
-          yAxisID: 'y1'
+          yAxisID: 'y1',
+          datalabels: { align: 'top' }
         }
       ]
     },
@@ -363,7 +367,21 @@ function renderHomeTrendChart(data) {
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { position: 'bottom', labels: { font: { size: 11, family: 'Inter' }, padding: 16, color: textColor, usePointStyle: true, pointStyle: 'circle' } } },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11, family: 'Inter' }, padding: 16, color: textColor, usePointStyle: true, pointStyle: 'circle' } },
+        datalabels: {
+          color: textColor,
+          font: { weight: '600', size: 10 },
+          backgroundColor: surfaceColor,
+          borderColor: labelBorderColor,
+          borderWidth: 1,
+          borderRadius: 4,
+          padding: { top: 2, bottom: 2, left: 4, right: 4 },
+          anchor: 'end',
+          clamp: true,
+          formatter: v => Number.isInteger(v) ? v.toLocaleString('pt-BR') : v.toFixed(1)
+        }
+      },
       scales: {
         x: { grid: { display: false }, ticks: { color: textColor, font: { size: 11 } } },
         y: { position: 'left', grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 } }, title: { display: true, text: 'Score', color: textColor, font: { size: 10 } } },
