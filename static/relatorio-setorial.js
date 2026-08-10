@@ -209,11 +209,6 @@ function renderRelatorioSetorial() {
   const prodGeral = totalAss > 0 ? totalFin / totalAss : 0;
   const traGeral = totalAss > 0 ? totalTra / totalAss : 0;
   const totalAtendentes = [...new Set(rows.map(r => r['Atendente']))].filter(Boolean).length;
-  const tmaGeral = _avgDuration(rows, 'TMA');
-  const tmrGeral = _avgDuration(rows, 'TMR');
-  const hasTma = tmaGeral !== null;
-  const hasTmr = tmrGeral !== null;
-  const hasDur = hasTma || hasTmr;
 
   const fmtNum = n => (Number(n) || 0).toLocaleString('pt-BR');
   const fmtScore = n => n > 0 ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014';
@@ -236,6 +231,17 @@ function renderRelatorioSetorial() {
     const colabs = [...new Set(recs.map(r => r['Atendente']))].filter(Boolean).length;
     return { nome: s, fin, ass, tra, scAvg, prod, taxaT, colabs, tma: _avgDuration(recs, 'TMA'), tmr: _avgDuration(recs, 'TMR') };
   });
+
+  // TMA/TMR geral = média das médias por setor (cada setor pesa igual, sem pesos)
+  const _durAvg = arr => {
+    const vals = arr.filter(v => v !== null && v !== undefined && !isNaN(v));
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  };
+  const tmaGeral = _durAvg(setorMetrics.map(s => s.tma));
+  const tmrGeral = _durAvg(setorMetrics.map(s => s.tmr));
+  const hasTma = tmaGeral !== null;
+  const hasTmr = tmrGeral !== null;
+  const hasDur = hasTma || hasTmr;
 
   let html = filterBarHtml;
 
