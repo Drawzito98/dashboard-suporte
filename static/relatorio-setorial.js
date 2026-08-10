@@ -265,9 +265,8 @@ function renderRelatorioSetorial() {
   const _prevLabel = hasPrev ? `vs ${prevRange[0]}${prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : ''}` : 'sem período anterior';
   const _deltaSpan = (d, invert) => {
     if (d === null || d === undefined || isNaN(d)) return '';
-    const sign = invert ? -d : d;
-    const cls = _arrowCls(sign);
-    const arrow = _arrow(sign);
+    const cls = _arrowCls(invert ? -d : d);
+    const arrow = _arrow(d);
     return `<span class="${cls}">${arrow} ${d > 0 ? '+' : ''}${Math.abs(d).toFixed(1)}%</span>`;
   };
   const kpiCards = [
@@ -875,7 +874,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   const border = '#e2e8f0';
   const white = '#ffffff';
 
-  const period = meses && meses.length ? (meses.length === 1 ? String(meses[0]) : `${meses[0]} → ${meses[meses.length - 1]}`) : '—';
+  const period = meses && meses.length ? (meses.length === 1 ? String(meses[0]) : `${meses[0]} \u2013 ${meses[meses.length - 1]}`) : '—';
   const now = new Date().toLocaleString('pt-BR', { hour12: false });
   const fmtInt = n => (Number(n) || 0).toLocaleString('pt-BR');
   const fmtScore = n => n > 0 ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014';
@@ -915,8 +914,22 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   const neutral = '#64748b';
 
   const pctDelta = (p, c) => (p === 0 ? null : _calcDeltaPct(p, c));
-  const fmtDeltaPct = d => d === null ? '' : `${d > 0 ? '\u25B2 +' : (d < 0 ? '\u25BC ' : '\u2192 ')}${Math.abs(d).toFixed(1)}%`;
+  const fmtDeltaPct = d => d === null || d === undefined || isNaN(d) ? '' : `${d > 0 ? '+' : ''}${Math.abs(d).toFixed(1)}%`;
   const deltaColor = d => d > 0 ? green : (d < 0 ? red : neutral);
+  const dirOf = d => d === null || d === undefined || isNaN(d) ? null : (d > 0 ? 'up' : (d < 0 ? 'down' : 'flat'));
+
+  function drawDelta(x, yBase, dir, color, txt) {
+    if (!dir || !txt) return;
+    doc.setTextColor(color);
+    doc.setFillColor(color);
+    doc.setDrawColor(color);
+    const cy = yBase - 1.8;
+    if (dir === 'up') doc.triangle(x - 1.7, cy + 1.1, x + 1.7, cy + 1.1, x, cy - 1.8, 'F');
+    else if (dir === 'down') doc.triangle(x - 1.7, cy - 1.1, x + 1.7, cy - 1.1, x, cy + 1.8, 'F');
+    else { doc.setLineWidth(0.5); doc.line(x - 1.7, cy, x + 1.7, cy); }
+    setFont('bold', 7);
+    doc.text(txt, x + 4.3, yBase, { align: 'left' });
+  }
 
   // Deltas gerais (cards) — sempre em % de variação
   const g = {
@@ -943,6 +956,14 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     prod: deltaColor(g.prod),
     traG: deltaColor(g.traG === null ? null : -g.traG)
   };
+  const gDir = {
+    ass: dirOf(g.ass),
+    tra: dirOf(g.tra),
+    fin: dirOf(g.fin),
+    score: dirOf(g.score),
+    prod: dirOf(g.prod),
+    traG: dirOf(g.traG)
+  };
 
   let page = 1;
   let y = drawHeader(0);
@@ -968,7 +989,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.setTextColor(muted); setFont('bold', 7); doc.text(String(k.label).toUpperCase(), x + 4, y + 7);
     doc.setTextColor(fg); setFont('bold', 15); doc.text(k.value, x + 4, y + 17);
     if (k.txt) {
-      doc.setTextColor(gColor[k.key]); setFont('bold', 6.5); doc.text(k.txt, x + 4, y + 23);
+      drawDelta(x + 5.5, y + 23, gDir[k.key], gColor[k.key], k.txt);
     }
   });
   y += cardH + 6;
@@ -989,7 +1010,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     { label: 'Produtividade', w: 38, align: 'left' },
     { label: 'Tx Transf.', w: 34, align: 'left' }
   ];
-  const rowH = 10;
+  const rowH = 12;
   const tableW = cols.reduce((s, c) => s + c.w, 0);
   const startX = (pageW - tableW) / 2;
 
@@ -1026,6 +1047,14 @@ function exportSetorPdf(setorMetrics, meses, opts) {
       prod: hasPrev && p && p.prod > 0 ? fmtDeltaPct(pct(p.prod, m.prod)) : '',
       traG: hasPrev && p && p.taxaT > 0 ? fmtDeltaPct(pct(p.taxaT, m.taxaT)) : ''
     };
+    const dDir = {
+      ass: hasPrev && p ? dirOf(m.ass - p.ass) : null,
+      tra: hasPrev && p ? dirOf(m.tra - p.tra) : null,
+      fin: hasPrev && p ? dirOf(m.fin - p.fin) : null,
+      score: hasPrev && p && p.scAvg > 0 ? dirOf(m.scAvg - p.scAvg) : null,
+      prod: hasPrev && p && p.prod > 0 ? dirOf(m.prod - p.prod) : null,
+      traG: hasPrev && p && p.taxaT > 0 ? dirOf(m.taxaT - p.taxaT) : null
+    };
     const dCol = {
       ass: hasPrev && p ? deltaColor(m.ass - p.ass) : neutral,
       tra: hasPrev && p ? deltaColor(m.tra - p.tra) : neutral,
@@ -1040,12 +1069,12 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     setFont('normal', 9);
     doc.text(m.nome, startX + 4, y + 6, { align: 'left' });
     const cells = [
-      { v: fmtInt(m.ass), dv: d.ass, dc: dCol.ass },
-      { v: fmtInt(m.tra), dv: d.tra, dc: dCol.tra },
-      { v: fmtInt(m.fin), dv: d.fin, dc: dCol.fin },
-      { v: fmtScore(m.scAvg), dv: d.score, dc: dCol.score },
-      { v: fmtPct(m.prod), dv: d.prod, dc: dCol.prod },
-      { v: fmtPct(m.taxaT), dv: d.traG, dc: dCol.traG }
+      { v: fmtInt(m.ass), dv: d.ass, dc: dCol.ass, dir: dDir.ass },
+      { v: fmtInt(m.tra), dv: d.tra, dc: dCol.tra, dir: dDir.tra },
+      { v: fmtInt(m.fin), dv: d.fin, dc: dCol.fin, dir: dDir.fin },
+      { v: fmtScore(m.scAvg), dv: d.score, dc: dCol.score, dir: dDir.score },
+      { v: fmtPct(m.prod), dv: d.prod, dc: dCol.prod, dir: dDir.prod },
+      { v: fmtPct(m.taxaT), dv: d.traG, dc: dCol.traG, dir: dDir.traG }
     ];
     let cx = startX + cols[0].w;
     cells.forEach((c, ci) => {
@@ -1053,7 +1082,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
       doc.setTextColor(fg);
       doc.text(c.v, cx + 4, y + 6, { align: 'left' });
       if (c.dv) {
-        doc.setTextColor(c.dc); setFont('bold', 7); doc.text(c.dv, cx + 4, y + 12, { align: 'left' });
+        drawDelta(cx + 5.5, y + 12.5, c.dir, c.dc, c.dv);
       }
       cx += w;
     });
