@@ -244,6 +244,22 @@ function renderRelatorioSetorial() {
   const prevProd = prevAss > 0 ? prevFin / prevAss : 0;
   const prevTraG = prevAss > 0 ? prevTra / prevAss : 0;
   const hasPrev = !!prevRows.length;
+  const prevSetorMetrics = {};
+  prevRows.forEach(r => {
+    const s = String(r['Setor'] || '').trim() || '(sem setor)';
+    if (!prevSetorMetrics[s]) prevSetorMetrics[s] = { fin: 0, ass: 0, tra: 0, sc: [] };
+    prevSetorMetrics[s].fin += parseInt(r['Finalizados']) || 0;
+    prevSetorMetrics[s].ass += parseInt(r['Assumidos']) || 0;
+    prevSetorMetrics[s].tra += parseInt(r['Transferidos']) || 0;
+    const v = r['SCORE'];
+    if (v !== null && v !== undefined && !isNaN(Number(v))) prevSetorMetrics[s].sc.push(Number(v));
+  });
+  const prevSetorMap = {};
+  Object.keys(prevSetorMetrics).forEach(s => {
+    const d = prevSetorMetrics[s];
+    const scAvg = d.sc.length ? d.sc.reduce((a, b) => a + b, 0) / d.sc.length : 0;
+    prevSetorMap[s] = { fin: d.fin, ass: d.ass, tra: d.tra, scAvg, prod: d.ass > 0 ? d.fin / d.ass : 0, taxaT: d.ass > 0 ? d.tra / d.ass : 0 };
+  });
   const _arrowCls = v => v > 0 ? 'trend-up' : (v < 0 ? 'trend-down' : 'trend-neutral');
   const _arrow = v => v > 0 ? '\u25B2' : (v < 0 ? '\u25BC' : '\u2192');
   const _prevLabel = hasPrev ? `vs ${prevRange[0]}${prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : ''}` : 'sem período anterior';
@@ -804,7 +820,7 @@ function renderRelatorioSetorial() {
   const pdfBtn = document.getElementById('rsPdfBtn');
   if (pdfBtn) {
     pdfBtn.addEventListener('click', () => {
-      exportSetorPdf(setorMetrics, meses, { avgScore, prodGeral, traGeral, totalAtendentes, totalAss, totalFin, totalTra });
+      exportSetorPdf(setorMetrics, meses, { avgScore, prodGeral, traGeral, totalAtendentes, totalAss, totalFin, totalTra, hasPrev, prevLabel: prevRange.length ? prevRange[0] + (prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : '') : '', setorMetricsPrev: prevSetorMap, totalFinPrev: prevFin, totalAssPrev: prevAss, totalTraPrev: prevTra, avgScorePrev: prevAvg, prodGeralPrev: prevProd, traGeralPrev: prevTraG });
     });
   }
 }
@@ -889,32 +905,73 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.text('Métricas por setor \u00B7 sem identificação individual de colaboradores', pageW / 2, pageH - 4, { align: 'center' });
   }
 
+  const hasPrev = !!opts.hasPrev;
+  const prevLabel = opts.prevLabel || '';
+  const prevMap = opts.setorMetricsPrev || {};
+  const green = '#059669';
+  const red = '#dc2626';
+  const neutral = '#64748b';
+
+  const pctDelta = (p, c) => (p === 0 ? null : _calcDeltaPct(p, c));
+  const fmtDeltaPct = d => d === null ? '' : `${d > 0 ? '\u25B2 +' : (d < 0 ? '\u25BC ' : '\u2192 ')}${Math.abs(d).toFixed(1)}%`;
+  const fmtDeltaScore = d => d === null ? '' : `${d > 0 ? '\u25B2 +' : (d < 0 ? '\u25BC ' : '\u2192 ')}${Math.abs(d).toFixed(2)}`;
+  const fmtDeltaPp = d => d === null ? '' : `${d > 0 ? '\u25B2 +' : (d < 0 ? '\u25BC ' : '\u2192 ')}${Math.abs(d).toFixed(1)} pp`;
+  const deltaColor = d => d > 0 ? green : (d < 0 ? red : neutral);
+
+  // Deltas gerais (cards)
+  const g = {
+    ass: hasPrev ? pctDelta(opts.totalAssPrev, totalAss) : null,
+    tra: hasPrev ? pctDelta(opts.totalTraPrev, totalTra) : null,
+    fin: hasPrev ? pctDelta(opts.totalFinPrev, totalFin) : null,
+    score: hasPrev ? (opts.avgScorePrev > 0 ? avgScore - opts.avgScorePrev : null) : null,
+    prod: hasPrev ? ((prodGeral - opts.prodGeralPrev) * 100) : null,
+    traG: hasPrev ? ((traGeral - opts.traGeralPrev) * 100) : null
+  };
+  const gText = {
+    ass: fmtDeltaPct(g.ass),
+    tra: fmtDeltaPct(g.tra),
+    fin: fmtDeltaPct(g.fin),
+    score: fmtDeltaScore(g.score),
+    prod: fmtDeltaPp(g.prod),
+    traG: fmtDeltaPp(g.traG)
+  };
+
   let page = 1;
   let y = drawHeader(0);
 
-  // KPI cards
+  // KPI cards (com variação vs período anterior)
   const kpis = [
-    ['Finalizados', fmtInt(totalFin)],
-    ['Assumidos', fmtInt(totalAss)],
-    ['Transferidos', fmtInt(totalTra)],
-    ['Score Médio', fmtScore(avgScore)],
-    ['Produtividade', fmtPct(prodGeral)],
-    ['Taxa Transferência', fmtPct(traGeral)]
+    { label: 'Assumidos', value: fmtInt(totalAss), delta: g.ass, txt: gText.ass },
+    { label: 'Transferidos', value: fmtInt(totalTra), delta: g.tra, txt: gText.tra },
+    { label: 'Finalizados', value: fmtInt(totalFin), delta: g.fin, txt: gText.fin },
+    { label: 'Score Médio', value: fmtScore(avgScore), delta: g.score, txt: gText.score },
+    { label: 'Produtividade', value: fmtPct(prodGeral), delta: g.prod, txt: gText.prod },
+    { label: 'Taxa Transferência', value: fmtPct(traGeral), delta: g.traG, txt: gText.traG }
   ];
   const gap = 6;
   const cardW = (pageW - M * 2 - gap * (kpis.length - 1)) / kpis.length;
+  const cardH = 26;
   y = 32;
   kpis.forEach((k, i) => {
     const x = M + i * (cardW + gap);
     doc.setFillColor(light);
     doc.setDrawColor(border);
-    doc.roundedRect(x, y, cardW, 22, 2.5, 2.5, 'FD');
-    doc.setTextColor(muted); setFont('bold', 7); doc.text(String(k[0]).toUpperCase(), x + 4, y + 7);
-    doc.setTextColor(fg); setFont('bold', 15); doc.text(k[1], x + 4, y + 18);
+    doc.roundedRect(x, y, cardW, cardH, 2.5, 2.5, 'FD');
+    doc.setTextColor(muted); setFont('bold', 7); doc.text(String(k.label).toUpperCase(), x + 4, y + 7);
+    doc.setTextColor(fg); setFont('bold', 15); doc.text(k.value, x + 4, y + 17);
+    if (k.txt) {
+      doc.setTextColor(deltaColor(k.delta)); setFont('bold', 6.5); doc.text(k.txt, x + 4, y + 23);
+    }
   });
-  y += 30;
+  y += cardH + 6;
 
-  // Table — Setor | Finalizados | Assumidos | Transferidos | Score | Produtividade | Tx Transf.
+  if (hasPrev && prevLabel) {
+    doc.setTextColor(muted); setFont('normal', 7.5);
+    doc.text(`Variação vs período anterior (${prevLabel})`, M, y);
+    y += 5;
+  }
+
+  // Table — Setor | Assumidos | Transferidos | Finalizados | Score | Produtividade | Tx Transf. (+ delta em cada célula)
   const cols = [
     { label: 'Setor', w: 52, align: 'left' },
     { label: 'Assumidos', w: 34, align: 'left' },
@@ -924,7 +981,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     { label: 'Produtividade', w: 38, align: 'left' },
     { label: 'Tx Transf.', w: 34, align: 'left' }
   ];
-  const rowH = 8;
+  const rowH = 10;
   const tableW = cols.reduce((s, c) => s + c.w, 0);
   const startX = (pageW - tableW) / 2;
 
@@ -932,10 +989,10 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.setFillColor(accent);
     doc.rect(startX, y, tableW, rowH, 'F');
     doc.setTextColor(white);
-    setFont('bold', 9);
+    setFont('bold', 8);
     let cx = startX;
     cols.forEach(c => {
-      doc.text(c.label, c.align === 'right' ? cx + c.w - 4 : cx + 4, y + 5.5, { align: c.align });
+      doc.text(c.label, cx + 4, y + 6, { align: 'left' });
       cx += c.w;
     });
     y += rowH;
@@ -944,7 +1001,6 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   drawTableHeader();
 
   const sorted = setorMetrics.slice().sort((a, b) => b.fin - a.fin);
-  setFont('normal', 9);
   sorted.forEach((m, i) => {
     if (y + rowH > pageH - 10) {
       doc.addPage('l', 'mm', 'a4');
@@ -952,15 +1008,47 @@ function exportSetorPdf(setorMetrics, meses, opts) {
       y = 16;
       drawTableHeader();
     }
+    const p = prevMap[m.nome];
+    const pct = (pv, cv) => pctDelta(pv, cv);
+    const d = {
+      ass: hasPrev && p ? fmtDeltaPct(pct(p.ass, m.ass)) : '',
+      tra: hasPrev && p ? fmtDeltaPct(pct(p.tra, m.tra)) : '',
+      fin: hasPrev && p ? fmtDeltaPct(pct(p.fin, m.fin)) : '',
+      score: hasPrev && p && p.scAvg > 0 ? fmtDeltaScore(m.scAvg - p.scAvg) : '',
+      prod: hasPrev && p ? fmtDeltaPp((m.prod - p.prod) * 100) : '',
+      traG: hasPrev && p ? fmtDeltaPp((m.taxaT - p.taxaT) * 100) : ''
+    };
+    const dCol = {
+      ass: hasPrev && p ? deltaColor(m.ass - p.ass) : neutral,
+      tra: hasPrev && p ? deltaColor(m.tra - p.tra) : neutral,
+      fin: hasPrev && p ? deltaColor(m.fin - p.fin) : neutral,
+      score: hasPrev && p && p.scAvg > 0 ? deltaColor(m.scAvg - p.scAvg) : neutral,
+      prod: hasPrev && p ? deltaColor((m.prod - p.prod) * 100) : neutral,
+      traG: hasPrev && p ? deltaColor((m.taxaT - p.taxaT) * 100) : neutral
+    };
     doc.setFillColor(i % 2 ? light : white);
     doc.rect(startX, y, tableW, rowH, 'F');
     doc.setTextColor(fg);
-    const vals = [m.nome, fmtInt(m.ass), fmtInt(m.tra), fmtInt(m.fin), fmtScore(m.scAvg), fmtPct(m.prod), fmtPct(m.taxaT)];
-    let cx = startX;
-    for (let ci = 0; ci < cols.length; ci++) {
-      doc.text(String(vals[ci]), cols[ci].align === 'right' ? cx + cols[ci].w - 4 : cx + 4, y + 5.5, { align: cols[ci].align });
-      cx += cols[ci].w;
-    }
+    setFont('normal', 9);
+    doc.text(m.nome, startX + 4, y + 6, { align: 'left' });
+    const cells = [
+      { v: fmtInt(m.ass), dv: d.ass, dc: dCol.ass },
+      { v: fmtInt(m.tra), dv: d.tra, dc: dCol.tra },
+      { v: fmtInt(m.fin), dv: d.fin, dc: dCol.fin },
+      { v: fmtScore(m.scAvg), dv: d.score, dc: dCol.score },
+      { v: fmtPct(m.prod), dv: d.prod, dc: dCol.prod },
+      { v: fmtPct(m.taxaT), dv: d.traG, dc: dCol.traG }
+    ];
+    let cx = startX + cols[0].w;
+    cells.forEach((c, ci) => {
+      const w = cols[ci + 1].w;
+      doc.setTextColor(fg);
+      doc.text(c.v, cx + 4, y + 6, { align: 'left' });
+      if (c.dv) {
+        doc.setTextColor(c.dc); setFont('bold', 7); doc.text(c.dv, cx + 4, y + 12, { align: 'left' });
+      }
+      cx += w;
+    });
     y += rowH;
   });
 
