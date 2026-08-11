@@ -22,6 +22,10 @@ const RF_METRICAS = [
 
 const RF_DEFAULT_METRICAS = ['Finalizados', 'Assumidos', 'Transferidos', 'SCORE'];
 
+function rfResolveMetricas(keys) {
+  return (Array.isArray(keys) ? keys : []).map(k => RF_METRICAS.find(m => m.key === k)).filter(Boolean);
+}
+
 // ─── Persistência da configuração ────────────────────────────────
 
 function rfGetConfig() {
@@ -278,10 +282,11 @@ function rfSectionFeedback(feedbackTexto) {
 }
 
 function rfBuildSections(opts) {
+  const metricas = rfResolveMetricas(opts.metricas);
   const sections = [];
   sections.push(rfSectionHeader(opts.colaborador, opts.mes, opts));
-  sections.push(rfSectionKPIs(opts.colaborador, opts.mes, opts.metricas, opts.records));
-  sections.push(rfSectionEvolucao(opts.colaborador, opts.mes, opts.metricas));
+  sections.push(rfSectionKPIs(opts.colaborador, opts.mes, metricas, opts.records));
+  sections.push(rfSectionEvolucao(opts.colaborador, opts.mes, metricas));
   sections.push(rfSectionObservacoes(opts.observacoes, opts.comentarios));
   sections.push(rfSectionProtocolos(opts.protocolos));
   sections.push(rfSectionAvaliacao(opts.avaliacoes));
