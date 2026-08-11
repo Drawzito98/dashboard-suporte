@@ -199,6 +199,7 @@ function rfSectionEvolucao(colaborador, mes, metricas) {
 
   const rows = displayMeses.map((m, i) => {
     const recs = rfRaw().filter(r => r['Atendente'] === colaborador && r['Mês'] === m);
+    const rowBg = i % 2 === 1 ? '#f8fafc' : '#ffffff';
     let prev = null;
     if (i > 0) {
       const pm = displayMeses[i - 1];
@@ -213,21 +214,21 @@ function rfSectionEvolucao(colaborador, mes, metricas) {
         const d = rfDeltaPct(val, rfCalcVal(prev.records, met));
         if (d != null) delta = `<div style="font-size:10px;font-weight:700;color:${rfDeltaColor(d, met.key)}">${rfArrow(d)} ${Math.abs(d).toFixed(1).replace('.', ',')}%</div>`;
       }
-      return `<td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155;text-align:right">${rfFmtVal(val, met)}${delta}</td>`;
+      return `<td style="background:${rowBg};padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155;text-align:right">${rfFmtVal(val, met)}${delta}</td>`;
     }).join('');
     const mesCell = single && prev
       ? `${escapeHtml(m)}<div style="font-size:10px;color:#94a3b8;font-weight:400">vs ${escapeHtml(prev.mes)}</div>`
       : escapeHtml(m);
-    return `<tr><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:600;color:#0f172a">${mesCell}</td>${cells}</tr>`;
+    return `<tr><td style="background:${rowBg};padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:600;color:#0f172a">${mesCell}</td>${cells}</tr>`;
   }).join('');
-  const heads = metricas.map(met => `<th style="padding:6px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:right">${escapeHtml(met.label)}</th>`).join('');
+  const heads = metricas.map(met => `<th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:6px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:right">${escapeHtml(met.label)}</th>`).join('');
 
   return `
     <div style="margin-bottom:20px">
       <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px">📈 Evolução mensal ${single ? `(${escapeHtml(mes)})` : ''}</div>
-      <div style="overflow:hidden;border:1px solid #e2e8f0;border-radius:8px">
+      <div style="overflow:hidden;border:1px solid #e2e8f0;border-radius:8px;background:#ffffff">
         <table style="width:100%;border-collapse:collapse">
-          <thead><tr><th style="padding:6px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Mês</th>${heads}</tr></thead>
+          <thead><tr><th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:6px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Mês</th>${heads}</tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -259,31 +260,32 @@ function rfSectionObservacoes(observacoes, comentarios) {
 
 function rfSectionProtocolos(protocolos) {
   if (!protocolos || !protocolos.length) return '';
-  const rows = protocolos.map(p => {
+  const rows = protocolos.map((p, i) => {
+    const rowBg = i % 2 === 1 ? '#f8fafc' : '#ffffff';
     const notaBadge = (!p.teve_nota || p.nota == null)
       ? '<span style="font-size:11px;color:#94a3b8">Sem nota</span>'
       : `<span style="font-size:12px;font-weight:700;color:${p.nota >= 4 ? '#059669' : p.nota >= 3 ? '#d97706' : '#dc2626'}">${p.nota}</span>`;
     return `
       <tr>
-        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:600;color:#0f172a">${escapeHtml(p.protocolo)}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#64748b">${escapeHtml(formatDataAtend(p.data_atendimento))}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155;text-align:center">${notaBadge}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155">${escapeHtml(p.resumo || '')}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155">${escapeHtml(p.orientacao || '')}</td>
+        <td style="background:${rowBg};padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:600;color:#0f172a">${escapeHtml(p.protocolo)}</td>
+        <td style="background:${rowBg};padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#64748b">${escapeHtml(formatDataAtend(p.data_atendimento))}</td>
+        <td style="background:${rowBg};padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155;text-align:center">${notaBadge}</td>
+        <td style="background:${rowBg};padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155">${escapeHtml(p.resumo || '')}</td>
+        <td style="background:${rowBg};padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155">${escapeHtml(p.orientacao || '')}</td>
       </tr>`;
   }).join('');
 
   return `
     <div style="margin-bottom:20px">
       <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px">🎧 Protocolos de atendimento (${protocolos.length})</div>
-      <div style="overflow:hidden;border:1px solid #e2e8f0;border-radius:8px">
+      <div style="overflow:hidden;border:1px solid #e2e8f0;border-radius:8px;background:#ffffff">
         <table style="width:100%;border-collapse:collapse">
           <thead><tr>
-            <th style="padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Protocolo</th>
-            <th style="padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Data</th>
-            <th style="padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:center">Nota</th>
-            <th style="padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Resumo</th>
-            <th style="padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Orientação</th>
+            <th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Protocolo</th>
+            <th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Data</th>
+            <th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:center">Nota</th>
+            <th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Resumo</th>
+            <th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Orientação</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
