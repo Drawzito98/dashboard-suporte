@@ -287,6 +287,7 @@
               <button class="btn-small" id="anotacoesBtn" type="button" title="Anotações diárias"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Anotações</button>
               <button class="btn-small" id="reportesBtn" type="button" title="Mensagens de usuários externos"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Reportes<span class="tab-badge" id="reportesBadgeSide"></span></button>
               <button class="btn-small" id="feedbacksBtn" type="button" title="Gerar feedbacks por colaborador"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Feedbacks</button>
+              <button class="btn-small" id="relatorioFeedbackBtn" type="button" title="Relatório de feedback por colaborador com PDF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Relatório Feedback</button>
             </div>
           </div>
         </section>
@@ -677,6 +678,14 @@
   </div>
 </div>
 
+<!-- Relatório de Feedback Overlay -->
+<div class="colab-detail-overlay" id="relatorioFeedbackOverlay" role="dialog" aria-modal="true" aria-label="Relatório de Feedback">
+  <div class="colab-detail-panel" style="max-width:1200px">
+    <button class="colab-detail-close" id="relatorioFeedbackOverlayClose" type="button" aria-label="Fechar">✕</button>
+    <div id="relatorioFeedbackContent"></div>
+  </div>
+</div>
+
 <!-- Acompanhamento Diário Overlay -->
 <div class="colab-detail-overlay" id="acompDiarioOverlay" role="dialog" aria-modal="true" aria-label="Acompanhamento diário">
   <div class="colab-detail-panel" style="max-width:800px">
@@ -748,6 +757,7 @@
 <script defer src="static/bonus.js"></script>
 <script defer src="static/relatorio-setorial.js"></script>
 <script defer src="static/avaliacao.js"></script>
+<script defer src="static/relatorio-feedback.js"></script>
 <script defer src="static/colaboradores.js"></script>
 <script defer src="static/mapeamento-time.js"></script>
 <script defer src="static/usuarios.js"></script>

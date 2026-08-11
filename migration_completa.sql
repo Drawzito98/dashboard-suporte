@@ -1,19 +1,23 @@
 -- ═══════════════════════════════════════════════════════════════════════════════
--- MIGRATION COMPLETA — Dashboard de Suporte (consolida migration.sql → v26)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- MIGRATION DEFINITIVA — Dashboard de Suporte
+-- Consolida TODAS as migrations do projeto: migration.sql + migration_v2 → v28.
 -- Execute no Supabase SQL Editor:
 --   https://supabase.com/dashboard/project/agvkmfusyetkicmuvumz/sql
 --
 -- ✅ 100% IDEMPOTENTE e NÃO-DESTRUTIVO:
 --   • NÃO apaga tabelas (sem DROP TABLE)
---   • NÃO apaga linhas (sem DELETE / TRUNCATE)
+--   • NÃO apaga linhas (sem DELETE / TRUNCATE)  ← a limpeza de duplicados do
+--     migration_v25 foi propositalmente excluída (já foi executada 1x)
 --   • NÃO altera dados existentes
 --   • Só cria o que não existe (CREATE ... IF NOT EXISTS)
 --   • Recria políticas de segurança (DROP POLICY IF EXISTS + CREATE POLICY)
 --
--- Pode rodar no seu banco ATUAL com segurança: tudo que já existe é ignorado.
--- A única coisa nova que será aplicada de verdade são as colunas "TMA" e "TMR".
+-- Pode rodar no seu banco ATUAL ou num banco NOVO com segurança:
+-- tudo que já existe é ignorado. Esta é a ÚNICA migration necessária.
 --
--- Estrutura: primeiro as tabelas, depois as políticas de segurança, depois índices.
+-- Estrutura: primeiro as tabelas, depois as políticas, depois os índices.
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -149,6 +153,104 @@ CREATE TABLE IF NOT EXISTS setor_inativos (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   nome TEXT NOT NULL
 );
+
+-- RLS das tabelas base (migration_v2)
+ALTER TABLE metas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comentarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE historico ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scoring_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alertas_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE colaborador_fotos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE colab_inativos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE setor_inativos ENABLE ROW LEVEL SECURITY;
+
+-- Metas: cada um vê e gerencia as suas
+DROP POLICY IF EXISTS "metas_select" ON metas;
+CREATE POLICY metas_select ON metas
+  FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "metas_insert" ON metas;
+CREATE POLICY metas_insert ON metas
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "metas_update" ON metas;
+CREATE POLICY metas_update ON metas
+  FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "metas_delete" ON metas;
+CREATE POLICY metas_delete ON metas
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Comentários: todos os autenticados podem ver, inserir e deletar
+DROP POLICY IF EXISTS "comentarios_select" ON comentarios;
+CREATE POLICY comentarios_select ON comentarios
+  FOR SELECT USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "comentarios_insert" ON comentarios;
+CREATE POLICY comentarios_insert ON comentarios
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "comentarios_delete" ON comentarios;
+CREATE POLICY comentarios_delete ON comentarios
+  FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Histórico: todos os autenticados podem ver e inserir
+DROP POLICY IF EXISTS "historico_select" ON historico;
+CREATE POLICY historico_select ON historico
+  FOR SELECT USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "historico_insert" ON historico;
+CREATE POLICY historico_insert ON historico
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Scoring config: cada um vê e gerencia a sua
+DROP POLICY IF EXISTS "scoring_select" ON scoring_config;
+CREATE POLICY scoring_select ON scoring_config
+  FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "scoring_insert" ON scoring_config;
+CREATE POLICY scoring_insert ON scoring_config
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "scoring_update" ON scoring_config;
+CREATE POLICY scoring_update ON scoring_config
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Alertas config: cada um vê e gerencia a sua
+DROP POLICY IF EXISTS "alertas_select" ON alertas_config;
+CREATE POLICY alertas_select ON alertas_config
+  FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "alertas_insert" ON alertas_config;
+CREATE POLICY alertas_insert ON alertas_config
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "alertas_update" ON alertas_config;
+CREATE POLICY alertas_update ON alertas_config
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Fotos: todos os autenticados podem ver e gerenciar
+DROP POLICY IF EXISTS "fotos_select" ON colaborador_fotos;
+CREATE POLICY fotos_select ON colaborador_fotos
+  FOR SELECT USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "fotos_insert" ON colaborador_fotos;
+CREATE POLICY fotos_insert ON colaborador_fotos
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "fotos_update" ON colaborador_fotos;
+CREATE POLICY fotos_update ON colaborador_fotos
+  FOR UPDATE USING (auth.role() = 'authenticated');
+
+-- Colab inativos: cada um vê e gerencia os seus
+DROP POLICY IF EXISTS "inativos_select" ON colab_inativos;
+CREATE POLICY inativos_select ON colab_inativos
+  FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "inativos_insert" ON colab_inativos;
+CREATE POLICY inativos_insert ON colab_inativos
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "inativos_delete" ON colab_inativos;
+CREATE POLICY inativos_delete ON colab_inativos
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Setor inativos: cada um vê e gerencia os seus
+DROP POLICY IF EXISTS "setor_select" ON setor_inativos;
+CREATE POLICY setor_select ON setor_inativos
+  FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "setor_insert" ON setor_inativos;
+CREATE POLICY setor_insert ON setor_inativos
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "setor_delete" ON setor_inativos;
+CREATE POLICY setor_delete ON setor_inativos
+  FOR DELETE USING (auth.uid() = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 3. Tabela feedbacks (migration_v3) + RLS com leitura por admin (migration_v12)
@@ -687,13 +789,12 @@ CREATE INDEX IF NOT EXISTS idx_feedbacks_user_id ON feedbacks (user_id, created_
 -- 17. NOVO — colunas TMA e TMR em registros (migration_v26)
 --     TMA = Tempo Médio de Atendimento, TMR = Tempo Médio de Resposta.
 --     Armazenadas como texto livre, ex: "1d 2h 18m 20s".
---     É o que de fato aplica algo novo no seu banco atual.
 -- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE registros ADD COLUMN IF NOT EXISTS "TMA" TEXT;
 ALTER TABLE registros ADD COLUMN IF NOT EXISTS "TMR" TEXT;
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- FIM — Migration completa
--- Dica: depois de rodar, confira com:
+-- FIM — Migration definitiva
+-- Depois de rodar, confira com:
 --   SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
 -- ═══════════════════════════════════════════════════════════════════════════════
