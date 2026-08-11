@@ -764,8 +764,11 @@ async function dbAvaliacaoAtendLoad() {
         protocolo: r.protocolo,
         colaborador: r.colaborador,
         nota: r.nota,
+        teve_nota: r.teve_nota != null ? r.teve_nota : (r.nota != null),
         justa: r.justa,
         resumo: r.resumo || '',
+        orientacao: r.orientacao || '',
+        data_atendimento: r.data_atendimento || '',
         imagem: r.imagem || '',
         createdAt: r.created_at,
         updatedAt: r.updated_at
@@ -794,9 +797,12 @@ async function dbAvaliacaoAtendSave(item) {
       await sbClient.from('avaliacao_atendimentos').update({
         protocolo: item.protocolo,
         colaborador: item.colaborador,
-        nota: item.nota,
+        nota: item.teve_nota ? item.nota : null,
+        teve_nota: item.teve_nota,
         justa: item.justa,
         resumo: item.resumo || '',
+        orientacao: item.orientacao || '',
+        data_atendimento: item.data_atendimento || '',
         imagem: item.imagem || '',
         updated_at: new Date().toISOString()
       }).eq('id', item.id);
@@ -805,9 +811,12 @@ async function dbAvaliacaoAtendSave(item) {
         user_id: uid,
         protocolo: item.protocolo,
         colaborador: item.colaborador,
-        nota: item.nota,
+        nota: item.teve_nota ? item.nota : null,
+        teve_nota: item.teve_nota,
         justa: item.justa,
         resumo: item.resumo || '',
+        orientacao: item.orientacao || '',
+        data_atendimento: item.data_atendimento || '',
         imagem: item.imagem || ''
       });
     }

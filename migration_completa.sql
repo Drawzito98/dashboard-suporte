@@ -569,6 +569,10 @@ CREATE TABLE IF NOT EXISTS avaliacao_atendimentos (
 );
 
 ALTER TABLE avaliacao_atendimentos ADD COLUMN IF NOT EXISTS imagem TEXT DEFAULT '';
+ALTER TABLE avaliacao_atendimentos ADD COLUMN IF NOT EXISTS data_atendimento TEXT DEFAULT '';
+ALTER TABLE avaliacao_atendimentos ADD COLUMN IF NOT EXISTS teve_nota BOOLEAN DEFAULT false;
+ALTER TABLE avaliacao_atendimentos ADD COLUMN IF NOT EXISTS orientacao TEXT DEFAULT '';
+ALTER TABLE avaliacao_atendimentos ALTER COLUMN nota DROP NOT NULL;
 
 ALTER TABLE avaliacao_atendimentos ENABLE ROW LEVEL SECURITY;
 
