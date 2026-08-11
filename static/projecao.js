@@ -83,6 +83,13 @@ function renderProjecao() {
             ${setores.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')}
           </select>
         </label>
+        <label class="field" style="flex:1;min-width:180px">
+          <span>Colaborador (opcional)</span>
+          <select id="projecaoColab" style="width:100%">
+            <option value="">Todos os colaboradores</option>
+            ${names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}
+          </select>
+        </label>
         <button class="btn-small" id="projecaoCopyBtn" type="button" ${lastMonth ? '' : 'disabled'}>
           📋 Copiar do mês anterior
         </button>
@@ -125,6 +132,7 @@ function renderProjecao() {
 
   const mesInput = document.getElementById('projecaoMes');
   const setorInput = document.getElementById('projecaoSetor');
+  const colabInput = document.getElementById('projecaoColab');
   const tbody = document.getElementById('projecaoTbody');
 
   function existingForMonth(mes) {
@@ -138,12 +146,14 @@ function renderProjecao() {
   function renderRows() {
     const mes = mesInput ? mesInput.value : '';
     const selSetor = setorInput ? setorInput.value : '';
+    const selColab = colabInput ? colabInput.value : '';
     const existing = existingForMonth(mes);
     let visible = 0;
 
     tbody.innerHTML = names.map(n => {
       const setor = colabSetor[n] || '';
       if (selSetor && setor !== selSetor) return '';
+      if (selColab && n !== selColab) return '';
       visible++;
       const prev = existing.get(n);
       const value = (field, dflt) => (prev && prev[field] !== undefined && prev[field] !== null ? prev[field] : dflt);
@@ -191,6 +201,7 @@ function renderProjecao() {
 
   if (mesInput) mesInput.addEventListener('change', renderRows);
   if (setorInput) setorInput.addEventListener('change', renderRows);
+  if (colabInput) colabInput.addEventListener('change', renderRows);
 
   // Copy from last month
   const copyBtn = document.getElementById('projecaoCopyBtn');
