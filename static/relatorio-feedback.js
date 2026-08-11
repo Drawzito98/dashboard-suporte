@@ -107,12 +107,6 @@ function rfRecordsColab(colaborador, mes) {
   return recs;
 }
 
-function rfTeamRecords(mes) {
-  let recs = rfRaw().filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']));
-  if (mes && mes !== 'all') recs = recs.filter(r => r['Mês'] === mes);
-  return recs;
-}
-
 function rfProtocolos(colaborador, mes) {
   const all = (typeof getAvalAtendSaved === 'function') ? getAvalAtendSaved() : [];
   const mesKey = rfMesKey(mes);
@@ -124,11 +118,6 @@ function rfProtocolos(colaborador, mes) {
     }
     return true;
   });
-}
-
-function rfAvaliacoesDesempenho(colaborador) {
-  const all = (typeof getAvaliacoesLocal === 'function') ? getAvaliacoesLocal() : [];
-  return all.filter(a => a.colaborador === colaborador);
 }
 
 function rfComentariosPeriodo(mes) {
@@ -158,22 +147,15 @@ function rfSectionHeader(colaborador, mes, opts) {
 }
 
 function rfSectionKPIs(colaborador, mes, metricas, records) {
-  const teamRecs = rfTeamRecords(mes);
   const prev = rfPrevPeriodo(colaborador, mes);
   const cards = metricas.map(met => {
     const val = rfCalcVal(records, met);
-    const teamVal = rfCalcVal(teamRecs, met);
     let cmp = '';
     if (prev && met.tipo !== 'texto') {
       const d = rfDeltaPct(val, rfCalcVal(prev.records, met));
       if (d != null) {
-        cmp += `<div style="font-size:11px;font-weight:700;color:${rfDeltaColor(d, met.key)};margin-top:3px">${rfArrow(d)} ${Math.abs(d).toFixed(1).replace('.', ',')}% <span style="color:#94a3b8;font-weight:400">vs ${escapeHtml(prev.mes)}</span></div>`;
+        cmp = `<div style="font-size:11px;font-weight:700;color:${rfDeltaColor(d, met.key)};margin-top:3px">${rfArrow(d)} ${Math.abs(d).toFixed(1).replace('.', ',')}% <span style="color:#94a3b8;font-weight:400">vs ${escapeHtml(prev.mes)}</span></div>`;
       }
-    }
-    if (val != null && teamVal != null && met.tipo !== 'texto') {
-      const dif = typeof val === 'number' && typeof teamVal === 'number' ? val - teamVal : null;
-      const sinal = dif != null && dif > 0 ? '+' : (dif != null && dif < 0 ? '' : '');
-      cmp += `<div style="font-size:11px;color:#94a3b8;margin-top:4px">Média equipe: ${rfFmtVal(teamVal, met)}${dif != null ? ` · ${sinal}${dif.toFixed(met.decimal || 0)}` : ''}</div>`;
     }
     return `
       <div style="flex:1;min-width:120px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px">
@@ -187,51 +169,6 @@ function rfSectionKPIs(colaborador, mes, metricas, records) {
     <div style="margin-bottom:20px">
       <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px">📊 Resultados do período</div>
       <div style="display:flex;flex-wrap:wrap;gap:10px">${cards}</div>
-    </div>`;
-}
-
-function rfSectionEvolucao(colaborador, mes, metricas) {
-  const allMeses = _uniqueMonths(rfRaw().filter(r => r['Atendente'] === colaborador));
-  if (!allMeses.length) return '';
-  const displayMeses = mes && mes !== 'all' ? allMeses.filter(m => m === mes) : allMeses;
-  if (!displayMeses.length) return '';
-  const single = displayMeses.length === 1;
-
-  const rows = displayMeses.map((m, i) => {
-    const recs = rfRaw().filter(r => r['Atendente'] === colaborador && r['Mês'] === m);
-    const rowBg = i % 2 === 1 ? '#f8fafc' : '#ffffff';
-    let prev = null;
-    if (i > 0) {
-      const pm = displayMeses[i - 1];
-      prev = { mes: pm, records: rfRaw().filter(r => r['Atendente'] === colaborador && r['Mês'] === pm) };
-    } else if (single) {
-      prev = rfPrevPeriodo(colaborador, m);
-    }
-    const cells = metricas.map(met => {
-      const val = rfCalcVal(recs, met);
-      let delta = '';
-      if (met.tipo !== 'texto' && prev) {
-        const d = rfDeltaPct(val, rfCalcVal(prev.records, met));
-        if (d != null) delta = `<div style="font-size:10px;font-weight:700;color:${rfDeltaColor(d, met.key)}">${rfArrow(d)} ${Math.abs(d).toFixed(1).replace('.', ',')}%</div>`;
-      }
-      return `<td style="background:${rowBg};padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155;text-align:left">${rfFmtVal(val, met)}${delta}</td>`;
-    }).join('');
-    const mesCell = single && prev
-      ? `${escapeHtml(m)}<div style="font-size:10px;color:#94a3b8;font-weight:400">vs ${escapeHtml(prev.mes)}</div>`
-      : escapeHtml(m);
-    return `<tr><td style="background:${rowBg};padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:600;color:#0f172a">${mesCell}</td>${cells}</tr>`;
-  }).join('');
-  const heads = metricas.map(met => `<th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:6px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">${escapeHtml(met.label)}</th>`).join('');
-
-  return `
-    <div style="margin-bottom:20px">
-      <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px">📈 Evolução mensal ${single ? `(${escapeHtml(mes)})` : ''}</div>
-      <div style="overflow:hidden;border:1px solid #e2e8f0;border-radius:8px;background:#ffffff">
-        <table style="width:100%;border-collapse:collapse">
-          <thead><tr><th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:6px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Mês</th>${heads}</tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
     </div>`;
 }
 
@@ -293,44 +230,6 @@ function rfSectionProtocolos(protocolos) {
     </div>`;
 }
 
-function rfSectionAvaliacao(avaliacoes) {
-  if (!avaliacoes || !avaliacoes.length) return '';
-  const cards = avaliacoes.map(av => {
-    const comps = getCompetencias();
-    const scored = comps.map(c => {
-      const v = av.scores && av.scores[c.id];
-      return { nome: c.nome.replace(/\s*\(C1\)\s*/, ''), val: (v !== null && v !== undefined && !isNaN(v)) ? Number(v) : null };
-    });
-    const valid = scored.filter(s => s.val != null);
-    const avg = valid.length ? (valid.reduce((a, s) => a + s.val, 0) / valid.length) : null;
-    const bars = scored.map(s => {
-      if (s.val == null) return `<div style="font-size:11px;color:#94a3b8;margin-bottom:4px">${escapeHtml(s.nome)}: —</div>`;
-      const pct = (s.val / 4) * 100;
-      const cor = s.val >= 3 ? '#059669' : s.val >= 2 ? '#d97706' : '#dc2626';
-      return `
-        <div style="margin-bottom:6px">
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:#334155;margin-bottom:2px"><span>${escapeHtml(s.nome)}</span><span style="font-weight:700;color:${cor}">${s.val}</span></div>
-          <div style="background:#e2e8f0;border-radius:4px;height:6px"><div style="background:${cor};border-radius:4px;height:6px;width:${pct}%"></div></div>
-        </div>`;
-    }).join('');
-    return `
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 18px;margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <strong style="font-size:13px;color:#0f172a">${escapeHtml(av.ciclo || 'Sem ciclo')}</strong>
-          ${avg != null ? `<span style="font-size:12px;font-weight:700;color:#0f172a">Média: ${avg.toFixed(2)}</span>` : ''}
-        </div>
-        ${bars}
-        ${av.avaliacao_qualitativa ? `<div style="margin-top:10px;font-size:12px;color:#334155;line-height:1.5"><strong>Observação:</strong> ${escapeHtml(av.avaliacao_qualitativa)}</div>` : ''}
-      </div>`;
-  }).join('');
-
-  return `
-    <div style="margin-bottom:20px">
-      <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px">🏅 Avaliação de desempenho (${avaliacoes.length})</div>
-      ${cards}
-    </div>`;
-}
-
 function rfSectionFeedback(feedbackTexto) {
   if (!feedbackTexto || !feedbackTexto.trim()) return '';
   return `
@@ -345,10 +244,8 @@ function rfBuildSections(opts) {
   const sections = [];
   sections.push(rfSectionHeader(opts.colaborador, opts.mes, opts));
   sections.push(rfSectionKPIs(opts.colaborador, opts.mes, metricas, opts.records));
-  sections.push(rfSectionEvolucao(opts.colaborador, opts.mes, metricas));
   sections.push(rfSectionObservacoes(opts.observacoes, opts.comentarios));
   sections.push(rfSectionProtocolos(opts.protocolos));
-  sections.push(rfSectionAvaliacao(opts.avaliacoes));
   sections.push(rfSectionFeedback(opts.feedback));
   return sections.filter(Boolean);
 }
@@ -390,7 +287,7 @@ function rfRenderForm() {
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:var(--s-4)">
         <div>
           <h2 style="font-size:18px;font-weight:700">📄 Relatório de Feedback</h2>
-          <p style="font-size:13px;color:var(--text-secondary);margin-top:2px">Resultados, observações, protocolos e avaliações em um PDF entregável ao colaborador.</p>
+          <p style="font-size:13px;color:var(--text-secondary);margin-top:2px">Resultados, observações, protocolos e feedback em um PDF entregável ao colaborador.</p>
         </div>
         <button class="btn-small" id="rfCloseBtn" type="button" style="font-size:12px">✕ Fechar</button>
       </div>
@@ -526,7 +423,6 @@ function rfCollectOpts() {
     records,
     setor: setores.length ? setores.join(', ') : '',
     protocolos: rfProtocolos(colab, mes),
-    avaliacoes: rfAvaliacoesDesempenho(colab),
     comentarios: rfComentariosPeriodo(mes)
   };
 }
