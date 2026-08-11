@@ -347,6 +347,7 @@ CREATE TABLE IF NOT EXISTS avaliacoes (
 ALTER TABLE avaliacoes ADD COLUMN IF NOT EXISTS comentarios_ia JSONB DEFAULT '[]';
 ALTER TABLE avaliacoes ADD COLUMN IF NOT EXISTS comentarios_finais JSONB DEFAULT '[]';
 ALTER TABLE avaliacoes ADD COLUMN IF NOT EXISTS observacoes_competencias JSONB DEFAULT '{}';
+ALTER TABLE avaliacoes ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pendente';
 ALTER TABLE avaliacoes ADD COLUMN IF NOT EXISTS avaliacao_qualitativa TEXT DEFAULT '';
 
 ALTER TABLE avaliacoes ENABLE ROW LEVEL SECURITY;
