@@ -12,7 +12,6 @@ const RF_METRICAS = [
   { key: 'Transferidos', label: 'Transferidos', tipo: 'soma' },
   { key: 'SCORE', label: 'Score', tipo: 'media', decimal: 2 },
   { key: 'Objetivo', label: 'Objetivo', tipo: 'soma' },
-  { key: 'Total', label: 'Total', tipo: 'soma' },
   { key: 'Nota1', label: 'Nota 1', tipo: 'media', decimal: 2 },
   { key: 'Nota2', label: 'Nota 2', tipo: 'media', decimal: 2 },
   { key: 'Nota3', label: 'Nota 3', tipo: 'media', decimal: 2 },
@@ -69,6 +68,35 @@ function rfFmtVal(v, met) {
   if (v == null || v === '') return '—';
   if (met.tipo === 'media') return (typeof v === 'number' ? v.toFixed(met.decimal) : String(v));
   return String(v);
+}
+
+// ─── Comparação com período anterior ────────────────────────────
+
+const RF_DELTA_INVERTIDAS = ['Transferidos', 'TMA', 'TMR'];
+
+function rfDeltaPct(cur, prev) {
+  if (cur == null || prev == null || prev === 0) return null;
+  return ((cur - prev) / Math.abs(prev)) * 100;
+}
+
+function rfDeltaColor(d, key) {
+  if (d === 0) return '#64748b';
+  const subirEhMelhor = !RF_DELTA_INVERTIDAS.includes(key);
+  const melhorou = subirEhMelhor ? d > 0 : d < 0;
+  return melhorou ? '#059669' : '#dc2626';
+}
+
+function rfArrow(d) {
+  return d > 0 ? '▲' : (d < 0 ? '▼' : '→');
+}
+
+function rfPrevPeriodo(colaborador, mes) {
+  if (!mes || mes === 'all') return null;
+  const meses = _uniqueMonths(rfRaw().filter(r => r['Atendente'] === colaborador));
+  const idx = meses.indexOf(mes);
+  if (idx <= 0) return null;
+  const prevMes = meses[idx - 1];
+  return { mes: prevMes, records: rfRaw().filter(r => r['Atendente'] === colaborador && r['Mês'] === prevMes) };
 }
 
 // ─── Coleta de dados por colaborador/período ─────────────────────
@@ -131,14 +159,21 @@ function rfSectionHeader(colaborador, mes, opts) {
 
 function rfSectionKPIs(colaborador, mes, metricas, records) {
   const teamRecs = rfTeamRecords(mes);
+  const prev = rfPrevPeriodo(colaborador, mes);
   const cards = metricas.map(met => {
     const val = rfCalcVal(records, met);
     const teamVal = rfCalcVal(teamRecs, met);
     let cmp = '';
+    if (prev && met.tipo !== 'texto') {
+      const d = rfDeltaPct(val, rfCalcVal(prev.records, met));
+      if (d != null) {
+        cmp += `<div style="font-size:11px;font-weight:700;color:${rfDeltaColor(d, met.key)};margin-top:3px">${rfArrow(d)} ${Math.abs(d).toFixed(1).replace('.', ',')}% <span style="color:#94a3b8;font-weight:400">vs ${escapeHtml(prev.mes)}</span></div>`;
+      }
+    }
     if (val != null && teamVal != null && met.tipo !== 'texto') {
       const dif = typeof val === 'number' && typeof teamVal === 'number' ? val - teamVal : null;
       const sinal = dif != null && dif > 0 ? '+' : (dif != null && dif < 0 ? '' : '');
-      cmp = `<div style="font-size:11px;color:#94a3b8;margin-top:4px">Média equipe: ${rfFmtVal(teamVal, met)}${dif != null ? ` · ${sinal}${dif.toFixed(met.decimal || 0)}` : ''}</div>`;
+      cmp += `<div style="font-size:11px;color:#94a3b8;margin-top:4px">Média equipe: ${rfFmtVal(teamVal, met)}${dif != null ? ` · ${sinal}${dif.toFixed(met.decimal || 0)}` : ''}</div>`;
     }
     return `
       <div style="flex:1;min-width:120px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px">
@@ -156,18 +191,40 @@ function rfSectionKPIs(colaborador, mes, metricas, records) {
 }
 
 function rfSectionEvolucao(colaborador, mes, metricas) {
-  const meses = _uniqueMonths(rfRaw().filter(r => r['Atendente'] === colaborador));
-  if (!meses.length) return '';
-  const rows = meses.map(m => {
+  const allMeses = _uniqueMonths(rfRaw().filter(r => r['Atendente'] === colaborador));
+  if (!allMeses.length) return '';
+  const displayMeses = mes && mes !== 'all' ? allMeses.filter(m => m === mes) : allMeses;
+  if (!displayMeses.length) return '';
+  const single = displayMeses.length === 1;
+
+  const rows = displayMeses.map((m, i) => {
     const recs = rfRaw().filter(r => r['Atendente'] === colaborador && r['Mês'] === m);
-    const cells = metricas.map(met => `<td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155;text-align:right">${rfFmtVal(rfCalcVal(recs, met), met)}</td>`).join('');
-    return `<tr><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:600;color:#0f172a">${escapeHtml(m)}</td>${cells}</tr>`;
+    let prev = null;
+    if (i > 0) {
+      const pm = displayMeses[i - 1];
+      prev = { mes: pm, records: rfRaw().filter(r => r['Atendente'] === colaborador && r['Mês'] === pm) };
+    } else if (single) {
+      prev = rfPrevPeriodo(colaborador, m);
+    }
+    const cells = metricas.map(met => {
+      const val = rfCalcVal(recs, met);
+      let delta = '';
+      if (met.tipo !== 'texto' && prev) {
+        const d = rfDeltaPct(val, rfCalcVal(prev.records, met));
+        if (d != null) delta = `<div style="font-size:10px;font-weight:700;color:${rfDeltaColor(d, met.key)}">${rfArrow(d)} ${Math.abs(d).toFixed(1).replace('.', ',')}%</div>`;
+      }
+      return `<td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155;text-align:right">${rfFmtVal(val, met)}${delta}</td>`;
+    }).join('');
+    const mesCell = single && prev
+      ? `${escapeHtml(m)}<div style="font-size:10px;color:#94a3b8;font-weight:400">vs ${escapeHtml(prev.mes)}</div>`
+      : escapeHtml(m);
+    return `<tr><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:600;color:#0f172a">${mesCell}</td>${cells}</tr>`;
   }).join('');
   const heads = metricas.map(met => `<th style="padding:6px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:right">${escapeHtml(met.label)}</th>`).join('');
 
   return `
     <div style="margin-bottom:20px">
-      <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px">📈 Evolução mensal</div>
+      <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px">📈 Evolução mensal ${single ? `(${escapeHtml(mes)})` : ''}</div>
       <div style="overflow:hidden;border:1px solid #e2e8f0;border-radius:8px">
         <table style="width:100%;border-collapse:collapse">
           <thead><tr><th style="padding:6px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Mês</th>${heads}</tr></thead>
