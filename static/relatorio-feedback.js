@@ -214,14 +214,14 @@ function rfSectionEvolucao(colaborador, mes, metricas) {
         const d = rfDeltaPct(val, rfCalcVal(prev.records, met));
         if (d != null) delta = `<div style="font-size:10px;font-weight:700;color:${rfDeltaColor(d, met.key)}">${rfArrow(d)} ${Math.abs(d).toFixed(1).replace('.', ',')}%</div>`;
       }
-      return `<td style="background:${rowBg};padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155;text-align:right">${rfFmtVal(val, met)}${delta}</td>`;
+      return `<td style="background:${rowBg};padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155;text-align:left">${rfFmtVal(val, met)}${delta}</td>`;
     }).join('');
     const mesCell = single && prev
       ? `${escapeHtml(m)}<div style="font-size:10px;color:#94a3b8;font-weight:400">vs ${escapeHtml(prev.mes)}</div>`
       : escapeHtml(m);
     return `<tr><td style="background:${rowBg};padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:600;color:#0f172a">${mesCell}</td>${cells}</tr>`;
   }).join('');
-  const heads = metricas.map(met => `<th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:6px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:right">${escapeHtml(met.label)}</th>`).join('');
+  const heads = metricas.map(met => `<th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:6px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">${escapeHtml(met.label)}</th>`).join('');
 
   return `
     <div style="margin-bottom:20px">
