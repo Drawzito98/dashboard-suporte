@@ -104,7 +104,7 @@ function renderProjecao() {
         <table class="ranking-table" style="min-width:1320px">
           <thead>
             <tr>
-              <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Colaborador</th>
+              <th style="position:sticky;top:0;left:0;background:var(--bg-elevated);z-index:4">Colaborador</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Setor</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Assumidos</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Finalizados</th>
@@ -149,12 +149,15 @@ function renderProjecao() {
     const selColab = colabInput ? colabInput.value : '';
     const existing = existingForMonth(mes);
     let visible = 0;
+    let rowIdx = 0;
 
-    tbody.innerHTML = names.map(n => {
+    tbody.innerHTML = names.map((n, i) => {
       const setor = colabSetor[n] || '';
       if (selSetor && setor !== selSetor) return '';
       if (selColab && n !== selColab) return '';
       visible++;
+      const rowBg = rowIdx % 2 === 1 ? 'var(--bg-inset)' : 'var(--bg-surface)';
+      rowIdx++;
       const prev = existing.get(n);
       const value = (field, dflt) => (prev && prev[field] !== undefined && prev[field] !== null ? prev[field] : dflt);
       const obs = (prev && prev['Observações']) ? String(prev['Observações']) : '';
@@ -164,7 +167,7 @@ function renderProjecao() {
         : '';
 
       return `<tr data-name="${escapeHtml(n)}">
-        <td style="font-weight:500;white-space:nowrap">${escapeHtml(n)}${marker}</td>
+        <td style="position:sticky;left:0;z-index:2;background:${rowBg};font-weight:500;white-space:nowrap">${escapeHtml(n)}${marker}</td>
         <td><select class="proj-setor" style="width:100%;padding:3px 6px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-size:12px">
           ${setores.map(s => `<option value="${escapeHtml(s)}" ${s === setorVal ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
         </select></td>
