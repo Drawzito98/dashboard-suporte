@@ -12,6 +12,23 @@ function _linksToStorage(links) {
   try { localStorage.setItem(LINKS_STORAGE_KEY, JSON.stringify(links)); } catch {}
 }
 
+// Atualiza o cache local a partir do banco (mantém os dados antigos se falhar)
+async function _linksRefreshCache() {
+  _linksCache = null;
+  if (!sbClient) return;
+  try {
+    const { data, error } = await sbClient
+      .from('links_importantes')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    _linksCache = data || [];
+    _linksToStorage(_linksCache);
+  } catch (e) {
+    console.warn('[links] Erro ao atualizar cache local:', e);
+  }
+}
+
 // ── CRUD Supabase ──
 
 async function dbLinksListar() {
@@ -44,8 +61,7 @@ async function dbLinksInserir({ nome, url }) {
       .select();
     if (error) { console.error('[links] Erro Supabase ao inserir:', error); throw error; }
     if (data?.[0]) {
-      _linksCache = null;
-      _linksToStorage([]);
+      _linksRefreshCache();
     }
     return data?.[0] || null;
   } catch (e) {
@@ -62,8 +78,7 @@ async function dbLinksAtualizar(id, { nome, url }) {
       .update({ nome, url, updated_at: new Date().toISOString() })
       .eq('id', id);
     if (error) throw error;
-    _linksCache = null;
-    _linksToStorage([]);
+    _linksRefreshCache();
     return true;
   } catch (e) {
     console.error('[links] Erro ao atualizar:', e);
@@ -79,8 +94,7 @@ async function dbLinksDeletar(id) {
       .delete()
       .eq('id', id);
     if (error) throw error;
-    _linksCache = null;
-    _linksToStorage([]);
+    _linksRefreshCache();
     return true;
   } catch (e) {
     console.error('[links] Erro ao deletar:', e);
