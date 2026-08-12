@@ -77,6 +77,13 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 - **Modo Apresentação** — toggle na sidebar
 - **Modo Reunião** — toggle que ativa apresentação + oculta dados sensíveis
 
+### Mobile / PWA
+- Layout responsivo até ~900px: topbar compacta, menu hambúrguer (gaveta lateral), barra de abas fixa no topo, filtros empilhados, modais como bottom sheet e tabelas com scroll horizontal
+- Instalável como app: `manifest.json` + service worker (`sw.js`)
+- Ícones PWA em `static/icons/` (icon-192/512, apple-touch-icon 180, icon-48)
+- Service worker: network-first em navegação, stale-while-revalidate em estáticos, nunca intercepta `/api/*`; versão via `CACHE` em `sw.js` (bump ao mudar estáticos)
+- Drawer: `body.sidebar-open` (JS em `app.js` — `initMobileMenu`)
+
 ## Regras de Negócio
 - **Nota baixa:** penalidade aplicada para score < 4.5
 - **Bônus manuais:** regra `pontos_extras` no scoring — soma manual × defaultValue da config

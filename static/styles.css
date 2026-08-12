@@ -3269,3 +3269,154 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   word-wrap: break-word;
   margin: 0;
 }
+
+/* =====================================================
+   Mobile / PWA
+   ===================================================== */
+
+/* Botão hambúrguer — visível apenas em telas pequenas */
+.menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.menu-btn:hover { background: var(--bg-subtle); border-color: var(--border-strong); }
+
+.sidebar-backdrop { display: none; }
+
+/* ===== Até 900px: layout mobile ===== */
+@media (max-width: 900px) {
+  main.app { padding: calc(var(--s-4) + env(safe-area-inset-top)) var(--s-4) var(--s-7); }
+
+  .layout { grid-template-columns: 1fr; gap: var(--s-4); }
+
+  /* ── Topbar compacta ── */
+  .topbar {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-3);
+    margin-bottom: var(--s-4);
+    padding-bottom: var(--s-4);
+  }
+  .titleblock h1 { font-size: 18px; }
+  .titleblock p { display: none; }
+  .titleblock .topbar-logo { height: 24px; }
+  .topbar-right { margin-left: auto; width: auto; justify-content: flex-end; gap: 6px; }
+  .topbar-right .seg-toggles .presentation-toggle span { font-size: 0; width: 0; overflow: hidden; }
+  .topbar-right .seg-toggles .presentation-toggle { padding: 6px; }
+  .topbar-right .presentation-toggle input { margin: 0; }
+  .topbar-right #logoutBtn span { display: none; }
+  .topbar-right #logoutBtn { width: 36px; justify-content: center; padding: 5px; }
+  .topbar-right .current-user { display: none; }
+  .topbar-right .theme-toggle .theme-label { display: none; }
+  .topbar-right .theme-toggle { width: 36px; justify-content: center; padding: 5px; }
+
+  /* ── Botão hambúrguer ── */
+  .menu-btn { display: inline-flex; }
+
+  /* ── Sidebar vira gaveta ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1300;
+    width: min(304px, 84vw);
+    max-height: none;
+    height: 100dvh;
+    margin: 0;
+    padding: var(--s-5);
+    padding-top: calc(var(--s-5) + env(safe-area-inset-top));
+    padding-bottom: calc(var(--s-5) + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(-105%);
+    transition: transform var(--t-base);
+    -webkit-overflow-scrolling: touch;
+  }
+  body.sidebar-open .sidebar { transform: translateX(0); }
+  body.sidebar-open { overflow: hidden; }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1250;
+    background: var(--overlay);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--t-base), visibility var(--t-base);
+  }
+  body.sidebar-open .sidebar-backdrop { opacity: 1; visibility: visible; }
+
+  /* ── Barra de abas fixa no topo ── */
+  .tab-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1100;
+    margin-bottom: var(--s-4);
+    padding-top: 4px;
+    background: var(--bg-app);
+  }
+  .tab-btn { padding: 8px 12px; font-size: 12px; }
+
+  /* ── Filtros globais ── */
+  .global-filter-bar { padding: var(--s-3); }
+  .global-filter-field { flex: 1 1 44%; min-width: 0; }
+  .global-filter-field select,
+  .global-filter-field input[type="text"] { width: 100%; min-width: 0; }
+  .global-filter-field--flex { flex: 1 1 100% !important; max-width: none; min-width: 0 !important; }
+}
+
+/* ===== Até 600px: ajustes finos ===== */
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: var(--s-2); }
+  .grid-2col { grid-template-columns: 1fr !important; }
+
+  .card-header .chart-toolbar { flex-wrap: wrap; }
+  .chart-toolbar .btn-small { flex: 1 1 auto; justify-content: center; }
+
+  .btn-row { gap: var(--s-1); }
+  .field select, .field input, .field textarea { width: 100%; box-sizing: border-box; }
+
+  /* Modais viram bottom sheet */
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal-box {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    padding: var(--s-4);
+  }
+  .colab-detail-overlay { padding: 0; align-items: flex-end; }
+  .colab-detail-panel {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    padding: var(--s-4);
+  }
+
+  /* Tabelas: scroll horizontal com snap suave */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .summary-text { font-size: 13px; }
+}

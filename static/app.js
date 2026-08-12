@@ -3354,3 +3354,37 @@ function initNotificacoesUI() {
 }
 // ── Removed: buildReportHTML moved to static/reports.js ──
 
+
+// ── Menu lateral mobile (gaveta) ──
+(function () {
+  function initMobileMenu() {
+    const menuBtn = document.getElementById('menuBtn');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (!menuBtn) return;
+
+    function setOpen(open) {
+      document.body.classList.toggle('sidebar-open', open);
+      menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    menuBtn.addEventListener('click', () => {
+      setOpen(!document.body.classList.contains('sidebar-open'));
+    });
+    if (backdrop) backdrop.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+
+    const tabBar = document.getElementById('tabBar');
+    if (tabBar) tabBar.addEventListener('click', () => setOpen(false));
+
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) {
+      sidebar.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-primary, .btn-small, .btn')) setOpen(false);
+      });
+    }
+
+    window.addEventListener('resize', () => { if (window.innerWidth > 900) setOpen(false); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initMobileMenu);
+  else initMobileMenu();
+})();
