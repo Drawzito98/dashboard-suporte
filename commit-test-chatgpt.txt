@@ -1,0 +1,4 @@
+Teste de commit do ChatGPT/Codex.
+Repositorio autorizado: Drawzito98/dashboard-suporte
+Branch de teste: agent/teste-commit-repositorio
+Este arquivo nao possui nenhuma funcao no projeto e pode ser removido depois.
