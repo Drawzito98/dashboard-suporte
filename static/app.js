@@ -2864,6 +2864,23 @@ if (!rawRecords || !rawRecords.length) {
   // ===== Tab System =====
   const tabBar = document.getElementById('tabBar');
   if (tabBar) {
+    const teamGroupToggle = document.getElementById('equipeGestaoToggle');
+    const teamGroupItems = document.getElementById('equipeGestaoNav');
+    const setTeamGroupCollapsed = (collapsed) => {
+      if (!teamGroupToggle || !teamGroupItems) return;
+      teamGroupItems.classList.toggle('is-collapsed', collapsed);
+      teamGroupToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      try { localStorage.setItem('sistema_nav_equipe_collapsed', collapsed ? '1' : '0'); } catch(e) {}
+    };
+    if (teamGroupToggle && teamGroupItems) {
+      let startsCollapsed = false;
+      try { startsCollapsed = localStorage.getItem('sistema_nav_equipe_collapsed') === '1'; } catch(e) {}
+      setTeamGroupCollapsed(startsCollapsed);
+      teamGroupToggle.addEventListener('click', () => {
+        setTeamGroupCollapsed(teamGroupToggle.getAttribute('aria-expanded') === 'true');
+      });
+    }
+
     const pageContext = {
       home: ['Início', 'Visão geral da operação e acessos rápidos'],
       dashboard: ['Dashboard', 'Indicadores de desempenho e análise do suporte'],
@@ -2890,6 +2907,7 @@ if (!rawRecords || !rawRecords.length) {
       if (!tabBtn) return;
       const tab = tabBtn.getAttribute('data-tab');
       if (!tab) return;
+      if (teamGroupItems?.contains(tabBtn)) setTeamGroupCollapsed(false);
 
       // Update active state
       tabBar.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
