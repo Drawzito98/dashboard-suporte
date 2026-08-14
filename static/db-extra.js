@@ -290,9 +290,23 @@ async function dbFotosLoad() {
   try {
     const { data } = await sbClient.from('colaborador_fotos').select('*');
     if (data && Array.isArray(data) && data.length > 0) {
-      const map = {};
-      data.forEach(f => { map[f.nome] = f.foto_url || ''; });
+      const localMap = _fallbackLoad(FOTOS_LOCAL_KEY, {});
+      const map = localMap && typeof localMap === 'object' ? { ...localMap } : {};
+      data.forEach(f => {
+        if (!f?.nome) return;
+        const normalizedRemoteName = typeof normalizeColabFotoName === 'function'
+          ? normalizeColabFotoName(f.nome)
+          : String(f.nome).trim().toLowerCase();
+        Object.keys(map).forEach(localName => {
+          const normalizedLocalName = typeof normalizeColabFotoName === 'function'
+            ? normalizeColabFotoName(localName)
+            : String(localName).trim().toLowerCase();
+          if (localName !== f.nome && normalizedLocalName === normalizedRemoteName) delete map[localName];
+        });
+        map[f.nome] = f.foto_url || '';
+      });
       localStorage.setItem(FOTOS_LOCAL_KEY, JSON.stringify(map));
+      window.dispatchEvent(new CustomEvent('colab-fotos-updated'));
       return map;
     }
     return _fallbackLoad(FOTOS_LOCAL_KEY, {});
