@@ -3461,6 +3461,8 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 }
 .shell-context-actions:empty { display: none; }
 .shell-context-actions:not(:empty) { margin: calc(-1 * var(--s-2)) 0 var(--s-4); }
+.dashboard-context-action { display: none !important; }
+body[data-active-tab="dashboard"] .dashboard-context-action { display: inline-flex !important; }
 
 @media (min-width: 901px) {
   main.app {

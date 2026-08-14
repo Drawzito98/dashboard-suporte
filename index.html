@@ -198,7 +198,12 @@
     <!-- Global Filter Bar -->
     <div class="page-controls">
       <div id="globalFilterBar" class="global-filter-bar"></div>
-      <div id="shellContextActions" class="shell-context-actions" aria-label="Ações da página"></div>
+      <div id="shellContextActions" class="shell-context-actions" aria-label="Ações da página">
+        <button class="btn-small dashboard-context-action" id="compactTableBtn" type="button" title="Alternar entre visual compacta e normal das tabelas"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21h14"/><path d="M7 3v18"/><path d="M9 7h2"/><path d="M9 11h2"/><path d="M9 15h2"/><path d="M17 3v18"/><path d="M15 7h2"/><path d="M15 11h2"/><path d="M15 15h2"/></svg> Visão compacta</button>
+        <button class="btn-primary dashboard-context-action" id="generateReportBtn" type="button" title="Gera um relatório executivo em texto com os dados filtrados">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="9" width="4" height="11"/></svg> Gerar relatório
+        </button>
+      </div>
     </div>
 
     <!-- Tab Navigation -->
@@ -247,22 +252,6 @@
       <!-- Sidebar -->
       <aside class="sidebar">
         
-        <!-- Panel: Visualização -->
-        <section class="panel panel-collapsible">
-          <div class="panel-header" data-toggle="vizContent">
-            <h2><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Visualização</h2>
-            <span class="panel-chevron">▼</span>
-          </div>
-          <div class="form-stack" id="vizContent">
-            <div class="btn-row" style="margin-top:4px">
-              <button class="btn-small" id="compactTableBtn" type="button" title="Alternar entre visual compacta e normal das tabelas"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21h14"/><path d="M7 3v18"/><path d="M9 7h2"/><path d="M9 11h2"/><path d="M9 15h2"/><path d="M17 3v18"/><path d="M15 7h2"/><path d="M15 11h2"/><path d="M15 15h2"/></svg> Visão compacta</button>
-            </div>
-            <button class="btn-primary" id="generateReportBtn" type="button" title="Gera um relatório executivo em texto com os dados filtrados" style="margin-top:8px;width:100%;justify-content:center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="9" width="4" height="11"/></svg> Gerar relatório
-            </button>
-          </div>
-        </section>
-
         <!-- Panel: Dados -->
         <section class="panel panel-collapsible">
           <div class="panel-header" data-toggle="dataContent">

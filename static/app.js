@@ -2878,6 +2878,7 @@ if (!rawRecords || !rawRecords.length) {
     };
     const updatePageContext = (tab) => {
       const context = pageContext[tab] || pageContext.home;
+      document.body.dataset.activeTab = tab;
       const title = document.getElementById('appPageTitle');
       const description = document.getElementById('appPageDescription');
       if (title) title.textContent = context[0];
