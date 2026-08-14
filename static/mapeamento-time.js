@@ -87,7 +87,7 @@
       html += '<div class="mt-grid">';
       filtrados.forEach(c => {
         const cat = CATEGORIAS[c.categoria];
-        html += '<div class="mt-card">';
+        html += `<div class="mt-card" data-id="${c.id}" role="button" tabindex="0" aria-label="Ver detalhes de ${escHtml(c.nome)}">`;
         html += '<div class="mt-card-top">';
         html += `<span class="mt-categoria-badge" style="background:${cat.corBg};color:${cat.cor};border:1px solid ${cat.cor}">${cat.emoji} ${cat.label.replace(/^[^\s]+\s/, '')}</span>`;
         html += '<div class="mt-card-actions">';
@@ -95,10 +95,11 @@
         html += `<button class="mt-btn-icon mt-btn-delete" data-id="${c.id}" title="Excluir"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>`;
         html += '</div>';
         html += '</div>';
-        html += `<h3 class="mt-card-nome">${c.nome}</h3>`;
-        html += `<p class="mt-card-setor">${c.setor}</p>`;
-        html += `<p class="mt-card-perfil"><strong>Perfil:</strong> ${c.perfil}</p>`;
-        html += `<div class="mt-card-acao"><strong>Ação Imediata do Líder:</strong> ${c.acao}</div>`;
+        html += `<h3 class="mt-card-nome">${escHtml(c.nome)}</h3>`;
+        html += `<p class="mt-card-setor">${escHtml(c.setor)}</p>`;
+        html += `<p class="mt-card-perfil"><strong>Perfil:</strong> ${escHtml(c.perfil)}</p>`;
+        html += `<div class="mt-card-acao"><strong>Ação Imediata do Líder:</strong> ${escHtml(c.acao)}</div>`;
+        html += '<div class="mt-card-foot">Ver detalhes <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>';
         html += '</div>';
       });
       html += '</div>';
@@ -124,7 +125,8 @@
     });
 
     container.querySelectorAll('.mt-btn-edit').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (event) => {
+        event.stopPropagation();
         const id = parseInt(btn.dataset.id, 10);
         const colab = colaboradores.find(c => c.id === id);
         if (colab) abrirModal(colab);
@@ -132,11 +134,75 @@
     });
 
     container.querySelectorAll('.mt-btn-delete').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (event) => {
+        event.stopPropagation();
         const id = parseInt(btn.dataset.id, 10);
         confirmarExcluir(id);
       });
     });
+
+    container.querySelectorAll('.mt-card').forEach(card => {
+      const abrir = () => {
+        const id = parseInt(card.dataset.id, 10);
+        const colab = colaboradores.find(c => c.id === id);
+        if (colab) abrirDetalhes(colab);
+      };
+
+      card.addEventListener('click', abrir);
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          abrir();
+        }
+      });
+    });
+  }
+
+  function abrirDetalhes(colab) {
+    const cat = CATEGORIAS[colab.categoria] || CATEGORIAS.alertas;
+    const overlay = document.createElement('div');
+    overlay.className = 'mt-modal-overlay';
+    overlay.innerHTML = `
+      <div class="mt-modal mt-details-modal" role="dialog" aria-modal="true" aria-labelledby="mtDetailsTitle">
+        <button class="mt-modal-close" type="button" aria-label="Fechar detalhes"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <span class="mt-categoria-badge" style="background:${cat.corBg};color:${cat.cor};border:1px solid ${cat.cor}">${cat.emoji} ${cat.label.replace(/^[^\s]+\s/, '')}</span>
+        <h3 id="mtDetailsTitle" class="mt-details-name">${escHtml(colab.nome)}</h3>
+        <p class="mt-card-setor">${escHtml(colab.setor)}</p>
+        <div class="mt-details-section">
+          <strong>Perfil</strong>
+          <p>${escHtml(colab.perfil)}</p>
+        </div>
+        <div class="mt-card-acao mt-details-action">
+          <strong>Ação Imediata do Líder</strong>
+          ${escHtml(colab.acao)}
+        </div>
+        <div class="mt-modal-btns">
+          <button class="btn-small mt-details-close" type="button">Fechar</button>
+          <button class="btn-primary mt-details-edit" type="button">Editar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('open'));
+
+    const fechar = () => {
+      document.removeEventListener('keydown', onKeydown);
+      overlay.classList.remove('open');
+      setTimeout(() => overlay.remove(), 200);
+    };
+    const onKeydown = (event) => {
+      if (event.key === 'Escape') fechar();
+    };
+
+    overlay.querySelector('.mt-modal-close').addEventListener('click', fechar);
+    overlay.querySelector('.mt-details-close').addEventListener('click', fechar);
+    overlay.querySelector('.mt-details-edit').addEventListener('click', () => {
+      fechar();
+      setTimeout(() => abrirModal(colab), 200);
+    });
+    overlay.addEventListener('click', (event) => { if (event.target === overlay) fechar(); });
+    document.addEventListener('keydown', onKeydown);
+    overlay.querySelector('.mt-modal-close').focus();
   }
 
   function abrirModal(colab) {
@@ -350,9 +416,15 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  cursor: pointer;
 }
 .mt-card:hover {
   box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.07));
+}
+.mt-card:focus-visible {
+  outline: 3px solid var(--accent-soft, rgba(37, 99, 235, 0.3));
+  outline-offset: 2px;
+  border-color: var(--accent, #2563eb);
 }
 .mt-card-top {
   display: flex;
@@ -441,6 +513,44 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--accent, #2563eb);
+}
+.mt-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 6px;
+  color: var(--accent, #2563eb);
+  font-size: 12px;
+  font-weight: 700;
+}
+.mt-details-modal {
+  max-width: 560px;
+}
+.mt-details-name {
+  margin: 14px 40px 4px 0;
+  color: var(--text-strong, #0f172a);
+  font-size: 21px;
+  line-height: 1.3;
+}
+.mt-details-section {
+  margin-top: 22px;
+}
+.mt-details-section strong {
+  color: var(--text-primary, #1f2937);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.mt-details-section p {
+  margin: 7px 0 0;
+  color: var(--text-secondary, #334155);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.mt-details-action {
+  margin-top: 18px;
 }
 
 .mt-modal-overlay {
