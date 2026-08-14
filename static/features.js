@@ -93,8 +93,10 @@
     btn.title = 'Baixar imagem do dashboard atual';
     btn.style.display = 'none';
 
+    const contextActions = document.getElementById('shellContextActions');
     const tabBar = document.getElementById('tabBar');
-    if (tabBar) tabBar.parentNode.insertBefore(btn, tabBar.nextSibling);
+    if (contextActions) contextActions.appendChild(btn);
+    else if (tabBar) tabBar.parentNode.insertBefore(btn, tabBar.nextSibling);
 
     // Show only on dashboard tab
     const observer = new MutationObserver(function () {
@@ -167,8 +169,10 @@
     `;
     compareBtn.style.display = 'none';
 
+    const contextActions = document.getElementById('shellContextActions');
     const tabBar = document.getElementById('tabBar');
-    if (tabBar) tabBar.parentNode.insertBefore(compareBtn, tabBar.nextSibling);
+    if (contextActions) contextActions.appendChild(compareBtn);
+    else if (tabBar) tabBar.parentNode.insertBefore(compareBtn, tabBar.nextSibling);
 
     const observer = new MutationObserver(function () {
       const activeTab = document.querySelector('.tab-btn.active');
@@ -331,8 +335,10 @@
     `;
     btn.style.display = 'none';
 
+    const contextActions = document.getElementById('shellContextActions');
     const tabBar = document.getElementById('tabBar');
-    if (tabBar) tabBar.parentNode.insertBefore(btn, tabBar.nextSibling);
+    if (contextActions) contextActions.appendChild(btn);
+    else if (tabBar) tabBar.parentNode.insertBefore(btn, tabBar.nextSibling);
 
     const observer = new MutationObserver(function () {
       const activeTab = document.querySelector('.tab-btn.active');

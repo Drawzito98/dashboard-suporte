@@ -2864,6 +2864,26 @@ if (!rawRecords || !rawRecords.length) {
   // ===== Tab System =====
   const tabBar = document.getElementById('tabBar');
   if (tabBar) {
+    const pageContext = {
+      home: ['Início', 'Visão geral da operação e acessos rápidos'],
+      dashboard: ['Dashboard', 'Indicadores de desempenho e análise do suporte'],
+      'relatorio-setorial': ['Relatório Setorial', 'Resultados, evolução e destaques por setor'],
+      gamificacao: ['Gamificação', 'Ranking, metas, conquistas e pontuações da equipe'],
+      tarefas: ['Tarefas', 'Agenda, prioridades e acompanhamento de atividades'],
+      colaboradores: ['Colaboradores', 'Cadastro e informações da equipe'],
+      lider: ['Liderança', 'Acompanhamento gerencial e alertas da operação'],
+      insights: ['Insights', 'Análises automáticas e oportunidades de melhoria'],
+      avaliacao: ['Avaliação', 'Avaliações de desempenho e feedback estruturado'],
+      'mapeamento-time': ['Mapeamento de Time', 'Perfis, talentos e ações de desenvolvimento']
+    };
+    const updatePageContext = (tab) => {
+      const context = pageContext[tab] || pageContext.home;
+      const title = document.getElementById('appPageTitle');
+      const description = document.getElementById('appPageDescription');
+      if (title) title.textContent = context[0];
+      if (description) description.textContent = context[1];
+    };
+
     tabBar.addEventListener('click', (e) => {
       const tabBtn = e.target.closest('.tab-btn');
       if (!tabBtn) return;
@@ -2874,6 +2894,7 @@ if (!rawRecords || !rawRecords.length) {
       tabBar.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
       tabBtn.classList.add('active');
       tabBtn.setAttribute('aria-selected', 'true');
+      updatePageContext(tab);
 
       // Show/hide tab content
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -2921,6 +2942,9 @@ if (!rawRecords || !rawRecords.length) {
       // Persist active tab
       try { localStorage.setItem('sistema_active_tab', tab); } catch(e) { console.warn('[App] Erro ao salvar aba:', e); }
     });
+
+    const initialTab = tabBar.querySelector('.tab-btn.active');
+    if (initialTab) updatePageContext(initialTab.getAttribute('data-tab'));
 
     // Presentation exit button
     const presExitBtn = document.getElementById('presentationExitBtn');
@@ -3354,6 +3378,15 @@ function initNotificacoesUI() {
 }
 // ── Removed: buildReportHTML moved to static/reports.js ──
 
+
+// ── Shell: reúne navegação principal e ferramentas na coluna lateral ──
+(function () {
+  const shellNavigation = document.querySelector('.shell-navigation');
+  const sidebar = document.querySelector('.sidebar');
+  if (shellNavigation && sidebar && sidebar.parentNode !== shellNavigation) {
+    shellNavigation.appendChild(sidebar);
+  }
+})();
 
 // ── Menu lateral mobile (gaveta) ──
 (function () {

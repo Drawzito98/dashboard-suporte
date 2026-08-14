@@ -149,8 +149,9 @@
       <div class="titleblock">
         <img src="static/logo-topbar.png" alt="IXC" class="topbar-logo"/>
         <div>
-          <h1>Painel de Suporte</h1>
-          <p>Indicadores de desempenho e análise do suporte</p>
+          <span class="page-eyebrow">Dashboard de Suporte</span>
+          <h1 id="appPageTitle">Início</h1>
+          <p id="appPageDescription">Visão geral da operação e acessos rápidos</p>
         </div>
       </div>
       <div class="topbar-right">
@@ -195,10 +196,15 @@
     </header>
 
     <!-- Global Filter Bar -->
-    <div id="globalFilterBar" class="global-filter-bar" style="margin-bottom:var(--s-4)"></div>
+    <div class="page-controls">
+      <div id="globalFilterBar" class="global-filter-bar"></div>
+      <div id="shellContextActions" class="shell-context-actions" aria-label="Ações da página"></div>
+    </div>
 
     <!-- Tab Navigation -->
+    <div class="shell-navigation" role="navigation" aria-label="Navegação e ferramentas">
     <div class="tab-bar" id="tabBar" role="tablist" aria-label="Navegação principal">
+      <span class="nav-section-label" role="presentation">Visão geral</span>
       <button class="tab-btn active" data-tab="home" role="tab" aria-selected="true">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span> Início
       </button>
@@ -208,6 +214,7 @@
       <button class="tab-btn" data-tab="relatorio-setorial" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="8" y="13" width="3" height="4"/><rect x="13" y="11" width="3" height="6"/></svg></span> Relatório Setorial
       </button>
+      <span class="nav-section-label" role="presentation">Equipe e gestão</span>
       <button class="tab-btn" data-tab="gamificacao" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><path d="M12 19v-4"/><path d="M8 5h8l-1 11H9L8 5z"/></svg></span> Gamificação
       </button>
@@ -230,6 +237,8 @@
       <button class="tab-btn" data-tab="mapeamento-time" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Mapeamento de Time
       </button>
+      <span class="nav-section-label nav-tools-label" role="presentation">Ferramentas</span>
+    </div>
     </div>
 
     <!-- Main Layout -->
