@@ -3510,22 +3510,26 @@ body[data-active-tab="dashboard"] .dashboard-context-action { display: inline-fl
     align-self: start;
     position: sticky;
     top: 16px;
-    max-height: calc(100vh - 32px);
-    max-height: calc(100dvh - 32px);
+    height: calc(100vh - 32px);
+    height: calc(100dvh - 32px);
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: scroll;
     overscroll-behavior-y: contain;
     scrollbar-gutter: stable;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-strong) transparent;
+    scrollbar-width: auto;
+    scrollbar-color: var(--text-muted) var(--bg-subtle);
   }
-  .shell-navigation::-webkit-scrollbar { width: 6px; }
-  .shell-navigation::-webkit-scrollbar-track { background: transparent; }
-  .shell-navigation::-webkit-scrollbar-thumb {
-    background: var(--border-strong);
+  .shell-navigation::-webkit-scrollbar { width: 8px; }
+  .shell-navigation::-webkit-scrollbar-track {
+    background: var(--bg-subtle);
     border-radius: 999px;
   }
-  .shell-navigation::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  .shell-navigation::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
+    border-radius: 999px;
+    border: 2px solid var(--bg-subtle);
+  }
+  .shell-navigation::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
   .tab-bar {
     display: flex;
     flex-direction: column;

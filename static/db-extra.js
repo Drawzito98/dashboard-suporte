@@ -352,6 +352,7 @@ async function dbInativosLoad() {
       if (typeof window.__inactiveColabs !== 'undefined') {
         window.__inactiveColabs = new Set(names);
       }
+      window.dispatchEvent(new CustomEvent('colab-active-state-changed'));
       return new Set(names);
     }
     return null;

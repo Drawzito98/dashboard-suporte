@@ -56,9 +56,10 @@
     const container = getContainer();
     if (!container) return;
 
+    const ativos = colaboradores.filter(c => isMappedColabActive(c.nome));
     const filtrados = filtroAtivo === 'todos'
-      ? colaboradores
-      : colaboradores.filter(c => c.categoria === filtroAtivo);
+      ? ativos
+      : ativos.filter(c => c.categoria === filtroAtivo);
 
     let html = '<div class="mt-container">';
 
@@ -340,12 +341,39 @@
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  function normalizeColabName(name) {
+    return String(name || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+      .replace(/\s+/g, ' ');
+  }
+
+  function isMappedColabActive(name) {
+    if (typeof isColabActive === 'function' && !isColabActive(name)) return false;
+    if (typeof getInactiveColabs !== 'function') return true;
+
+    const targetTokens = normalizeColabName(name).split(' ').filter(Boolean);
+    if (targetTokens.length < 2) return true;
+    return ![...getInactiveColabs()].some(inactiveName => {
+      const inactiveTokens = normalizeColabName(inactiveName).split(' ').filter(Boolean);
+      if (inactiveTokens.length < 2) return false;
+      const shorter = targetTokens.length <= inactiveTokens.length ? targetTokens : inactiveTokens;
+      const longer = targetTokens.length <= inactiveTokens.length ? inactiveTokens : targetTokens;
+      return shorter.every(token => longer.includes(token));
+    });
+  }
+
   window.onMapeamentoTimeTabActivated = function () {
     const container = getContainer();
     if (!container) return;
     carregarEstado();
     render();
   };
+
+  window.addEventListener('colab-active-state-changed', render);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {

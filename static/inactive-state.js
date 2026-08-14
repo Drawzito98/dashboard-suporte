@@ -34,6 +34,7 @@ function setColabActive(name, active) {
   if (active) set.delete(name);
   else set.add(name);
   saveInactiveColabs();
+  window.dispatchEvent(new CustomEvent('colab-active-state-changed', { detail: { name, active } }));
 }
 
 function isColabActive(name) {
