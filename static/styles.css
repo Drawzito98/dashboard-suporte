@@ -3510,7 +3510,22 @@ body[data-active-tab="dashboard"] .dashboard-context-action { display: inline-fl
     align-self: start;
     position: sticky;
     top: 16px;
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
   }
+  .shell-navigation::-webkit-scrollbar { width: 6px; }
+  .shell-navigation::-webkit-scrollbar-track { background: transparent; }
+  .shell-navigation::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+  }
+  .shell-navigation::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
   .tab-bar {
     display: flex;
     flex-direction: column;
