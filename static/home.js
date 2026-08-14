@@ -3,6 +3,7 @@
 function renderHome() {
   const container = document.getElementById('homeContent');
   if (!container) return;
+  ['homeColabsModal', 'homeScoreModal', 'homeTasksModal'].forEach(id => document.getElementById(id)?.remove());
 
   const records = (typeof getDataFiltered === 'function' ? getDataFiltered() : rawRecords) || [];
   const activeColabs = records.filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']));
@@ -40,7 +41,7 @@ function renderHome() {
   let pendingTaskList = [];
   try {
     const tarefas = JSON.parse(localStorage.getItem('sistema_tarefas_v1') || '[]');
-    pendingTaskList = tarefas.filter(t => t.status === 'pendente');
+    pendingTaskList = tarefas.filter(t => t.status !== 'concluida' && t.status !== 'cancelada');
     pendingTasks = pendingTaskList.length;
   } catch (e) { console.error('[Home] Erro:', e); }
 
@@ -59,6 +60,46 @@ function renderHome() {
       count: scores.length
     }))
     .sort((a, b) => b.avg - a.avg);
+  const criticalScores = scoreList.filter(item => item.avg < 4.5).sort((a, b) => a.avg - b.avg);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayKey = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0')
+  ].join('-');
+  const taskDateValue = task => task.data ? new Date(task.data + 'T00:00:00').getTime() : Number.MAX_SAFE_INTEGER;
+  const overdueTasks = pendingTaskList.filter(t => t.data && t.data < todayKey);
+  const todayTasks = pendingTaskList.filter(t => t.data === todayKey);
+  pendingTaskList.sort((a, b) => taskDateValue(a) - taskDateValue(b));
+
+  let colabInfo = {};
+  let vacations = [];
+  try { colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (e) {}
+  try { vacations = JSON.parse(localStorage.getItem('sistema_ferias_v1') || '[]'); } catch (e) {}
+
+  const upcomingBirthdays = Object.entries(colabInfo).map(([name, info]) => {
+    if (!info?.data_aniversario || (typeof isColabActive === 'function' && !isColabActive(name))) return null;
+    const parts = info.data_aniversario.split('-');
+    if (parts.length !== 3) return null;
+    let next = new Date(today.getFullYear(), Number(parts[1]) - 1, Number(parts[2]));
+    if (next < today) next = new Date(today.getFullYear() + 1, Number(parts[1]) - 1, Number(parts[2]));
+    return { type: 'birthday', name, days: Math.round((next - today) / 86400000) };
+  }).filter(item => item && item.days <= 30);
+
+  const upcomingVacations = vacations.map(item => {
+    if (!item?.data_inicio || (typeof isColabActive === 'function' && !isColabActive(item.colaborador))) return null;
+    const start = new Date(item.data_inicio + 'T00:00:00');
+    const end = item.data_fim ? new Date(item.data_fim + 'T00:00:00') : start;
+    if (end < today) return null;
+    const active = start <= today && end >= today;
+    const days = active ? 0 : Math.round((start - today) / 86400000);
+    return { type: 'vacation', name: item.colaborador, days, active };
+  }).filter(item => item && item.days <= 30);
+  const teamEvents = [...upcomingBirthdays, ...upcomingVacations]
+    .sort((a, b) => a.days - b.days)
+    .slice(0, 6);
 
   // Monthly trend data (last 6 months)
   const trendMonths = meses.slice(-6);
@@ -73,8 +114,11 @@ function renderHome() {
   // Recent activity from historico
   let recentActivity = [];
   try {
-    if (typeof dbHistoricoLoad === 'function') {
-      recentActivity = dbHistoricoLoad().slice(-5).reverse();
+    const history = JSON.parse(localStorage.getItem('sistema_historico_v1') || '[]');
+    if (Array.isArray(history)) {
+      recentActivity = history.slice()
+        .sort((a, b) => new Date(b.ts || b.data || b.createdAt || 0) - new Date(a.ts || a.data || a.createdAt || 0))
+        .slice(0, 5);
     }
   } catch (e) { console.error('[Home] Erro:', e); }
 
@@ -119,7 +163,70 @@ function renderHome() {
     </div>
   </div>`;
 
-  // ── Section 2: Quick Actions ──
+  // ── Section 2: Operational priorities ──
+  const priorityItems = [
+    ...overdueTasks.slice(0, 3).map(t => ({
+      tone: 'danger',
+      icon: '!',
+      title: t.titulo || t.descricao || 'Tarefa sem título',
+      meta: 'Atrasada · ' + (t.data ? new Date(t.data + 'T12:00:00').toLocaleDateString('pt-BR') : 'sem data'),
+      tab: 'tarefas'
+    })),
+    ...todayTasks.slice(0, 2).map(t => ({
+      tone: 'warning',
+      icon: '•',
+      title: t.titulo || t.descricao || 'Tarefa sem título',
+      meta: 'Vence hoje',
+      tab: 'tarefas'
+    })),
+    ...criticalScores.slice(0, 3).map(item => ({
+      tone: 'danger',
+      icon: '↓',
+      title: item.name,
+      meta: 'Score ' + item.avg.toFixed(2) + ' · requer acompanhamento',
+      tab: 'lider'
+    }))
+  ].slice(0, 6);
+
+  const priorityHtml = priorityItems.length
+    ? priorityItems.map(item =>
+      '<button class="home-operations-item" type="button" data-home-tab="' + item.tab + '">' +
+        '<span class="home-status-dot home-status-dot--' + item.tone + '">' + item.icon + '</span>' +
+        '<span class="home-operations-copy"><strong>' + escapeHtml(item.title) + '</strong><small>' + escapeHtml(item.meta) + '</small></span>' +
+        '<span class="home-item-arrow">›</span>' +
+      '</button>'
+    ).join('')
+    : '<div class="home-operations-empty"><span>✓</span><strong>Nenhuma prioridade crítica</strong><small>As pendências e alertas aparecerão aqui.</small></div>';
+
+  const eventsHtml = teamEvents.length
+    ? teamEvents.map(item => {
+      const label = item.type === 'birthday'
+        ? (item.days === 0 ? 'Aniversário hoje' : 'Aniversário em ' + item.days + ' dia(s)')
+        : (item.active ? 'Em férias agora' : 'Férias em ' + item.days + ' dia(s)');
+      const action = item.type === 'birthday' ? 'colaboradores' : 'ferias';
+      const icon = item.type === 'birthday' ? '🎂' : '🏖️';
+      return '<button class="home-operations-item" type="button" data-home-action="' + action + '">' +
+        '<span class="home-event-icon">' + icon + '</span>' +
+        '<span class="home-operations-copy"><strong>' + escapeHtml(item.name) + '</strong><small>' + escapeHtml(label) + '</small></span>' +
+        '<span class="home-item-arrow">›</span>' +
+      '</button>';
+    }).join('')
+    : '<div class="home-operations-empty"><span>○</span><strong>Nenhum evento próximo</strong><small>Aniversários e férias aparecerão aqui.</small></div>';
+
+  html += '<div class="home-operations-grid">' +
+    '<section class="home-operations-card">' +
+      '<div class="home-operations-header"><div><span class="home-operations-kicker">Prioridades</span><h3>O que precisa de atenção</h3></div><span class="home-count-badge">' + priorityItems.length + '</span></div>' +
+      '<div class="home-operations-list">' + priorityHtml + '</div>' +
+      '<div class="home-operations-summary"><span><strong>' + overdueTasks.length + '</strong> atrasada(s)</span><span><strong>' + todayTasks.length + '</strong> para hoje</span><span><strong>' + criticalScores.length + '</strong> score(s) em atenção</span></div>' +
+    '</section>' +
+    '<section class="home-operations-card">' +
+      '<div class="home-operations-header"><div><span class="home-operations-kicker">Próximos 30 dias</span><h3>Agenda da equipe</h3></div><span class="home-count-badge home-count-badge--neutral">' + teamEvents.length + '</span></div>' +
+      '<div class="home-operations-list">' + eventsHtml + '</div>' +
+      '<button class="home-card-link" type="button" data-home-tab="colaboradores">Ver equipe completa <span>→</span></button>' +
+    '</section>' +
+  '</div>';
+
+  // ── Section 3: Quick Actions ──
   html += `<div class="home-section">
     <h3 class="home-section-title">Ações rápidas</h3>
     <div class="home-actions-grid">
@@ -156,11 +263,12 @@ function renderHome() {
       <h3 class="home-section-title">Atividade recente</h3>
       <div class="home-activity-list">`;
     recentActivity.forEach(item => {
-      const time = item.data ? new Date(item.data).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+      const activityDate = item.ts || item.data || item.createdAt;
+      const time = activityDate ? new Date(activityDate).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
       html += `<div class="home-activity-item">
         <div class="home-activity-dot"></div>
         <div class="home-activity-body">
-          <span class="home-activity-text">${escapeHtml(item.descricao || item.acao || 'Alteração')}</span>
+          <span class="home-activity-text">${escapeHtml(item.descricao || item.detalhes || item.acao || 'Alteração')}</span>
           <span class="home-activity-time">${time}</span>
         </div>
       </div>`;
@@ -179,6 +287,18 @@ function renderHome() {
   }
 
   container.innerHTML = html;
+
+  container.querySelectorAll('[data-home-tab]').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelector('.tab-btn[data-tab="' + button.dataset.homeTab + '"]')?.click();
+    });
+  });
+  container.querySelectorAll('[data-home-action]').forEach(button => {
+    button.addEventListener('click', () => {
+      if (button.dataset.homeAction === 'ferias') document.getElementById('feriasBtn')?.click();
+      else document.querySelector('.tab-btn[data-tab="colaboradores"]')?.click();
+    });
+  });
 
   // Colabs modal
   const modalHtml = `
