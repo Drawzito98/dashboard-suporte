@@ -3434,12 +3434,6 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   .summary-text { font-size: 13px; }
 }
 
-/* =====================================================
-   Escala em telas grandes (FullHD+) — interface maior
-   ===================================================== */
-@media (min-width: 1500px) {
-  :root { zoom: 1.08; }
-}
 
 /* =====================================================
    App shell — navegação lateral e hierarquia contextual
