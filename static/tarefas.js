@@ -45,6 +45,10 @@ function renderTarefas() {
 
   let html = '';
 
+  html += "<section class=\"card rotina-overview\">";
+  html += "<div><span class=\"page-eyebrow\">Organização pessoal</span><h2>Rotina</h2><p>Organize compromissos e registre informações importantes do dia.</p></div>";
+  html += "<button class=\"btn-primary\" id=\"rotinaAnotacoesBtn\" type=\"button\">📝 Anotações diárias</button></section>";
+
   // ── Formulário (sempre nova tarefa) ──
   html += '<div class="card" style="margin-bottom:var(--s-5)">';
   html += '<div style="margin-bottom:var(--s-4)">';
@@ -153,6 +157,10 @@ html += `<span style="font-size:11px;padding:1px 6px;border-radius:var(--r-sm);b
 function bindTarefaEvents(saved) {
   const container = document.getElementById('tarefasContent');
   if (!container) return;
+
+  document.getElementById("rotinaAnotacoesBtn")?.addEventListener("click", () => {
+    if (typeof openAnotacoesOverlay === "function") openAnotacoesOverlay();
+  });
 
   // Salvar nova tarefa
   const salvarBtn = document.getElementById('tarefaSalvarBtn');

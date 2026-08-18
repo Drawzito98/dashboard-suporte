@@ -303,6 +303,19 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-5) var(--s-6) var
   user-select: none;
 }
 
+.rotina-overview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+.rotina-overview h2 { margin: 2px 0 4px; font-size: 20px; }
+.rotina-overview p { color: var(--text-secondary); font-size: 13px; }
+ (max-width: 640px) {
+  .rotina-overview { align-items: stretch; flex-direction: column; }
+}
+
 /* ===== Surfaces ===== */
 .panel, .card {
   background: var(--bg-surface);
@@ -3610,6 +3623,10 @@ body[data-active-tab="dashboard"] .dashboard-context-action { display: inline-fl
     background: var(--accent-soft);
     border: 0;
     box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .tab-btn-featured {
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
   }
   .tab-btn .tab-icon {
     display: inline-flex;

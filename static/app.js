@@ -2886,7 +2886,7 @@ if (!rawRecords || !rawRecords.length) {
       dashboard: ['Dashboard', 'Indicadores de desempenho e análise do suporte'],
       'relatorio-setorial': ['Relatório Setorial', 'Resultados, evolução e destaques por setor'],
       gamificacao: ['Gamificação', 'Ranking, metas, conquistas e pontuações da equipe'],
-      tarefas: ['Tarefas', 'Agenda, prioridades e acompanhamento de atividades'],
+      tarefas: ['Rotina', 'Agenda, tarefas e anotações diárias'],
       colaboradores: ['Colaboradores', 'Cadastro e informações da equipe'],
       lider: ['Gestão', 'Acompanhamento gerencial e alertas da operação'],
       insights: ['Análises avançadas', 'Diagnósticos automáticos e oportunidades de melhoria'],
