@@ -118,6 +118,17 @@
       html += '</div>';
     }
 
+    html += `<section class="mt-legend" aria-labelledby="mtLegendTitle">
+      <h3 id="mtLegendTitle">Entenda as categorias</h3>
+      <div class="mt-legend-grid">
+        <div class="mt-legend-item"><span>🟢</span><div><strong>Referências</strong><p>Alta maturidade, autonomia, consistência e confiança.</p></div></div>
+        <div class="mt-legend-item"><span>🟡</span><div><strong>Alto Potencial</strong><p>Capacidade elevada, com pontos específicos a desenvolver.</p></div></div>
+        <div class="mt-legend-item"><span>🔵</span><div><strong>Em Desenvolvimento</strong><p>Evolução técnica ou comportamental em andamento.</p></div></div>
+        <div class="mt-legend-item"><span>🔴</span><div><strong>Acompanhamento Prioritário</strong><p>Requer atenção mais próxima e um plano de ação.</p></div></div>
+      </div>
+      <p class="mt-legend-note">As categorias são dinâmicas e devem ser revisadas periodicamente conforme a evolução profissional.</p>
+    </section>`;
+
     html += '</div>';
     container.innerHTML = html;
     bindEvents();
@@ -593,6 +604,21 @@
   margin-top: 18px;
 }
 
+.mt-legend {
+  margin-top: var(--s-4, 16px);
+  padding: var(--s-5, 20px);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--r-lg, 10px);
+  background: var(--bg-subtle, #f1f4f9);
+}
+.mt-legend h3 { margin: 0 0 14px; color: var(--text-strong, #0f172a); font-size: 15px; }
+.mt-legend-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; }
+.mt-legend-item { display: flex; align-items: flex-start; gap: 9px; }
+.mt-legend-item > span { font-size: 14px; line-height: 1.4; }
+.mt-legend-item strong { color: var(--text-primary, #1f2937); font-size: 12.5px; }
+.mt-legend-item p { margin: 2px 0 0; color: var(--text-secondary, #334155); font-size: 12px; line-height: 1.45; }
+.mt-legend-note { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--border, #e2e8f0); color: var(--text-muted, #64748b); font-size: 11.5px; font-style: italic; }
+
 .mt-modal-overlay {
   position: fixed;
   inset: 0;
@@ -655,6 +681,9 @@
 }
 @media (max-width: 768px) {
   .mt-grid {
+    grid-template-columns: 1fr;
+  }
+  .mt-legend-grid {
     grid-template-columns: 1fr;
   }
   .mt-header {
