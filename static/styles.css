@@ -248,8 +248,6 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-5) var(--s-6) var
   padding: var(--s-6); text-align: center; color: var(--text-secondary); font-size: 13px;
 }
 @media (max-width: 768px) {
-  .rs-container .rs-view-switch { width: 100%; }
-  .rs-container .rs-view-switch button { flex: 1; }
   .topbar-right .current-user { display: none; }
 }
 
@@ -2038,11 +2036,6 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
 .rs-container .rs-section {
   margin-bottom: 28px;
 }
-.rs-container .rs-view-switch { display: inline-flex; padding: 3px; border: 1px solid var(--border); border-radius: 9px; background: var(--bg-inset); }
-.rs-container .rs-view-switch button { border: 0; border-radius: 6px; padding: 6px 12px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
-.rs-container .rs-view-switch button.active { background: var(--bg-surface); color: var(--accent); box-shadow: var(--shadow-sm); }
-.rs-container .rs-sector-view.hidden, .rs-container .rs-people-view.hidden { display: none; }
-.rs-container.rs-hide-cards .kpi-grid, .rs-container.rs-hide-cards .rs-people-view .card { display: none; }
 .rs-container .rs-section-title {
   font-size: 15px;
   font-weight: 700;
