@@ -3953,6 +3953,7 @@ table td { border-color: var(--border); }
   max-height: calc(100dvh - 48px);
   padding: 0 28px 28px;
   overflow-y: auto;
+  scroll-padding: 24px 0 48px;
   scrollbar-gutter: stable;
 }
 #colabDetailOverlay .colab-detail-close {
@@ -4011,7 +4012,7 @@ table td { border-color: var(--border); }
   background: var(--bg-inset);
 }
 .ci-editor-form input, .ci-editor-form select { min-height: 42px; }
-.ci-editor-form textarea { resize: vertical; }
+.ci-editor-form textarea { resize: vertical; scroll-margin: 24px 0 48px; }
 .ci-field-wide, .ci-section-heading, .ci-redflag-card, .ci-editor-actions { grid-column: 1 / -1 !important; }
 .ci-section-heading {
   display: flex;
@@ -4050,9 +4051,8 @@ table td { border-color: var(--border); }
 }
 .ci-redflag-reason textarea { background: var(--danger-soft); }
 .ci-editor-actions {
-  position: sticky;
-  bottom: -28px;
-  z-index: 2;
+  position: static;
+  z-index: auto;
   display: flex;
   gap: 10px;
   margin: 8px -28px -28px;
@@ -4073,11 +4073,11 @@ table td { border-color: var(--border); }
 @media (max-width: 640px) {
   #colabDetailOverlay { padding: 0; }
   #colabDetailOverlay .colab-detail-panel { max-height: 94dvh; border-radius: 18px 18px 0 0; }
-  #colabDetailContent { max-height: 94dvh; padding: 0 18px 22px; }
-  .ci-editor-header { margin: 0 -18px 20px; padding: 18px 58px 18px 18px; }
+  #colabDetailContent { max-height: 94dvh; padding: 0 18px 22px; scroll-padding-bottom: 32px; }
+  .ci-editor-header { position: static; margin: 0 -18px 20px; padding: 18px 58px 18px 18px; backdrop-filter: none; }
   .ci-editor-form { grid-template-columns: 1fr; }
   .ci-editor-form > .field { grid-column: 1 / -1; }
-  .ci-editor-actions { bottom: -22px; margin: 8px -18px -22px; padding: 14px 18px; }
+  .ci-editor-actions { margin: 8px -18px -22px; padding: 14px 18px; }
   .ci-editor-actions #ciLimparBtn { flex: 0 0 42px; width: 42px; overflow: hidden; white-space: nowrap; color: transparent; }
   .ci-editor-actions #ciLimparBtn::first-letter { color: var(--danger); }
 }
