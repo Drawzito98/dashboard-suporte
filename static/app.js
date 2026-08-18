@@ -3398,8 +3398,30 @@ function initNotificacoesUI() {
 // ── Removed: buildReportHTML moved to static/reports.js ──
 
 
-// ── Shell: reúne navegação principal e ferramentas na coluna lateral ──
+// ── Shell: organiza a navegação por jornada sem alterar os destinos ──
 (function () {
+  const tabBar = document.getElementById("tabBar");
+  if (tabBar && !tabBar.dataset.organized) {
+    const buttons = {};
+    tabBar.querySelectorAll(".tab-btn[data-tab]").forEach(btn => { buttons[btn.dataset.tab] = btn; });
+    const groups = [
+      ["Principal", ["home"]],
+      ["Desempenho", ["dashboard", "relatorio-setorial", "insights"]],
+      ["Pessoas", ["colaboradores", "mapeamento-time", "lider", "avaliacao"]],
+      ["Organização", ["tarefas", "gamificacao"]]
+    ];
+    const fragment = document.createDocumentFragment();
+    groups.forEach(([label, tabs]) => {
+      const heading = document.createElement("span");
+      heading.className = "nav-section-label";
+      heading.setAttribute("role", "presentation");
+      heading.textContent = label;
+      fragment.appendChild(heading);
+      tabs.forEach(tab => { if (buttons[tab]) fragment.appendChild(buttons[tab]); });
+    });
+    tabBar.replaceChildren(fragment);
+    tabBar.dataset.organized = "true";
+  }
   const shellNavigation = document.querySelector('.shell-navigation');
   const sidebar = document.querySelector('.sidebar');
   if (shellNavigation && sidebar && sidebar.parentNode !== shellNavigation) {
