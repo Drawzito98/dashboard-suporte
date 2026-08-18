@@ -5,9 +5,12 @@ function renderColaboradores() {
   if (!container) return;
 
   const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
-  const colabs = [...new Set((rawRecords || [])
-    .filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']))
-    .map(r => r['Atendente']))].sort();
+  const recordNames = (rawRecords || [])
+    .filter(r => r && r["Atendente"] && !isAggregateName(r["Atendente"]))
+    .map(r => String(r["Atendente"]).trim());
+  const colabs = [...new Set([...recordNames, ...Object.keys(colabInfo)])]
+    .filter(nome => nome && isColabActive(nome))
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   // Mapa setor por colaborador
   const setorMap = {};
@@ -21,21 +24,19 @@ function renderColaboradores() {
 
   let html = '';
 
-  html += '<div style="margin-bottom:var(--s-4)">';
-  html += '<h3 style="font-size:16px;font-weight:600;margin-bottom:2px">👥 Meus Colaboradores</h3>';
-  html += `<p style="font-size:13px;color:var(--text-secondary)">${colabs.length} colaborador(es) ativos · ${Object.keys(colabInfo).length} com cadastro</p>`;
-  html += '</div>';
+  html += `<div class="colab-list-header"><div><h3>Meus Colaboradores</h3><p>${colabs.length} colaborador(es) ativos · ${Object.keys(colabInfo).length} com cadastro</p></div><button class="btn-primary" id="novoColaboradorBtn" type="button">+ Novo colaborador</button></div>`;
 
   if (!colabs.length) {
-    html += '<div class="empty-state" style="padding:var(--s-5)"><div class="empty-title">Nenhum colaborador</div><div class="empty-sub">Importe um CSV com dados para ver a lista.</div></div>';
+    html += '<div class="empty-state" style="padding:var(--s-5)"><div class="empty-title">Nenhum colaborador</div><div class="empty-sub">Cadastre um colaborador ou importe um CSV para começar.</div></div>';
     container.innerHTML = html;
+    document.getElementById("novoColaboradorBtn")?.addEventListener("click", openNovoColaboradorModal);
     return;
   }
 
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s-3)">';
   for (const nome of colabs) {
     const info = colabInfo[nome] || {};
-    const hasData = info.data_aniversario || info.data_admissao || info.email || info.observacoes;
+    const hasData = info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa;
     const conduta = info.conduta_negativa === 'true' || info.conduta_negativa === true;
     html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''}" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Clique para ver/editar">`;
     html += '<div style="display:flex;align-items:center;gap:var(--s-3)">';
@@ -74,12 +75,55 @@ function renderColaboradores() {
 
   container.innerHTML = html;
 
+  document.getElementById("novoColaboradorBtn")?.addEventListener("click", openNovoColaboradorModal);
+
   // Click to open overlay
   container.querySelectorAll('.colab-card').forEach(card => {
     card.addEventListener('click', () => {
       const nome = card.dataset.nome;
       openColabDetailOverlay(nome);
     });
+  });
+}
+
+function openNovoColaboradorModal() {
+  if (!requireAdmin()) return;
+  document.getElementById("novoColaboradorModal")?.remove();
+  const modal = document.createElement("div");
+  modal.id = "novoColaboradorModal";
+  modal.className = "modal-overlay";
+  modal.innerHTML = `<div class="modal-box novo-colaborador-modal" role="dialog" aria-modal="true" aria-labelledby="novoColaboradorTitulo">
+    <div class="novo-colaborador-header"><div><span>Novo cadastro</span><h3 id="novoColaboradorTitulo">Adicionar colaborador</h3><p>Crie o perfil agora e complete os demais dados na próxima etapa.</p></div><button class="btn-small" id="novoColaboradorFechar" type="button" aria-label="Fechar">✕</button></div>
+    <form id="novoColaboradorForm"><label class="field"><span>Nome completo</span><input type="text" id="novoColaboradorNome" autocomplete="off" maxlength="120" placeholder="Digite o nome do colaborador" required></label><div class="modal-actions"><button class="btn-small" id="novoColaboradorCancelar" type="button">Cancelar</button><button class="btn-primary" type="submit">Criar e completar perfil</button></div></form>
+  </div>`;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  document.getElementById("novoColaboradorFechar").addEventListener("click", close);
+  document.getElementById("novoColaboradorCancelar").addEventListener("click", close);
+  modal.addEventListener("click", event => { if (event.target === modal) close(); });
+  document.getElementById("novoColaboradorNome").focus();
+  document.getElementById("novoColaboradorForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const input = document.getElementById("novoColaboradorNome");
+    const nome = input.value.trim().replace(/\s+/g, " ");
+    if (nome.length < 2) { showToast("Informe um nome válido.", "error", "Colaboradores"); input.focus(); return; }
+    const colabInfo = JSON.parse(localStorage.getItem("sistema_colaboradores_info_v1") || "{}");
+    const recordNames = (rawRecords || []).map(r => r && r["Atendente"]).filter(Boolean).map(String);
+    const existingName = [...recordNames, ...Object.keys(colabInfo)].find(item => item.trim().localeCompare(nome, "pt-BR", { sensitivity: "base" }) === 0);
+    if (existingName) {
+      close();
+      if (!isColabActive(existingName)) setColabActive(existingName, true);
+      renderColaboradores();
+      openColabDetailOverlay(existingName);
+      showToast("Esse colaborador já existia. O perfil foi aberto para edição.", "info", "Colaboradores");
+      return;
+    }
+    setColabActive(nome, true);
+    await dbColabInfoSave(nome, { data_aniversario: "", data_admissao: "", email: "", nivel: "", tarefas_desempenhadas: "", objetivos_futuros: "", observacoes: "", conduta_negativa: "", conduta_motivo: "" });
+    close();
+    renderColaboradores();
+    openColabDetailOverlay(nome);
+    showToast(`${nome} foi adicionado. Complete o perfil.`, "success", "Colaboradores");
   });
 }
 
