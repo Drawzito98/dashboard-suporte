@@ -265,11 +265,12 @@ function openColabDetailOverlay(nome) {
 
   let html = '';
   const setores = [...new Set((rawRecords || []).filter(r => r && r['Atendente'] === nome && r['Setor']).map(r => String(r['Setor']).trim()))];
-  html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-4)">`;
-  html += `<div style="display:flex;align-items:center;gap:var(--s-3)"><div style="font-size:32px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 40) : '👤'}</div><div><h3 style="font-size:18px;font-weight:600;margin:0">${escapeHtml(nome)}</h3><p style="font-size:13px;color:var(--text-secondary);margin:0">${setores.length ? '🏢 '+escapeHtml(setores.join(', ')) : 'Informações do colaborador'}</p></div></div>`;
+  html += `<div class="ci-editor-header">`;
+  html += `<div class="ci-editor-identity"><div class="ci-editor-avatar">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 40) : '👤'}</div><div><h3 style="font-size:18px;font-weight:600;margin:0">${escapeHtml(nome)}</h3><p style="font-size:13px;color:var(--text-secondary);margin:0">${setores.length ? '🏢 '+escapeHtml(setores.join(', ')) : 'Informações do colaborador'}</p></div></div>`;
   html += '</div>';
 
-  html += '<form id="colabInfoForm" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3)">';
+  html += `<form id="colabInfoForm" class="ci-editor-form">`;
+  html += `<div class="ci-section-heading"><span>01</span><div><strong>Cadastro</strong><small>Informações básicas e contato</small></div></div>`;
 
   html += '<div class="field"><span>Data de Aniversário</span>';
   html += `<input type="date" id="ciAniversario" value="${info.data_aniversario || ''}">`;
@@ -283,7 +284,8 @@ function openColabDetailOverlay(nome) {
   html += `<input type="email" id="ciEmail" placeholder="email@exemplo.com" value="${escapeHtml(info.email || '')}">`;
   html += '</div>';
 
-  html += `<div class="field" style="grid-column:1/-1"><span>Nível de Atendimento</span>`;
+  html += `<div class="ci-section-heading"><span>02</span><div><strong>Desenvolvimento</strong><small>Informações usadas no acompanhamento e no perfil do time</small></div></div>`;
+  html += `<div class="field ci-field-wide"><span>Nível de Atendimento</span>`;
   const nivelAtual = info.nivel || '';
   html += `<select id="ciNivel" style="width:100%">
     <option value="">Selecione...</option>
@@ -293,17 +295,18 @@ function openColabDetailOverlay(nome) {
   </select>`;
   html += '</div>';
 
-  html += `<div class="field" style="grid-column:1/-1"><span>Tarefas que já desempenhou</span>`;
+  html += `<div class="field ci-field-wide"><span>Tarefas que já desempenhou</span>`;
   html += `<textarea id="ciTarefas" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Ex: Atendimento N1, Suporte Chat, Projeto Migração...">${escapeHtml(info.tarefas_desempenhadas || '')}</textarea>`;
   html += '</div>';
 
-  html += `<div class="field" style="grid-column:1/-1"><span>Objetivos Futuros</span>`;
+  html += `<div class="field ci-field-wide"><span>Objetivos Futuros</span>`;
   html += `<textarea id="ciObjetivos" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Ex: Assumir liderança, aprender ferramenta X...">${escapeHtml(info.objetivos_futuros || '')}</textarea>`;
   html += '</div>';
 
   const condutaChecked = info.conduta_negativa === 'true' || info.conduta_negativa === true;
+  html += `<div class="ci-section-heading ci-section-danger"><span>03</span><div><strong>Red flags</strong><small>Sinais de atenção que precisam acompanhar o histórico</small></div></div>`;
 
-  html += `<div id="ciCondutaField" class="field" style="grid-column:1/-1;display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);border:1px solid ${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:var(--r-md)">
+  html += `<div id="ciCondutaField" class="field ci-redflag-card" style="grid-column:1/-1;display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);border:1px solid ${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:var(--r-md)">
     <span style="font-size:18px">🚩</span>
     <div style="flex:1">
       <div style="font-size:13px;font-weight:600;color:var(--text-strong)">Destacar por conduta negativa</div>
@@ -316,16 +319,17 @@ function openColabDetailOverlay(nome) {
     </label>
   </div>`;
 
-  html += `<div class="field" style="grid-column:1/-1" id="ciCondutaMotivoField" ${condutaChecked ? '' : 'hidden'}>
+  html += `<div class="field ci-field-wide ci-redflag-reason" id="ciCondutaMotivoField" ${condutaChecked ? '' : 'hidden'}>
     <span>Motivo da conduta</span>
     <textarea id="ciCondutaMotivo" style="width:100%;min-height:60px;font-size:13px;line-height:1.6;border-color:var(--danger)" placeholder="Descreva o motivo do destaque...">${escapeHtml(info.conduta_motivo || '')}</textarea>
   </div>`;
 
-  html += `<div class="field" style="grid-column:1/-1"><span>Observações</span>`;
+  html += `<div class="ci-section-heading"><span>04</span><div><strong>Notas gerais</strong><small>Contexto adicional sobre o colaborador</small></div></div>`;
+  html += `<div class="field ci-field-wide"><span>Observações</span>`;
   html += `<textarea id="ciObservacoes" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Qualquer observação adicional...">${escapeHtml(info.observacoes || '')}</textarea>`;
   html += '</div>';
 
-  html += '<div style="grid-column:1/-1;display:flex;gap:var(--s-2);padding-top:var(--s-2)">';
+  html += '<div class="ci-editor-actions">';
   html += `<button class="btn-primary" id="ciSalvarBtn" type="button" style="flex:1">💾 Salvar</button>`;
   html += `<button class="btn-small" id="ciLimparBtn" type="button">🗑️ Limpar dados</button>`;
   html += '</div>';
@@ -336,7 +340,7 @@ function openColabDetailOverlay(nome) {
   const allBonus = JSON.parse(localStorage.getItem('sistema_pontos_extras_v1') || '[]');
   const penalties = allBonus.filter(b => String(b.colaborador) === nome && (parseFloat(b.pontos) || 0) < 0);
   if (penalties.length) {
-    html += '<div style="grid-column:1/-1;margin-top:var(--s-4)">';
+    html += '<div class="ci-penalties">';
     html += '<h4 style="font-size:14px;font-weight:600;margin:0 0 var(--s-3) 0">📋 Histórico de penalidades</h4>';
     html += '<div style="display:flex;flex-direction:column;gap:var(--s-2)">';
     for (const p of penalties) {

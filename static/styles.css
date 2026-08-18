@@ -3938,3 +3938,146 @@ table td { border-color: var(--border); }
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Editor de colaborador — perfil, desenvolvimento e red flags */
+#colabDetailOverlay { padding: 24px; }
+#colabDetailOverlay .colab-detail-panel {
+  width: min(760px, 100%);
+  max-width: 760px;
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+  overflow: hidden;
+}
+#colabDetailContent {
+  max-height: calc(100dvh - 48px);
+  padding: 0 28px 28px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+#colabDetailOverlay .colab-detail-close {
+  position: sticky;
+  top: 12px;
+  z-index: 4;
+  float: right;
+  margin: 12px 12px -42px 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.ci-editor-header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  min-height: 92px;
+  margin: 0 -28px 24px;
+  padding: 20px 72px 20px 28px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-surface) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+.ci-editor-identity { display: flex; align-items: center; gap: 14px; }
+.ci-editor-avatar {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-inset);
+  font-size: 32px;
+  overflow: hidden;
+}
+.ci-editor-identity h3 { color: var(--text-strong); font-size: 19px !important; letter-spacing: -.02em; }
+.ci-editor-identity p { margin-top: 3px !important; color: var(--text-secondary) !important; }
+.ci-editor-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+.ci-editor-form .field > span {
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+.ci-editor-form input, .ci-editor-form select, .ci-editor-form textarea {
+  width: 100%;
+  border-color: var(--border);
+  background: var(--bg-inset);
+}
+.ci-editor-form input, .ci-editor-form select { min-height: 42px; }
+.ci-editor-form textarea { resize: vertical; }
+.ci-field-wide, .ci-section-heading, .ci-redflag-card, .ci-editor-actions { grid-column: 1 / -1 !important; }
+.ci-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.ci-section-heading:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.ci-section-heading > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+}
+.ci-section-heading div { display: flex; flex-direction: column; }
+.ci-section-heading strong { color: var(--text-strong); font-size: 14px; }
+.ci-section-heading small { color: var(--text-muted); font-size: 11px; }
+.ci-section-danger > span { background: var(--danger-soft); color: var(--danger); }
+.ci-redflag-card {
+  min-height: 74px;
+  padding: 14px 16px !important;
+  border-width: 1px !important;
+  background: var(--bg-inset);
+}
+.ci-redflag-card:has(#ciCondutaToggle:checked) {
+  border-color: var(--danger) !important;
+  background: var(--danger-soft);
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+.ci-redflag-reason textarea { background: var(--danger-soft); }
+.ci-editor-actions {
+  position: sticky;
+  bottom: -28px;
+  z-index: 2;
+  display: flex;
+  gap: 10px;
+  margin: 8px -28px -28px;
+  padding: 16px 28px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-surface) 95%, transparent);
+  backdrop-filter: blur(12px);
+}
+.ci-editor-actions #ciSalvarBtn { flex: 1; min-height: 42px; }
+.ci-editor-actions #ciLimparBtn { color: var(--danger); }
+.ci-penalties {
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--bg-inset);
+}
+@media (max-width: 640px) {
+  #colabDetailOverlay { padding: 0; }
+  #colabDetailOverlay .colab-detail-panel { max-height: 94dvh; border-radius: 18px 18px 0 0; }
+  #colabDetailContent { max-height: 94dvh; padding: 0 18px 22px; }
+  .ci-editor-header { margin: 0 -18px 20px; padding: 18px 58px 18px 18px; }
+  .ci-editor-form { grid-template-columns: 1fr; }
+  .ci-editor-form > .field { grid-column: 1 / -1; }
+  .ci-editor-actions { bottom: -22px; margin: 8px -18px -22px; padding: 14px 18px; }
+  .ci-editor-actions #ciLimparBtn { flex: 0 0 42px; width: 42px; overflow: hidden; white-space: nowrap; color: transparent; }
+  .ci-editor-actions #ciLimparBtn::first-letter { color: var(--danger); }
+}
