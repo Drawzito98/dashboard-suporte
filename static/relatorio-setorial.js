@@ -71,7 +71,26 @@ function _avgScoreBySetor(rows) {
 }
 
 // ── Filtros do relatório setorial ──
-let __rsFilterState = { sector: null, monthStart: null, monthEnd: null, generated: false };
+const RS_VIEW_KEY = 'sistema_relatorio_setorial_visao_v1';
+const RS_CARDS_KEY = 'sistema_relatorio_setorial_cards_visiveis_v1';
+let __rsFilterState = { sector: null, monthStart: null, monthEnd: null, generated: false, view: _loadRsView() };
+
+function _loadRsView() {
+  try {
+    return localStorage.getItem(RS_VIEW_KEY) === 'people' ? 'people' : 'sectors';
+  } catch (_) {
+    return 'sectors';
+  }
+}
+
+function _setRsView(view) {
+  __rsFilterState.view = view === 'people' ? 'people' : 'sectors';
+  try { localStorage.setItem(RS_VIEW_KEY, __rsFilterState.view); } catch (_) {}
+}
+
+function _rsCardsVisible() {
+  try { return localStorage.getItem(RS_CARDS_KEY) !== 'false'; } catch (_) { return true; }
+}
 
 function _renderFilterBar(setores, meses) {
   const ss = __rsFilterState.sector || '';
@@ -105,6 +124,14 @@ function _renderFilterBar(setores, meses) {
 }
 
 function __bindFilterEvents(container, setores, meses) {
+  container.querySelectorAll('[data-rs-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.rsView;
+      if (view === __rsFilterState.view) return;
+      _setRsView(view);
+      renderRelatorioSetorial();
+    });
+  });
   const genBtn = document.getElementById('rsGenerateBtn');
   if (genBtn) {
     genBtn.addEventListener('click', () => {
@@ -244,20 +271,28 @@ function renderRelatorioSetorial() {
   const hasDur = hasTma || hasTmr;
 
   let html = filterBarHtml;
+  const peopleView = __rsFilterState.view === 'people';
 
   // ── Header ──
   html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-5);flex-wrap:wrap;gap:var(--s-3)">
     <div>
       <h2 style="font-size:20px;font-weight:700;color:var(--text-strong);margin:0">\uD83D\uDCCA Relatório Setorial</h2>
-      <p style="font-size:14px;color:var(--text-secondary);margin-top:2px">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 Rankings, análise setorial, tendências e relatório executivo</p>
+      <p style="font-size:14px;color:var(--text-secondary);margin-top:2px">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 ${peopleView ? 'Desempenho e comparação individual' : 'Indicadores agregados, tendências e análise setorial'}</p>
     </div>
     <div style="display:flex;gap:var(--s-2);align-items:center">
+      <div class="rs-view-switch" role="group" aria-label="Tipo de análise">
+        <button type="button" class="${peopleView ? '' : 'active'}" data-rs-view="sectors" aria-pressed="${!peopleView}">Setores</button>
+        <button type="button" class="${peopleView ? 'active' : ''}" data-rs-view="people" aria-pressed="${peopleView}">Pessoas</button>
+      </div>
+      <button id="rsCardsToggle" class="btn-small" type="button" aria-pressed="${!_rsCardsVisible()}">${_rsCardsVisible() ? '👁️ Ocultar cards' : '👁️ Exibir cards'}</button>
       <span id="rsPresentationModeIndicator" style="font-size:12px;color:var(--text-muted);display:none">\uD83D\uDCF1 Modo apresentação</span>
       <button id="rsPresentationToggle" class="btn-small" type="button" title="Ocultar botões de ação para captura de tela">\uD83D\uDCF1 Apresentação</button>
       <button class="btn-primary" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
       <button class="btn-primary" id="rsPdfBtn" type="button">\uD83D\uDCC4 PDF (equipe)</button>
     </div>
   </div>`;
+
+  html += `<div class="rs-sector-view${peopleView ? ' hidden' : ''}">`;
 
   // ── KPI cards com variação vs período anterior ──
   const baseData = _rsData();
@@ -315,7 +350,9 @@ function renderRelatorioSetorial() {
     ${kpiCards.map(c => `<div class="kpi"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
   </div>`;
 
-  // ── Top 3 Rankings ──
+  html += `</div><div class="rs-people-view${peopleView ? '' : ' hidden'}">`;
+
+  // ── Rankings e comparação de pessoas ──
   const colabData = {};
   rows.forEach(r => {
     const nome = String(r['Atendente'] || '').trim();
@@ -376,6 +413,12 @@ function renderRelatorioSetorial() {
       </div>
     </div>
   </div>`;
+
+  html += `<h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">👥 Comparativo entre Pessoas</h3>
+  <div style="overflow-x:auto;margin-bottom:var(--s-5)"><table class="ranking-table">
+    <thead><tr><th>Atendente</th><th>Finalizados</th><th>Score médio</th></tr></thead>
+    <tbody>${colabList.slice().sort((a, b) => b.fin - a.fin).map(c => `<tr><td><strong>${escapeHtml(c.nome)}</strong></td><td>${fmtNum(c.fin)}</td><td class="score-cell ${c.score > 0 ? getClasseScore(c.score) : ''}">${fmtScore(c.score)}</td></tr>`).join('')}</tbody>
+  </table></div></div><div class="rs-sector-view${peopleView ? ' hidden' : ''}">`;
 
   // ── Destaques e Pontos de Atenção ──
   const destaques = [];
@@ -600,9 +643,19 @@ function renderRelatorioSetorial() {
       </div>
     </div>
     <textarea id="reportText" class="reportText" placeholder="Clique em “Gerar relatório executivo” no menu lateral para montar o texto automaticamente…"></textarea>
-  </div>`;
+  </div></div>`;
 
   container.innerHTML = html;
+  container.classList.toggle('rs-hide-cards', !_rsCardsVisible());
+
+  const cardsToggle = document.getElementById('rsCardsToggle');
+  if (cardsToggle) cardsToggle.addEventListener('click', () => {
+    const visible = container.classList.contains('rs-hide-cards');
+    container.classList.toggle('rs-hide-cards', !visible);
+    cardsToggle.setAttribute('aria-pressed', String(!visible));
+    cardsToggle.textContent = visible ? '👁️ Ocultar cards' : '👁️ Exibir cards';
+    try { localStorage.setItem(RS_CARDS_KEY, String(visible)); } catch (_) {}
+  });
 
   // ── Bind dos botões do relatório executivo ──
   __bindFilterEvents(container, allSetores, allMeses);
