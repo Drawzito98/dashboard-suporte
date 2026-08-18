@@ -7,6 +7,7 @@
     pilares:   { label: '🟢 Os Pilares',          emoji: '🟢', cor: 'var(--success)', corBg: 'var(--success-soft)' },
     promissores: { label: '🔵 Os Promissores',   emoji: '🔵', cor: 'var(--info)', corBg: 'var(--info-soft)' },
   };
+  const ORDEM_CATEGORIAS = ['pilares', 'promissores', 'talentos', 'alertas'];
 
   let colaboradores = [
     { id: 1,  nome: 'Pedro Henrique',     setor: 'Financeiro',           perfil: 'Rápido no aprendizado, mas apresenta desvios éticos (fura fila de atendimentos).', acao: 'Feedback duro sobre integridade de processos e conduta.', categoria: 'alertas' },
@@ -56,7 +57,18 @@
     const container = getContainer();
     if (!container) return;
 
-    const ativos = colaboradores.filter(c => isMappedColabActive(c.nome));
+    const prioridadeCategoria = categoria => {
+      const indice = ORDEM_CATEGORIAS.indexOf(categoria);
+      return indice === -1 ? ORDEM_CATEGORIAS.length : indice;
+    };
+    const ativos = colaboradores
+      .filter(c => isMappedColabActive(c.nome))
+      .slice()
+      .sort((a, b) => {
+        const porCategoria = prioridadeCategoria(a.categoria) - prioridadeCategoria(b.categoria);
+        if (porCategoria !== 0) return porCategoria;
+        return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' });
+      });
     const filtrados = filtroAtivo === 'todos'
       ? ativos
       : ativos.filter(c => c.categoria === filtroAtivo);
@@ -71,10 +83,10 @@
     html += '<div class="mt-filtros">';
     const filters = [
       { key: 'todos', label: 'Todos', cor: 'var(--text-secondary)' },
-      { key: 'alertas', label: '🔴 Alertas Críticos', cor: 'var(--danger)' },
-      { key: 'talentos', label: '🟡 Talentos Brutos', cor: 'var(--warning)' },
       { key: 'pilares', label: '🟢 Os Pilares', cor: 'var(--success)' },
       { key: 'promissores', label: '🔵 Os Promissores', cor: 'var(--info)' },
+      { key: 'talentos', label: '🟡 Talentos Brutos', cor: 'var(--warning)' },
+      { key: 'alertas', label: '🔴 Alertas Críticos', cor: 'var(--danger)' },
     ];
     filters.forEach(f => {
       const ativo = filtroAtivo === f.key;
@@ -241,10 +253,10 @@
           <div class="field">
             <label class="label">Categoria</label>
             <select id="mtFormCategoria" class="input">
-              <option value="alertas" ${cat === 'alertas' ? 'selected' : ''}>🔴 Alertas Críticos</option>
-              <option value="talentos" ${cat === 'talentos' ? 'selected' : ''}>🟡 Talentos Brutos</option>
               <option value="pilares" ${cat === 'pilares' ? 'selected' : ''}>🟢 Os Pilares</option>
               <option value="promissores" ${cat === 'promissores' ? 'selected' : ''}>🔵 Os Promissores</option>
+              <option value="talentos" ${cat === 'talentos' ? 'selected' : ''}>🟡 Talentos Brutos</option>
+              <option value="alertas" ${cat === 'alertas' ? 'selected' : ''}>🔴 Alertas Críticos</option>
             </select>
           </div>
           <div class="mt-modal-btns">
