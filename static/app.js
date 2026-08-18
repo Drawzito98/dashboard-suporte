@@ -2888,8 +2888,8 @@ if (!rawRecords || !rawRecords.length) {
       gamificacao: ['Gamificação', 'Ranking, metas, conquistas e pontuações da equipe'],
       tarefas: ['Tarefas', 'Agenda, prioridades e acompanhamento de atividades'],
       colaboradores: ['Colaboradores', 'Cadastro e informações da equipe'],
-      lider: ['Liderança', 'Acompanhamento gerencial e alertas da operação'],
-      insights: ['Insights', 'Análises automáticas e oportunidades de melhoria'],
+      lider: ['Gestão', 'Acompanhamento gerencial e alertas da operação'],
+      insights: ['Análises avançadas', 'Diagnósticos automáticos e oportunidades de melhoria'],
       avaliacao: ['Avaliação', 'Avaliações de desempenho e feedback estruturado'],
       'mapeamento-time': ['Mapeamento de Time', 'Perfis, talentos e ações de desenvolvimento']
     };

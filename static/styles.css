@@ -3510,8 +3510,11 @@ body[data-active-tab="dashboard"] .dashboard-context-action { display: inline-fl
     align-self: start;
     position: sticky;
     top: 16px;
-    height: calc(100vh - 32px);
-    height: calc(100dvh - 32px);
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    box-sizing: border-box;
+    padding-bottom: 16px;
+    scroll-padding-bottom: 24px;
     overflow-x: hidden;
     overflow-y: scroll;
     overscroll-behavior-y: contain;
