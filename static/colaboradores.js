@@ -256,160 +256,134 @@ function openColabReport(nome) {
 }
 
 function openColabDetailOverlay(nome) {
-  const overlay = document.getElementById('colabDetailOverlay');
-  const content = document.getElementById('colabDetailContent');
+  const overlay = document.getElementById("colabDetailOverlay");
+  const content = document.getElementById("colabDetailContent");
   if (!overlay || !content) return;
 
-  const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+  const colabInfo = JSON.parse(localStorage.getItem("sistema_colaboradores_info_v1") || "{}");
   const info = colabInfo[nome] || {};
+  const setores = [...new Set((rawRecords || [])
+    .filter(r => r && r["Atendente"] === nome && r["Setor"])
+    .map(r => String(r["Setor"]).trim()))];
+  const condutaChecked = info.conduta_negativa === "true" || info.conduta_negativa === true;
+  const nivelAtual = info.nivel || "";
 
-  let html = '';
-  const setores = [...new Set((rawRecords || []).filter(r => r && r['Atendente'] === nome && r['Setor']).map(r => String(r['Setor']).trim()))];
-  html += `<div class="ci-editor-header">`;
-  html += `<div class="ci-editor-identity"><div class="ci-editor-avatar">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 40) : '👤'}</div><div><h3 style="font-size:18px;font-weight:600;margin:0">${escapeHtml(nome)}</h3><p style="font-size:13px;color:var(--text-secondary);margin:0">${setores.length ? '🏢 '+escapeHtml(setores.join(', ')) : 'Informações do colaborador'}</p></div></div>`;
-  html += '</div>';
-
-  html += `<form id="colabInfoForm" class="ci-editor-form">`;
-  html += `<div class="ci-section-heading"><span>01</span><div><strong>Cadastro</strong><small>Informações básicas e contato</small></div></div>`;
-
-  html += '<div class="field"><span>Data de Aniversário</span>';
-  html += `<input type="date" id="ciAniversario" value="${info.data_aniversario || ''}">`;
-  html += '</div>';
-
-  html += '<div class="field"><span>Data de Admissão</span>';
-  html += `<input type="date" id="ciAdmissao" value="${info.data_admissao || ''}">`;
-  html += '</div>';
-
-  html += '<div class="field" style="grid-column:1/-1"><span>Email</span>';
-  html += `<input type="email" id="ciEmail" placeholder="email@exemplo.com" value="${escapeHtml(info.email || '')}">`;
-  html += '</div>';
-
-  html += `<div class="ci-section-heading"><span>02</span><div><strong>Desenvolvimento</strong><small>Informações usadas no acompanhamento e no perfil do time</small></div></div>`;
-  html += `<div class="field ci-field-wide"><span>Nível de Atendimento</span>`;
-  const nivelAtual = info.nivel || '';
-  html += `<select id="ciNivel" style="width:100%">
-    <option value="">Selecione...</option>
-    <option value="N1"${nivelAtual === 'N1' ? ' selected' : ''}>N1</option>
-    <option value="N2"${nivelAtual === 'N2' ? ' selected' : ''}>N2</option>
-    <option value="N3"${nivelAtual === 'N3' ? ' selected' : ''}>N3</option>
-  </select>`;
-  html += '</div>';
-
-  html += `<div class="field ci-field-wide"><span>Tarefas que já desempenhou</span>`;
-  html += `<textarea id="ciTarefas" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Ex: Atendimento N1, Suporte Chat, Projeto Migração...">${escapeHtml(info.tarefas_desempenhadas || '')}</textarea>`;
-  html += '</div>';
-
-  html += `<div class="field ci-field-wide"><span>Objetivos Futuros</span>`;
-  html += `<textarea id="ciObjetivos" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Ex: Assumir liderança, aprender ferramenta X...">${escapeHtml(info.objetivos_futuros || '')}</textarea>`;
-  html += '</div>';
-
-  const condutaChecked = info.conduta_negativa === 'true' || info.conduta_negativa === true;
-  html += `<div class="ci-section-heading ci-section-danger"><span>03</span><div><strong>Red flags</strong><small>Sinais de atenção que precisam acompanhar o histórico</small></div></div>`;
-
-  html += `<div id="ciCondutaField" class="field ci-redflag-card" style="grid-column:1/-1;display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);border:1px solid ${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:var(--r-md)">
-    <span style="font-size:18px">🚩</span>
-    <div style="flex:1">
-      <div style="font-size:13px;font-weight:600;color:var(--text-strong)">Destacar por conduta negativa</div>
-      <div style="font-size:11px;color:var(--text-muted)">Ex: desrespeito, faltas, reclamações recorrentes</div>
+  let html = `<div class="ci-dialog">`;
+  html += `<header class="ci-dialog-header">
+    <div class="ci-dialog-avatar">${typeof colabAvatarHtml === "function" ? colabAvatarHtml(nome, 48) : "👤"}</div>
+    <div class="ci-dialog-title">
+      <span>Perfil do colaborador</span>
+      <h2>${escapeHtml(nome)}</h2>
+      <p>${setores.length ? escapeHtml(setores.join(", ")) : "Setor não identificado"}</p>
     </div>
-    <label id="ciCondutaLabel" style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;cursor:pointer">
-      <input type="checkbox" id="ciCondutaToggle" ${condutaChecked ? 'checked' : ''} style="position:absolute;opacity:0;width:100%;height:100%;left:0;top:0;margin:0;pointer-events:none">
-      <span id="ciCondutaTrack" style="position:absolute;pointer-events:none;inset:0;background:${condutaChecked ? 'var(--danger)' : 'var(--border)'};border-radius:12px;transition:.2s"></span>
-      <span id="ciCondutaKnob" style="position:absolute;pointer-events:none;height:18px;width:18px;left:3px;bottom:3px;background:var(--bg-surface);border-radius:50%;transition:.2s;transform:${condutaChecked ? 'translateX(20px)' : 'translateX(0)'}"></span>
+  </header>`;
+
+  html += `<form id="colabInfoForm" class="ci-dialog-form">`;
+  html += `<section class="ci-form-section">
+    <div class="ci-form-section-title"><div><strong>Dados cadastrais</strong><small>Informações básicas do colaborador</small></div></div>
+    <div class="ci-form-grid">
+      <label class="field"><span>Aniversário</span><input type="date" id="ciAniversario" value="${info.data_aniversario || ""}"></label>
+      <label class="field"><span>Admissão</span><input type="date" id="ciAdmissao" value="${info.data_admissao || ""}"></label>
+      <label class="field ci-span-2"><span>E-mail</span><input type="email" id="ciEmail" placeholder="email@exemplo.com" value="${escapeHtml(info.email || "")}"></label>
+    </div>
+  </section>`;
+
+  html += `<section class="ci-form-section">
+    <div class="ci-form-section-title"><div><strong>Desenvolvimento e perfil</strong><small>Dados utilizados no acompanhamento e no Mapeamento de Time</small></div></div>
+    <div class="ci-form-grid">
+      <label class="field ci-span-2"><span>Nível de atendimento</span>
+        <select id="ciNivel">
+          <option value="">Selecione...</option>
+          <option value="N1"${nivelAtual === "N1" ? " selected" : ""}>N1</option>
+          <option value="N2"${nivelAtual === "N2" ? " selected" : ""}>N2</option>
+          <option value="N3"${nivelAtual === "N3" ? " selected" : ""}>N3</option>
+        </select>
+      </label>
+      <label class="field ci-span-2"><span>Tarefas que já desempenhou</span><textarea id="ciTarefas" rows="3" placeholder="Ex.: Atendimento N1, suporte por chat, projeto de migração...">${escapeHtml(info.tarefas_desempenhadas || "")}</textarea></label>
+      <label class="field ci-span-2"><span>Objetivos futuros</span><textarea id="ciObjetivos" rows="3" placeholder="Ex.: Assumir liderança, aprender uma ferramenta, mudar de nível...">${escapeHtml(info.objetivos_futuros || "")}</textarea></label>
+    </div>
+  </section>`;
+
+  html += `<section class="ci-form-section ci-detractor-section${condutaChecked ? " is-active" : ""}" id="ciCondutaField">
+    <div class="ci-form-section-title ci-detractor-title">
+      <div><strong>🚩 Pontos detratores</strong><small>Registre sinais de atenção relevantes para o acompanhamento</small></div>
+      <label class="ci-native-toggle">
+        <input type="checkbox" id="ciCondutaToggle" ${condutaChecked ? "checked" : ""}>
+        <span>Possui ponto detrator</span>
+      </label>
+    </div>
+    <label class="field ci-detractor-reason" id="ciCondutaMotivoField" ${condutaChecked ? "" : "hidden"}>
+      <span>Motivo do ponto detrator</span>
+      <textarea id="ciCondutaMotivo" rows="4" placeholder="Descreva o fato de forma objetiva, incluindo contexto quando necessário...">${escapeHtml(info.conduta_motivo || "")}</textarea>
+      <small>Use informações factuais. Este registro ficará associado ao colaborador.</small>
     </label>
-  </div>`;
+  </section>`;
 
-  html += `<div class="field ci-field-wide ci-redflag-reason" id="ciCondutaMotivoField" ${condutaChecked ? '' : 'hidden'}>
-    <span>Motivo da conduta</span>
-    <textarea id="ciCondutaMotivo" style="width:100%;min-height:60px;font-size:13px;line-height:1.6;border-color:var(--danger)" placeholder="Descreva o motivo do destaque...">${escapeHtml(info.conduta_motivo || '')}</textarea>
-  </div>`;
+  html += `<section class="ci-form-section">
+    <div class="ci-form-section-title"><div><strong>Observações gerais</strong><small>Contexto adicional que não se enquadra como ponto detrator</small></div></div>
+    <label class="field"><textarea id="ciObservacoes" rows="4" placeholder="Registre observações gerais sobre o colaborador...">${escapeHtml(info.observacoes || "")}</textarea></label>
+  </section>`;
 
-  html += `<div class="ci-section-heading"><span>04</span><div><strong>Notas gerais</strong><small>Contexto adicional sobre o colaborador</small></div></div>`;
-  html += `<div class="field ci-field-wide"><span>Observações</span>`;
-  html += `<textarea id="ciObservacoes" style="width:100%;min-height:70px;font-size:13px;line-height:1.6" placeholder="Qualquer observação adicional...">${escapeHtml(info.observacoes || '')}</textarea>`;
-  html += '</div>';
-
-  html += '<div class="ci-editor-actions">';
-  html += `<button class="btn-primary" id="ciSalvarBtn" type="button" style="flex:1">💾 Salvar</button>`;
-  html += `<button class="btn-small" id="ciLimparBtn" type="button">🗑️ Limpar dados</button>`;
-  html += '</div>';
-
-  html += '</form>';
-
-  // ── Histórico de penalidades ──
-  const allBonus = JSON.parse(localStorage.getItem('sistema_pontos_extras_v1') || '[]');
+  const allBonus = JSON.parse(localStorage.getItem("sistema_pontos_extras_v1") || "[]");
   const penalties = allBonus.filter(b => String(b.colaborador) === nome && (parseFloat(b.pontos) || 0) < 0);
   if (penalties.length) {
-    html += '<div class="ci-penalties">';
-    html += '<h4 style="font-size:14px;font-weight:600;margin:0 0 var(--s-3) 0">📋 Histórico de penalidades</h4>';
-    html += '<div style="display:flex;flex-direction:column;gap:var(--s-2)">';
-    for (const p of penalties) {
-      const pts = Math.abs(parseFloat(p.pontos) || 0);
-      html += '<div style="display:flex;align-items:flex-start;gap:var(--s-3);padding:var(--s-2) var(--s-3);border:1px solid var(--border);border-radius:var(--r-sm)">';
-      html += `<div style="font-size:16px;font-weight:700;color:var(--danger);min-width:48px;text-align:center">-${pts.toFixed(1)}</div>`;
-      html += '<div style="flex:1;min-width:0">';
-      if (p.descricao) {
-        html += `<div style="font-size:13px">${escapeHtml(p.descricao)}</div>`;
-      }
-      html += '<div style="font-size:11px;color:var(--text-muted);margin-top:1px">';
-      const parts = [];
-      if (p.mes) parts.push(`📅 ${escapeHtml(p.mes)}`);
-      if (p.createdAt) parts.push(new Date(p.createdAt).toLocaleString('pt-BR'));
-      html += parts.join(' · ');
-      html += '</div></div></div>';
+    html += `<section class="ci-form-section"><div class="ci-form-section-title"><div><strong>Histórico de penalidades</strong><small>${penalties.length} registro(s)</small></div></div><div class="ci-penalty-list">`;
+    for (const penalty of penalties) {
+      const pts = Math.abs(parseFloat(penalty.pontos) || 0);
+      const meta = [];
+      if (penalty.mes) meta.push(escapeHtml(penalty.mes));
+      if (penalty.createdAt) meta.push(new Date(penalty.createdAt).toLocaleString("pt-BR"));
+      html += `<div class="ci-penalty-item"><strong>-${pts.toFixed(1)}</strong><div><span>${escapeHtml(penalty.descricao || "Penalidade registrada")}</span><small>${meta.join(" · ")}</small></div></div>`;
     }
-    html += '</div></div>';
+    html += `</div></section>`;
   }
 
-  content.innerHTML = html;
-  overlay.classList.add('open');
+  html += `<div class="ci-dialog-actions">
+    <button class="btn-small ci-clear-button" id="ciLimparBtn" type="button">Limpar dados</button>
+    <button class="btn-primary" id="ciSalvarBtn" type="button">Salvar alterações</button>
+  </div></form></div>`;
 
-  document.getElementById('ciSalvarBtn').addEventListener('click', async () => {
+  content.innerHTML = html;
+  overlay.classList.add("open");
+
+  const condutaToggle = document.getElementById("ciCondutaToggle");
+  condutaToggle.addEventListener("change", () => {
+    const active = condutaToggle.checked;
+    document.getElementById("ciCondutaMotivoField").hidden = !active;
+    document.getElementById("ciCondutaField").classList.toggle("is-active", active);
+    if (active) requestAnimationFrame(() => document.getElementById("ciCondutaMotivo").focus({ preventScroll: true }));
+  });
+
+  document.getElementById("ciSalvarBtn").addEventListener("click", async () => {
     if (!requireAdmin()) return;
     const data = {
-      data_aniversario: document.getElementById('ciAniversario').value || '',
-      data_admissao: document.getElementById('ciAdmissao').value || '',
-      email: document.getElementById('ciEmail').value.trim(),
-      tarefas_desempenhadas: document.getElementById('ciTarefas').value.trim(),
-      objetivos_futuros: document.getElementById('ciObjetivos').value.trim(),
-      observacoes: document.getElementById('ciObservacoes').value.trim(),
-      conduta_negativa: document.getElementById('ciCondutaToggle').checked ? 'true' : '',
-      conduta_motivo: document.getElementById('ciCondutaMotivo').value.trim(),
-      nivel: document.getElementById('ciNivel').value
+      data_aniversario: document.getElementById("ciAniversario").value || "",
+      data_admissao: document.getElementById("ciAdmissao").value || "",
+      email: document.getElementById("ciEmail").value.trim(),
+      tarefas_desempenhadas: document.getElementById("ciTarefas").value.trim(),
+      objetivos_futuros: document.getElementById("ciObjetivos").value.trim(),
+      observacoes: document.getElementById("ciObservacoes").value.trim(),
+      conduta_negativa: condutaToggle.checked ? "true" : "",
+      conduta_motivo: document.getElementById("ciCondutaMotivo").value.trim(),
+      nivel: document.getElementById("ciNivel").value
     };
     await dbColabInfoSave(nome, data);
-    showToast(`Dados de ${nome} salvos!`, 'success', 'Colaboradores');
-    overlay.classList.remove('open');
-    if (typeof renderColaboradores === 'function') renderColaboradores();
+    showToast(`Dados de ${nome} salvos!`, "success", "Colaboradores");
+    overlay.classList.remove("open");
+    renderColaboradores();
   });
 
-  document.getElementById('ciCondutaLabel').addEventListener('click', (e) => {
-    e.preventDefault();
-    const cb = document.getElementById('ciCondutaToggle');
-    cb.checked = !cb.checked;
-    const checked = cb.checked;
-    const field = document.getElementById('ciCondutaMotivoField');
-    if (field) field.hidden = !checked;
-    const track = document.getElementById('ciCondutaTrack');
-    if (track) track.style.background = checked ? 'var(--danger)' : 'var(--border)';
-    const knob = document.getElementById('ciCondutaKnob');
-    if (knob) knob.style.transform = checked ? 'translateX(20px)' : 'translateX(0)';
-    const condutaField = document.getElementById('ciCondutaField');
-    if (condutaField) condutaField.style.borderColor = checked ? 'var(--danger)' : 'var(--border)';
-  });
-
-  document.getElementById('ciLimparBtn').addEventListener('click', async () => {
+  document.getElementById("ciLimparBtn").addEventListener("click", async () => {
     if (!requireAdmin()) return;
     if (!confirm(`Limpar todos os dados cadastrais de ${nome}?`)) return;
-    const data = {
-      data_aniversario: '', data_admissao: '', email: '',
-      tarefas_desempenhadas: '', objetivos_futuros: '', observacoes: '',
-      conduta_negativa: '', conduta_motivo: '', nivel: ''
-    };
-    await dbColabInfoSave(nome, data);
-    showToast(`Dados de ${nome} removidos!`, 'success', 'Colaboradores');
-    overlay.classList.remove('open');
-    if (typeof renderColaboradores === 'function') renderColaboradores();
+    await dbColabInfoSave(nome, {
+      data_aniversario: "", data_admissao: "", email: "", nivel: "",
+      tarefas_desempenhadas: "", objetivos_futuros: "", observacoes: "",
+      conduta_negativa: "", conduta_motivo: ""
+    });
+    showToast(`Dados de ${nome} removidos!`, "success", "Colaboradores");
+    overlay.classList.remove("open");
+    renderColaboradores();
   });
 }
 
