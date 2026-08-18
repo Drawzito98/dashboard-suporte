@@ -2,10 +2,10 @@
   'use strict';
 
   const CATEGORIAS = {
-    alertas:    { label: '🔴 Alertas Críticos',  emoji: '🔴', cor: 'var(--danger)', corBg: 'var(--danger-soft)' },
-    talentos:  { label: '🟡 Talentos Brutos',    emoji: '🟡', cor: 'var(--warning)', corBg: 'var(--warning-soft)' },
-    pilares:   { label: '🟢 Os Pilares',          emoji: '🟢', cor: 'var(--success)', corBg: 'var(--success-soft)' },
-    promissores: { label: '🔵 Os Promissores',   emoji: '🔵', cor: 'var(--info)', corBg: 'var(--info-soft)' },
+    alertas:    { label: '🔴 Acompanhamento Prioritário',  emoji: '🔴', cor: 'var(--danger)', corBg: 'var(--danger-soft)' },
+    talentos:  { label: '🟡 Alto Potencial',    emoji: '🟡', cor: 'var(--warning)', corBg: 'var(--warning-soft)' },
+    pilares:   { label: '🟢 Referências',          emoji: '🟢', cor: 'var(--success)', corBg: 'var(--success-soft)' },
+    promissores: { label: '🔵 Em Desenvolvimento',   emoji: '🔵', cor: 'var(--info)', corBg: 'var(--info-soft)' },
   };
   const ORDEM_CATEGORIAS = ['pilares', 'promissores', 'talentos', 'alertas'];
 
@@ -83,10 +83,10 @@
     html += '<div class="mt-filtros">';
     const filters = [
       { key: 'todos', label: 'Todos', cor: 'var(--text-secondary)' },
-      { key: 'pilares', label: '🟢 Os Pilares', cor: 'var(--success)' },
-      { key: 'promissores', label: '🔵 Os Promissores', cor: 'var(--info)' },
-      { key: 'talentos', label: '🟡 Talentos Brutos', cor: 'var(--warning)' },
-      { key: 'alertas', label: '🔴 Alertas Críticos', cor: 'var(--danger)' },
+      { key: 'pilares', label: '🟢 Referências', cor: 'var(--success)' },
+      { key: 'promissores', label: '🔵 Em Desenvolvimento', cor: 'var(--info)' },
+      { key: 'talentos', label: '🟡 Alto Potencial', cor: 'var(--warning)' },
+      { key: 'alertas', label: '🔴 Acompanhamento Prioritário', cor: 'var(--danger)' },
     ];
     filters.forEach(f => {
       const ativo = filtroAtivo === f.key;
@@ -253,10 +253,10 @@
           <div class="field">
             <label class="label">Categoria</label>
             <select id="mtFormCategoria" class="input">
-              <option value="pilares" ${cat === 'pilares' ? 'selected' : ''}>🟢 Os Pilares</option>
-              <option value="promissores" ${cat === 'promissores' ? 'selected' : ''}>🔵 Os Promissores</option>
-              <option value="talentos" ${cat === 'talentos' ? 'selected' : ''}>🟡 Talentos Brutos</option>
-              <option value="alertas" ${cat === 'alertas' ? 'selected' : ''}>🔴 Alertas Críticos</option>
+              <option value="pilares" ${cat === 'pilares' ? 'selected' : ''}>🟢 Referências</option>
+              <option value="promissores" ${cat === 'promissores' ? 'selected' : ''}>🔵 Em Desenvolvimento</option>
+              <option value="talentos" ${cat === 'talentos' ? 'selected' : ''}>🟡 Alto Potencial</option>
+              <option value="alertas" ${cat === 'alertas' ? 'selected' : ''}>🔴 Acompanhamento Prioritário</option>
             </select>
           </div>
           <div class="mt-modal-btns">
