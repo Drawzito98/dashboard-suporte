@@ -7,7 +7,14 @@
     pilares:   { label: '🟢 Referências',          emoji: '🟢', cor: 'var(--success)', corBg: 'var(--success-soft)' },
     promissores: { label: '🔵 Em Desenvolvimento',   emoji: '🔵', cor: 'var(--info)', corBg: 'var(--info-soft)' },
   };
-  const ORDEM_CATEGORIAS = ['pilares', 'promissores', 'talentos', 'alertas'];
+  const ORDEM_CATEGORIAS = ["pilares", "promissores", "talentos", "alertas"];
+  const CATEGORIA_DESCRICOES = {
+    pilares: "Alta maturidade, autonomia, consistência e confiança.",
+    talentos: "Capacidade elevada, com pontos específicos a desenvolver.",
+    promissores: "Evolução técnica ou comportamental em andamento.",
+    alertas: "Requer atenção mais próxima e um plano de ação.",
+  };
+  const CATEGORIA_PDF_CORES = { pilares: [22, 163, 74], talentos: [217, 119, 6], promissores: [37, 99, 235], alertas: [220, 38, 38] };
 
   let colaboradores = [
     { id: 1,  nome: 'Pedro Henrique',     setor: 'Financeiro',           perfil: 'Rápido no aprendizado, mas apresenta desvios éticos (fura fila de atendimentos).', acao: 'Feedback duro sobre integridade de processos e conduta.', categoria: 'alertas' },
@@ -77,7 +84,7 @@
 
     html += '<div class="mt-header">';
     html += '<h2 style="font-size:20px;font-weight:600;color:var(--text-strong);letter-spacing:-0.02em">Mapeamento de Time</h2>';
-    html += '<button class="btn-primary" id="mtAddBtn" type="button" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;font-size:13px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> + Adicionar Colaborador</button>';
+    html += '<div class="mt-header-actions"><button class="btn-small" id="mtExportPdfBtn" type="button">📄 Exportar PDF</button><button class="btn-primary" id="mtAddBtn" type="button" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;font-size:13px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> + Adicionar Colaborador</button></div>';
     html += '</div>';
 
     html += '<div class="mt-filtros">';
@@ -140,6 +147,8 @@
 
     const addBtn = document.getElementById('mtAddBtn');
     if (addBtn) addBtn.addEventListener('click', () => abrirModal());
+    const exportBtn = document.getElementById('mtExportPdfBtn');
+    if (exportBtn) exportBtn.addEventListener('click', exportarMapeamentoPdf);
 
     container.querySelectorAll('.mt-filtro-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -202,6 +211,7 @@
         </div>
         <div class="mt-modal-btns">
           <button class="btn-small mt-details-close" type="button">Fechar</button>
+          <button class="btn-small mt-details-export" type="button">📄 Exportar PDF</button>
           <button class="btn-primary mt-details-edit" type="button">Editar</button>
         </div>
       </div>
@@ -220,6 +230,7 @@
 
     overlay.querySelector('.mt-modal-close').addEventListener('click', fechar);
     overlay.querySelector('.mt-details-close').addEventListener('click', fechar);
+    overlay.querySelector('.mt-details-export').addEventListener('click', () => exportarColaboradorPdf(colab));
     overlay.querySelector('.mt-details-edit').addEventListener('click', () => {
       fechar();
       setTimeout(() => abrirModal(colab), 200);
@@ -359,6 +370,74 @@
     });
   }
 
+  function getPdfApi() {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      if (typeof showToast === "function") showToast("Biblioteca de PDF não carregada.", "error");
+      return null;
+    }
+    return window.jspdf.jsPDF;
+  }
+
+  function nomeArquivo(valor) {
+    return String(valor || "mapeamento").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+/, "");
+  }
+
+  function colaboradoresVisiveis() {
+    const prioridade = categoria => { const indice = ORDEM_CATEGORIAS.indexOf(categoria); return indice === -1 ? ORDEM_CATEGORIAS.length : indice; };
+    return colaboradores.filter(c => isMappedColabActive(c.nome)).filter(c => filtroAtivo === "todos" || c.categoria === filtroAtivo).slice().sort((a, b) => prioridade(a.categoria) - prioridade(b.categoria) || String(a.nome).localeCompare(String(b.nome), "pt-BR", { sensitivity: "base" }));
+  }
+
+  function exportarMapeamentoPdf() {
+    const jsPDF = getPdfApi();
+    if (!jsPDF) return;
+    const lista = colaboradoresVisiveis();
+    if (!lista.length) { if (typeof showToast === "function") showToast("Nenhum colaborador para exportar.", "warning"); return; }
+    const doc = new jsPDF("l", "mm", "a4");
+    const largura = 297; const margem = 14; let y = 18;
+    const novaPagina = () => { doc.addPage(); y = 18; };
+    doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(15, 23, 42); doc.text("Mapeamento de Time", margem, y);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(100, 116, 139);
+    const filtroLabel = filtroAtivo === "todos" ? "Todos" : CATEGORIAS[filtroAtivo].label.replace(/^\S+\s/, "");
+    doc.text("Filtro: " + filtroLabel + "  |  " + lista.length + " colaborador(es)  |  Gerado em " + new Date().toLocaleDateString("pt-BR"), margem, y + 6); y += 14;
+    lista.forEach(c => {
+      const perfil = doc.splitTextToSize("Perfil: " + c.perfil, 250); const acao = doc.splitTextToSize("Ação do líder: " + c.acao, 250);
+      const altura = Math.max(26, 17 + (perfil.length + acao.length) * 4); if (y + altura > 195) novaPagina();
+      const cor = CATEGORIA_PDF_CORES[c.categoria] || [100, 116, 139];
+      doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240); doc.roundedRect(margem, y, largura - margem * 2, altura, 2, 2, "FD");
+      doc.setFillColor(...cor); doc.rect(margem, y, 2.5, altura, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(15, 23, 42); doc.text(c.nome, margem + 6, y + 7);
+      doc.setFontSize(8.5); doc.setTextColor(...cor); doc.text(CATEGORIAS[c.categoria].label.replace(/^\S+\s/, ""), largura - margem - 4, y + 7, { align: "right" });
+      doc.setFont("helvetica", "normal"); doc.setTextColor(71, 85, 105); doc.text(c.setor, margem + 6, y + 12);
+      doc.setFontSize(8); doc.text(perfil, margem + 6, y + 18); doc.text(acao, margem + 6, y + 18 + perfil.length * 4); y += altura + 4;
+    });
+    if (y + 38 > 195) novaPagina();
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(15, 23, 42); doc.text("Entenda as categorias", margem, y + 3); y += 9;
+    ORDEM_CATEGORIAS.forEach(categoria => {
+      const cor = CATEGORIA_PDF_CORES[categoria];
+      doc.setFillColor(...cor); doc.circle(margem + 1.5, y - 1, 1.5, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...cor); doc.text(CATEGORIAS[categoria].label.replace(/^\S+\s/, ""), margem + 6, y);
+      doc.setFont("helvetica", "normal"); doc.setTextColor(71, 85, 105); doc.text("— " + CATEGORIA_DESCRICOES[categoria], margem + 48, y); y += 6;
+    });
+    doc.save("mapeamento-time-" + filtroAtivo + ".pdf");
+    if (typeof showToast === "function") showToast("PDF do mapeamento exportado.", "success");
+  }
+
+  function exportarColaboradorPdf(colab) {
+    const jsPDF = getPdfApi(); if (!jsPDF) return;
+    const doc = new jsPDF("p", "mm", "a4"); const margem = 18; const cor = CATEGORIA_PDF_CORES[colab.categoria] || [100, 116, 139];
+    doc.setFillColor(...cor); doc.rect(0, 0, 210, 8, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(15, 23, 42); doc.text(colab.nome, margem, 25);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(100, 116, 139); doc.text(colab.setor, margem, 32);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...cor); doc.text(CATEGORIAS[colab.categoria].label.replace(/^\S+\s/, ""), margem, 42);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(71, 85, 105); doc.text(doc.splitTextToSize(CATEGORIA_DESCRICOES[colab.categoria] || "", 174), margem, 48);
+    let y = 63;
+    const secao = (titulo, texto) => { doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(15, 23, 42); doc.text(titulo, margem, y); y += 6; doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(51, 65, 85); const linhas = doc.splitTextToSize(texto || "—", 174); doc.text(linhas, margem, y); y += linhas.length * 5 + 10; };
+    secao("Perfil", colab.perfil); secao("Ação imediata do líder", colab.acao);
+    doc.setDrawColor(226, 232, 240); doc.line(margem, 275, 192, 275); doc.setFontSize(8); doc.setTextColor(100, 116, 139); doc.text("Ficha gerada em " + new Date().toLocaleDateString("pt-BR"), margem, 282);
+    doc.save("mapeamento-" + nomeArquivo(colab.nome) + ".pdf");
+    if (typeof showToast === "function") showToast("PDF individual exportado.", "success");
+  }
+
   function escHtml(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -424,6 +503,7 @@
   flex-wrap: wrap;
   gap: var(--s-3, 12px);
 }
+.mt-header-actions { display: flex; align-items: center; gap: 8px; }
 .mt-filtros {
   display: flex;
   flex-wrap: wrap;
@@ -694,6 +774,8 @@
     width: 100%;
     justify-content: center;
   }
+  .mt-header-actions { width: 100%; flex-direction: column; }
+  .mt-header-actions .btn-small { width: 100%; }
 }
     `;
   }
