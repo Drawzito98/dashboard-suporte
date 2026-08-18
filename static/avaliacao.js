@@ -40,6 +40,13 @@ function getAvaliacoesLocal() {
   } catch { return []; }
 }
 
+function getAvaliacoesAtivas() {
+  return getAvaliacoesLocal().filter(av =>
+    av && av.colaborador &&
+    (typeof isColabActive !== 'function' || isColabActive(av.colaborador))
+  );
+}
+
 function saveAvaliacoesLocal(list) {
   localStorage.setItem(AVALIACAO_KEY, JSON.stringify(list));
 }
@@ -1008,7 +1015,7 @@ function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
 }
 
 function exportarTodasAvaliacoesXLSX() {
-  const avaliacoes = getAvaliacoesLocal();
+  const avaliacoes = getAvaliacoesAtivas();
   if (!avaliacoes.length) {
     showToast('Nenhuma avaliação salva para exportar.', 'error');
     return;
@@ -1053,7 +1060,7 @@ function exportarTodasAvaliacoesXLSX() {
 }
 
 function mostrarRankingAvaliacoes() {
-  const avaliacoes = getAvaliacoesLocal();
+  const avaliacoes = getAvaliacoesAtivas();
   if (!avaliacoes.length) {
     showToast('Nenhuma avaliação salva para exibir o ranking.', 'error');
     return;
@@ -1140,7 +1147,7 @@ function mostrarRankingAvaliacoes() {
 }
 
 function mostrarConsolidado() {
-  const avaliacoes = getAvaliacoesLocal();
+  const avaliacoes = getAvaliacoesAtivas();
   if (!avaliacoes.length) {
     showToast('Nenhuma avaliação salva.', 'error');
     return;
@@ -1271,7 +1278,7 @@ function renderHistoricoAvaliacoes() {
 
   const filtroColab = document.getElementById('avaliacaoHistSelect')?.value || '';
   const filtroStatus = document.getElementById('avaliacaoStatusFilter')?.value || '';
-  const avaliacoes = getAvaliacoesLocal();
+  const avaliacoes = getAvaliacoesAtivas();
   let filtered = avaliacoes;
   if (filtroColab) filtered = filtered.filter(a => a.colaborador === filtroColab);
   if (filtroStatus) filtered = filtered.filter(a => (a.status || 'pendente') === filtroStatus);
@@ -1616,3 +1623,7 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
 function onAvaliacaoTabActivated() {
   renderAvaliacao();
 }
+
+window.addEventListener('colab-active-state-changed', () => {
+  if (document.getElementById('avaliacaoContent')) renderAvaliacao();
+});
