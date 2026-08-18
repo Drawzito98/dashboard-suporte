@@ -28,17 +28,31 @@ function saveInactiveColabs() {
   }
 }
 
+function normalizeInactiveColabName(name) {
+  return typeof normalizeNameShared === 'function'
+    ? normalizeNameShared(name)
+    : String(name || '').trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+}
+
 function setColabActive(name, active) {
   if (!requireAdmin()) return;
   const set = getInactiveColabs();
-  if (active) set.delete(name);
-  else set.add(name);
+  if (active) {
+    const normalizedName = normalizeInactiveColabName(name);
+    [...set].forEach(inactiveName => {
+      if (normalizeInactiveColabName(inactiveName) === normalizedName) set.delete(inactiveName);
+    });
+  } else set.add(String(name || '').trim());
   saveInactiveColabs();
   window.dispatchEvent(new CustomEvent('colab-active-state-changed', { detail: { name, active } }));
 }
 
 function isColabActive(name) {
-  return !getInactiveColabs().has(name);
+  const normalizedName = normalizeInactiveColabName(name);
+  if (!normalizedName) return true;
+  return ![...getInactiveColabs()].some(inactiveName =>
+    normalizeInactiveColabName(inactiveName) === normalizedName
+  );
 }
 
 // ─── Setores Inativos ──────────────────────────────────────

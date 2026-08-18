@@ -118,7 +118,6 @@ function closeManageColabs() {
 function renderManageColabs() {
   const container = document.getElementById('manageColabsContent');
   if (!container) return;
-  const inactive = getInactiveColabs();
   const allNames = [...new Set((rawRecords || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente'])).map(r => r['Atendente']))].sort();
 
   let html = `
@@ -130,7 +129,7 @@ function renderManageColabs() {
           <thead><tr><th>Colaborador</th><th style="text-align:center">Ativo</th></tr></thead>
           <tbody>
             ${allNames.map(n => {
-              const ativo = !inactive.has(n);
+              const ativo = isColabActive(n);
               return `<tr>
                 <td style="font-weight:500">${escapeHtml(n)}</td>
                 <td style="text-align:center">
