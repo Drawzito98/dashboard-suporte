@@ -252,6 +252,8 @@ function openColabReport(nome) {
   }
 
   content.innerHTML = html;
+  overlay.style.removeProperty("display");
+  overlay.setAttribute("aria-hidden", "false");
   overlay.classList.add('open');
 }
 
@@ -344,6 +346,8 @@ function openColabDetailOverlay(nome) {
   </div></form></div>`;
 
   content.innerHTML = html;
+  overlay.style.removeProperty("display");
+  overlay.setAttribute("aria-hidden", "false");
   overlay.classList.add("open");
 
   const condutaToggle = document.getElementById("ciCondutaToggle");
@@ -369,7 +373,7 @@ function openColabDetailOverlay(nome) {
     };
     await dbColabInfoSave(nome, data);
     showToast(`Dados de ${nome} salvos!`, "success", "Colaboradores");
-    overlay.classList.remove("open");
+    closeColabDetail();
     renderColaboradores();
   });
 
@@ -382,7 +386,7 @@ function openColabDetailOverlay(nome) {
       conduta_negativa: "", conduta_motivo: ""
     });
     showToast(`Dados de ${nome} removidos!`, "success", "Colaboradores");
-    overlay.classList.remove("open");
+    closeColabDetail();
     renderColaboradores();
   });
 }

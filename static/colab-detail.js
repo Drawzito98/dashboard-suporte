@@ -6,13 +6,19 @@ function openColabDetail(name) {
   currentColabDetail = name;
   const overlay = document.getElementById('colabDetailOverlay');
   if (!overlay) return;
+  overlay.style.removeProperty("display");
+  overlay.setAttribute("aria-hidden", "false");
   overlay.classList.add('open');
   renderColabDetail(name);
 }
 
 function closeColabDetail() {
-  const overlay = document.getElementById('colabDetailOverlay');
-  if (overlay) overlay.classList.remove('open');
+  const overlay = document.getElementById("colabDetailOverlay");
+  if (overlay) {
+    overlay.classList.remove("open");
+    overlay.style.removeProperty("display");
+    overlay.setAttribute("aria-hidden", "true");
+  }
   currentColabDetail = null;
 }
 

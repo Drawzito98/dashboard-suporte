@@ -264,7 +264,7 @@ document.addEventListener('keydown', (e) => {
     const panel = document.getElementById('notifPanel');
     if (panel) panel.style.display = 'none';
     const colabOverlay = document.getElementById('colabDetailOverlay');
-    if (colabOverlay) colabOverlay.style.display = 'none';
+    if (colabOverlay) { colabOverlay.classList.remove('open'); colabOverlay.style.removeProperty('display'); colabOverlay.setAttribute('aria-hidden', 'true'); }
     const reportOverlay = document.getElementById('colabReportOverlay');
     if (reportOverlay) reportOverlay.style.display = 'none';
     // Close any open modal
