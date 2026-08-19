@@ -504,7 +504,7 @@
   gap: var(--s-3, 12px);
 }
 .mt-header-actions { display: flex; align-items: center; gap: 8px; }
-#mtExportPdfBtn { flex: 0 0 auto; min-height: 30px; padding: 5px 10px; font-size: 12px; line-height: 1; white-space: nowrap; }
+#mtExportPdfBtn, .mt-details-export { flex: 0 0 auto; min-height: 30px; padding: 5px 10px; font-size: 12px; line-height: 1; white-space: nowrap; }
 .mt-filtros {
   display: flex;
   flex-wrap: wrap;
