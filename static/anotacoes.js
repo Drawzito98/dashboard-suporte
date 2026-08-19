@@ -137,7 +137,7 @@ function bindAnotacaoEvents(saved) {
 
   container.querySelectorAll('.anotacao-ver-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const a = saved.find(x => x.id === btn.dataset.id);
+      const a = saved.find(x => String(x.id) === btn.dataset.id);
       if (!a) return;
       const overlay = document.getElementById('anotacaoViewOverlay') || criarAnotacaoOverlay();
       const content = document.getElementById('anotacaoViewContent');
@@ -158,16 +158,19 @@ function bindAnotacaoEvents(saved) {
 
   container.querySelectorAll('.anotacao-editar-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const a = saved.find(x => x.id === btn.dataset.id);
+      const a = saved.find(x => String(x.id) === btn.dataset.id);
       if (!a) return;
       localStorage.setItem(ANOTACOES_EDITING_KEY, JSON.stringify({ ...a }));
       renderAnotacoes();
+      const input = document.getElementById('anotacaoTextoInput');
+      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      input?.focus({ preventScroll: true });
     });
   });
 
   container.querySelectorAll('.anotacao-excluir-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const a = saved.find(x => x.id === btn.dataset.id);
+      const a = saved.find(x => String(x.id) === btn.dataset.id);
       if (!a || !confirm(`Excluir anotação de ${formatarData(a.data)}?`)) return;
       await dbAnotacoesDelete(a.id);
       renderAnotacoes();
@@ -189,8 +192,11 @@ function bindAnotacaoEvents(saved) {
 function criarAnotacaoOverlay() {
   const div = document.createElement('div');
   div.id = 'anotacaoViewOverlay';
-  div.className = 'overlay';
-  div.innerHTML = '<div class="overlay-content" style="max-width:600px"><div id="anotacaoViewContent"></div></div>';
+  div.className = 'colab-detail-overlay anotacao-view-overlay';
+  div.setAttribute('role', 'dialog');
+  div.setAttribute('aria-modal', 'true');
+  div.setAttribute('aria-label', 'Visualizar anotação');
+  div.innerHTML = '<div class="colab-detail-panel" style="max-width:600px"><div id="anotacaoViewContent"></div></div>';
   document.body.appendChild(div);
   return div;
 }
