@@ -504,6 +504,7 @@
   gap: var(--s-3, 12px);
 }
 .mt-header-actions { display: flex; align-items: center; gap: 8px; }
+#mtExportPdfBtn { flex: 0 0 auto; min-height: 30px; padding: 5px 10px; font-size: 12px; line-height: 1; white-space: nowrap; }
 .mt-filtros {
   display: flex;
   flex-wrap: wrap;
@@ -774,8 +775,9 @@
     width: 100%;
     justify-content: center;
   }
-  .mt-header-actions { width: 100%; flex-direction: column; }
-  .mt-header-actions .btn-small { width: 100%; }
+  .mt-header-actions { width: 100%; flex-direction: row; }
+  .mt-header-actions .btn-primary { width: auto; flex: 1; }
+  .mt-header-actions .btn-small { width: auto; }
 }
     `;
   }
