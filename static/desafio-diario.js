@@ -111,6 +111,22 @@
     </article>`;
   }
 
+  function engagementSummaryMarkup(stats = {}) {
+    const participations = Number(stats.participations || 0);
+    const goal = Number(stats.monthlyGoal || 15);
+    const progress = Math.min(100, Math.round(participations / goal * 100));
+    const weeklyParticipations = Number(stats.weeklyParticipations || 0);
+    const weeklyCorrect = Number(stats.weeklyCorrect || 0);
+    const achievements = Array.isArray(stats.achievements) ? stats.achievements : [];
+    const weekText = weeklyParticipations
+      ? 'Nesta semana: ' + weeklyParticipations + (weeklyParticipations === 1 ? ' participação' : ' participações') + ' · ' + weeklyCorrect + (weeklyCorrect === 1 ? ' acerto' : ' acertos')
+      : 'Sua semana começa na primeira resposta.';
+    const milestone = stats.nextMilestone ? 'Próxima ofensiva: ' + Number(stats.nextMilestone) + ' dias' : 'Todos os marcos de ofensiva alcançados';
+    return '<section class="engagement-summary" aria-label="Seu progresso pessoal"><div class="engagement-goal"><div><strong>Meta do mês</strong><span>' + participations + ' de ' + goal + ' participações</span></div><span>' + progress + '%</span></div>' +
+      '<div class="engagement-progress" role="progressbar" aria-valuemin="0" aria-valuemax="' + goal + '" aria-valuenow="' + participations + '"><i style="width:' + progress + '%"></i></div>' +
+      '<div class="engagement-details"><span>' + safe(weekText) + '</span><span>' + safe(milestone) + '</span></div>' +
+      '<div class="achievement-list">' + (achievements.length ? achievements.map(item => '<span title="Conquista desbloqueada">' + safe(item.icon) + ' ' + safe(item.label) + '</span>').join('') : '<small>✨ Sua primeira conquista chega ao responder.</small>') + '</div></section>';
+  }
   function challengeCompletedMarkup() {
     return '<div class="daily-empty challenge-completed"><span>✅</span><strong>Desafio do dia concluído</strong><p>Obrigado por responder! Um novo desafio será liberado amanhã.</p></div>';
   }
@@ -181,7 +197,7 @@
           <div><strong>${Number(data.stats?.participations || 0)}</strong><span>Participações</span></div>
           <div><strong>🔥 ${Number(data.stats?.streak || 0)}</strong><span>Ofensiva</span></div>
         </div>
-        ${data.stats?.nextMilestone ? `<p class="streak-progress">🔥 Mais ${data.stats.nextMilestone - data.stats.streak} ${data.stats.nextMilestone - data.stats.streak === 1 ? 'dia' : 'dias'} para a ofensiva de ${data.stats.nextMilestone}.</p>` : '<p class="streak-progress">🏅 Você alcançou todos os marcos de ofensiva do mês.</p>'}
+        ${engagementSummaryMarkup(data.stats)}
         <article class="daily-card mood-card">
           <div class="daily-card-heading"><span class="daily-step">1</span><div><h2>Como você está hoje?</h2><p>Seu registro é confidencial e ajuda a liderança a cuidar melhor do time.</p></div></div>
           <div class="mood-options" role="radiogroup" aria-label="Como você está se sentindo">

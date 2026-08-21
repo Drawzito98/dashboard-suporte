@@ -80,6 +80,13 @@ function previousMonthKey(today, offset = 1) {
   return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
 }
 
+function weekStartKey(today) {
+  const date = new Date(today + 'T12:00:00-03:00');
+  const day = date.getDay();
+  date.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
+  return localDate(date);
+}
+
 async function getPersonalResults(user) {
   const collaborator = String(user.app_metadata?.csv_nome || '').trim();
   if (!collaborator) return { linked: false, collaborator: '', months: [] };
@@ -124,20 +131,29 @@ async function getDaily(user) {
     rest(`perguntas_diarias?select=id,data,pergunta,alternativas,explicacao&data=eq.${today}&ativo=eq.true&limit=1`),
     rest(`checkins_diarios?select=humor&user_id=eq.${user.id}&data=eq.${today}&limit=1`),
     rest(`respostas_diarias?select=alternativa,acertou,pontos&user_id=eq.${user.id}&data=eq.${today}&limit=1`),
-    rest(`respostas_diarias?select=data,pontos&user_id=eq.${user.id}&order=data.desc&limit=180`),
+    rest(`respostas_diarias?select=data,pontos,acertou&user_id=eq.${user.id}&order=data.desc&limit=180`),
     getPersonalResults(user).catch(error => ({ linked: true, collaborator: String(user.app_metadata?.csv_nome || ''), months: [], previousMonth: null, error: error.message }))
   ]);
   const monthHistory = history.filter(row => row.data.startsWith(month));
   const points = monthHistory.length + monthHistory.reduce((sum, row) => sum + Number(row.pontos || 0), 0);
   const streak = calculateStreak(history, today);
   const nextMilestone = [5, 10, 20].find(value => value > streak) || null;
+  const weeklyHistory = history.filter(row => row.data >= weekStartKey(today) && row.data <= today);
+  const correctAnswers = monthHistory.filter(row => row.acertou).length;
+  const monthlyGoal = 15;
+  const achievements = [
+    monthHistory.length >= 1 && { icon: '✨', label: 'Primeiro passo' },
+    streak >= 5 && { icon: '🔥', label: '5 dias seguidos' },
+    correctAnswers >= 10 && { icon: '🎯', label: '10 acertos' },
+    monthHistory.length >= monthlyGoal && { icon: '🏅', label: 'Meta do mês' }
+  ].filter(Boolean).slice(-3);
   return {
     date: today,
     name: user.user_metadata?.name || user.user_metadata?.csv_nome || user.email,
     question: questions[0] || null,
     checkin: checkins[0] || null,
     answer: answers[0] || null,
-    stats: { points, participations: monthHistory.length, streak, nextMilestone },
+    stats: { points, participations: monthHistory.length, streak, nextMilestone, monthlyGoal, correctAnswers, weeklyParticipations: weeklyHistory.length, weeklyCorrect: weeklyHistory.filter(row => row.acertou).length, achievements },
     personalResults
   };
 }
