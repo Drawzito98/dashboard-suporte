@@ -513,7 +513,7 @@ function renderUsuariosAba() {
       if (!response.ok) throw new Error(data.error || 'Não foi possível criar os acessos.');
       const skipped = [...(data.skipped || []), ...(data.failed || [])];
       resultEl.innerHTML = '<strong>' + Number(data.created?.length || 0) + ' criados</strong> · ' + Number(data.existing?.length || 0) + ' já existentes · ' + skipped.length + ' pendentes' +
-        (skipped.length ? '<div style="margin-top:6px;color:var(--danger)">Corrija o e-mail de: ' + skipped.map(item => escapeHtml(item.name)).join(', ') + '.</div>' : '<div style="margin-top:6px;color:var(--success)">Todos os colaboradores ativos possuem acesso.</div>');
+        (skipped.length ? '<div style="margin-top:6px;color:var(--danger)">' + skipped.map(item => '<div>' + escapeHtml(item.name) + ' (' + escapeHtml(item.email || 'sem e-mail') + '): ' + escapeHtml(item.reason || 'revise o cadastro') + '</div>').join('') + '</div>' : '<div style="margin-top:6px;color:var(--success)">Todos os colaboradores ativos possuem acesso.</div>');
       carregarUsuarios();
     } catch (error) {
       resultEl.innerHTML = '<span style="color:var(--danger)">' + escapeHtml(error.message) + '</span>';

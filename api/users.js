@@ -101,13 +101,22 @@ module.exports = async (req, res) => {
             continue;
           }
           if (seenEmails.has(email)) {
-            result.skipped.push({ name, reason: 'E-mail repetido na equipe' });
+            result.skipped.push({ name, email, reason: 'E-mail repetido na equipe' });
             continue;
           }
           seenEmails.add(email);
           if (existingEmails.has(email)) {
             const existing = existingEmails.get(email);
             const existingRole = existing.app_metadata?.role || existing.user_metadata?.role;
+            if (existingRole === 'admin') {
+              result.skipped.push({ name, email, reason: 'E-mail já pertence a uma conta administrativa' });
+              continue;
+            }
+            const linkedName = String(existing.app_metadata?.csv_nome || existing.user_metadata?.csv_nome || existing.user_metadata?.name || '').trim();
+            if (linkedName && linkedName.localeCompare(name, 'pt-BR', { sensitivity: 'base' }) !== 0) {
+              result.skipped.push({ name, email, reason: 'E-mail já pertence a ' + linkedName });
+              continue;
+            }
             if (existingRole !== 'admin') {
               const userMetadata = { ...(existing.user_metadata || {}), role: 'colaborador', ativo: true, name, csv_nome: name };
               const appMetadata = { ...(existing.app_metadata || {}), role: 'colaborador', csv_nome: name };
