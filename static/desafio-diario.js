@@ -57,8 +57,8 @@
     const months = Array.isArray(results.months) ? results.months : [];
     return `<article class="daily-card personal-results-card">
       <div class="daily-card-heading"><span class="daily-step">3</span><div><h2>Seus resultados mensais</h2><p>Indicadores de ${safe(results.collaborator)}.</p></div></div>
-      ${months.length ? `<div class="table-wrap"><table class="personal-results-table"><thead><tr><th>Período</th><th>Setor</th><th>Assumidos</th><th>Finalizados</th><th>Transferidos</th><th>Score médio</th><th>Produtividade</th></tr></thead><tbody>
-        ${months.map(item => `<tr><td>${safe(formatMonth(item.month))}</td><td>${safe((item.sectors || []).join(', ') || '—')}</td><td>${Number(item.assumed || 0).toLocaleString('pt-BR')}</td><td>${Number(item.completed || 0).toLocaleString('pt-BR')}</td><td>${Number(item.transferred || 0).toLocaleString('pt-BR')}</td><td>${item.averageScore == null ? '—' : Number(item.averageScore).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td>${item.productivity == null ? '—' : `${Number(item.productivity).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}</td></tr>`).join('')}
+      ${months.length ? `<div class="personal-results-filter"><label for="personalResultsPeriod">Filtrar período</label><select id="personalResultsPeriod"><option value="">Todos os meses</option>${months.map(item => `<option value="${safe(item.month)}">${safe(formatMonth(item.month))}</option>`).join('')}</select></div><div class="table-wrap"><table class="personal-results-table"><thead><tr><th>Período</th><th>Setor</th><th>Assumidos</th><th>Finalizados</th><th>Transferidos</th><th>Score médio</th><th>Produtividade</th></tr></thead><tbody>
+        ${months.map(item => `<tr data-month="${safe(item.month)}"><td>${safe(formatMonth(item.month))}</td><td>${safe((item.sectors || []).join(', ') || '—')}</td><td>${Number(item.assumed || 0).toLocaleString('pt-BR')}</td><td>${Number(item.completed || 0).toLocaleString('pt-BR')}</td><td>${Number(item.transferred || 0).toLocaleString('pt-BR')}</td><td>${item.averageScore == null ? '—' : Number(item.averageScore).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td>${item.productivity == null ? '—' : `${Number(item.productivity).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}</td></tr>`).join('')}
       </tbody></table></div>` : '<div class="daily-empty"><span>📊</span><strong>Nenhum resultado encontrado</strong><p>Ainda não há registros mensais associados ao seu nome.</p></div>'}
     </article>`;
   }
@@ -110,6 +110,13 @@
         <p class="daily-privacy">Seu sentimento individual é visível apenas para a gestão. O ranking considera somente o desafio de conhecimento.</p>
       </div>`;
 
+    root.querySelector('#personalResultsPeriod')?.addEventListener('change', event => {
+      const selectedMonth = event.currentTarget.value;
+      root.querySelectorAll('.personal-results-table tbody tr').forEach(row => {
+        row.hidden = Boolean(selectedMonth && row.dataset.month !== selectedMonth);
+      });
+    });
+
     root.querySelectorAll('.mood-option').forEach(button => button.addEventListener('click', async () => {
       const feedback = root.querySelector('#moodFeedback');
       root.querySelectorAll('.mood-option').forEach(item => { item.disabled = true; });
@@ -156,6 +163,7 @@
   }
 
   async function initCollaborator() {
+    if (document.getElementById('dailyExperience')) return;
     const main = document.querySelector('#appScreen main.app');
     if (!main) return;
     document.getElementById('homeScreen').style.display = 'none';
@@ -266,6 +274,7 @@
   }
 
   async function init() {
+  document.addEventListener('app-role-ready', init);
     for (let attempt = 0; attempt < 100 && !document.body.dataset.role; attempt += 1) {
       await new Promise(resolve => setTimeout(resolve, 50));
     }

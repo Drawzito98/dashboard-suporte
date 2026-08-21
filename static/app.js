@@ -2501,6 +2501,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else {
         document.body.dataset.role = 'colaborador';
       }
+      document.dispatchEvent(new CustomEvent('app-role-ready', { detail: { role: document.body.dataset.role } }));
       if (!role) {
         try {
           await fetch('/api/users', {
