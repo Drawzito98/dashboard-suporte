@@ -166,7 +166,7 @@
             </div>
             <label class="field"><span>Resposta correta</span><select id="dailyCorrectAnswer"><option value="0">Alternativa A</option><option value="1">Alternativa B</option><option value="2">Alternativa C</option><option value="3">Alternativa D</option></select></label>
             <label class="field"><span>Explicação após responder (opcional)</span><textarea id="dailyQuestionExplanation" rows="2"></textarea></label>
-            <button class="btn-primary" type="submit">Salvar pergunta</button><p class="daily-feedback" id="dailyAdminFeedback"></p>
+            <div class="daily-form-actions"><button class="btn-primary" type="submit">Salvar pergunta</button><button class="btn-small" id="dailyClearFormBtn" type="button">Nova pergunta</button></div><p class="daily-feedback" id="dailyAdminFeedback"></p>
           </form>
         </section>
         <section class="daily-card"><h3>Ranking do mês</h3>
@@ -174,7 +174,7 @@
         </section>
       </div>
       <section class="daily-card daily-questions-list"><h3>Perguntas programadas</h3>
-        ${data.questions.length ? `<div class="table-wrap"><table><thead><tr><th>Data</th><th>Pergunta</th><th>Status</th></tr></thead><tbody>${data.questions.map(question => `<tr><td>${safe(formatDate(question.data))}</td><td>${safe(question.pergunta)}</td><td>${question.ativo ? 'Ativa' : 'Inativa'}</td></tr>`).join('')}</tbody></table></div>` : '<p>Nenhuma pergunta programada.</p>'}
+        ${data.questions.length ? `<div class="table-wrap"><table><thead><tr><th>Data</th><th>Pergunta</th><th>Status</th><th></th></tr></thead><tbody>${data.questions.map((question, index) => `<tr><td>${safe(formatDate(question.data))}</td><td>${safe(question.pergunta)}</td><td>${question.ativo ? 'Ativa' : 'Inativa'}</td><td><button class="btn-small daily-edit-question" type="button" data-index="${index}">Editar</button></td></tr>`).join('')}</tbody></table></div>` : '<p>Nenhuma pergunta programada.</p>'}
       </section>`;
     const dateInput = root.querySelector('#dailyQuestionDate');
     if (dateInput) dateInput.value = data.date;
@@ -191,6 +191,22 @@
         const updated = root.querySelector('#dailyAdminFeedback');
         if (updated) updated.textContent = 'Pergunta salva com sucesso.';
       } catch (error) { feedback.textContent = error.message; button.disabled = false; }
+    });
+    root.querySelectorAll('.daily-edit-question').forEach(button => button.addEventListener('click', () => {
+      const question = data.questions[Number(button.dataset.index)];
+      if (!question) return;
+      dateInput.value = question.data;
+      root.querySelector('#dailyQuestionText').value = question.pergunta;
+      root.querySelectorAll('.daily-answer-input').forEach((input, index) => { input.value = question.alternativas[index] || ''; });
+      root.querySelector('#dailyCorrectAnswer').value = String(question.resposta_correta);
+      root.querySelector('#dailyQuestionExplanation').value = question.explicacao || '';
+      root.querySelector('#dailyQuestionText').focus();
+      root.querySelector('#dailyQuestionForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
+    root.querySelector('#dailyClearFormBtn')?.addEventListener('click', () => {
+      root.querySelector('#dailyQuestionForm').reset();
+      dateInput.value = data.date;
+      root.querySelector('#dailyQuestionText').focus();
     });
   }
 
