@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.7.2';
+const APP_VERSION = '1.8.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -3488,6 +3488,151 @@ function initNotificacoesUI() {
   document.addEventListener('app-role-ready', refreshAdminSidebarIdentity);
   window.addEventListener('admin-sidebar-photo-updated', refreshAdminSidebarIdentity);
   if (document.body.dataset.role === 'admin') refreshAdminSidebarIdentity();
+})();
+
+// Preferências do workspace e busca rápida do painel administrativo.
+(function () {
+  const SIDEBAR_PREF_KEY = 'sistema_admin_sidebar_collapsed_v1';
+
+  function setSidebarCollapsed(collapsed) {
+    document.body.classList.toggle('admin-sidebar-collapsed', collapsed);
+    try { localStorage.setItem(SIDEBAR_PREF_KEY, collapsed ? '1' : '0'); } catch (_) {}
+    const button = document.querySelector('.sidebar-collapse-btn');
+    if (button) {
+      button.setAttribute('aria-label', collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral');
+      button.setAttribute('title', collapsed ? 'Expandir menu' : 'Recolher menu');
+      button.innerHTML = collapsed ? '&rsaquo;' : '&lsaquo;';
+    }
+  }
+
+  function buildCommandPalette() {
+    if (document.getElementById('adminCommandPalette')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'adminCommandPalette';
+    overlay.className = 'command-palette-overlay';
+    overlay.hidden = true;
+    overlay.innerHTML = '<div class="command-palette" role="dialog" aria-modal="true" aria-label="Busca rápida"><div class="command-search"><span aria-hidden="true">⌕</span><input id="commandPaletteInput" type="search" placeholder="Buscar telas e ações..." autocomplete="off"><kbd>Esc</kbd></div><div class="command-results" id="commandPaletteResults"></div><div class="command-footer"><span>↑↓ navegar</span><span>Enter abrir</span><span>Ctrl K buscar</span></div></div>';
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector('#commandPaletteInput');
+    const results = overlay.querySelector('#commandPaletteResults');
+    let activeIndex = 0;
+    let visibleActions = [];
+
+    function collectActions() {
+      const elements = [...document.querySelectorAll('#tabBar .tab-btn[data-tab], .sidebar .btn-small[id]')];
+      const seen = new Set();
+      return elements.map(element => {
+        const label = element.textContent.replace(/\s+/g, ' ').trim();
+        if (!label || seen.has(label)) return null;
+        seen.add(label);
+        return { label, kind: element.matches('.tab-btn') ? 'Tela' : 'Ação', run: () => element.click() };
+      }).filter(Boolean);
+    }
+
+    function renderResults(query) {
+      const normalized = String(query || '').trim().toLocaleLowerCase('pt-BR');
+      visibleActions = collectActions().filter(item => !normalized || item.label.toLocaleLowerCase('pt-BR').includes(normalized)).slice(0, 10);
+      activeIndex = Math.min(activeIndex, Math.max(visibleActions.length - 1, 0));
+      results.innerHTML = '';
+      if (!visibleActions.length) {
+        const empty = document.createElement('div');
+        empty.className = 'command-empty';
+        empty.textContent = 'Nenhum resultado encontrado';
+        results.appendChild(empty);
+        return;
+      }
+      visibleActions.forEach((item, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'command-result' + (index === activeIndex ? ' is-active' : '');
+        button.innerHTML = '<span></span><small></small>';
+        button.querySelector('span').textContent = item.label;
+        button.querySelector('small').textContent = item.kind;
+        button.addEventListener('mouseenter', () => { activeIndex = index; renderResults(input.value); });
+        button.addEventListener('click', () => { item.run(); closePalette(); });
+        results.appendChild(button);
+      });
+    }
+
+    function openPalette() {
+      overlay.hidden = false;
+      document.body.classList.add('command-palette-open');
+      activeIndex = 0;
+      input.value = '';
+      renderResults('');
+      requestAnimationFrame(() => input.focus());
+    }
+    function closePalette() {
+      overlay.hidden = true;
+      document.body.classList.remove('command-palette-open');
+    }
+    window.openAdminCommandPalette = openPalette;
+    overlay.addEventListener('click', event => { if (event.target === overlay) closePalette(); });
+    input.addEventListener('input', () => { activeIndex = 0; renderResults(input.value); });
+    input.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown') { event.preventDefault(); activeIndex = Math.min(activeIndex + 1, visibleActions.length - 1); renderResults(input.value); }
+      if (event.key === 'ArrowUp') { event.preventDefault(); activeIndex = Math.max(activeIndex - 1, 0); renderResults(input.value); }
+      if (event.key === 'Enter' && visibleActions[activeIndex]) { event.preventDefault(); visibleActions[activeIndex].run(); closePalette(); }
+      if (event.key === 'Escape') closePalette();
+    });
+    document.addEventListener('keydown', event => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); overlay.hidden ? openPalette() : closePalette(); }
+      else if (event.key === 'Escape' && !overlay.hidden) closePalette();
+    });
+  }
+
+  function initAdminWorkspace() {
+    if (document.body.dataset.role !== 'admin' || document.body.dataset.workspaceReady === 'true') return;
+    document.body.dataset.workspaceReady = 'true';
+    let collapsed = false;
+    try { collapsed = localStorage.getItem(SIDEBAR_PREF_KEY) === '1'; } catch (_) {}
+    setSidebarCollapsed(collapsed);
+
+    document.querySelectorAll('#tabBar .tab-btn[data-tab]').forEach(button => {
+      if (!button.title) button.title = button.textContent.replace(/\s+/g, ' ').trim();
+    });
+
+    const identity = document.querySelector('.sidebar-identity');
+    if (identity && !identity.querySelector('.sidebar-collapse-btn')) {
+      const collapseButton = document.createElement('button');
+      collapseButton.type = 'button';
+      collapseButton.className = 'sidebar-collapse-btn';
+      collapseButton.addEventListener('click', () => setSidebarCollapsed(!document.body.classList.contains('admin-sidebar-collapsed')));
+      identity.appendChild(collapseButton);
+      setSidebarCollapsed(collapsed);
+    }
+
+    const topbarRight = document.querySelector('.topbar-right');
+    if (topbarRight && !document.getElementById('quickCommandBtn')) {
+      const quickButton = document.createElement('button');
+      quickButton.id = 'quickCommandBtn';
+      quickButton.type = 'button';
+      quickButton.className = 'btn-small quick-command-btn';
+      quickButton.innerHTML = '<span aria-hidden="true">⌕</span><span>Buscar</span><kbd>Ctrl K</kbd>';
+      quickButton.addEventListener('click', () => window.openAdminCommandPalette?.());
+      topbarRight.prepend(quickButton);
+    }
+
+    const dropdown = document.getElementById('userDropdown');
+    if (dropdown && !dropdown.querySelector('[data-workspace-preferences]')) {
+      const preferences = document.createElement('div');
+      preferences.dataset.workspacePreferences = 'true';
+      preferences.className = 'user-dropdown-preferences';
+      preferences.innerHTML = '<button class="user-dropdown-item" type="button" data-pref="theme">Alternar tema</button><button class="user-dropdown-item" type="button" data-pref="sidebar">Recolher ou expandir menu</button><button class="user-dropdown-item" type="button" data-pref="density">Alternar densidade das tabelas</button>';
+      preferences.addEventListener('click', event => {
+        const action = event.target.closest('[data-pref]')?.dataset.pref;
+        if (action === 'theme') document.getElementById('themeToggle')?.click();
+        if (action === 'sidebar') setSidebarCollapsed(!document.body.classList.contains('admin-sidebar-collapsed'));
+        if (action === 'density') document.getElementById('compactTableBtn')?.click();
+      });
+      dropdown.appendChild(preferences);
+    }
+    buildCommandPalette();
+  }
+
+  document.addEventListener('app-role-ready', initAdminWorkspace);
+  if (document.body.dataset.role === 'admin') initAdminWorkspace();
 })();
 
 // ── Menu lateral mobile (gaveta) ──
