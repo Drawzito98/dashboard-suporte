@@ -19,9 +19,9 @@
       { keys: ['Ctrl', 'S'], desc: 'Salvar avaliação' },
     ];
     const tabNames = [
-      ['1', 'Início'], ['2', 'Dashboard'], ['3', 'Relatório'],
-      ['4', 'Gamificação'], ['5', 'Tarefas'], ['6', 'Colaboradores'],
-      ['7', 'Líder'], ['8', 'Insights'], ['9', 'Avaliação']
+      ['1', 'Início'], ['2', 'Indicadores'], ['3', 'Relatório'],
+      ['4', 'Tarefas'], ['5', 'Colaboradores'],
+      ['6', 'Líder'], ['7', 'Insights'], ['8', 'Avaliação']
     ];
 
     const overlay = document.createElement('div');

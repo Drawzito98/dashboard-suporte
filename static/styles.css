@@ -4166,3 +4166,39 @@ table td { border-color: var(--border); }
   .novo-colaborador-modal .modal-actions { align-items: stretch; flex-direction: column-reverse; }
   .novo-colaborador-modal .modal-actions .btn-primary, .novo-colaborador-modal .modal-actions .btn-small { width: 100%; }
 }
+
+
+/* Interface review v3 — hierarchy, readability and responsive controls */
+.user-dropdown-mobile-actions { display: none; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 6px; }
+.user-dropdown-danger { color: var(--danger) !important; }
+.btn-danger-subtle { color: var(--danger) !important; }
+.btn-danger-subtle:hover { border-color: color-mix(in srgb, var(--danger) 35%, var(--border)) !important; background: var(--danger-soft) !important; }
+:where(button, a, input, select, textarea, [tabindex]):focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 2px; }
+.tab-btn { min-height: 40px; font-size: 13px; }
+.nav-section-label, .page-eyebrow { font-size: 11px; }
+.sidebar .panel-header h2 { font-size: 12px; }
+.sidebar .btn-small, .sidebar .btn-primary { min-height: 40px; font-size: 13px; }
+.field > span, .global-filter-field > span { font-size: 12px; }
+.modal-box, .modal-sheet, .colab-detail-panel { scroll-margin-top: 16px; }
+body.has-accessible-dialog { overflow: hidden; }
+@media (max-width: 900px) {
+  .topbar { min-height: 56px; padding: 8px 10px; }
+  .titleblock { min-width: 0; }
+  .titleblock h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 18px; }
+  .titleblock p { display: none; }
+  .topbar-right { gap: 4px; }
+  .tab-bar { position: static; margin-bottom: 12px; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: thin; }
+  .tab-btn { flex: 0 0 auto; min-height: 44px; font-size: 13px; }
+}
+@media (max-width: 600px) {
+  .user-dropdown-mobile-actions { display: block; }
+  .topbar-right .seg-toggles, .topbar-right > .theme-toggle, .topbar-right > #logoutBtn { display: none !important; }
+  .topbar-logo { display: none; }
+  .current-user.user-menu-trigger { display: inline-flex !important; width: 40px; min-width: 40px; height: 40px; overflow: hidden; justify-content: center; border-radius: 50%; font-size: 0; }
+  .current-user.user-menu-trigger::before { content: "Perfil"; font-size: 10px; font-weight: 800; }
+  .notif-btn-wrapper .btn-small, .menu-btn { width: 40px; min-width: 40px; height: 40px; }
+  .page-controls { margin-bottom: 10px; }
+  .global-filter-bar { padding: 10px; }
+  .shell-context-actions .btn-small, .shell-context-actions .btn-primary { min-height: 44px; flex: 1 1 auto; justify-content: center; }
+  .modal-box, .colab-detail-panel { max-height: 94dvh; }
+}

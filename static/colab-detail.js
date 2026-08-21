@@ -1,4 +1,4 @@
-// Colaborador Detail — histórico completo, evolução, ranking, tendências
+// Colaborador Detail — histórico completo, evolução e tendências
 
 let currentColabDetail = null;
 
@@ -42,13 +42,6 @@ function renderColabDetail(name) {
   const produtividade = totalAssumidos > 0 ? (totalFinalizados / totalAssumidos) * 100 : 0;
   const meses = [...new Set(records.map(r => r['Mês']))].sort();
 
-  // Get ranking position
-  const ranking = getOverallRanking ? getOverallRanking(data) : [];
-  const rankPos = ranking.findIndex(r => r.name === name) + 1;
-
-  const scoring = computeScoreForCollaborator ? computeScoreForCollaborator(name, data) : { total: 0 };
-  const streak = computeStreak ? computeStreak(name) : { count: 0 };
-
   // Get setor
   const setores = [...new Set(records.map(r => r['Setor']))].filter(Boolean);
   const perfilLink = getPerfilDocsLink(name);
@@ -80,7 +73,7 @@ function renderColabDetail(name) {
       ${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(name, 56) : `<div class="colab-detail-avatar">${escapeHtml(initials)}</div>`}
       <div class="colab-detail-name">
         <h2>${escapeHtml(displayName)}</h2>
-        <p>${escapeHtml(setores.join(', '))} · ${meses.length} ${meses.length === 1 ? 'período' : 'períodos'} · #${rankPos} no ranking</p>
+        <p>${escapeHtml(setores.join(", "))} · ${meses.length} ${meses.length === 1 ? "período" : "períodos"}</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center">${perfilLink ? `<button class="btn-small" id="colabPerfilBtn" type="button">📄 Perfil</button>` : ''}
       </div>
@@ -92,15 +85,12 @@ function renderColabDetail(name) {
       <div class="colab-stat"><div class="colab-stat-value">${totalTransferidos.toLocaleString('pt-BR')}</div><div class="colab-stat-label">Transferidos</div></div>
       <div class="colab-stat"><div class="colab-stat-value">${avgScore.toFixed(2)}</div><div class="colab-stat-label">Score médio</div></div>
       <div class="colab-stat"><div class="colab-stat-value">${produtividade.toFixed(1)}%</div><div class="colab-stat-label">Produtividade</div></div>
-      <div class="colab-stat"><div class="colab-stat-value">${scoring.total.toFixed(1)}</div><div class="colab-stat-label">Pontuação</div></div>
     </div>
 
     ${trend ? `<div style="margin-bottom:var(--s-5);padding:var(--s-3);border-radius:var(--r-md);background:var(--bg-inset);font-size:13px;color:var(--text-secondary)">
       <strong>Tendências (último mês):</strong>
       Finalizados: <span class="${trend.finalizados >= 0 ? 'trend-up' : 'trend-down'}">${trend.finalizados >= 0 ? '+' : ''}${trend.finalizados}</span> ·
       Score: <span class="${trend.score >= 0 ? 'trend-up' : 'trend-down'}">${trend.score >= 0 ? '+' : ''}${trend.score.toFixed(2)}</span>
-      ${streak.count > 0 ? `· 🔥 Sequência: ${streak.count} ${streak.count === 1 ? 'mês' : 'meses'}` : ''}
-      ${rankPos <= 3 ? `· 🏆 Top ${rankPos} do ranking` : ''}
     </div>` : ''}
   `;
 
@@ -112,39 +102,6 @@ function renderColabDetail(name) {
     </div>`;
   }
 
-  // Scoring breakdown
-  if (scoring.breakdown) {
-    html += `<div style="margin-bottom:var(--s-5)">
-      <h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📊 Composição da Pontuação</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2)">
-        ${Object.entries(scoring.breakdown).map(([ruleId, pts]) => {
-          const rule = (scoringRules || []).find(r => r.id === ruleId);
-          if (!rule || pts === 0) return '';
-          return `<div style="display:flex;justify-content:space-between;padding:6px 10px;border-radius:var(--r-sm);background:var(--bg-inset);font-size:12px">
-            <span>${rule.icon} ${escapeHtml(rule.name)}</span>
-            <span style="font-weight:600;color:${pts >= 0 ? 'var(--success)' : 'var(--danger)'}">${pts >= 0 ? '+' : ''}${pts.toFixed(1)}</span>
-          </div>`;
-        }).filter(Boolean).join('')}
-      </div>
-    </div>`;
-  }
-
-  // Goals assigned to this collaborator
-  const colabGoals = (goals || []).filter(g => g.collaborator === name || (!g.collaborator && (g.setor === 'all' || setores.includes(g.setor))));
-  if (colabGoals.length) {
-    html += `<div style="margin-bottom:var(--s-5)">
-      <h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">🎯 Metas Relacionadas</h3>
-      ${colabGoals.map(g => {
-        const progress = typeof getMetaProgress === 'function' ? getMetaProgress(g) : 0;
-        const progClass = progress >= 100 ? 'good' : (progress >= 50 ? 'warn' : 'bad');
-        return `<div style="display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:var(--s-2)">
-          <div style="flex:1;font-size:13px;font-weight:500">${escapeHtml(g.title)}</div>
-          <div style="width:100px"><div class="meta-progress-bar"><div class="meta-progress-fill ${progClass}" style="width:${Math.min(100, progress)}%"></div></div></div>
-          <span style="font-size:12px;font-weight:600">${progress}%</span>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }
 
   // Monthly data table
   html += `<h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📋 Histórico Detalhado</h3>

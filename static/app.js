@@ -272,7 +272,7 @@ document.addEventListener('keydown', (e) => {
 
   // Keyboard shortcuts (only when not in input)
   if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    const tabOrder = ['home','dashboard','relatorio-setorial','gamificacao','tarefas','colaboradores','lider','insights','avaliacao'];
+    const tabOrder = ['home','dashboard','relatorio-setorial','tarefas','colaboradores','lider','insights','avaliacao'];
     const num = parseInt(e.key);
     if (num >= 1 && num <= tabOrder.length) {
       e.preventDefault();
@@ -2646,6 +2646,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Colaboradores usam somente a experiência diária; não carregam dados gerenciais.
+  if (document.body.dataset.role === "colaborador") {
+    const homeScreen = document.getElementById("homeScreen");
+    const appScreen = document.getElementById("appScreen");
+    if (homeScreen) homeScreen.style.display = "none";
+    if (appScreen) appScreen.style.display = "block";
+    setLoading(false);
+    return;
+  }
+
   // Carrega dados extras do Supabase (metas, comentários, scoring, fotos, etc.)
   if (typeof initDbExtra === 'function') {
     setLoading(true, 'Carregando dados...');
@@ -2882,9 +2892,8 @@ if (!rawRecords || !rawRecords.length) {
 
     const pageContext = {
       home: ['Início', 'Visão geral da operação e acessos rápidos'],
-      dashboard: ['Dashboard', 'Indicadores de desempenho e análise do suporte'],
+      dashboard: ['Indicadores', 'Desempenho, qualidade e produtividade do suporte'],
       'relatorio-setorial': ['Relatório Setorial', 'Resultados, evolução e destaques por setor'],
-      gamificacao: ['Gamificação', 'Ranking, metas, conquistas e pontuações da equipe'],
       tarefas: ['Rotina', 'Agenda, tarefas e anotações diárias'],
       colaboradores: ['Colaboradores', 'Cadastro e informações da equipe'],
       lider: ['Gestão', 'Acompanhamento gerencial e alertas da operação'],
@@ -2922,10 +2931,6 @@ if (!rawRecords || !rawRecords.length) {
       // Call per-tab initialization
       if (tab === 'home' && typeof onHomeTabActivated === 'function') {
         onHomeTabActivated();
-      }
-      if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') {
-        onGamificationTabActivated();
-        if (typeof onMetasTabActivated === 'function') onMetasTabActivated();
       }
       if (tab === 'lider' && typeof onLiderTabActivated === 'function') {
         onLiderTabActivated();
@@ -3407,7 +3412,7 @@ function initNotificacoesUI() {
       ["Principal", ["home"]],
       ["Desempenho", ["dashboard", "relatorio-setorial", "insights"]],
       ["Pessoas", ["colaboradores", "mapeamento-time", "lider", "avaliacao"]],
-      ["Organização", ["tarefas", "gamificacao"]]
+      ["Organização", ["tarefas"]]
     ];
     const fragment = document.createDocumentFragment();
     groups.forEach(([label, tabs]) => {
@@ -3460,4 +3465,121 @@ function initNotificacoesUI() {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initMobileMenu);
   else initMobileMenu();
+})();
+
+
+// Interface review v3: semantics, mobile account actions and dialog accessibility.
+(function () {
+  function initInterfaceAccessibility() {
+    const tabBar = document.getElementById("tabBar");
+    if (tabBar) {
+      tabBar.querySelectorAll(".tab-btn[data-tab]").forEach((button) => {
+        const name = button.dataset.tab;
+        const panel = document.getElementById("tab-" + name);
+        button.id = "tab-button-" + name;
+        button.setAttribute("aria-controls", "tab-" + name);
+        button.setAttribute("tabindex", button.classList.contains("active") ? "0" : "-1");
+        if (panel) panel.setAttribute("aria-labelledby", button.id);
+      });
+      tabBar.addEventListener("click", (event) => {
+        const selected = event.target.closest(".tab-btn[data-tab]");
+        if (!selected) return;
+        tabBar.querySelectorAll(".tab-btn[data-tab]").forEach((button) => button.setAttribute("tabindex", button === selected ? "0" : "-1"));
+      });
+      tabBar.addEventListener("keydown", (event) => {
+        if (event.key !== "ArrowDown" && event.key !== "ArrowUp" && event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+        const buttons = Array.from(tabBar.querySelectorAll(".tab-btn[data-tab]"));
+        const current = buttons.indexOf(document.activeElement);
+        if (current < 0) return;
+        event.preventDefault();
+        const forward = event.key === "ArrowDown" || event.key === "ArrowRight";
+        buttons[(current + (forward ? 1 : -1) + buttons.length) % buttons.length].focus();
+      });
+    }
+
+    const userDropdown = document.getElementById("userDropdown");
+    if (userDropdown && !document.getElementById("mobilePresentationBtn")) {
+      const mobileActions = document.createElement("div");
+      mobileActions.className = "user-dropdown-mobile-actions";
+      mobileActions.setAttribute("aria-label", "Preferências e sessão");
+      mobileActions.innerHTML = `<button class="user-dropdown-item" id="mobilePresentationBtn" type="button">Modo apresentação</button><button class="user-dropdown-item" id="mobileThemeBtn" type="button">Alternar tema</button><button class="user-dropdown-item user-dropdown-danger" id="mobileLogoutBtn" type="button">Sair</button>`;
+      userDropdown.appendChild(mobileActions);
+    }
+
+    const proxyActions = [
+      ["mobilePresentationBtn", "presentationModeToggle"],
+      ["mobileThemeBtn", "themeToggle"],
+      ["mobileLogoutBtn", "logoutBtn"]
+    ];
+    proxyActions.forEach(([proxyId, targetId]) => {
+      const proxy = document.getElementById(proxyId);
+      const target = document.getElementById(targetId);
+      if (!proxy || !target) return;
+      proxy.addEventListener("click", () => {
+        if (target.matches("input")) {
+          target.checked = !target.checked;
+          target.dispatchEvent(new Event("change", { bubbles: true }));
+        } else target.click();
+        const dropdown = document.getElementById("userDropdown");
+        if (dropdown) dropdown.style.display = "none";
+      });
+    });
+
+    const dialogSelector = ".colab-detail-overlay, .modal-overlay, .kpi-drill-overlay, .rs-modal-overlay";
+    const initialized = new WeakSet();
+    const openers = new WeakMap();
+    let lastInteraction = null;
+    document.addEventListener("pointerdown", () => { lastInteraction = document.activeElement; }, true);
+
+    function isVisible(element) {
+      if (!element || !element.isConnected) return false;
+      const style = getComputedStyle(element);
+      return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+    }
+    function focusables(dialog) {
+      return Array.from(dialog.querySelectorAll("button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])"))
+        .filter(isVisible);
+    }
+    function syncDialogs() {
+      const visible = Array.from(document.querySelectorAll(dialogSelector)).filter(isVisible);
+      document.body.classList.toggle("has-accessible-dialog", visible.length > 0);
+      visible.forEach((dialog) => {
+        if (initialized.has(dialog)) return;
+        initialized.add(dialog);
+        openers.set(dialog, lastInteraction);
+        dialog.setAttribute("role", "dialog");
+        dialog.setAttribute("aria-modal", "true");
+        requestAnimationFrame(() => focusables(dialog)[0]?.focus());
+      });
+      document.querySelectorAll(dialogSelector).forEach((dialog) => {
+        if (isVisible(dialog) || !initialized.has(dialog)) return;
+        initialized.delete(dialog);
+        const opener = openers.get(dialog);
+        if (opener && opener.isConnected) opener.focus();
+      });
+    }
+    new MutationObserver(syncDialogs).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "style", "hidden"] });
+    document.addEventListener("keydown", (event) => {
+      const dialogs = Array.from(document.querySelectorAll(dialogSelector)).filter(isVisible);
+      const dialog = dialogs[dialogs.length - 1];
+      if (!dialog) return;
+      if (event.key === "Escape") {
+        const close = dialog.querySelector(".colab-detail-close, .modal-close, .rs-modal-close, .kpi-drill-close, [data-close], [aria-label*=\"Fechar\"]");
+        if (close) close.click();
+        else if (dialog.classList.contains("open")) dialog.classList.remove("open");
+        else dialog.style.display = "none";
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusables(dialog);
+      if (!items.length) { event.preventDefault(); return; }
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    });
+    syncDialogs();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initInterfaceAccessibility);
+  else initInterfaceAccessibility();
 })();

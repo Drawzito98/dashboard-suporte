@@ -285,16 +285,6 @@ function openColabReport(nome) {
   }
   html += '</div></div>';
 
-  // ── Bonus/Penalties summary ──
-  const allBonus = JSON.parse(localStorage.getItem('sistema_pontos_extras_v1') || '[]');
-  const colabBonus = allBonus.filter(b => String(b.colaborador) === nome);
-  if (colabBonus.length) {
-    const totalPts = colabBonus.reduce((s, b) => s + (parseFloat(b.pontos) || 0), 0);
-    html += '<div class="report-section"><h3 class="report-section-title">💰 Bônus & Penalidades</h3>';
-    html += `<div style="font-size:13px;color:var(--text-secondary)">Total: <strong style="color:${totalPts >= 0 ? 'var(--success)' : 'var(--danger)'}">${totalPts > 0 ? '+' : ''}${totalPts.toFixed(1)}</strong> pts</div>`;
-    html += '</div>';
-  }
-
   content.innerHTML = html;
   overlay.style.removeProperty("display");
   overlay.setAttribute("aria-hidden", "false");
