@@ -4202,3 +4202,24 @@ body.has-accessible-dialog { overflow: hidden; }
   .shell-context-actions .btn-small, .shell-context-actions .btn-primary { min-height: 44px; flex: 1 1 auto; justify-content: center; }
   .modal-box, .colab-detail-panel { max-height: 94dvh; }
 }
+
+
+/* Gotham corporativa — identidade sóbria no app principal em modo escuro */
+html[data-theme="dark"] body:not([data-role="colaborador"]) {
+  background:
+    radial-gradient(circle at 88% 0, rgba(var(--accent-rgb), .08), transparent 24%),
+    var(--bg-app);
+}
+html[data-theme="dark"] body:not([data-role="colaborador"]) .topbar {
+  border-bottom-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+html[data-theme="dark"] body:not([data-role="colaborador"]) :is(.panel, .card, .kpi) {
+  border-color: color-mix(in srgb, var(--border) 88%, var(--accent) 12%);
+}
+html[data-theme="dark"] body:not([data-role="colaborador"]) .sidebar .panel-collapsible:hover {
+  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--bg-surface) 92%, var(--accent) 8%);
+}
+html[data-theme="dark"] body:not([data-role="colaborador"]) .tab-btn.active {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}

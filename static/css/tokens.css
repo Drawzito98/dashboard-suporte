@@ -154,27 +154,27 @@
   --bg-card:           #fdfcf9;
 }
 
-/* ===== Dark — grafite elegante ===== */
+/* ===== Dark — Gotham corporativa ===== */
 html[data-theme="dark"] {
-  --bg-app:        #111111;
-  --bg-canvas:     #161616;
-  --bg-surface:    #1e1e1e;
-  --bg-subtle:     #2a2a2a;
-  --bg-inset:      #222222;
+  --bg-app:        #080b11;
+  --bg-canvas:     #0f141d;
+  --bg-surface:    #151b25;
+  --bg-subtle:     #202936;
+  --bg-inset:      #1a222e;
 
-  --text-strong:   #f1f5f9;
-  --text-primary:  #e2e8f0;
-  --text-secondary:#94a3b8;
-  --text-muted:    #8494a7;
+  --text-strong:   #ffffff;
+  --text-primary:  #eef2f7;
+  --text-secondary:#c3ccd8;
+  --text-muted:    #9ca8b8;
 
-  --border:        #2a2a2a;
-  --border-strong: #3a3a3a;
+  --border:        #2d3746;
+  --border-strong: #465265;
 
-  --accent:        #60a5fa;
-  --accent-hover:  #93c5fd;
-  --accent-soft:   rgba(96, 165, 250, 0.12);
-  --accent-ring:   rgba(96, 165, 250, 0.30);
-  --accent-rgb:    96, 165, 250;
+  --accent:        #e2b53c;
+  --accent-hover:  #f0cb62;
+  --accent-soft:   rgba(226, 181, 60, 0.12);
+  --accent-ring:   rgba(226, 181, 60, 0.30);
+  --accent-rgb:    226, 181, 60;
   --warn-fg:       #fbbf24;
   --danger-ring:   rgba(248, 113, 113, 0.3);
   --accent-selected:       #a78bfa;
@@ -274,6 +274,6 @@ html[data-theme="dark"] {
   --border-color:   var(--border-strong);
   --muted:          var(--text-muted);
 
-  --text:              #e2e8f0;
-  --bg-card:           #1e1e1e;
+  --text:              #eef2f7;
+  --bg-card:           #151b25;
 }
