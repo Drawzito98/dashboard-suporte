@@ -190,12 +190,18 @@
         <p class="daily-privacy">Seu sentimento individual é visível apenas para a gestão. O ranking considera somente o desafio de conhecimento.</p>
       </div>`;
 
-    root.querySelector('#personalResultsPeriod')?.addEventListener('change', event => {
-      const selectedMonth = event.currentTarget.value;
+    const periodSelect = root.querySelector('#personalResultsPeriod');
+    const filterPersonalRows = selectedMonth => {
       root.querySelectorAll('.personal-results-table tbody tr').forEach(row => {
         row.hidden = Boolean(selectedMonth && row.dataset.month !== selectedMonth);
       });
-    });
+    };
+    periodSelect?.addEventListener('change', event => filterPersonalRows(event.currentTarget.value));
+    const latestMonth = data.personalResults?.months?.[0]?.month || '';
+    if (periodSelect && latestMonth) {
+      periodSelect.value = latestMonth;
+      filterPersonalRows(latestMonth);
+    }
 
     root.querySelectorAll('.mood-option:not([disabled])').forEach(button => button.addEventListener('click', async () => {
       const feedback = root.querySelector('#moodFeedback');
