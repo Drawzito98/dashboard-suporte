@@ -52,6 +52,7 @@ async function carregarUsuarios() {
         const created = u.created_at ? new Date(u.created_at).toLocaleString('pt-BR') : '-';
         const email = u.email || u.id;
         const name = u.user_metadata?.name || '';
+        const displayName = name.trim().split(/\s+/)[0] || '';
         const role = u.user_metadata?.role || 'admin';
         const isYou = email === currentEmail;
         const roleLabel = role === 'admin' ? 'Admin' : role === 'colaborador' ? 'Colaborador' : 'Visualizador';
@@ -60,7 +61,7 @@ async function carregarUsuarios() {
         const csvSetor = u.app_metadata?.csv_setor || u.user_metadata?.csv_setor || '';
 
         return `<tr>
-          <td>${escapeHtml(name) || '<span style="color:var(--text-muted);font-style:italic">—</span>'}</td>
+          <td title="${escapeHtml(name)}">${escapeHtml(displayName) || '<span style="color:var(--text-muted);font-style:italic">—</span>'}</td>
           <td>${escapeHtml(email)}${isYou ? ' <strong>(você)</strong>' : ''}</td>
           <td><span class="role-badge role-${role}">${roleLabel}</span></td>
           <td>${created}</td>
