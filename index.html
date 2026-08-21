@@ -12,8 +12,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
   <meta name="apple-mobile-web-app-title" content="Painel de Suporte"/>
   <link rel="manifest" href="manifest.json"/>
-  <link href="static/css/tokens.css?v=73" rel="stylesheet"/>
-  <link href="static/styles.css?v=73" rel="stylesheet"/>
+  <link href="static/css/tokens.css?v=74" rel="stylesheet"/>
+  <link href="static/styles.css?v=74" rel="stylesheet"/>
   <link href="static/desafio-diario.css?v=68" rel="stylesheet"/>
   <link href="static/home.css" rel="stylesheet"/>
   <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
@@ -45,7 +45,18 @@
 
 <!-- ========== AUTH OVERLAY ========== -->
 <div id="authOverlay" class="auth-overlay">
-  <div class="auth-card">
+  <div class="auth-shell">
+    <section class="auth-showcase" aria-label="Sobre o painel">
+      <span class="auth-eyebrow">Central de desempenho</span>
+      <h2>Clareza para liderar.<br><strong>Dados para evoluir.</strong></h2>
+      <p>Acompanhe a equipe, identifique oportunidades e transforme indicadores em decisões melhores.</p>
+      <div class="auth-trust-list" aria-hidden="true">
+        <span><i></i> Indicadores em um só lugar</span>
+        <span><i></i> Acompanhamento seguro</span>
+        <span><i></i> Evolução mês a mês</span>
+      </div>
+    </section>
+    <div class="auth-card">
     <div class="auth-title">
       <img src="static/logo-topbar.png" alt="IXC" class="auth-logo"/>
       <h1>Painel de Suporte</h1>
@@ -97,6 +108,7 @@
     <div class="auth-loading hidden" id="authLoading">
       <div class="spinner" aria-hidden="true"></div>
       <div class="loading-text">Aguarde...</div>
+    </div>
     </div>
   </div>
 </div>
