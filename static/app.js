@@ -3432,6 +3432,64 @@ function initNotificacoesUI() {
   }
 })();
 
+// Identidade do administrador no topo da navegação lateral.
+(function () {
+  async function refreshAdminSidebarIdentity() {
+    if (document.body.dataset.role !== 'admin') return;
+    const shell = document.querySelector('.shell-navigation');
+    const tabBar = document.getElementById('tabBar');
+    if (!shell || !tabBar || typeof sbClient === 'undefined') return;
+
+    let identity = shell.querySelector('.sidebar-identity');
+    if (!identity) {
+      identity = document.createElement('div');
+      identity.className = 'sidebar-identity';
+      identity.innerHTML = '<span class="sidebar-identity-avatar sidebar-identity-fallback">A</span><span class="sidebar-identity-copy"><strong>Administrador</strong><small>Painel de suporte</small></span>';
+      shell.insertBefore(identity, tabBar);
+    }
+
+    try {
+      const { data } = await sbClient.auth.getSession();
+      const session = data?.session;
+      if (!session) return;
+      const user = session.user || {};
+      const name = String(user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Administrador').trim();
+      const firstName = name.split(/\s+/)[0] || 'Administrador';
+      identity.querySelector('strong').textContent = firstName;
+      const fallback = identity.querySelector('.sidebar-identity-fallback');
+      if (fallback) fallback.textContent = firstName.charAt(0).toUpperCase() || 'A';
+
+      const response = await fetch('/api/desafio?view=admin', { headers: { Authorization: 'Bearer ' + session.access_token } });
+      if (!response.ok) return;
+      const payload = await response.json();
+      const imageUrl = String(payload.leaderImageUrl || '').trim();
+      if (!imageUrl) {
+        const currentAvatar = identity.querySelector('.sidebar-identity-avatar');
+        if (currentAvatar?.tagName === 'IMG') {
+          const initial = document.createElement('span');
+          initial.className = 'sidebar-identity-avatar sidebar-identity-fallback';
+          initial.textContent = firstName.charAt(0).toUpperCase() || 'A';
+          currentAvatar.replaceWith(initial);
+        }
+        return;
+      }
+      const image = document.createElement('img');
+      image.className = 'sidebar-identity-avatar';
+      image.src = imageUrl;
+      image.alt = 'Foto de ' + firstName;
+      image.decoding = 'async';
+      identity.querySelector('.sidebar-identity-avatar')?.replaceWith(image);
+    } catch (error) {
+      console.warn('[Sidebar] Não foi possível carregar a foto do administrador:', error);
+    }
+  }
+
+  window.refreshAdminSidebarIdentity = refreshAdminSidebarIdentity;
+  document.addEventListener('app-role-ready', refreshAdminSidebarIdentity);
+  window.addEventListener('admin-sidebar-photo-updated', refreshAdminSidebarIdentity);
+  if (document.body.dataset.role === 'admin') refreshAdminSidebarIdentity();
+})();
+
 // ── Menu lateral mobile (gaveta) ──
 (function () {
   function initMobileMenu() {

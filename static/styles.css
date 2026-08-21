@@ -4890,3 +4890,55 @@ html[data-theme="dark"] body[data-role="admin"] .topbar {
 @media (prefers-reduced-motion: reduce) {
   body[data-role="admin"] .shell-navigation { transition-duration: .01ms !important; }
 }
+
+
+/* Identidade circular do administrador na sidebar */
+body[data-role="admin"] .shell-navigation::before { display: none; }
+body[data-role="admin"] .sidebar-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 11px;
+  margin: 0 8px 18px;
+  padding: 5px 8px 18px;
+  border-bottom: 1px solid rgba(198,229,227,.10);
+  text-align: center;
+}
+body[data-role="admin"] .sidebar-identity-avatar {
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  overflow: hidden;
+  border: 3px solid rgba(151,221,217,.72);
+  border-radius: 50%;
+  background: #17494d;
+  color: #f3fbfb;
+  box-shadow: 0 0 0 5px rgba(117,201,197,.08), 0 12px 28px rgba(0,0,0,.22);
+  object-fit: cover;
+  object-position: center;
+  font-size: 25px;
+  font-weight: 700;
+}
+body[data-role="admin"] .sidebar-identity-copy { display: grid; gap: 3px; min-width: 0; }
+body[data-role="admin"] .sidebar-identity-copy strong {
+  overflow: hidden;
+  color: #f4fbfb;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body[data-role="admin"] .sidebar-identity-copy small {
+  color: #78a5a5;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+@media (max-width: 900px) {
+  body[data-role="admin"] .sidebar-identity { margin-bottom: 12px; padding-bottom: 14px; }
+  body[data-role="admin"] .sidebar-identity-avatar { width: 68px; height: 68px; }
+}
