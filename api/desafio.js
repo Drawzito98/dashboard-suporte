@@ -1,5 +1,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://agvkmfusyetkicmuvumz.supabase.co';
 const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
+const crypto = require('crypto');
+const CHALLENGE_SECONDS = 60;
 
 function jsonHeaders(extra = {}) {
   return {
@@ -36,6 +38,39 @@ function localDate(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Recife', year: 'numeric', month: '2-digit', day: '2-digit'
   }).format(date);
+}
+
+function challengeOrder(userId, questionId, length) {
+  return Array.from({ length }, (_, index) => index).sort((a, b) => {
+    const left = crypto.createHash('sha256').update(userId + '|' + questionId + '|' + a).digest('hex');
+    const right = crypto.createHash('sha256').update(userId + '|' + questionId + '|' + b).digest('hex');
+    return left.localeCompare(right);
+  });
+}
+
+function createChallengeToken(userId, questionId) {
+  const payload = Buffer.from(JSON.stringify({ userId, questionId, startedAt: Date.now() })).toString('base64url');
+  const signature = crypto.createHmac('sha256', SERVICE_ROLE_KEY).update(payload).digest('base64url');
+  return payload + '.' + signature;
+}
+
+function verifyChallengeToken(token, userId, questionId) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 2) throw new Error('Sessão do desafio inválida. Atualize a página.');
+  const expected = crypto.createHmac('sha256', SERVICE_ROLE_KEY).update(parts[0]).digest('base64url');
+  const validSignature = parts[1].length === expected.length && crypto.timingSafeEqual(Buffer.from(parts[1]), Buffer.from(expected));
+  if (!validSignature) throw new Error('Sessão do desafio inválida. Atualize a página.');
+  const payload = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
+  if (payload.userId !== userId || payload.questionId !== questionId) throw new Error('Sessão do desafio inválida. Atualize a página.');
+  const elapsedSeconds = Math.max(0, Math.round((Date.now() - Number(payload.startedAt)) / 1000));
+  if (elapsedSeconds > CHALLENGE_SECONDS + 3) throw new Error('O tempo do desafio terminou. Volte amanhã para uma nova pergunta.');
+  return elapsedSeconds;
+}
+
+function publicQuestion(question, user) {
+  if (!question) return null;
+  const order = challengeOrder(user.id, question.id, question.alternativas.length);
+  return { id: question.id, data: question.data, pergunta: question.pergunta, alternativas: order.map(index => question.alternativas[index]), challengeToken: createChallengeToken(user.id, question.id), timeLimit: CHALLENGE_SECONDS };
 }
 
 function previousBusinessDay(iso) {
@@ -176,6 +211,12 @@ async function getDaily(user) {
     rest(`respostas_diarias?select=data,pontos,acertou&user_id=eq.${user.id}&order=data.desc&limit=180`),
     getPersonalResults(user).catch(error => ({ linked: true, collaborator: String(user.app_metadata?.csv_nome || ''), months: [], previousMonth: null, error: error.message }))
   ]);
+  const previousAnswers = await rest(`respostas_diarias?select=data,acertou,pergunta_id&user_id=eq.${user.id}&data=lt.${today}&order=data.desc&limit=1`).catch(() => []);
+  let learningRecap = null;
+  if (previousAnswers[0]?.pergunta_id) {
+    const recapQuestions = await rest(`perguntas_diarias?select=pergunta,explicacao&id=eq.${previousAnswers[0].pergunta_id}&limit=1`).catch(() => []);
+    if (recapQuestions[0]?.explicacao) learningRecap = { data: previousAnswers[0].data, acertou: previousAnswers[0].acertou, pergunta: recapQuestions[0].pergunta, explicacao: recapQuestions[0].explicacao };
+  }
   const monthHistory = history.filter(row => row.data.startsWith(month));
   const points = monthHistory.length + monthHistory.reduce((sum, row) => sum + Number(row.pontos || 0), 0);
   const streak = calculateStreak(history, today);
@@ -193,11 +234,12 @@ async function getDaily(user) {
   return {
     date: today,
     name: user.user_metadata?.name || user.user_metadata?.csv_nome || user.email,
-    question: questions[0] || null,
+    question: answers[0] ? null : publicQuestion(questions[0], user),
     checkin: checkins[0] || null,
     answer: answers[0] || null,
     stats: { points, participations: monthHistory.length, streak, nextMilestone, monthlyGoal, correctAnswers, weeklyParticipations: weeklyHistory.length, weeklyCorrect: weeklyHistory.filter(row => row.acertou).length, achievements },
     personalResults,
+    learningRecap,
     ranking
   };
 }
@@ -222,11 +264,14 @@ async function answerQuestion(user, body) {
   const question = questions[0];
   if (!question) throw new Error('Não há desafio disponível hoje.');
   const existing = await rest(`respostas_diarias?select=alternativa,acertou,pontos&user_id=eq.${user.id}&pergunta_id=eq.${question.id}&limit=1`);
-  if (existing[0]) return { ...existing[0], alreadyAnswered: true, explanation: question.explicacao };
-  const alternative = Number(body.alternativa);
-  if (!Number.isInteger(alternative) || alternative < 0 || alternative >= question.alternativas.length) {
+  if (existing[0]) return { ...existing[0], alreadyAnswered: true, explanationAvailableTomorrow: Boolean(question.explicacao) };
+  const displayedAlternative = Number(body.alternativa);
+  if (!Number.isInteger(displayedAlternative) || displayedAlternative < 0 || displayedAlternative >= question.alternativas.length) {
     throw new Error('Alternativa inválida.');
   }
+  const responseTime = verifyChallengeToken(body.challengeToken, user.id, question.id);
+  const order = challengeOrder(user.id, question.id, question.alternativas.length);
+  const alternative = order[displayedAlternative];
   const correct = alternative === Number(question.resposta_correta);
   const saved = await rest('respostas_diarias', {
     method: 'POST',
@@ -236,7 +281,7 @@ async function answerQuestion(user, body) {
       alternativa: alternative, acertou: correct, pontos: correct ? 1 : 0
     })
   });
-  return { ...saved[0], explanation: question.explicacao };
+  return { ...saved[0], responseTime, explanationAvailableTomorrow: Boolean(question.explicacao) };
 }
 
 
