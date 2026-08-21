@@ -128,7 +128,7 @@
     overlay.innerHTML = '<div class="celebration-confetti" aria-hidden="true">' + confetti + '</div>' +
       '<div class="celebration-card"><div class="celebration-icon">' + (result.acertou ? '🏆' : '👏') + '</div>' +
       '<span class="daily-kicker">Desafio concluído</span><h2>Obrigado por responder!</h2>' +
-      '<p>' + (result.acertou ? 'Você acertou e ganhou 1 ponto.' : 'Sua participação foi registrada. Amanhã tem uma nova chance!') + '</p>' +
+      '<p>' + (result.acertou ? 'Você acertou e ganhou 2 pontos no total.' : 'Você ganhou 1 ponto por participar. Amanhã tem uma nova chance!') + '</p>' +
       '<div class="celebration-streak"><span>🔥</span><strong>' + streak + '</strong><small>' + (streak === 1 ? 'dia de ofensiva' : 'dias de ofensiva') + '</small></div>' +
       '<p class="celebration-message">' + (streak > 1 ? 'Você manteve sua sequência. Continue assim!' : 'Sua ofensiva começou. Volte amanhã para continuar!') + '</p>' +
       (result.explanation ? '<div class="celebration-explanation"><strong>Saiba mais</strong><span>' + safe(result.explanation) + '</span></div>' : '') +
@@ -143,6 +143,16 @@
     overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
   }
 
+
+  function profileAvatarMarkup(data) {
+    const fullName = data.personalResults?.collaborator || data.name || '';
+    const initials = String(fullName).split(/\s+/).filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase() || '🙂';
+    const rawUrl = data.personalResults?.photoUrl || '';
+    const photoUrl = rawUrl && typeof normalizeFotoUrl === 'function' ? normalizeFotoUrl(rawUrl) : rawUrl;
+    return photoUrl
+      ? '<img class="daily-profile-avatar" src="' + safe(photoUrl) + '" alt="Foto de ' + safe(fullName) + '">'
+      : '<span class="daily-profile-avatar daily-profile-initials">' + safe(initials) + '</span>';
+  }
   function collaboratorMarkup() {
     return `<section class="daily-experience" id="dailyExperience" aria-live="polite">
       <div class="daily-loading"><div class="spinner"></div><p>Preparando seu dia...</p></div>
@@ -160,15 +170,18 @@
     root.innerHTML = `
       <div class="daily-shell">
         <div class="daily-welcome">
-          <span class="daily-kicker">${safe(formatDate(data.date))}</span>
-          <h1>Olá, ${safe(String(data.name || '').split(' ')[0])}!</h1>
-          <p>Reserve um minuto para registrar seu dia e participar do desafio.</p>
+          <div class="daily-profile">${profileAvatarMarkup(data)}<div>
+            <span class="daily-kicker">${safe(formatDate(data.date))}</span>
+            <h1>Olá, ${safe(String(data.name || '').split(' ')[0])}!</h1>
+            <p>Reserve um minuto para registrar seu dia e participar do desafio.</p>
+          </div></div>
         </div>
         <div class="daily-stats" aria-label="Seu desempenho no mês">
           <div><strong>${Number(data.stats?.points || 0)}</strong><span>Pontos no mês</span></div>
           <div><strong>${Number(data.stats?.participations || 0)}</strong><span>Participações</span></div>
           <div><strong>🔥 ${Number(data.stats?.streak || 0)}</strong><span>Ofensiva</span></div>
         </div>
+        ${data.stats?.nextMilestone ? `<p class="streak-progress">🔥 Mais ${data.stats.nextMilestone - data.stats.streak} ${data.stats.nextMilestone - data.stats.streak === 1 ? 'dia' : 'dias'} para a ofensiva de ${data.stats.nextMilestone}.</p>` : '<p class="streak-progress">🏅 Você alcançou todos os marcos de ofensiva do mês.</p>'}
         <article class="daily-card mood-card">
           <div class="daily-card-heading"><span class="daily-step">1</span><div><h2>Como você está hoje?</h2><p>Seu registro é confidencial e ajuda a liderança a cuidar melhor do time.</p></div></div>
           <div class="mood-options" role="radiogroup" aria-label="Como você está se sentindo">
@@ -183,7 +196,7 @@
               ${question.alternativas.map((option, index) => `<button type="button" class="challenge-option${answered?.alternativa === index ? ' selected' : ''}" data-answer="${index}" ${answered ? 'disabled' : ''}><span>${String.fromCharCode(65 + index)}</span>${safe(option)}</button>`).join('')}
             </div>
             <button type="button" class="btn-primary challenge-submit" id="challengeSubmit" ${answered ? 'disabled' : ''}>${answered ? 'Resposta enviada' : 'Confirmar resposta'}</button>
-            <div class="challenge-result${answered ? (answered.acertou ? ' is-correct' : ' is-wrong') : ''}" id="challengeResult">${answered ? (answered.acertou ? '🎉 Resposta correta! Você ganhou 1 ponto.' : 'Resposta registrada. Amanhã tem uma nova chance!') : ''}</div>`
+            <div class="challenge-result${answered ? (answered.acertou ? ' is-correct' : ' is-wrong') : ''}" id="challengeResult">${answered ? (answered.acertou ? '🎉 Resposta correta! Você ganhou 2 pontos no total.' : 'Resposta registrada! Você ganhou 1 ponto por participar.') : ''}</div>`
             : '<div class="daily-empty"><span>📚</span><strong>Sem desafio programado para hoje</strong><p>Volte mais tarde ou continue sua ofensiva no próximo dia útil.</p></div>'}
         </article>
         ${personalResultsMarkup(data.personalResults)}
@@ -235,7 +248,7 @@
         const result = await postCollaborator('answer', { alternativa: selectedAnswer });
         const resultEl = root.querySelector('#challengeResult');
         resultEl.className = `challenge-result ${result.acertou ? 'is-correct' : 'is-wrong'}`;
-        resultEl.innerHTML = `${result.acertou ? '🎉 Resposta correta! Você ganhou 1 ponto.' : 'Resposta registrada. Amanhã tem uma nova chance!'}${result.explanation ? `<small>${safe(result.explanation)}</small>` : ''}`;
+        resultEl.innerHTML = `${result.acertou ? '🎉 Resposta correta! Você ganhou 2 pontos no total.' : 'Resposta registrada! Você ganhou 1 ponto por participar.'}${result.explanation ? `<small>${safe(result.explanation)}</small>` : ''}`;
         root.querySelectorAll('.challenge-option').forEach(item => { item.disabled = true; });
         event.currentTarget.textContent = 'Resposta enviada';
         const refreshed = await api();
@@ -269,6 +282,26 @@
     </div>`;
   }
 
+
+  function resetHistoryMarkup(rows) {
+    if (!Array.isArray(rows) || !rows.length) return '<p class="reset-history-empty">Nenhum reset realizado.</p>';
+    return '<div class="reset-history">' + rows.map(row => {
+      let snapshot = {};
+      try { snapshot = JSON.parse(row.descricao || '{}'); } catch {}
+      const winner = snapshot.ranking?.[0];
+      return '<div><strong>' + safe(formatMonth(row.link)) + '</strong><span>' + Number(snapshot.answers || 0) + ' respostas · ' + Number(snapshot.checkins || 0) + ' check-ins</span>' +
+        (winner ? '<small>Líder arquivado: ' + safe(winner.name) + ' (' + Number(winner.points || 0) + ' pts)</small>' : '<small>Sem ranking no período</small>') +
+        '<small>Zerado em ' + safe(new Date(row.created_at).toLocaleString('pt-BR')) + ' por ' + safe(row.actor_email || 'administrador') + '</small></div>';
+    }).join('') + '</div>';
+  }
+
+  function rankingHighlightsMarkup(ranking) {
+    if (!Array.isArray(ranking) || !ranking.length) return '';
+    const pointsLeader = ranking[0];
+    const streakLeader = ranking.slice().sort((a, b) => b.streak - a.streak || b.points - a.points)[0];
+    return '<div class="ranking-highlights"><div><span>🏆 Pontuação</span><strong>' + safe(pointsLeader.name) + '</strong><small>' + Number(pointsLeader.points || 0) + ' pts</small></div>' +
+      '<div><span>🔥 Constância</span><strong>' + safe(streakLeader.name) + '</strong><small>' + Number(streakLeader.streak || 0) + ' dias</small></div></div>';
+  }
   function renderAdmin(root, data) {
     root.innerHTML = `<div class="daily-admin-header"><span class="daily-kicker">Engajamento e aprendizado</span><h2>Desafio diário</h2><p>Acompanhe a participação do time e programe as perguntas.</p></div>
       <div class="daily-admin-summary">
@@ -290,15 +323,42 @@
             <div class="daily-form-actions"><button class="btn-primary" type="submit">Salvar pergunta</button><button class="btn-small" id="dailyClearFormBtn" type="button">Nova pergunta</button></div><p class="daily-feedback" id="dailyAdminFeedback"></p>
           </form>
         </section>
-        <section class="daily-card"><h3>Ranking do mês</h3>
+        <section class="daily-card"><div class="ranking-month-heading"><h3>Ranking do mês</h3><input id="adminRankingMonth" type="month" value="${data.month}"></div>
+          ${rankingHighlightsMarkup(data.ranking)}
           ${data.ranking.length ? `<div class="daily-ranking">${data.ranking.map((item, index) => `<div><span class="daily-rank-position">${index + 1}</span><strong>${safe(item.name)}</strong><span>${item.points} pts</span><small>🔥 ${item.streak}</small></div>`).join('')}</div>` : '<div class="daily-empty"><p>Nenhuma participação neste mês.</p></div>'}
         </section>
       </div>
+      <section class="daily-card reset-month-card"><div class="reset-month-heading"><div><h3>Zerar mês de testes</h3><p>O ranking e os check-ins são limpos, mas um resumo permanece no histórico administrativo.</p></div><div class="reset-month-actions"><input id="resetChallengeMonth" type="month" value="${data.date.slice(0, 7)}"><button id="resetChallengeMonthBtn" class="btn-small" type="button">Zerar mês</button></div></div><p class="daily-feedback" id="resetChallengeFeedback"></p>${resetHistoryMarkup(data.resetHistory)}
+      </section>
       <section class="daily-card daily-questions-list"><h3>Perguntas programadas</h3>
         ${data.questions.length ? `<div class="table-wrap"><table><thead><tr><th>Data</th><th>Pergunta</th><th>Status</th><th></th></tr></thead><tbody>${data.questions.map((question, index) => `<tr><td>${safe(formatDate(question.data))}</td><td>${safe(question.pergunta)}</td><td>${question.ativo ? 'Ativa' : 'Inativa'}</td><td><button class="btn-small daily-edit-question" type="button" data-index="${index}">Editar</button></td></tr>`).join('')}</tbody></table></div>` : '<p>Nenhuma pergunta programada.</p>'}
       </section>`;
     const dateInput = root.querySelector('#dailyQuestionDate');
     if (dateInput) dateInput.value = data.date;
+    root.querySelector('#adminRankingMonth')?.addEventListener('change', async event => {
+      const month = event.currentTarget.value;
+      if (!month) return;
+      root.innerHTML = '<div class="daily-loading"><div class="spinner"></div><p>Carregando ranking...</p></div>';
+      try { renderAdmin(root, await api('?view=admin&month=' + encodeURIComponent(month))); }
+      catch (error) { root.innerHTML = '<div class="daily-error"><h2>Erro ao carregar</h2><p>' + safe(error.message) + '</p></div>'; }
+    });
+    root.querySelector('#resetChallengeMonthBtn')?.addEventListener('click', async event => {
+      const month = root.querySelector('#resetChallengeMonth')?.value;
+      const feedback = root.querySelector('#resetChallengeFeedback');
+      if (!month) { feedback.textContent = 'Selecione o mês.'; return; }
+      if (!confirm('Zerar respostas e check-ins de ' + formatMonth(month) + '? Um resumo ficará salvo no histórico.')) return;
+      event.currentTarget.disabled = true;
+      feedback.textContent = 'Salvando histórico e zerando...';
+      try {
+        await api('', { method: 'POST', body: JSON.stringify({ action: 'reset_month', month }) });
+        renderAdmin(root, await api('?view=admin'));
+        const updated = root.querySelector('#resetChallengeFeedback');
+        if (updated) updated.textContent = 'Mês zerado. O resumo foi preservado no histórico.';
+      } catch (error) {
+        feedback.textContent = error.message;
+        event.currentTarget.disabled = false;
+      }
+    });
     root.querySelector('#dailyQuestionForm')?.addEventListener('submit', async event => {
       event.preventDefault();
       const feedback = root.querySelector('#dailyAdminFeedback');
