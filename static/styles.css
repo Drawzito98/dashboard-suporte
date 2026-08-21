@@ -4908,8 +4908,8 @@ body[data-role="admin"] .sidebar-identity {
 body[data-role="admin"] .sidebar-identity-avatar {
   display: grid;
   place-items: center;
-  width: 78px;
-  height: 78px;
+  width: 108px;
+  height: 108px;
   overflow: hidden;
   border: 3px solid rgba(151,221,217,.72);
   border-radius: 50%;
@@ -4940,5 +4940,5 @@ body[data-role="admin"] .sidebar-identity-copy small {
 }
 @media (max-width: 900px) {
   body[data-role="admin"] .sidebar-identity { margin-bottom: 12px; padding-bottom: 14px; }
-  body[data-role="admin"] .sidebar-identity-avatar { width: 68px; height: 68px; }
+  body[data-role="admin"] .sidebar-identity-avatar { width: 88px; height: 88px; }
 }
