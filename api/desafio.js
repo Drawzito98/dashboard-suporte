@@ -83,7 +83,11 @@ function previousMonthKey(today, offset = 1) {
 async function getPersonalResults(user) {
   const collaborator = String(user.app_metadata?.csv_nome || '').trim();
   if (!collaborator) return { linked: false, collaborator: '', months: [] };
-  const records = await rest(`registros?select=Setor,Mês,Atendente,Assumidos,Transferidos,Finalizados,Score&Atendente=eq.${encodeURIComponent(collaborator)}&order=Mês.desc`);
+  const encodedCollaborator = encodeURIComponent(collaborator);
+  const [records, photos] = await Promise.all([
+    rest('registros?select=Setor,Mês,Atendente,Assumidos,Transferidos,Finalizados,Score&Atendente=eq.' + encodedCollaborator + '&order=Mês.desc'),
+    rest('colaborador_fotos?select=foto_url&nome=eq.' + encodedCollaborator + '&limit=1').catch(() => [])
+  ]);
   const grouped = new Map();
   records.forEach(record => {
     const month = String(record['Mês'] || '').trim();
@@ -110,7 +114,7 @@ async function getPersonalResults(user) {
   months.sort((a, b) => b.monthKey.localeCompare(a.monthKey));
   const previousMonth = months.find(item => item.monthKey === previousMonthKey(localDate(), 1)) || null;
   const comparisonMonth = months.find(item => item.monthKey === previousMonthKey(localDate(), 2)) || null;
-  return { linked: true, collaborator, previousMonth, comparisonMonth, months };
+  return { linked: true, collaborator, photoUrl: photos[0]?.foto_url || '', previousMonth, comparisonMonth, months };
 }
 
 async function getDaily(user) {
@@ -124,14 +128,16 @@ async function getDaily(user) {
     getPersonalResults(user).catch(error => ({ linked: true, collaborator: String(user.app_metadata?.csv_nome || ''), months: [], previousMonth: null, error: error.message }))
   ]);
   const monthHistory = history.filter(row => row.data.startsWith(month));
-  const points = monthHistory.reduce((sum, row) => sum + Number(row.pontos || 0), 0);
+  const points = monthHistory.length + monthHistory.reduce((sum, row) => sum + Number(row.pontos || 0), 0);
+  const streak = calculateStreak(history, today);
+  const nextMilestone = [5, 10, 20].find(value => value > streak) || null;
   return {
     date: today,
     name: user.user_metadata?.name || user.user_metadata?.csv_nome || user.email,
     question: questions[0] || null,
     checkin: checkins[0] || null,
     answer: answers[0] || null,
-    stats: { points, participations: monthHistory.length, streak: calculateStreak(history, today) },
+    stats: { points, participations: monthHistory.length, streak, nextMilestone },
     personalResults
   };
 }
@@ -173,33 +179,36 @@ async function answerQuestion(user, body) {
   return { ...saved[0], explanation: question.explicacao };
 }
 
-async function getAdminData() {
+async function getAdminData(requestedMonth) {
   const today = localDate();
-  const month = today.slice(0, 7);
-  const [questions, checkins, answers, usersResponse] = await Promise.all([
+  const month = /^\d{4}-\d{2}$/.test(String(requestedMonth || '')) ? String(requestedMonth) : today.slice(0, 7);
+  const [questions, checkins, answers, usersResponse, resetHistory] = await Promise.all([
     rest('perguntas_diarias?select=id,data,pergunta,alternativas,resposta_correta,explicacao,ativo&order=data.desc&limit=40'),
-    rest(`checkins_diarios?select=user_id,data,humor,created_at&data=gte.${month}-01&order=data.desc`),
-    rest(`respostas_diarias?select=user_id,data,acertou,pontos,created_at&data=gte.${month}-01&order=data.desc`),
+    rest('checkins_diarios?select=user_id,data,humor,created_at&data=gte.' + month + '-01&data=lte.' + month + '-31&order=data.desc'),
+    rest('respostas_diarias?select=user_id,data,acertou,pontos,created_at&data=gte.' + month + '-01&data=lte.' + month + '-31&order=data.desc'),
     fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1000`, { headers: jsonHeaders() }).then(async response => {
       if (!response.ok) throw new Error('Não foi possível listar colaboradores.');
       return response.json();
-    })
+    }),
+    rest('notificacoes?select=id,created_at,link,descricao,actor_email&tipo=eq.desafio_reset&order=created_at.desc&limit=24').catch(() => [])
   ]);
   const users = (usersResponse.users || usersResponse || []).filter(user => user.user_metadata?.role !== 'admin');
   const names = Object.fromEntries(users.map(user => [user.id, user.user_metadata?.name || user.user_metadata?.csv_nome || user.email]));
   const ranking = Object.entries(answers.reduce((acc, row) => {
     const item = acc[row.user_id] || { user_id: row.user_id, name: names[row.user_id] || 'Colaborador', points: 0, participations: 0, dates: [] };
-    item.points += Number(row.pontos || 0);
+    item.points += 1 + Number(row.pontos || 0);
     item.participations += 1;
     item.dates.push(row.data);
     acc[row.user_id] = item;
     return acc;
-  }, {})).map(([, item]) => ({ ...item, streak: calculateStreak(item.dates.map(data => ({ data })), today) }))
+  }, {})).map(([, item]) => ({ ...item, streak: calculateStreak(item.dates.map(data => ({ data })), item.dates.slice().sort().at(-1) || today) }))
     .sort((a, b) => b.points - a.points || b.participations - a.participations || a.name.localeCompare(b.name));
   const todayCheckins = checkins.filter(row => row.data === today);
   return {
     date: today,
+    month,
     questions,
+    resetHistory,
     ranking,
     summary: {
       collaborators: users.filter(user => user.user_metadata?.ativo !== false).length,
@@ -208,6 +217,51 @@ async function getAdminData() {
       answersToday: answers.filter(row => row.data === today).length
     }
   };
+}
+
+async function resetChallengeMonth(user, body) {
+  const month = String(body.month || '').trim();
+  if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('Selecione um mês válido.');
+  const start = month + '-01';
+  const end = month + '-31';
+  const [answers, checkins, usersResponse] = await Promise.all([
+    rest('respostas_diarias?select=user_id,data,acertou,pontos&data=gte.' + start + '&data=lte.' + end),
+    rest('checkins_diarios?select=user_id,data,humor&data=gte.' + start + '&data=lte.' + end),
+    fetch(SUPABASE_URL + '/auth/v1/admin/users?per_page=1000', { headers: jsonHeaders() }).then(response => response.json())
+  ]);
+  const users = usersResponse.users || usersResponse || [];
+  const names = Object.fromEntries(users.map(item => [item.id, item.user_metadata?.name || item.user_metadata?.csv_nome || item.email]));
+  const rankingMap = answers.reduce((acc, row) => {
+    const item = acc[row.user_id] || { name: names[row.user_id] || 'Colaborador', points: 0, participations: 0, correct: 0 };
+    item.points += 1 + Number(row.pontos || 0);
+    item.participations += 1;
+    if (row.acertou) item.correct += 1;
+    acc[row.user_id] = item;
+    return acc;
+  }, {});
+  const snapshot = {
+    month,
+    answers: answers.length,
+    checkins: checkins.length,
+    ranking: Object.values(rankingMap).sort((a, b) => b.points - a.points)
+  };
+  await rest('notificacoes', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      tipo: 'desafio_reset',
+      descricao: JSON.stringify(snapshot),
+      link: month,
+      lida: false,
+      actor_id: user.id,
+      actor_email: user.email || ''
+    })
+  });
+  await Promise.all([
+    rest('respostas_diarias?data=gte.' + start + '&data=lte.' + end, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }),
+    rest('checkins_diarios?data=gte.' + start + '&data=lte.' + end, { method: 'DELETE', headers: { Prefer: 'return=minimal' } })
+  ]);
+  return { ok: true, snapshot };
 }
 
 async function saveQuestion(user, body) {
@@ -242,7 +296,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       if (req.query?.view === 'admin') {
         if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
-        return res.status(200).json(await getAdminData());
+        return res.status(200).json(await getAdminData(req.query?.month));
       }
       if (user.user_metadata?.role === 'admin') return res.status(403).json({ error: 'Área exclusiva de usuários não administradores.' });
       return res.status(200).json(await getDaily(user));
@@ -250,6 +304,10 @@ module.exports = async (req, res) => {
 
     if (req.method === 'POST') {
       const action = req.body?.action;
+      if (action === 'reset_month') {
+        if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
+        return res.status(200).json(await resetChallengeMonth(user, req.body));
+      }
       if (action === 'question') {
         if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
         return res.status(200).json(await saveQuestion(user, req.body));
