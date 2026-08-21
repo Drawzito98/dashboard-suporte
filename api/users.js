@@ -52,6 +52,29 @@ module.exports = async (req, res) => {
         }
       });
       const data = await response.json();
+      if (response.ok) {
+        const users = data.users || (Array.isArray(data) ? data : []);
+        await Promise.all(users.map(async user => {
+          const legacyName = String(user.user_metadata?.csv_nome || '').trim();
+          if (!legacyName || user.app_metadata?.csv_nome) return;
+          const appMetadata = {
+            ...(user.app_metadata || {}),
+            role: user.user_metadata?.role || user.app_metadata?.role || 'viewer',
+            csv_nome: legacyName,
+            csv_setor: user.user_metadata?.csv_setor || null
+          };
+          const migration = await fetch(SUPABASE_URL + '/auth/v1/admin/users/' + user.id, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SERVICE_ROLE_KEY,
+              'Authorization': 'Bearer ' + SERVICE_ROLE_KEY
+            },
+            body: JSON.stringify({ app_metadata: appMetadata })
+          });
+          if (migration.ok) user.app_metadata = appMetadata;
+        }));
+      }
       return res.status(response.ok ? 200 : 400).json(data);
     }
 

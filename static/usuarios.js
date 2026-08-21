@@ -227,6 +227,13 @@ async function carregarUsuarios() {
         document.getElementById('csvMapUserId').value = btn.dataset.id;
         document.getElementById('csvMapUserEmail').textContent = btn.dataset.email;
         document.getElementById('csvMapNome').value = btn.dataset.csvNome;
+        const namesList = document.getElementById('csvMapNomes');
+        if (namesList) {
+          const names = [...new Set((typeof rawRecords !== 'undefined' ? rawRecords : [])
+            .map(record => String(record?.Atendente || '').trim())
+            .filter(name => name && (typeof isAggregateName !== 'function' || !isAggregateName(name))))].sort();
+          namesList.innerHTML = names.map(name => '<option value="' + escapeHtml(name) + '"></option>').join('');
+        }
         document.getElementById('csvMapSetor').value = btn.dataset.csvSetor;
         document.getElementById('csvMapError').classList.add('hidden');
         document.getElementById('csvMapSuccess').classList.add('hidden');
@@ -326,7 +333,7 @@ function renderUsuariosAba() {
     <!-- CSV Map Overlay -->
     <div id="csvMapOverlay" class="hidden" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center">
       <div style="background:var(--bg-surface);border-radius:var(--r-lg);padding:var(--s-6);max-width:420px;width:90%;box-shadow:var(--shadow-lg)">
-        <h3 style="margin:0 0 var(--s-2)">Vincular colaborador ao CSV</h3>
+        <h3 style="margin:0 0 var(--s-2)">Vincular colaborador aos resultados</h3>
         <p style="font-size:0.875rem;color:var(--text-secondary);margin:0 0 var(--s-4)">
           Usuário: <strong id="csvMapUserEmail"></strong>
         </p>
@@ -334,7 +341,8 @@ function renderUsuariosAba() {
         <label class="field">
           <span>Nome exato no CSV</span>
           <input id="csvMapNome" type="text" placeholder="Ex: João Silva" />
-        </label>
+          <input id="csvMapNome" type="text" list="csvMapNomes" autocomplete="off" placeholder="Selecione ou digite o nome exato" />
+          <datalist id="csvMapNomes"></datalist>
         <label class="field">
           <span>Setor (opcional)</span>
           <input id="csvMapSetor" type="text" placeholder="Ex: Suporte N1" />
