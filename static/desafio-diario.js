@@ -65,6 +65,12 @@
         <div class="daily-empty"><span>🔗</span><strong>Cadastro ainda não vinculado</strong><p>Peça ao administrador para vincular seu usuário ao seu nome nos dados de desempenho.</p></div>
       </article>`;
     }
+    if (results.error) {
+      return `<article class="daily-card personal-results-card">
+        <div class="daily-card-heading"><span class="daily-step">3</span><div><h2>Seus resultados mensais</h2><p>Indicadores de ${safe(results.collaborator)}.</p></div></div>
+        <div class="daily-empty"><span>⏳</span><strong>Resultados temporariamente indisponíveis</strong><p>O humor e o desafio continuam disponíveis. Tente atualizar a página em alguns instantes.</p></div>
+      </article>`;
+    }
     const months = Array.isArray(results.months) ? results.months : [];
     return `<article class="daily-card personal-results-card">
       <div class="daily-card-heading"><span class="daily-step">3</span><div><h2>Seus resultados mensais</h2><p>Indicadores de ${safe(results.collaborator)}.</p></div></div>

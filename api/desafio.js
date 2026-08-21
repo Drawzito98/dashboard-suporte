@@ -83,7 +83,7 @@ function previousMonthKey(today) {
 async function getPersonalResults(user) {
   const collaborator = String(user.app_metadata?.csv_nome || '').trim();
   if (!collaborator) return { linked: false, collaborator: '', months: [] };
-  const records = await rest(`registros?select=Setor,Mês,Atendente,Assumidos,Transferidos,Finalizados,Score,SCORE&Atendente=eq.${encodeURIComponent(collaborator)}&order=Mês.desc`);
+  const records = await rest(`registros?select=Setor,Mês,Atendente,Assumidos,Transferidos,Finalizados,Score&Atendente=eq.${encodeURIComponent(collaborator)}&order=Mês.desc`);
   const grouped = new Map();
   records.forEach(record => {
     const month = String(record['Mês'] || '').trim();
@@ -93,7 +93,7 @@ async function getPersonalResults(user) {
     item.assumed += numberValue(record.Assumidos);
     item.transferred += numberValue(record.Transferidos);
     item.completed += numberValue(record.Finalizados);
-    const score = numberValue(record.SCORE || record.Score);
+    const score = numberValue(record.Score);
     if (score > 0) item.scores.push(score);
     grouped.set(month, item);
   });
@@ -120,7 +120,7 @@ async function getDaily(user) {
     rest(`checkins_diarios?select=humor&user_id=eq.${user.id}&data=eq.${today}&limit=1`),
     rest(`respostas_diarias?select=alternativa,acertou,pontos&user_id=eq.${user.id}&data=eq.${today}&limit=1`),
     rest(`respostas_diarias?select=data,pontos&user_id=eq.${user.id}&order=data.desc&limit=180`),
-    getPersonalResults(user)
+    getPersonalResults(user).catch(error => ({ linked: true, collaborator: String(user.app_metadata?.csv_nome || ''), months: [], previousMonth: null, error: error.message }))
   ]);
   const monthHistory = history.filter(row => row.data.startsWith(month));
   const points = monthHistory.reduce((sum, row) => sum + Number(row.pontos || 0), 0);
