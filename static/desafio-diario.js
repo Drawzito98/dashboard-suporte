@@ -193,7 +193,7 @@
     else if (data.answer) message = "Cada tentativa ensina algo. Amanhã tem uma nova chance!";
     else if (streak >= 5) message = "Essa ofensiva está incrível. Vamos manter o ritmo!";
     const state = data.answer ? " is-celebrating" : streak >= 5 ? " is-on-fire" : "";
-    return `<aside class="daily-pet${state}" aria-label="Mensagem diária do Batman"><div class="daily-pet-bubble"><strong>Batman</strong><span>${safe(message)}</span></div><div class="daily-pet-character" aria-hidden="true"><i>✨</i><span>🦇</span></div></aside>`;
+    return `<aside class="daily-pet${state}" aria-label="Mensagem diária do Batman"><div class="daily-pet-bubble"><strong>Batman</strong><span>${safe(message)}</span></div><div class="daily-pet-character" aria-hidden="true"><div class="batman-hero"><span class="batman-cape"></span><span class="batman-torso"><b class="batman-emblem">◆</b></span><span class="batman-head"><b class="batman-eye is-left"></b><b class="batman-eye is-right"></b></span></div></div></aside>`;
   }
 
   function profileAvatarMarkup(data) {
