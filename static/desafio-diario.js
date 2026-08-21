@@ -9,6 +9,7 @@
     { value: 4, emoji: '🙂', label: 'Bem' },
     { value: 5, emoji: '😄', label: 'Muito bem' }
   ];
+  let rankingRefreshTimer = null;
 
   async function authHeaders() {
     const { data } = await sbClient.auth.getSession();
@@ -127,6 +128,16 @@
       '<div class="engagement-details"><span>' + safe(weekText) + '</span><span>' + safe(milestone) + '</span></div>' +
       '<div class="achievement-list">' + (achievements.length ? achievements.map(item => '<span title="Conquista desbloqueada">' + safe(item.icon) + ' ' + safe(item.label) + '</span>').join('') : '<small>✨ Sua primeira conquista chega ao responder.</small>') + '</div></section>';
   }
+  function liveRankingMarkup(ranking) {
+    if (!ranking || ranking.locked) return '<section class="daily-card live-ranking-card" id="liveChallengeRanking"><div class="live-ranking-heading"><div><span class="daily-kicker">Ranking mensal</span><h3>Classificação da equipe</h3></div><small>Atualizando...</small></div></section>';
+    const top = Array.isArray(ranking.top) ? ranking.top : [];
+    const me = ranking.me;
+    const medals = ['🥇', '🥈', '🥉'];
+    const row = item => '<div class="live-ranking-row' + (item.isCurrentUser ? ' is-me' : '') + '"><span class="live-rank-position">' + (medals[item.position - 1] || item.position + 'º') + '</span><strong>' + safe(item.name) + (item.isCurrentUser ? ' <small>você</small>' : '') + '</strong><span>' + Number(item.points || 0) + ' pts</span><small>🔥 ' + Number(item.streak || 0) + ' · 🎯 ' + Number(item.accuracy || 0) + '%</small></div>';
+    const ownOutsideTop = me && !top.some(item => item.isCurrentUser);
+    const updated = ranking.updatedAt ? new Date(ranking.updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+    return '<section class="daily-card live-ranking-card" id="liveChallengeRanking"><div class="live-ranking-heading"><div><span class="daily-kicker">Ranking mensal</span><h3>Classificação da equipe</h3></div><small>Atualizado ' + safe(updated) + '</small></div><div class="live-ranking-list">' + top.map(row).join('') + (ownOutsideTop ? '<div class="live-ranking-divider"></div>' + row(me) : '') + '</div><p>Pontos definem a posição; ofensiva e acertos resolvem empates.</p></section>';
+  }
   function challengeCompletedMarkup() {
     return '<div class="daily-empty challenge-completed"><span>✅</span><strong>Desafio do dia concluído</strong><p>Obrigado por responder! Um novo desafio será liberado amanhã.</p></div>';
   }
@@ -215,9 +226,21 @@
             <div class="challenge-result${answered ? (answered.acertou ? ' is-correct' : ' is-wrong') : ''}" id="challengeResult">${answered ? (answered.acertou ? '🎉 Resposta correta! Você ganhou 2 pontos no total.' : 'Resposta registrada! Você ganhou 1 ponto por participar.') : ''}</div>`
             : '<div class="daily-empty"><span>📚</span><strong>Sem desafio programado para hoje</strong><p>Volte mais tarde ou continue sua ofensiva no próximo dia útil.</p></div>'}
         </article>
+        ${answered ? liveRankingMarkup(data.ranking) : ''}
         ${personalResultsMarkup(data.personalResults)}
         <p class="daily-privacy">Seu sentimento individual é visível apenas para a gestão. O ranking considera somente o desafio de conhecimento.</p>
       </div>`;
+
+    if (rankingRefreshTimer) clearInterval(rankingRefreshTimer);
+    if (answered) {
+      rankingRefreshTimer = setInterval(async () => {
+        try {
+          const ranking = await api('?view=ranking');
+          const current = root.querySelector('#liveChallengeRanking');
+          if (current && !ranking.locked) current.outerHTML = liveRankingMarkup(ranking);
+        } catch {}
+      }, 30000);
+    }
 
     const periodSelect = root.querySelector('#personalResultsPeriod');
     const filterPersonalRows = selectedMonth => {
@@ -315,8 +338,10 @@
     if (!Array.isArray(ranking) || !ranking.length) return '';
     const pointsLeader = ranking[0];
     const streakLeader = ranking.slice().sort((a, b) => b.streak - a.streak || b.points - a.points)[0];
+    const accuracyLeader = ranking.filter(item => item.participations >= 5).sort((a, b) => b.accuracy - a.accuracy || b.correct - a.correct || b.points - a.points)[0];
     return '<div class="ranking-highlights"><div><span>🏆 Pontuação</span><strong>' + safe(pointsLeader.name) + '</strong><small>' + Number(pointsLeader.points || 0) + ' pts</small></div>' +
-      '<div><span>🔥 Constância</span><strong>' + safe(streakLeader.name) + '</strong><small>' + Number(streakLeader.streak || 0) + ' dias</small></div></div>';
+      '<div><span>🔥 Constância</span><strong>' + safe(streakLeader.name) + '</strong><small>' + Number(streakLeader.streak || 0) + ' dias</small></div>' +
+      (accuracyLeader ? '<div><span>🎯 Precisão</span><strong>' + safe(accuracyLeader.name) + '</strong><small>' + Number(accuracyLeader.accuracy || 0) + '% · mín. 5</small></div>' : '') + '</div>';
   }
   function activityReportMarkup(activity) {
     const rows = Array.isArray(activity) ? activity : [];
