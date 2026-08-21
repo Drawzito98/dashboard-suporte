@@ -179,13 +179,47 @@ async function answerQuestion(user, body) {
   return { ...saved[0], explanation: question.explicacao };
 }
 
+
+function buildAdminActivity(answers, checkins, questions, names, archived = false) {
+  const questionMap = Object.fromEntries((questions || []).map(question => [question.id, question]));
+  const rows = new Map();
+  (checkins || []).forEach(checkin => {
+    const key = checkin.user_id + '|' + checkin.data;
+    rows.set(key, {
+      userId: checkin.user_id,
+      name: names[checkin.user_id] || 'Colaborador',
+      date: checkin.data,
+      mood: Number(checkin.humor),
+      answered: false,
+      archived
+    });
+  });
+  (answers || []).forEach(answer => {
+    const key = answer.user_id + '|' + answer.data;
+    const question = questionMap[answer.pergunta_id] || {};
+    const row = rows.get(key) || {
+      userId: answer.user_id,
+      name: names[answer.user_id] || 'Colaborador',
+      date: answer.data,
+      mood: null,
+      archived
+    };
+    row.answered = true;
+    row.correct = Boolean(answer.acertou);
+    row.points = 1 + Number(answer.pontos || 0);
+    row.question = question.pergunta || 'Pergunta não disponível';
+    row.selectedAnswer = Array.isArray(question.alternativas) ? question.alternativas[Number(answer.alternativa)] || '' : '';
+    rows.set(key, row);
+  });
+  return Array.from(rows.values()).sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+}
 async function getAdminData(requestedMonth) {
   const today = localDate();
   const month = /^\d{4}-\d{2}$/.test(String(requestedMonth || '')) ? String(requestedMonth) : today.slice(0, 7);
   const [questions, checkins, answers, usersResponse, resetHistory] = await Promise.all([
-    rest('perguntas_diarias?select=id,data,pergunta,alternativas,resposta_correta,explicacao,ativo&order=data.desc&limit=40'),
+    rest('perguntas_diarias?select=id,data,pergunta,alternativas,resposta_correta,explicacao,ativo&order=data.desc&limit=400'),
     rest('checkins_diarios?select=user_id,data,humor,created_at&data=gte.' + month + '-01&data=lte.' + month + '-31&order=data.desc'),
-    rest('respostas_diarias?select=user_id,data,acertou,pontos,created_at&data=gte.' + month + '-01&data=lte.' + month + '-31&order=data.desc'),
+    rest('respostas_diarias?select=user_id,data,alternativa,acertou,pontos,pergunta_id,created_at&data=gte.' + month + '-01&data=lte.' + month + '-31&order=data.desc'),
     fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1000`, { headers: jsonHeaders() }).then(async response => {
       if (!response.ok) throw new Error('Não foi possível listar colaboradores.');
       return response.json();
@@ -203,6 +237,14 @@ async function getAdminData(requestedMonth) {
     return acc;
   }, {})).map(([, item]) => ({ ...item, streak: calculateStreak(item.dates.map(data => ({ data })), item.dates.slice().sort().at(-1) || today) }))
     .sort((a, b) => b.points - a.points || b.participations - a.participations || a.name.localeCompare(b.name));
+  const liveActivity = buildAdminActivity(answers, checkins, questions, names);
+  const archivedActivity = resetHistory.filter(row => row.link === month).flatMap(row => {
+    try {
+      const snapshot = JSON.parse(row.descricao || '{}');
+      return Array.isArray(snapshot.activity) ? snapshot.activity.map(item => ({ ...item, archived: true })) : [];
+    } catch { return []; }
+  });
+  const activity = [...liveActivity, ...archivedActivity].sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
   const todayCheckins = checkins.filter(row => row.data === today);
   return {
     date: today,
@@ -210,6 +252,7 @@ async function getAdminData(requestedMonth) {
     questions,
     resetHistory,
     ranking,
+    activity,
     summary: {
       collaborators: users.filter(user => user.user_metadata?.ativo !== false).length,
       checkinsToday: todayCheckins.length,
@@ -224,10 +267,11 @@ async function resetChallengeMonth(user, body) {
   if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('Selecione um mês válido.');
   const start = month + '-01';
   const end = month + '-31';
-  const [answers, checkins, usersResponse] = await Promise.all([
-    rest('respostas_diarias?select=user_id,data,acertou,pontos&data=gte.' + start + '&data=lte.' + end),
+  const [answers, checkins, usersResponse, questions] = await Promise.all([
+    rest('respostas_diarias?select=user_id,data,alternativa,acertou,pontos,pergunta_id&data=gte.' + start + '&data=lte.' + end),
     rest('checkins_diarios?select=user_id,data,humor&data=gte.' + start + '&data=lte.' + end),
-    fetch(SUPABASE_URL + '/auth/v1/admin/users?per_page=1000', { headers: jsonHeaders() }).then(response => response.json())
+    fetch(SUPABASE_URL + '/auth/v1/admin/users?per_page=1000', { headers: jsonHeaders() }).then(response => response.json()),
+    rest('perguntas_diarias?select=id,pergunta,alternativas&data=gte.' + start + '&data=lte.' + end)
   ]);
   const users = usersResponse.users || usersResponse || [];
   const names = Object.fromEntries(users.map(item => [item.id, item.user_metadata?.name || item.user_metadata?.csv_nome || item.email]));
@@ -243,7 +287,8 @@ async function resetChallengeMonth(user, body) {
     month,
     answers: answers.length,
     checkins: checkins.length,
-    ranking: Object.values(rankingMap).sort((a, b) => b.points - a.points)
+    ranking: Object.values(rankingMap).sort((a, b) => b.points - a.points),
+    activity: buildAdminActivity(answers, checkins, questions, names, true)
   };
   await rest('notificacoes', {
     method: 'POST',

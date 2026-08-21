@@ -302,6 +302,22 @@
     return '<div class="ranking-highlights"><div><span>🏆 Pontuação</span><strong>' + safe(pointsLeader.name) + '</strong><small>' + Number(pointsLeader.points || 0) + ' pts</small></div>' +
       '<div><span>🔥 Constância</span><strong>' + safe(streakLeader.name) + '</strong><small>' + Number(streakLeader.streak || 0) + ' dias</small></div></div>';
   }
+  function activityReportMarkup(activity) {
+    const rows = Array.isArray(activity) ? activity : [];
+    const names = [...new Set(rows.map(item => item.name).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const rowMarkup = rows.map(item => {
+      const mood = moods.find(option => option.value === Number(item.mood));
+      const result = !item.answered ? 'no_answer' : item.correct ? 'correct' : 'wrong';
+      return '<tr data-activity-name="' + safe(item.name) + '" data-activity-result="' + result + '"><td>' + safe(formatDate(item.date)) + (item.archived ? '<small class="archive-badge">Histórico</small>' : '') + '</td>' +
+        '<td>' + safe(item.name) + '</td><td>' + (mood ? mood.emoji + ' ' + safe(mood.label) : '—') + '</td>' +
+        '<td class="activity-question">' + safe(item.question || '—') + '</td><td>' + safe(item.selectedAnswer || '—') + '</td>' +
+        '<td><span class="activity-result is-' + result + '">' + (!item.answered ? 'Sem resposta' : item.correct ? 'Acertou' : 'Errou') + '</span></td><td>' + (item.answered ? Number(item.points || 0) : '—') + '</td></tr>';
+    }).join('');
+    return '<section class="daily-card activity-report-card"><div class="activity-report-heading"><div><h3>Registros da equipe</h3><p>Humor, respostas e acertos do mês selecionado.</p></div><div class="activity-filters"><select id="activityUserFilter"><option value="">Todos os colaboradores</option>' +
+      names.map(name => '<option value="' + safe(name) + '">' + safe(name) + '</option>').join('') +
+      '</select><select id="activityResultFilter"><option value="">Todos os resultados</option><option value="correct">Acertou</option><option value="wrong">Errou</option><option value="no_answer">Sem resposta</option></select></div></div>' +
+      (rows.length ? '<div class="table-wrap"><table class="activity-report-table"><thead><tr><th>Data</th><th>Colaborador</th><th>Humor</th><th>Pergunta</th><th>Resposta</th><th>Resultado</th><th>Pontos</th></tr></thead><tbody>' + rowMarkup + '</tbody></table></div><p class="activity-empty-filter" hidden>Nenhum registro corresponde aos filtros.</p>' : '<div class="daily-empty"><p>Nenhum registro neste mês.</p></div>') + '</section>';
+  }
   function renderAdmin(root, data) {
     root.innerHTML = `<div class="daily-admin-header"><span class="daily-kicker">Engajamento e aprendizado</span><h2>Desafio diário</h2><p>Acompanhe a participação do time e programe as perguntas.</p></div>
       <div class="daily-admin-summary">
@@ -328,6 +344,7 @@
           ${data.ranking.length ? `<div class="daily-ranking">${data.ranking.map((item, index) => `<div><span class="daily-rank-position">${index + 1}</span><strong>${safe(item.name)}</strong><span>${item.points} pts</span><small>🔥 ${item.streak}</small></div>`).join('')}</div>` : '<div class="daily-empty"><p>Nenhuma participação neste mês.</p></div>'}
         </section>
       </div>
+      ${activityReportMarkup(data.activity)}
       <section class="daily-card reset-month-card"><div class="reset-month-heading"><div><h3>Zerar mês de testes</h3><p>O ranking e os check-ins são limpos, mas um resumo permanece no histórico administrativo.</p></div><div class="reset-month-actions"><input id="resetChallengeMonth" type="month" value="${data.date.slice(0, 7)}"><button id="resetChallengeMonthBtn" class="btn-small" type="button">Zerar mês</button></div></div><p class="daily-feedback" id="resetChallengeFeedback"></p>${resetHistoryMarkup(data.resetHistory)}
       </section>
       <section class="daily-card daily-questions-list"><h3>Perguntas programadas</h3>
@@ -335,6 +352,20 @@
       </section>`;
     const dateInput = root.querySelector('#dailyQuestionDate');
     if (dateInput) dateInput.value = data.date;
+    const filterActivityRows = () => {
+      const selectedName = root.querySelector('#activityUserFilter')?.value || '';
+      const selectedResult = root.querySelector('#activityResultFilter')?.value || '';
+      let visible = 0;
+      root.querySelectorAll('.activity-report-table tbody tr').forEach(row => {
+        const show = (!selectedName || row.dataset.activityName === selectedName) && (!selectedResult || row.dataset.activityResult === selectedResult);
+        row.hidden = !show;
+        if (show) visible += 1;
+      });
+      const empty = root.querySelector('.activity-empty-filter');
+      if (empty) empty.hidden = visible > 0;
+    };
+    root.querySelector('#activityUserFilter')?.addEventListener('change', filterActivityRows);
+    root.querySelector('#activityResultFilter')?.addEventListener('change', filterActivityRows);
     root.querySelector('#adminRankingMonth')?.addEventListener('change', async event => {
       const month = event.currentTarget.value;
       if (!month) return;
