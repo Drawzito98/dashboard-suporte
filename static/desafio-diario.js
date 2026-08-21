@@ -70,6 +70,24 @@
       '<div><strong>' + score + '</strong><span>Score médio</span>' + trendMarkup(item.averageScore, comparison?.averageScore) + '</div>' +
       '<div><strong>' + productivity + '</strong><span>Produtividade</span>' + trendMarkup(item.productivity, comparison?.productivity) + '</div></div></section>';
   }
+
+  function metricCell(display, current, previous) {
+    return '<span class="metric-value">' + display + '</span>' + trendMarkup(current, previous);
+  }
+
+  function monthlyRowMarkup(item, previous) {
+    const assumed = Number(item.assumed || 0);
+    const completed = Number(item.completed || 0);
+    const transferred = Number(item.transferred || 0);
+    const score = item.averageScore == null ? '—' : Number(item.averageScore).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const productivity = item.productivity == null ? '—' : Number(item.productivity).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
+    return '<tr data-month="' + safe(item.month) + '"><td>' + safe(formatMonth(item.month)) + '</td><td>' + safe((item.sectors || []).join(', ') || '—') + '</td>' +
+      '<td>' + metricCell(assumed.toLocaleString('pt-BR'), assumed, previous?.assumed) + '</td>' +
+      '<td>' + metricCell(completed.toLocaleString('pt-BR'), completed, previous?.completed) + '</td>' +
+      '<td>' + metricCell(transferred.toLocaleString('pt-BR'), transferred, previous?.transferred) + '</td>' +
+      '<td>' + metricCell(score, item.averageScore, previous?.averageScore) + '</td>' +
+      '<td>' + metricCell(productivity, item.productivity, previous?.productivity) + '</td></tr>';
+  }
   function personalResultsMarkup(results) {
     if (!results?.linked) {
       return `<article class="daily-card personal-results-card">
@@ -88,7 +106,7 @@
       <div class="daily-card-heading"><span class="daily-step">3</span><div><h2>Seus resultados mensais</h2><p>Indicadores de ${safe(results.collaborator)}.</p></div></div>
       ${previousMonthSummaryMarkup(results.previousMonth, results.comparisonMonth)}
       ${months.length ? `<div class="personal-results-filter"><label for="personalResultsPeriod">Filtrar período</label><select id="personalResultsPeriod"><option value="">Todos os meses</option>${months.map(item => `<option value="${safe(item.month)}">${safe(formatMonth(item.month))}</option>`).join('')}</select></div><div class="table-wrap"><table class="personal-results-table"><thead><tr><th>Período</th><th>Setor</th><th>Assumidos</th><th>Finalizados</th><th>Transferidos</th><th>Score médio</th><th>Produtividade</th></tr></thead><tbody>
-        ${months.map(item => `<tr data-month="${safe(item.month)}"><td>${safe(formatMonth(item.month))}</td><td>${safe((item.sectors || []).join(', ') || '—')}</td><td>${Number(item.assumed || 0).toLocaleString('pt-BR')}</td><td>${Number(item.completed || 0).toLocaleString('pt-BR')}</td><td>${Number(item.transferred || 0).toLocaleString('pt-BR')}</td><td>${item.averageScore == null ? '—' : Number(item.averageScore).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td>${item.productivity == null ? '—' : `${Number(item.productivity).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}</td></tr>`).join('')}
+        ${months.map((item, index) => monthlyRowMarkup(item, months[index + 1])).join('')}
       </tbody></table></div>` : '<div class="daily-empty"><span>📊</span><strong>Nenhum resultado encontrado</strong><p>Ainda não há registros mensais associados ao seu nome.</p></div>'}
     </article>`;
   }
