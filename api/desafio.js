@@ -1,5 +1,6 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://agvkmfusyetkicmuvumz.supabase.co';
 const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
+const { generateQuestion } = require('./_desafio-generator');
 
 function jsonHeaders(extra = {}) {
   return {
@@ -116,7 +117,7 @@ async function getAdminData() {
   const today = localDate();
   const month = today.slice(0, 7);
   const [questions, checkins, answers, usersResponse] = await Promise.all([
-    rest('perguntas_diarias?select=id,data,pergunta,alternativas,resposta_correta,explicacao,ativo&order=data.desc&limit=40'),
+    rest('perguntas_diarias?select=id,data,pergunta,alternativas,resposta_correta,explicacao,ativo,fonte_url,fonte_titulo,gerada_automaticamente,modelo_gerador,gerada_em&order=data.desc&limit=40'),
     rest(`checkins_diarios?select=user_id,data,humor,created_at&data=gte.${month}-01&order=data.desc`),
     rest(`respostas_diarias?select=user_id,data,acertou,pontos,created_at&data=gte.${month}-01&order=data.desc`),
     fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1000`, { headers: jsonHeaders() }).then(async response => {
@@ -162,7 +163,11 @@ async function saveQuestion(user, body) {
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify({
       data, pergunta, alternativas, resposta_correta: correta,
-      explicacao: String(body.explicacao || '').trim(), ativo: body.ativo !== false, created_by: user.id
+      explicacao: String(body.explicacao || '').trim(), ativo: body.ativo !== false, created_by: user.id,
+      fonte_url: String(body.fonte_url || '').trim(), fonte_titulo: String(body.fonte_titulo || '').trim(),
+      gerada_automaticamente: body.gerada_automaticamente === true,
+      modelo_gerador: body.gerada_automaticamente === true ? String(body.modelo_gerador || '') : '',
+      gerada_em: body.gerada_automaticamente === true ? (body.gerada_em || new Date().toISOString()) : null
     })
   });
   return { ok: true };
@@ -192,6 +197,10 @@ module.exports = async (req, res) => {
       if (action === 'question') {
         if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
         return res.status(200).json(await saveQuestion(user, req.body));
+      }
+      if (action === 'generate-question') {
+        if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
+        return res.status(200).json(await generateQuestion({ targetDate: req.body?.data, force: true, createdBy: user.id }));
       }
       if (user.user_metadata?.role !== 'colaborador') return res.status(403).json({ error: 'Área exclusiva do colaborador.' });
       if (action === 'checkin') return res.status(200).json(await saveCheckin(user, req.body));

@@ -1,5 +1,8 @@
 {
   "version": 2,
+  "crons": [
+    { "path": "/api/gerar-desafio", "schedule": "5 23 * * 0-4" }
+  ],
   "rewrites": [
     { "source": "/reportlider", "destination": "/reporte.html" }
   ]
