@@ -2498,10 +2498,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const role = user.user_metadata?.role;
       if (role === 'admin') {
         document.body.dataset.role = 'admin';
-      } else if (role === 'colaborador') {
-        document.body.dataset.role = 'colaborador';
       } else {
-        document.body.dataset.role = 'viewer';
+        document.body.dataset.role = 'colaborador';
       }
       if (!role) {
         try {

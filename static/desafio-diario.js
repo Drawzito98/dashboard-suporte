@@ -37,6 +37,32 @@
     return new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
   }
 
+  function formatMonth(value) {
+    const text = String(value || '').trim();
+    const iso = text.match(/^(\d{4})-(\d{2})$/);
+    const br = text.match(/^(\d{2})\/(\d{4})$/);
+    if (!iso && !br) return text;
+    const year = iso ? iso[1] : br[2];
+    const month = iso ? iso[2] : br[1];
+    return new Date(`${year}-${month}-01T12:00:00`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  }
+
+  function personalResultsMarkup(results) {
+    if (!results?.linked) {
+      return `<article class="daily-card personal-results-card">
+        <div class="daily-card-heading"><span class="daily-step">3</span><div><h2>Seus resultados mensais</h2><p>Acompanhe apenas os seus próprios indicadores.</p></div></div>
+        <div class="daily-empty"><span>🔗</span><strong>Cadastro ainda não vinculado</strong><p>Peça ao administrador para vincular seu usuário ao seu nome nos dados de desempenho.</p></div>
+      </article>`;
+    }
+    const months = Array.isArray(results.months) ? results.months : [];
+    return `<article class="daily-card personal-results-card">
+      <div class="daily-card-heading"><span class="daily-step">3</span><div><h2>Seus resultados mensais</h2><p>Indicadores de ${safe(results.collaborator)}.</p></div></div>
+      ${months.length ? `<div class="table-wrap"><table class="personal-results-table"><thead><tr><th>Período</th><th>Setor</th><th>Assumidos</th><th>Finalizados</th><th>Transferidos</th><th>Score médio</th><th>Produtividade</th></tr></thead><tbody>
+        ${months.map(item => `<tr><td>${safe(formatMonth(item.month))}</td><td>${safe((item.sectors || []).join(', ') || '—')}</td><td>${Number(item.assumed || 0).toLocaleString('pt-BR')}</td><td>${Number(item.completed || 0).toLocaleString('pt-BR')}</td><td>${Number(item.transferred || 0).toLocaleString('pt-BR')}</td><td>${item.averageScore == null ? '—' : Number(item.averageScore).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td>${item.productivity == null ? '—' : `${Number(item.productivity).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}</td></tr>`).join('')}
+      </tbody></table></div>` : '<div class="daily-empty"><span>📊</span><strong>Nenhum resultado encontrado</strong><p>Ainda não há registros mensais associados ao seu nome.</p></div>'}
+    </article>`;
+  }
+
   function collaboratorMarkup() {
     return `<section class="daily-experience" id="dailyExperience" aria-live="polite">
       <div class="daily-loading"><div class="spinner"></div><p>Preparando seu dia...</p></div>
@@ -80,6 +106,7 @@
             <div class="challenge-result${answered ? (answered.acertou ? ' is-correct' : ' is-wrong') : ''}" id="challengeResult">${answered ? (answered.acertou ? '🎉 Resposta correta! Você ganhou 1 ponto.' : 'Resposta registrada. Amanhã tem uma nova chance!') : ''}</div>`
             : '<div class="daily-empty"><span>📚</span><strong>Sem desafio programado para hoje</strong><p>Volte mais tarde ou continue sua ofensiva no próximo dia útil.</p></div>'}
         </article>
+        ${personalResultsMarkup(data.personalResults)}
         <p class="daily-privacy">Seu sentimento individual é visível apenas para a gestão. O ranking considera somente o desafio de conhecimento.</p>
       </div>`;
 

@@ -56,14 +56,52 @@ function calculateStreak(rows, today) {
   return streak;
 }
 
+function numberValue(value) {
+  const text = String(value ?? '').trim().replace(/\s/g, '');
+  if (!text) return 0;
+  const normalized = text.includes(',') ? text.replace(/\./g, '').replace(',', '.') : text;
+  const number = Number(normalized.replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(number) ? number : 0;
+}
+
+async function getPersonalResults(user) {
+  const collaborator = String(user.app_metadata?.csv_nome || '').trim();
+  if (!collaborator) return { linked: false, collaborator: '', months: [] };
+  const records = await rest(`registros?select=Setor,Mês,Atendente,Assumidos,Transferidos,Finalizados,Score,SCORE&Atendente=eq.${encodeURIComponent(collaborator)}&order=Mês.desc`);
+  const grouped = new Map();
+  records.forEach(record => {
+    const month = String(record['Mês'] || '').trim();
+    if (!month) return;
+    const item = grouped.get(month) || { month, sectors: new Set(), assumed: 0, transferred: 0, completed: 0, scores: [] };
+    if (record.Setor) item.sectors.add(String(record.Setor));
+    item.assumed += numberValue(record.Assumidos);
+    item.transferred += numberValue(record.Transferidos);
+    item.completed += numberValue(record.Finalizados);
+    const score = numberValue(record.SCORE || record.Score);
+    if (score > 0) item.scores.push(score);
+    grouped.set(month, item);
+  });
+  const months = Array.from(grouped.values()).map(item => ({
+    month: item.month,
+    sectors: Array.from(item.sectors),
+    assumed: item.assumed,
+    transferred: item.transferred,
+    completed: item.completed,
+    averageScore: item.scores.length ? item.scores.reduce((sum, score) => sum + score, 0) / item.scores.length : null,
+    productivity: item.assumed > 0 ? item.completed / item.assumed * 100 : null
+  }));
+  return { linked: true, collaborator, months };
+}
+
 async function getDaily(user) {
   const today = localDate();
   const month = today.slice(0, 7);
-  const [questions, checkins, answers, history] = await Promise.all([
+  const [questions, checkins, answers, history, personalResults] = await Promise.all([
     rest(`perguntas_diarias?select=id,data,pergunta,alternativas,explicacao&data=eq.${today}&ativo=eq.true&limit=1`),
     rest(`checkins_diarios?select=humor&user_id=eq.${user.id}&data=eq.${today}&limit=1`),
     rest(`respostas_diarias?select=alternativa,acertou,pontos&user_id=eq.${user.id}&data=eq.${today}&limit=1`),
-    rest(`respostas_diarias?select=data,pontos&user_id=eq.${user.id}&order=data.desc&limit=180`)
+    rest(`respostas_diarias?select=data,pontos&user_id=eq.${user.id}&order=data.desc&limit=180`),
+    getPersonalResults(user)
   ]);
   const monthHistory = history.filter(row => row.data.startsWith(month));
   const points = monthHistory.reduce((sum, row) => sum + Number(row.pontos || 0), 0);
@@ -73,7 +111,8 @@ async function getDaily(user) {
     question: questions[0] || null,
     checkin: checkins[0] || null,
     answer: answers[0] || null,
-    stats: { points, participations: monthHistory.length, streak: calculateStreak(history, today) }
+    stats: { points, participations: monthHistory.length, streak: calculateStreak(history, today) },
+    personalResults
   };
 }
 
@@ -124,7 +163,7 @@ async function getAdminData() {
       return response.json();
     })
   ]);
-  const users = (usersResponse.users || usersResponse || []).filter(user => user.user_metadata?.role === 'colaborador');
+  const users = (usersResponse.users || usersResponse || []).filter(user => user.user_metadata?.role !== 'admin');
   const names = Object.fromEntries(users.map(user => [user.id, user.user_metadata?.name || user.user_metadata?.csv_nome || user.email]));
   const ranking = Object.entries(answers.reduce((acc, row) => {
     const item = acc[row.user_id] || { user_id: row.user_id, name: names[row.user_id] || 'Colaborador', points: 0, participations: 0, dates: [] };
@@ -183,7 +222,7 @@ module.exports = async (req, res) => {
         if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
         return res.status(200).json(await getAdminData());
       }
-      if (user.user_metadata?.role !== 'colaborador') return res.status(403).json({ error: 'Área exclusiva do colaborador.' });
+      if (user.user_metadata?.role === 'admin') return res.status(403).json({ error: 'Área exclusiva de usuários não administradores.' });
       return res.status(200).json(await getDaily(user));
     }
 
@@ -193,7 +232,7 @@ module.exports = async (req, res) => {
         if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
         return res.status(200).json(await saveQuestion(user, req.body));
       }
-      if (user.user_metadata?.role !== 'colaborador') return res.status(403).json({ error: 'Área exclusiva do colaborador.' });
+      if (user.user_metadata?.role === 'admin') return res.status(403).json({ error: 'Área exclusiva de usuários não administradores.' });
       if (action === 'checkin') return res.status(200).json(await saveCheckin(user, req.body));
       if (action === 'answer') return res.status(200).json(await answerQuestion(user, req.body));
       return res.status(400).json({ error: 'Ação inválida.' });
