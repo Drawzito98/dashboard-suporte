@@ -30,9 +30,9 @@
   --accent-rgb:    37, 99, 235;
   --warn-fg:       #c98a1e;
   --danger-ring:   rgba(220, 38, 38, 0.3);
-  --accent-selected:       #8B5CF6;
-  --accent-selected-ring:  rgba(139, 92, 246, 0.25);
-  --accent-selected-soft:  rgba(139, 92, 246, 0.05);
+  --accent-selected:       #c69216;
+  --accent-selected-ring:  rgba(198, 146, 22, 0.25);
+  --accent-selected-soft:  rgba(198, 146, 22, 0.08);
 
   /* Status (uso parcimonioso) */
   --success:       #047857;
@@ -177,9 +177,9 @@ html[data-theme="dark"] {
   --accent-rgb:    226, 181, 60;
   --warn-fg:       #fbbf24;
   --danger-ring:   rgba(248, 113, 113, 0.3);
-  --accent-selected:       #a78bfa;
-  --accent-selected-ring:  rgba(167, 139, 250, 0.25);
-  --accent-selected-soft:  rgba(167, 139, 250, 0.12);
+  --accent-selected:       #e2b53c;
+  --accent-selected-ring:  rgba(226, 181, 60, 0.30);
+  --accent-selected-soft:  rgba(226, 181, 60, 0.12);
 
   --success:       #34d399;
   --success-soft:  rgba(52, 211, 153, 0.12);

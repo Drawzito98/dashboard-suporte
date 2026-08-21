@@ -2733,9 +2733,9 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   box-shadow: 0 1px 4px var(--accent-ring);
 }
 .avaliacao-historico-item.selected {
-  border-color: var(--accent-selected, #8B5CF6);
-  box-shadow: 0 0 0 2px var(--accent-selected-ring, rgba(139,92,246,0.25));
-  background: var(--accent-selected-soft, rgba(139,92,246,0.05));
+  border-color: var(--accent-selected, #c69216);
+  box-shadow: 0 0 0 2px var(--accent-selected-ring, rgba(198,146,22,0.25));
+  background: var(--accent-selected-soft, rgba(198,146,22,0.08));
 }
 
 .avaliacao-historico-header {
@@ -3744,20 +3744,20 @@ body[data-active-tab="dashboard"] .dashboard-context-action { display: inline-fl
   --shadow-lg: 0 20px 50px rgba(23, 32, 51, .14);
 }
 html[data-theme="dark"] {
-  --bg-app: #0e121b;
-  --bg-canvas: #131925;
-  --bg-surface: #171e2b;
-  --bg-subtle: #202838;
-  --bg-inset: #111722;
-  --text-strong: #f2f5fa;
-  --text-primary: #dbe1eb;
-  --text-secondary: #9ba7ba;
-  --text-muted: #778398;
-  --border: #273144;
-  --border-strong: #39465d;
-  --accent: #7895ff;
-  --accent-hover: #9aafff;
-  --accent-soft: rgba(120, 149, 255, .13);
+  --bg-app: #080b11;
+  --bg-canvas: #0f141d;
+  --bg-surface: #151b25;
+  --bg-subtle: #202936;
+  --bg-inset: #1a222e;
+  --text-strong: #ffffff;
+  --text-primary: #eef2f7;
+  --text-secondary: #c3ccd8;
+  --text-muted: #9ca8b8;
+  --border: #2d3746;
+  --border-strong: #465265;
+  --accent: #e2b53c;
+  --accent-hover: #f0cb62;
+  --accent-soft: rgba(226, 181, 60, .12);
 }
 body { background: var(--bg-app); }
 button, input, select, textarea { font: inherit; }
