@@ -176,6 +176,26 @@
   }
 
 
+  function dailyPetMarkup(data) {
+    const messages = [
+      "Um passo de cada vez também leva longe.",
+      "Seu conhecimento cresce um pouco todos os dias.",
+      "Consistência vale mais do que perfeição.",
+      "Hoje é uma boa oportunidade para aprender algo novo.",
+      "Seu esforço de hoje já conta.",
+      "Continue curioso. Você está evoluindo.",
+      "Pequenos avanços criam grandes resultados."
+    ];
+    const seed = String(data.date || "").split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const streak = Number(data.stats?.streak || 0);
+    let message = messages[seed % messages.length];
+    if (data.answer?.acertou) message = "Mandou bem no desafio! Seu conhecimento brilhou hoje.";
+    else if (data.answer) message = "Cada tentativa ensina algo. Amanhã tem uma nova chance!";
+    else if (streak >= 5) message = "Essa ofensiva está incrível. Vamos manter o ritmo!";
+    const state = data.answer ? " is-celebrating" : streak >= 5 ? " is-on-fire" : "";
+    return `<aside class="daily-pet${state}" aria-label="Mensagem diária do Ixinho"><div class="daily-pet-bubble"><strong>Ixinho</strong><span>${safe(message)}</span></div><div class="daily-pet-character" aria-hidden="true"><i>✨</i><span>🦊</span></div></aside>`;
+  }
+
   function profileAvatarMarkup(data) {
     const fullName = data.personalResults?.collaborator || data.name || '';
     const initials = String(fullName).split(/\s+/).filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase() || '🙂';
@@ -207,6 +227,7 @@
             <h1>Olá, ${safe(String(data.name || '').split(' ')[0])}!</h1>
             <p>Reserve um minuto para registrar seu dia e participar do desafio.</p>
           </div></div>
+          ${dailyPetMarkup(data)}
         </div>
         <div class="daily-stats" aria-label="Seu desempenho no mês">
           <div><strong>${Number(data.stats?.points || 0)}</strong><span>Pontos no mês</span></div>
