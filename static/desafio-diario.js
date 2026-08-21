@@ -186,7 +186,7 @@
       button.disabled = true;
       feedback.textContent = 'Salvando...';
       try {
-        await api('', { method: 'POST', body: JSON.stringify({ action: 'question', data: dateInput.value, pergunta: root.querySelector('#dailyQuestionText').value, alternativas, resposta_correta: Number(root.querySelector('#dailyCorrectAnswer').value), explicacao: root.querySelector('#dailyQuestionExplanation').value }) });
+        await api('', { method: 'POST', body: JSON.stringify({ action: 'question', data: dateInput.value, pergunta: root.querySelector('#dailyQuestionText').value, alternativas: alternatives, resposta_correta: Number(root.querySelector('#dailyCorrectAnswer').value), explicacao: root.querySelector('#dailyQuestionExplanation').value }) });
         renderAdmin(root, await api('?view=admin'));
         const updated = root.querySelector('#dailyAdminFeedback');
         if (updated) updated.textContent = 'Pergunta salva com sucesso.';
