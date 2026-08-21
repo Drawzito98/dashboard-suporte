@@ -4230,6 +4230,15 @@ html[data-theme="dark"] body:not([data-role="colaborador"]) .tab-btn.active {
    ===================================================== */
 body[data-role="admin"] {
   --premium-ease: cubic-bezier(.22, 1, .36, 1);
+  --accent: #287f83;
+  --accent-hover: #206b6f;
+  --accent-soft: rgba(40, 127, 131, .11);
+  --accent-ring: rgba(40, 127, 131, .24);
+  --accent-rgb: 40, 127, 131;
+  --accent-selected: #287f83;
+  --accent-selected-ring: rgba(40, 127, 131, .24);
+  --accent-selected-soft: rgba(40, 127, 131, .11);
+  --text-on-accent: #ffffff;
 }
 body[data-role="admin"] main.app {
   max-width: 1660px;
@@ -4378,6 +4387,17 @@ body[data-role="admin"] :is(.modal-box, .modal-sheet, .colab-detail-panel) {
   border: 1px solid var(--border);
   border-radius: 18px;
   box-shadow: 0 28px 70px rgba(4, 8, 15, .22);
+}
+html[data-theme="dark"] body[data-role="admin"] {
+  --accent: #58b8b5;
+  --accent-hover: #72cbc7;
+  --accent-soft: rgba(88, 184, 181, .13);
+  --accent-ring: rgba(88, 184, 181, .28);
+  --accent-rgb: 88, 184, 181;
+  --accent-selected: #58b8b5;
+  --accent-selected-ring: rgba(88, 184, 181, .28);
+  --accent-selected-soft: rgba(88, 184, 181, .13);
+  --text-on-accent: #071416;
 }
 html[data-theme="dark"] body[data-role="admin"] :is(.card, .panel, .kpi, .global-filter-bar, .sidebar) {
   background-image: linear-gradient(145deg, rgba(255,255,255,.018), transparent 42%);
