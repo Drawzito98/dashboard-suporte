@@ -18,6 +18,13 @@ async function _authHeaders() {
   } catch { return {}; }
 }
 
+
+function findCsvSectorByName(name) {
+  const target = String(name || '').trim();
+  if (!target || typeof rawRecords === 'undefined') return '';
+  const match = rawRecords.find(record => String(record?.Atendente || '').trim().localeCompare(target, 'pt-BR', { sensitivity: 'base' }) === 0 && String(record?.Setor || '').trim());
+  return String(match?.Setor || '').trim();
+}
 async function carregarUsuarios() {
   const container = document.getElementById('listaUsuarios');
   if (!container) return;
@@ -81,6 +88,49 @@ async function carregarUsuarios() {
     ].join('');
 
     container.innerHTML = html;
+
+    const bulkCsvButton = document.getElementById('bulkCsvLinkBtn');
+    if (bulkCsvButton) bulkCsvButton.onclick = async () => {
+      const records = typeof rawRecords !== 'undefined' ? rawRecords : [];
+      const csvNames = [...new Set(records.map(record => String(record?.Atendente || '').trim()).filter(name => name && (typeof isAggregateName !== 'function' || !isAggregateName(name)) && (typeof isColabActive !== 'function' || isColabActive(name))))];
+      const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+      const exactName = value => csvNames.find(name => name.localeCompare(String(value || '').trim(), 'pt-BR', { sensitivity: 'base' }) === 0) || '';
+      const mappings = [];
+      const pending = [];
+      users.filter(user => (user.app_metadata?.role || user.user_metadata?.role) !== 'admin' && user.user_metadata?.ativo !== false).forEach(user => {
+        const email = String(user.email || '').toLowerCase();
+        const registeredName = Object.keys(colabInfo).find(name => String(colabInfo[name]?.email || '').trim().toLowerCase() === email);
+        const csvName = exactName(user.app_metadata?.csv_nome || user.user_metadata?.csv_nome) || exactName(user.user_metadata?.name) || exactName(registeredName);
+        if (csvName) mappings.push({ user, csvName, sector: findCsvSectorByName(csvName) });
+        else pending.push(user.user_metadata?.name || user.email || 'Sem identificação');
+      });
+      if (!mappings.length) {
+        document.getElementById('syncActiveTeamResult').textContent = 'Nenhuma correspondência exata foi encontrada no CSV.';
+        return;
+      }
+      if (!confirm('Vincular automaticamente ' + mappings.length + ' usuários aos nomes e setores identificados no CSV?')) return;
+      bulkCsvButton.disabled = true;
+      bulkCsvButton.textContent = 'Vinculando...';
+      let updated = 0;
+      const failed = [];
+      for (const mapping of mappings) {
+        try {
+          const response = await fetch('/api/users', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
+            body: JSON.stringify({ id: mapping.user.id, csv_nome: mapping.csvName, csv_setor: mapping.sector || null })
+          });
+          if (response.ok) updated += 1;
+          else failed.push(mapping.csvName);
+        } catch { failed.push(mapping.csvName); }
+      }
+      const resultEl = document.getElementById('syncActiveTeamResult');
+      const unresolved = [...pending, ...failed];
+      resultEl.innerHTML = '<strong>' + updated + ' vínculos atualizados</strong>' + (unresolved.length ? ' · ' + unresolved.length + ' pendentes<div style="margin-top:6px;color:var(--text-muted)">Revise individualmente: ' + unresolved.map(escapeHtml).join(', ') + '.</div>' : '<div style="margin-top:6px;color:var(--success)">Nomes e setores vinculados com sucesso.</div>');
+      bulkCsvButton.disabled = false;
+      bulkCsvButton.textContent = 'Vincular CSV em massa';
+      carregarUsuarios();
+    };
 
     // Edit name
     container.querySelectorAll('.btn-edit-name').forEach(btn => {
@@ -235,7 +285,7 @@ async function carregarUsuarios() {
             .filter(name => name && (typeof isAggregateName !== 'function' || !isAggregateName(name))))].sort();
           namesList.innerHTML = names.map(name => '<option value="' + escapeHtml(name) + '"></option>').join('');
         }
-        document.getElementById('csvMapSetor').value = btn.dataset.csvSetor;
+        document.getElementById('csvMapSetor').value = findCsvSectorByName(btn.dataset.csvNome) || btn.dataset.csvSetor || '';
         document.getElementById('csvMapError').classList.add('hidden');
         document.getElementById('csvMapSuccess').classList.add('hidden');
       });
@@ -277,7 +327,7 @@ function renderUsuariosAba() {
     <section class="card" style="padding:var(--s-4);margin-bottom:var(--s-5);border-color:var(--accent-soft)">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);flex-wrap:wrap">
         <div><h3 style="margin:0 0 4px">Acessos da equipe ativa</h3><p style="margin:0;color:var(--text-secondary);font-size:12px">Cria somente contas ausentes, vinculadas ao e-mail e aos resultados do colaborador.</p></div>
-        <button class="btn-primary" id="syncActiveTeamBtn" type="button">Criar acessos ausentes</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-small" id="bulkCsvLinkBtn" type="button">Vincular CSV em massa</button><button class="btn-primary" id="syncActiveTeamBtn" type="button">Criar acessos ausentes</button></div>
       </div>
       <p style="margin:10px 0 0;color:var(--text-muted);font-size:11px">Senha provisória: <strong>12345678</strong>. A troca será obrigatória no primeiro acesso.</p>
       <div id="syncActiveTeamResult" style="margin-top:10px;font-size:12px"></div>
@@ -349,12 +399,12 @@ function renderUsuariosAba() {
         <input type="hidden" id="csvMapUserId" />
         <label class="field">
           <span>Nome exato no CSV</span>
-          <input id="csvMapNome" type="text" placeholder="Ex: João Silva" />
           <input id="csvMapNome" type="text" list="csvMapNomes" autocomplete="off" placeholder="Selecione ou digite o nome exato" />
           <datalist id="csvMapNomes"></datalist>
+        </label>
         <label class="field">
-          <span>Setor (opcional)</span>
-          <input id="csvMapSetor" type="text" placeholder="Ex: Suporte N1" />
+          <span>Setor identificado</span>
+          <input id="csvMapSetor" type="text" placeholder="Preenchido automaticamente" />
         </label>
         <div style="display:flex;gap:var(--s-2);margin-top:var(--s-3)">
           <button class="btn-primary" id="csvMapSalvarBtn" type="button" style="flex:1;justify-content:center">Salvar</button>
@@ -572,6 +622,14 @@ function renderUsuariosAba() {
   });
 
   // CSV Map overlay
+  const csvMapNameInput = document.getElementById('csvMapNome');
+  const updateCsvSector = () => {
+    const sectorInput = document.getElementById('csvMapSetor');
+    const identified = findCsvSectorByName(csvMapNameInput?.value);
+    if (sectorInput) sectorInput.value = identified;
+  };
+  csvMapNameInput?.addEventListener('input', updateCsvSector);
+  csvMapNameInput?.addEventListener('change', updateCsvSector);
   document.getElementById('csvMapSalvarBtn')?.addEventListener('click', async () => {
     if (!requireAdmin()) return;
     const id = document.getElementById('csvMapUserId').value;
