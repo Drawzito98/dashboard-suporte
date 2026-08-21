@@ -142,19 +142,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginBtn = document.getElementById('loginBtn');
   if (loginBtn) {
     loginBtn.addEventListener('click', async () => {
-      const email = document.getElementById('loginEmail').value.trim();
+      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
       const password = document.getElementById('loginPassword').value;
       if (!email || !password) { showAuthError('login', 'Preencha email e senha.'); return; }
       setAuthLoading(true);
       showAuthError('login', '');
       try {
+        const { data: currentSessionData } = await sbClient.auth.getSession();
+        const sessionEmail = String(currentSessionData?.session?.user?.email || '').toLowerCase();
+        if (sessionEmail && sessionEmail !== email) await sbClient.auth.signOut({ scope: 'local' });
         const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
-        setAuthLoading(false);
         if (error) {
-          showAuthError('login', error.message === 'Invalid login credentials'
-            ? 'Email ou senha incorretos.'
-            : error.message);
+          setAuthLoading(false);
+          showAuthError('login', error.message === 'Invalid login credentials' ? 'Email ou senha incorretos.' : error.message);
+          return;
         }
+        if (String(data?.user?.email || '').toLowerCase() !== email) {
+          await sbClient.auth.signOut({ scope: 'local' });
+          setAuthLoading(false);
+          showAuthOverlay();
+          showAuthError('login', 'A sessão aberta não corresponde ao e-mail informado. Entre novamente.');
+          return;
+        }
+        setAuthLoading(false);
       } catch (e) {
         setAuthLoading(false);
         showAuthError('login', 'Erro de conexão. Tente novamente.');

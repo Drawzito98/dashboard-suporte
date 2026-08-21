@@ -95,7 +95,12 @@ async function carregarUsuarios() {
       const csvNames = [...new Set(records.map(record => String(record?.Atendente || '').trim()).filter(name => name && (typeof isAggregateName !== 'function' || !isAggregateName(name)) && (typeof isColabActive !== 'function' || isColabActive(name))))];
       const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
       const exactName = value => csvNames.find(name => name.localeCompare(String(value || '').trim(), 'pt-BR', { sensitivity: 'base' }) === 0) || '';
-      const teamUsers = users.filter(user => (user.app_metadata?.role || user.user_metadata?.role) !== 'admin' && user.user_metadata?.ativo !== false);
+      const registeredEmails = new Set(Object.values(colabInfo).map(info => String(info?.email || '').trim().toLowerCase()).filter(Boolean));
+      const teamUsers = users.filter(user => {
+        const email = String(user.email || '').toLowerCase();
+        const role = user.app_metadata?.role || user.user_metadata?.role;
+        return user.user_metadata?.ativo !== false && email !== currentEmail.toLowerCase() && (role !== 'admin' || registeredEmails.has(email));
+      });
       const pending = [];
       const mappings = teamUsers.map(user => {
         const email = String(user.email || '').toLowerCase();
@@ -349,9 +354,9 @@ function renderUsuariosAba() {
       <label class="field">
         <span>Cargo</span>
         <select id="novoUserRole">
-          <option value="admin">Administrador (controle total)</option>
-          <option value="viewer">Visualizador (só ver dados)</option>
           <option value="colaborador">Colaborador (próprios dados)</option>
+          <option value="viewer">Visualizador (só ver dados)</option>
+          <option value="admin">Administrador (controle total)</option>
         </select>
       </label>
       <label class="field" id="csvColabField" style="display:none">
