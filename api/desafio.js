@@ -74,9 +74,9 @@ function normalizeMonthKey(value) {
   return match ? match[2] + '-' + match[1] : '';
 }
 
-function previousMonthKey(today) {
+function previousMonthKey(today, offset = 1) {
   const date = new Date(today + 'T12:00:00-03:00');
-  date.setMonth(date.getMonth() - 1);
+  date.setMonth(date.getMonth() - offset);
   return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
 }
 
@@ -108,8 +108,9 @@ async function getPersonalResults(user) {
     productivity: item.assumed > 0 ? item.completed / item.assumed * 100 : null
   }));
   months.sort((a, b) => b.monthKey.localeCompare(a.monthKey));
-  const previousMonth = months.find(item => item.monthKey === previousMonthKey(localDate())) || null;
-  return { linked: true, collaborator, previousMonth, months };
+  const previousMonth = months.find(item => item.monthKey === previousMonthKey(localDate(), 1)) || null;
+  const comparisonMonth = months.find(item => item.monthKey === previousMonthKey(localDate(), 2)) || null;
+  return { linked: true, collaborator, previousMonth, comparisonMonth, months };
 }
 
 async function getDaily(user) {
