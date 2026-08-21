@@ -9,8 +9,21 @@
     { value: 4, emoji: '🙂', label: 'Bem' },
     { value: 5, emoji: '😄', label: 'Muito bem' }
   ];
+  const motivationalMessages = [
+    'Um passo de cada vez também leva longe.',
+    'Seu conhecimento cresce um pouco todos os dias.',
+    'Consistência vale mais do que perfeição.',
+    'Hoje é uma boa oportunidade para aprender algo novo.',
+    'Seu esforço de hoje já conta.',
+    'Continue curioso. Você está evoluindo.',
+    'Pequenos avanços criam grandes resultados.',
+    'Confie no processo e siga em frente.',
+    'A equipe fica mais forte quando cada pessoa evolui.',
+    'Você não precisa acertar tudo para continuar crescendo.'
+  ];
   let rankingRefreshTimer = null;
   let challengeCountdownTimer = null;
+  let petMessageTimer = null;
 
   async function authHeaders() {
     const { data } = await sbClient.auth.getSession();
@@ -177,24 +190,15 @@
 
 
   function dailyPetMarkup(data) {
-    const messages = [
-      "Um passo de cada vez também leva longe.",
-      "Seu conhecimento cresce um pouco todos os dias.",
-      "Consistência vale mais do que perfeição.",
-      "Hoje é uma boa oportunidade para aprender algo novo.",
-      "Seu esforço de hoje já conta.",
-      "Continue curioso. Você está evoluindo.",
-      "Pequenos avanços criam grandes resultados."
-    ];
-    const seed = String(data.date || "").split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const seed = String(data.date || '').split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
     const streak = Number(data.stats?.streak || 0);
-    let message = messages[seed % messages.length];
-    if (data.answer?.acertou) message = "Mandou bem no desafio! Seu conhecimento brilhou hoje.";
-    else if (data.answer) message = "Cada tentativa ensina algo. Amanhã tem uma nova chance!";
-    else if (streak >= 5) message = "Essa ofensiva está incrível. Vamos manter o ritmo!";
-    const state = data.answer ? " is-celebrating" : streak >= 5 ? " is-on-fire" : "";
+    let message = motivationalMessages[seed % motivationalMessages.length];
+    if (data.answer?.acertou) message = 'Mandou bem no desafio! Seu conhecimento brilhou hoje.';
+    else if (data.answer) message = 'Cada tentativa ensina algo. Amanhã tem uma nova chance!';
+    else if (streak >= 5) message = 'Essa ofensiva está incrível. Vamos manter o ritmo!';
+    const state = data.answer ? ' is-celebrating' : streak >= 5 ? ' is-on-fire' : '';
     const image = data.leaderImageUrl ? `<div class="daily-pet-character" aria-hidden="true"><img class="leader-uploaded-image" src="${safe(data.leaderImageUrl)}" alt=""></div>` : '';
-    return `<aside class="daily-pet${state}" aria-label="Mensagem diária do Líder Supremo"><div class="daily-pet-bubble"><strong>Líder Supremo</strong><span>${safe(message)}</span></div>${image}</aside>`;
+    return `<aside class="daily-pet${state}" aria-label="Mensagem diária do Líder Supremo"><div class="daily-pet-bubble"><strong>Líder Supremo</strong><span class="daily-pet-message" aria-live="polite">${safe(message)}</span></div>${image}</aside>`;
   }
 
   function profileAvatarMarkup(data) {
@@ -258,6 +262,18 @@
         ${personalResultsMarkup(data.personalResults)}
         <p class="daily-privacy">Seu sentimento individual é visível apenas para a gestão. O ranking considera somente o desafio de conhecimento.</p>
       </div>`;
+
+    if (petMessageTimer) clearInterval(petMessageTimer);
+    const petMessage = root.querySelector('.daily-pet-message');
+    if (petMessage) {
+      const seed = String(data.date || '').split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      let messageIndex = seed % motivationalMessages.length;
+      petMessageTimer = setInterval(() => {
+        messageIndex = (messageIndex + 1) % motivationalMessages.length;
+        petMessage.classList.add('is-changing');
+        setTimeout(() => { petMessage.textContent = motivationalMessages[messageIndex]; petMessage.classList.remove('is-changing'); }, 180);
+      }, 12000);
+    }
 
     if (rankingRefreshTimer) clearInterval(rankingRefreshTimer);
     if (answered) {
