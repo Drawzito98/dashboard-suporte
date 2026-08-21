@@ -63,6 +63,34 @@
     </article>`;
   }
 
+  function showAnswerCelebration(result, stats) {
+    document.getElementById('challengeCelebration')?.remove();
+    const streak = Number(stats?.streak || 0);
+    const overlay = document.createElement('div');
+    const confetti = Array.from({ length: 18 }, (_, index) => '<i style="--i:' + index + '"></i>').join('');
+    overlay.id = 'challengeCelebration';
+    overlay.className = 'challenge-celebration ' + (result.acertou ? 'is-correct' : 'is-participation');
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Desafio concluído');
+    overlay.innerHTML = '<div class="celebration-confetti" aria-hidden="true">' + confetti + '</div>' +
+      '<div class="celebration-card"><div class="celebration-icon">' + (result.acertou ? '🏆' : '👏') + '</div>' +
+      '<span class="daily-kicker">Desafio concluído</span><h2>Obrigado por responder!</h2>' +
+      '<p>' + (result.acertou ? 'Você acertou e ganhou 1 ponto.' : 'Sua participação foi registrada. Amanhã tem uma nova chance!') + '</p>' +
+      '<div class="celebration-streak"><span>🔥</span><strong>' + streak + '</strong><small>' + (streak === 1 ? 'dia de ofensiva' : 'dias de ofensiva') + '</small></div>' +
+      '<p class="celebration-message">' + (streak > 1 ? 'Você manteve sua sequência. Continue assim!' : 'Sua ofensiva começou. Volte amanhã para continuar!') + '</p>' +
+      (result.explanation ? '<div class="celebration-explanation"><strong>Saiba mais</strong><span>' + safe(result.explanation) + '</span></div>' : '') +
+      '<button type="button" class="btn-primary celebration-continue">Continuar</button></div>';
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('open'));
+    const close = () => {
+      overlay.classList.remove('open');
+      setTimeout(() => overlay.remove(), 220);
+    };
+    overlay.querySelector('.celebration-continue').addEventListener('click', close);
+    overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+  }
+
   function collaboratorMarkup() {
     return `<section class="daily-experience" id="dailyExperience" aria-live="polite">
       <div class="daily-loading"><div class="spinner"></div><p>Preparando seu dia...</p></div>
@@ -155,6 +183,7 @@
         event.currentTarget.textContent = 'Resposta enviada';
         const refreshed = await api();
         root.querySelector('.daily-stats').innerHTML = `<div><strong>${refreshed.stats.points}</strong><span>Pontos no mês</span></div><div><strong>${refreshed.stats.participations}</strong><span>Participações</span></div><div><strong>🔥 ${refreshed.stats.streak}</strong><span>Ofensiva</span></div>`;
+        showAnswerCelebration(result, refreshed.stats);
       } catch (error) {
         event.currentTarget.disabled = false;
         root.querySelector('#challengeResult').textContent = error.message;
