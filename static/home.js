@@ -188,6 +188,22 @@ function renderHome() {
     }))
   ].slice(0, 6);
 
+  const attentionCount = overdueTasks.length + todayTasks.length + criticalScores.length;
+  const briefingTitle = attentionCount
+    ? attentionCount + (attentionCount === 1 ? ' ponto merece' : ' pontos merecem') + ' sua atenção hoje'
+    : 'Operação em dia — nenhum ponto crítico agora';
+  const briefingText = attentionCount
+    ? overdueTasks.length + ' tarefa(s) atrasada(s), ' + todayTasks.length + ' para hoje e ' + criticalScores.length + ' score(s) em atenção.'
+    : 'Continue acompanhando os indicadores e a agenda da equipe.';
+  html += '<section class="home-daily-briefing ' + (attentionCount ? 'has-attention' : 'is-clear') + '">' +
+    '<div class="home-briefing-symbol" aria-hidden="true">' + (attentionCount ? '!' : '✓') + '</div>' +
+    '<div class="home-briefing-copy"><span>Briefing diário</span><h3>' + escapeHtml(briefingTitle) + '</h3><p>' + escapeHtml(briefingText) + '</p></div>' +
+    '<div class="home-briefing-actions">' +
+      (overdueTasks.length || todayTasks.length ? '<button type="button" data-home-tab="tarefas">Ver tarefas</button>' : '') +
+      (criticalScores.length ? '<button type="button" data-home-tab="lider">Ver gestão</button>' : '') +
+      (!attentionCount ? '<button type="button" data-home-tab="dashboard">Ver indicadores</button>' : '') +
+    '</div></section>';
+
   const priorityHtml = priorityItems.length
     ? priorityItems.map(item =>
       '<button class="home-operations-item" type="button" data-home-tab="' + item.tab + '">' +

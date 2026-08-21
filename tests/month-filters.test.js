@@ -10,6 +10,8 @@ module.exports = function ({ describe, it, assert }) {
     if (m) return `${m[3]}-${m[2]}`;
     const m2 = raw.match(/(\d{4})-(\d{2})/);
     if (m2) return `${m2[1]}-${m2[2]}`;
+    const m3 = raw.match(/^(\d{2})[\/-](\d{4})$/);
+    if (m3) return `${m3[2]}-${m3[1]}`;
     return raw;
   }
 
@@ -90,7 +92,7 @@ module.exports = function ({ describe, it, assert }) {
     it('skips empty values', () => {
       const records = [{ 'Mês': '' }, { 'Mês': null }, { 'Mês': '03/2025' }];
       const months = extractUniqueMonths(records, 'Mês');
-      assert.deepEqual(months, ['2025']);
+      assert.deepEqual(months, ['2025-03']);
     });
   });
 };

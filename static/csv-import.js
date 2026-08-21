@@ -64,7 +64,8 @@ function normalizeNumber(s) {
   if (s == null) return '';
   let t = String(s).replace(/\u00A0/g, '').replace(/ /g, '');
   if (t.indexOf('.') !== -1 && t.indexOf(',') !== -1) {
-    t = t.replace(/\./g, '').replace(/,/g, '.');
+    if (t.lastIndexOf(',') > t.lastIndexOf('.')) t = t.replace(/\./g, '').replace(/,/g, '.');
+    else t = t.replace(/,/g, '');
   } else {
     t = t.replace(/\./g, '');
     t = t.replace(/,/g, '.');
@@ -78,6 +79,8 @@ function parseDateKey(raw) {
   const m = raw.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
   if (m) return `${m[3]}-${m[2]}`;
   const m2 = raw.match(/(\d{4})-(\d{2})/);
+  const m3 = raw.match(/^(\d{2})[\/-](\d{4})$/);
+  if (m3) return `${m3[2]}-${m3[1]}`;
   if (m2) return `${m2[1]}-${m2[2]}`;
   return raw;
 }

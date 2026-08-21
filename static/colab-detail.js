@@ -121,6 +121,7 @@ function renderColabDetail(name) {
   </table></div>`;
 
   container.innerHTML = html;
+  renderColab360Extras(name, container);
 
   // Bind perfil button
   const perfilBtn = document.getElementById('colabPerfilBtn');
@@ -132,6 +133,55 @@ function renderColabDetail(name) {
   if (document.getElementById('colabDetailChart') && typeof Chart !== 'undefined') {
     renderColabDetailChart(monthlyData);
   }
+}
+
+async function renderColab360Extras(name, container) {
+  const host = document.createElement('section');
+  host.className = 'colab-360-section';
+  host.innerHTML = '<div class="colab-360-heading"><div><span>Visão integrada</span><h3>Perfil 360°</h3></div><small>Desempenho, desenvolvimento e engajamento</small></div><div class="colab-360-grid"><div class="loading-skeleton"></div><div class="loading-skeleton"></div><div class="loading-skeleton"></div><div class="loading-skeleton"></div></div>';
+  container.appendChild(host);
+
+  const normalize = value => String(value || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
+  const key = normalize(name);
+  const readList = storageKey => {
+    try { const value = JSON.parse(localStorage.getItem(storageKey) || '[]'); return Array.isArray(value) ? value : []; }
+    catch (_) { return []; }
+  };
+  const feedbacks = readList('sistema_feedbacks_v1').filter(item => normalize(item.colaborador) === key);
+  const bonuses = readList('sistema_pontos_extras_v1').filter(item => normalize(item.colaborador) === key);
+  const evaluations = readList('sistema_avaliacoes_v1').filter(item => normalize(item.colaborador) === key);
+  const bonusTotal = bonuses.reduce((sum, item) => sum + (Number(item.pontos) || 0), 0);
+  let activity = [];
+
+  try {
+    if (typeof sbClient !== 'undefined') {
+      const { data } = await sbClient.auth.getSession();
+      const token = data?.session?.access_token;
+      if (token) {
+        const response = await fetch('/api/desafio?view=admin', { headers: { Authorization: 'Bearer ' + token } });
+        if (response.ok) {
+          const payload = await response.json();
+          activity = (payload.activity || []).filter(item => normalize(item.name) === key);
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('[Perfil 360] Engajamento indisponível:', error);
+  }
+
+  const answered = activity.filter(item => item.answered);
+  const correct = answered.filter(item => item.correct).length;
+  const accuracy = answered.length ? Math.round(correct / answered.length * 100) : null;
+  const moods = activity.map(item => Number(item.mood)).filter(Number.isFinite);
+  const moodAverage = moods.length ? moods.reduce((a, b) => a + b, 0) / moods.length : null;
+  const cards = [
+    ['Feedbacks', feedbacks.length, 'registros salvos'],
+    ['Avaliações', evaluations.length, 'ciclos registrados'],
+    ['Bônus', (bonusTotal > 0 ? '+' : '') + bonusTotal.toLocaleString('pt-BR', { maximumFractionDigits: 1 }), bonuses.length + ' lançamento(s)'],
+    ['Desafios', accuracy == null ? '—' : accuracy + '%', answered.length + ' resposta(s)'],
+    ['Clima médio', moodAverage == null ? '—' : moodAverage.toLocaleString('pt-BR', { maximumFractionDigits: 1 }), moods.length + ' check-in(s)']
+  ];
+  host.querySelector('.colab-360-grid').innerHTML = cards.map(item => '<div class="colab-360-card"><span>' + item[0] + '</span><strong>' + item[1] + '</strong><small>' + item[2] + '</small></div>').join('');
 }
 
 function renderColabDetailChart(monthlyData) {
