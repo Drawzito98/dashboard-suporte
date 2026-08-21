@@ -124,6 +124,48 @@ async function getPersonalResults(user) {
   return { linked: true, collaborator, photoUrl: photos[0]?.foto_url || '', previousMonth, comparisonMonth, months };
 }
 
+
+async function getMonthlyRanking(currentUser, month = localDate().slice(0, 7), today = localDate()) {
+  const [answers, usersResponse] = await Promise.all([
+    rest('respostas_diarias?select=user_id,data,pontos,acertou&data=gte.' + month + '-01&data=lte.' + month + '-31'),
+    fetch(SUPABASE_URL + '/auth/v1/admin/users?per_page=1000', { headers: jsonHeaders() }).then(async response => {
+      if (!response.ok) throw new Error('Não foi possível atualizar o ranking.');
+      return response.json();
+    })
+  ]);
+  const users = (usersResponse.users || usersResponse || []).filter(user => (user.app_metadata?.role || user.user_metadata?.role) === 'colaborador' && user.user_metadata?.ativo !== false);
+  const userMap = Object.fromEntries(users.map(user => [user.id, user]));
+  const rankingMap = answers.reduce((acc, row) => {
+    if (!userMap[row.user_id]) return acc;
+    const item = acc[row.user_id] || { userId: row.user_id, points: 0, participations: 0, correct: 0, dates: [] };
+    item.points += 1 + Number(row.pontos || 0);
+    item.participations += 1;
+    if (row.acertou) item.correct += 1;
+    item.dates.push(row.data);
+    acc[row.user_id] = item;
+    return acc;
+  }, {});
+  const ranking = Object.values(rankingMap).map(item => {
+    const user = userMap[item.userId];
+    const fullName = user.user_metadata?.name || user.app_metadata?.csv_nome || user.email || 'Colaborador';
+    const parts = String(fullName).trim().split(/\s+/).filter(Boolean);
+    return {
+      ...item,
+      name: parts[0] + (parts[1] ? ' ' + parts[1][0] + '.' : ''),
+      streak: calculateStreak(item.dates.map(data => ({ data })), today),
+      accuracy: item.participations ? Math.round(item.correct / item.participations * 100) : 0
+    };
+  }).sort((a, b) => b.points - a.points || b.streak - a.streak || b.correct - a.correct || a.name.localeCompare(b.name));
+  const publicRow = (item, index) => item ? { position: index + 1, name: item.name, points: item.points, participations: item.participations, correct: item.correct, streak: item.streak, accuracy: item.accuracy, isCurrentUser: item.userId === currentUser.id } : null;
+  const ownIndex = ranking.findIndex(item => item.userId === currentUser.id);
+  return {
+    month,
+    total: ranking.length,
+    top: ranking.slice(0, 3).map(publicRow),
+    me: ownIndex >= 0 ? publicRow(ranking[ownIndex], ownIndex) : null,
+    updatedAt: new Date().toISOString()
+  };
+}
 async function getDaily(user) {
   const today = localDate();
   const month = today.slice(0, 7);
@@ -147,6 +189,7 @@ async function getDaily(user) {
     correctAnswers >= 10 && { icon: '🎯', label: '10 acertos' },
     monthHistory.length >= monthlyGoal && { icon: '🏅', label: 'Meta do mês' }
   ].filter(Boolean).slice(-3);
+  const ranking = answers[0] ? await getMonthlyRanking(user, month, today).catch(() => null) : null;
   return {
     date: today,
     name: user.user_metadata?.name || user.user_metadata?.csv_nome || user.email,
@@ -154,7 +197,8 @@ async function getDaily(user) {
     checkin: checkins[0] || null,
     answer: answers[0] || null,
     stats: { points, participations: monthHistory.length, streak, nextMilestone, monthlyGoal, correctAnswers, weeklyParticipations: weeklyHistory.length, weeklyCorrect: weeklyHistory.filter(row => row.acertou).length, achievements },
-    personalResults
+    personalResults,
+    ranking
   };
 }
 
@@ -245,14 +289,15 @@ async function getAdminData(requestedMonth) {
   const users = (usersResponse.users || usersResponse || []).filter(user => user.user_metadata?.role !== 'admin');
   const names = Object.fromEntries(users.map(user => [user.id, user.user_metadata?.name || user.user_metadata?.csv_nome || user.email]));
   const ranking = Object.entries(answers.reduce((acc, row) => {
-    const item = acc[row.user_id] || { user_id: row.user_id, name: names[row.user_id] || 'Colaborador', points: 0, participations: 0, dates: [] };
+    const item = acc[row.user_id] || { user_id: row.user_id, name: names[row.user_id] || 'Colaborador', points: 0, participations: 0, correct: 0, dates: [] };
     item.points += 1 + Number(row.pontos || 0);
     item.participations += 1;
+    if (row.acertou) item.correct += 1;
     item.dates.push(row.data);
     acc[row.user_id] = item;
     return acc;
-  }, {})).map(([, item]) => ({ ...item, streak: calculateStreak(item.dates.map(data => ({ data })), item.dates.slice().sort().at(-1) || today) }))
-    .sort((a, b) => b.points - a.points || b.participations - a.participations || a.name.localeCompare(b.name));
+  }, {})).map(([, item]) => ({ ...item, streak: calculateStreak(item.dates.map(data => ({ data })), item.dates.slice().sort().at(-1) || today), accuracy: item.participations ? Math.round(item.correct / item.participations * 100) : 0 }))
+    .sort((a, b) => b.points - a.points || b.streak - a.streak || b.correct - a.correct || a.name.localeCompare(b.name));
   const liveActivity = buildAdminActivity(answers, checkins, questions, names);
   const archivedActivity = resetHistory.filter(row => row.link === month).flatMap(row => {
     try {
@@ -355,6 +400,13 @@ module.exports = async (req, res) => {
 
   try {
     if (req.method === 'GET') {
+      if (req.query?.view === 'ranking') {
+        if (user.user_metadata?.role === 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
+        const today = localDate();
+        const answered = await rest('respostas_diarias?select=id&user_id=eq.' + user.id + '&data=eq.' + today + '&limit=1');
+        if (!answered[0]) return res.status(200).json({ locked: true });
+        return res.status(200).json(await getMonthlyRanking(user, today.slice(0, 7), today));
+      }
       if (req.query?.view === 'admin') {
         if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
         return res.status(200).json(await getAdminData(req.query?.month));
