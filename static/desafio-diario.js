@@ -48,15 +48,27 @@
   }
 
 
-  function previousMonthSummaryMarkup(item) {
+  function trendMarkup(current, previous) {
+    const currentValue = Number(current);
+    const previousValue = Number(previous);
+    if (!Number.isFinite(currentValue) || !Number.isFinite(previousValue) || previousValue === 0) return '';
+    const variation = (currentValue - previousValue) / Math.abs(previousValue) * 100;
+    if (Math.abs(variation) < 0.05) return '<small class="metric-trend is-stable">• estável</small>';
+    const direction = variation > 0 ? 'up' : 'down';
+    const arrow = variation > 0 ? '↑' : '↓';
+    return '<small class="metric-trend is-' + direction + '">' + arrow + ' ' + Math.abs(variation).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%</small>';
+  }
+
+  function previousMonthSummaryMarkup(item, comparison) {
     if (!item) {
       return '<div class="previous-month-summary is-empty"><span>Último mês fechado</span><p>Os dados do mês anterior ainda não foram importados.</p></div>';
     }
     const score = item.averageScore == null ? '—' : Number(item.averageScore).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const productivity = item.productivity == null ? '—' : Number(item.productivity).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
     return '<section class="previous-month-summary"><div class="previous-month-title"><span>Último mês fechado</span><strong>' + safe(formatMonth(item.month)) + '</strong></div>' +
-      '<div class="previous-month-metrics"><div><strong>' + Number(item.completed || 0).toLocaleString('pt-BR') + '</strong><span>Finalizados</span></div>' +
-      '<div><strong>' + score + '</strong><span>Score médio</span></div><div><strong>' + productivity + '</strong><span>Produtividade</span></div></div></section>';
+      '<div class="previous-month-metrics"><div><strong>' + Number(item.completed || 0).toLocaleString('pt-BR') + '</strong><span>Finalizados</span>' + trendMarkup(item.completed, comparison?.completed) + '</div>' +
+      '<div><strong>' + score + '</strong><span>Score médio</span>' + trendMarkup(item.averageScore, comparison?.averageScore) + '</div>' +
+      '<div><strong>' + productivity + '</strong><span>Produtividade</span>' + trendMarkup(item.productivity, comparison?.productivity) + '</div></div></section>';
   }
   function personalResultsMarkup(results) {
     if (!results?.linked) {
@@ -74,7 +86,7 @@
     const months = Array.isArray(results.months) ? results.months : [];
     return `<article class="daily-card personal-results-card">
       <div class="daily-card-heading"><span class="daily-step">3</span><div><h2>Seus resultados mensais</h2><p>Indicadores de ${safe(results.collaborator)}.</p></div></div>
-      ${previousMonthSummaryMarkup(results.previousMonth)}
+      ${previousMonthSummaryMarkup(results.previousMonth, results.comparisonMonth)}
       ${months.length ? `<div class="personal-results-filter"><label for="personalResultsPeriod">Filtrar período</label><select id="personalResultsPeriod"><option value="">Todos os meses</option>${months.map(item => `<option value="${safe(item.month)}">${safe(formatMonth(item.month))}</option>`).join('')}</select></div><div class="table-wrap"><table class="personal-results-table"><thead><tr><th>Período</th><th>Setor</th><th>Assumidos</th><th>Finalizados</th><th>Transferidos</th><th>Score médio</th><th>Produtividade</th></tr></thead><tbody>
         ${months.map(item => `<tr data-month="${safe(item.month)}"><td>${safe(formatMonth(item.month))}</td><td>${safe((item.sectors || []).join(', ') || '—')}</td><td>${Number(item.assumed || 0).toLocaleString('pt-BR')}</td><td>${Number(item.completed || 0).toLocaleString('pt-BR')}</td><td>${Number(item.transferred || 0).toLocaleString('pt-BR')}</td><td>${item.averageScore == null ? '—' : Number(item.averageScore).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td>${item.productivity == null ? '—' : `${Number(item.productivity).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}</td></tr>`).join('')}
       </tbody></table></div>` : '<div class="daily-empty"><span>📊</span><strong>Nenhum resultado encontrado</strong><p>Ainda não há registros mensais associados ao seu nome.</p></div>'}
