@@ -273,6 +273,14 @@ function renderUsuariosAba() {
   if (!container) return;
 
   container.innerHTML = `
+    <section class="card" style="padding:var(--s-4);margin-bottom:var(--s-5);border-color:var(--accent-soft)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);flex-wrap:wrap">
+        <div><h3 style="margin:0 0 4px">Acessos da equipe ativa</h3><p style="margin:0;color:var(--text-secondary);font-size:12px">Cria somente contas ausentes, vinculadas ao e-mail e aos resultados do colaborador.</p></div>
+        <button class="btn-primary" id="syncActiveTeamBtn" type="button">Criar acessos ausentes</button>
+      </div>
+      <p style="margin:10px 0 0;color:var(--text-muted);font-size:11px">Senha provisória: <strong>12345678</strong>. A troca será obrigatória no primeiro acesso.</p>
+      <div id="syncActiveTeamResult" style="margin-top:10px;font-size:12px"></div>
+    </section>
     <div class="form-stack" style="max-width:500px;margin-bottom:var(--s-6)">
       <h3 style="margin:0 0 var(--s-3)">Criar novo usuário</h3>
       <label class="field">
@@ -425,6 +433,42 @@ function renderUsuariosAba() {
     if (pwdInput && !pwdInput.value) {
       pwdInput.value = '12345678';
     }
+  });
+
+  document.getElementById('syncActiveTeamBtn')?.addEventListener('click', async event => {
+    if (!requireAdmin()) return;
+    const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+    const records = typeof rawRecords !== 'undefined' ? rawRecords : [];
+    const recordNames = records.filter(row => row?.Atendente && (typeof isAggregateName !== 'function' || !isAggregateName(row.Atendente))).map(row => String(row.Atendente).trim());
+    const names = [...new Set([...recordNames, ...Object.keys(colabInfo)])].filter(name => name && (typeof isColabActive !== 'function' || isColabActive(name))).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const collaborators = names.map(name => {
+      const row = records.find(item => String(item?.Atendente || '').trim() === name && item?.Setor);
+      return { name, email: String(colabInfo[name]?.email || '').trim(), sector: String(row?.Setor || '').trim() };
+    });
+    const resultEl = document.getElementById('syncActiveTeamResult');
+    if (!collaborators.length) { resultEl.textContent = 'Nenhum colaborador ativo encontrado.'; return; }
+    if (!confirm('Criar os acessos ausentes para ' + collaborators.length + ' colaboradores ativos? A senha provisória será 12345678.')) return;
+    const button = event.currentTarget;
+    button.disabled = true;
+    button.textContent = 'Criando acessos...';
+    resultEl.textContent = '';
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
+        body: JSON.stringify({ action: 'sync_active_team', collaborators })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Não foi possível criar os acessos.');
+      const skipped = [...(data.skipped || []), ...(data.failed || [])];
+      resultEl.innerHTML = '<strong>' + Number(data.created?.length || 0) + ' criados</strong> · ' + Number(data.existing?.length || 0) + ' já existentes · ' + skipped.length + ' pendentes' +
+        (skipped.length ? '<div style="margin-top:6px;color:var(--danger)">Corrija o e-mail de: ' + skipped.map(item => escapeHtml(item.name)).join(', ') + '.</div>' : '<div style="margin-top:6px;color:var(--success)">Todos os colaboradores ativos possuem acesso.</div>');
+      carregarUsuarios();
+    } catch (error) {
+      resultEl.innerHTML = '<span style="color:var(--danger)">' + escapeHtml(error.message) + '</span>';
+    }
+    button.disabled = false;
+    button.textContent = 'Criar acessos ausentes';
   });
 
   document.getElementById('criarUsuarioBtn')?.addEventListener('click', async () => {
