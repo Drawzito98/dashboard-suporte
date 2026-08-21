@@ -64,6 +64,22 @@ function numberValue(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
+function normalizeMonthKey(value) {
+  const text = String(value || '').trim();
+  let match = text.match(/^(\d{4})-(\d{2})/);
+  if (match) return match[1] + '-' + match[2];
+  match = text.match(/^(\d{2})[\/-](\d{4})$/);
+  if (match) return match[2] + '-' + match[1];
+  match = text.match(/^\d{2}[\/-](\d{2})[\/-](\d{4})$/);
+  return match ? match[2] + '-' + match[1] : '';
+}
+
+function previousMonthKey(today) {
+  const date = new Date(today + 'T12:00:00-03:00');
+  date.setMonth(date.getMonth() - 1);
+  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+}
+
 async function getPersonalResults(user) {
   const collaborator = String(user.app_metadata?.csv_nome || '').trim();
   if (!collaborator) return { linked: false, collaborator: '', months: [] };
@@ -83,6 +99,7 @@ async function getPersonalResults(user) {
   });
   const months = Array.from(grouped.values()).map(item => ({
     month: item.month,
+    monthKey: normalizeMonthKey(item.month),
     sectors: Array.from(item.sectors),
     assumed: item.assumed,
     transferred: item.transferred,
@@ -90,7 +107,9 @@ async function getPersonalResults(user) {
     averageScore: item.scores.length ? item.scores.reduce((sum, score) => sum + score, 0) / item.scores.length : null,
     productivity: item.assumed > 0 ? item.completed / item.assumed * 100 : null
   }));
-  return { linked: true, collaborator, months };
+  months.sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+  const previousMonth = months.find(item => item.monthKey === previousMonthKey(localDate())) || null;
+  return { linked: true, collaborator, previousMonth, months };
 }
 
 async function getDaily(user) {
