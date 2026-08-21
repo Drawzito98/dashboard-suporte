@@ -193,7 +193,8 @@
     else if (data.answer) message = "Cada tentativa ensina algo. Amanhã tem uma nova chance!";
     else if (streak >= 5) message = "Essa ofensiva está incrível. Vamos manter o ritmo!";
     const state = data.answer ? " is-celebrating" : streak >= 5 ? " is-on-fire" : "";
-    return `<aside class="daily-pet${state}" aria-label="Mensagem diária do Líder Supremo"><div class="daily-pet-bubble"><strong>Líder Supremo</strong><span>${safe(message)}</span></div><div class="daily-pet-character" aria-hidden="true"><svg class="leader-hero" viewBox="0 0 160 180"><defs><linearGradient id="cape90" x1="0" x2="1"><stop stop-color="#05070c"/><stop offset=".45" stop-color="#172947"/><stop offset="1" stop-color="#020409"/></linearGradient><linearGradient id="suit90" x1="0" x2="1"><stop stop-color="#5d6775"/><stop offset=".5" stop-color="#9ba2aa"/><stop offset="1" stop-color="#46505e"/></linearGradient></defs><path fill="url(#cape90)" d="M3 180 15 78 48 52l17-8h30l17 8 33 26 12 102-26-26-17 26-17-22-17 22-17-22-18 22-17-26Z"/><path fill="url(#suit90)" d="m20 180 9-82 34-25h34l34 25 9 82Z"/><path fill="#46505e" d="m29 98 34-25 17 17-17 17Zm102 0L97 73 80 90l17 17Z" opacity=".7"/><path fill="#090d16" d="m54 19 10-19 9 20h14L97 0l10 19-7 57-20 24-20-24Z"/><path fill="#ba8d70" d="m61 62 10 8h18l10-8-4 22-15 14-15-14Z"/><path fill="#f5fbff" d="m60 45 15 5-14 5Zm40 0-15 5 14 5Z"/><path fill="#080b12" d="m58 38 18 9-18-4Zm44 0-18 9 18-4Z"/><ellipse cx="80" cy="119" rx="27" ry="12" fill="#e4b72f"/><path fill="#111827" d="m57 119 11-6 5 3 7-6 7 6 5-3 11 6-10-2-6 7-7-4-7 4-6-7Z"/><path fill="none" stroke="#29384e" stroke-width="3" d="m22 128 35-20m81 20-35-20M48 164l32-20 32 20"/><path fill="#0a0f19" d="m15 78 18 14-7 60-23 28Zm130 0-18 14 7 60 23 28Z"/></svg></div></aside>`;
+    const image = data.leaderImageUrl ? `<div class="daily-pet-character" aria-hidden="true"><img class="leader-uploaded-image" src="${safe(data.leaderImageUrl)}" alt=""></div>` : '';
+    return `<aside class="daily-pet${state}" aria-label="Mensagem diária do Líder Supremo"><div class="daily-pet-bubble"><strong>Líder Supremo</strong><span>${safe(message)}</span></div>${image}</aside>`;
   }
 
   function profileAvatarMarkup(data) {
@@ -418,6 +419,7 @@
         <div><strong>${data.summary.averageMood == null ? '—' : data.summary.averageMood.toFixed(1)}</strong><span>Clima médio hoje</span></div>
         <div><strong>${data.summary.answersToday}</strong><span>Respostas hoje</span></div>
       </div>
+      <section class="daily-card leader-image-admin-card"><div><h3>Imagem do Líder Supremo</h3><p>Envie um PNG com fundo transparente. Ele aparecerá ao lado da mensagem diária dos colaboradores.</p><label class="field"><span>Arquivo PNG · máximo 1,5 MB</span><input id="leaderImageInput" type="file" accept="image/png,.png"></label><div class="daily-form-actions"><button class="btn-primary" id="leaderImageUploadBtn" type="button">Salvar imagem</button><button class="btn-small" id="leaderImageRemoveBtn" type="button" ${data.leaderImageUrl ? '' : 'disabled'}>Remover imagem</button></div><p class="daily-feedback" id="leaderImageFeedback"></p></div><div class="leader-image-preview" id="leaderImagePreview">${data.leaderImageUrl ? `<img src="${safe(data.leaderImageUrl)}" alt="Prévia da imagem atual">` : '<span>Nenhuma imagem configurada</span>'}</div></section>
       <div class="daily-admin-grid">
         <section class="daily-card"><h3>Programar pergunta</h3>
           <form id="dailyQuestionForm" class="daily-question-form">
@@ -444,6 +446,42 @@
       </section>`;
     const dateInput = root.querySelector('#dailyQuestionDate');
     if (dateInput) dateInput.value = data.date;
+    const leaderInput = root.querySelector('#leaderImageInput');
+    leaderInput?.addEventListener('change', () => {
+      const file = leaderInput.files?.[0];
+      const feedback = root.querySelector('#leaderImageFeedback');
+      if (!file) return;
+      if (file.type !== 'image/png' || !file.name.toLowerCase().endsWith('.png')) { leaderInput.value = ''; feedback.textContent = 'Selecione um arquivo PNG válido.'; return; }
+      if (file.size > 1572864) { leaderInput.value = ''; feedback.textContent = 'A imagem deve ter no máximo 1,5 MB.'; return; }
+      const preview = root.querySelector('#leaderImagePreview');
+      if (preview) preview.innerHTML = '<img src="' + safe(URL.createObjectURL(file)) + '" alt="Prévia da imagem selecionada">';
+      feedback.textContent = 'Prévia pronta. Clique em Salvar imagem.';
+    });
+    root.querySelector('#leaderImageUploadBtn')?.addEventListener('click', async event => {
+      const file = leaderInput?.files?.[0];
+      const feedback = root.querySelector('#leaderImageFeedback');
+      if (!file) { feedback.textContent = 'Selecione uma imagem PNG.'; return; }
+      event.currentTarget.disabled = true;
+      feedback.textContent = 'Enviando imagem...';
+      try {
+        const imageData = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.')); reader.readAsDataURL(file); });
+        await api('', { method: 'POST', body: JSON.stringify({ action: 'leader_image', imageData }) });
+        renderAdmin(root, await api('?view=admin'));
+        root.querySelector('#leaderImageFeedback').textContent = 'Imagem salva e liberada para os colaboradores.';
+      } catch (error) { feedback.textContent = error.message; event.currentTarget.disabled = false; }
+    });
+    root.querySelector('#leaderImageRemoveBtn')?.addEventListener('click', async event => {
+      if (!confirm('Remover a imagem atual do Líder Supremo?')) return;
+      const feedback = root.querySelector('#leaderImageFeedback');
+      event.currentTarget.disabled = true;
+      feedback.textContent = 'Removendo imagem...';
+      try {
+        await api('', { method: 'POST', body: JSON.stringify({ action: 'leader_image', remove: true }) });
+        renderAdmin(root, await api('?view=admin'));
+        root.querySelector('#leaderImageFeedback').textContent = 'Imagem removida.';
+      } catch (error) { feedback.textContent = error.message; event.currentTarget.disabled = false; }
+    });
+
     const filterActivityRows = () => {
       const selectedName = root.querySelector('#activityUserFilter')?.value || '';
       const selectedResult = root.querySelector('#activityResultFilter')?.value || '';
