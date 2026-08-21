@@ -63,6 +63,10 @@
     </article>`;
   }
 
+  function challengeCompletedMarkup() {
+    return '<div class="daily-empty challenge-completed"><span>✅</span><strong>Desafio do dia concluído</strong><p>Obrigado por responder! Um novo desafio será liberado amanhã.</p></div>';
+  }
+
   function showAnswerCelebration(result, stats) {
     document.getElementById('challengeCelebration')?.remove();
     const streak = Number(stats?.streak || 0);
@@ -120,13 +124,13 @@
         <article class="daily-card mood-card">
           <div class="daily-card-heading"><span class="daily-step">1</span><div><h2>Como você está hoje?</h2><p>Seu registro é confidencial e ajuda a liderança a cuidar melhor do time.</p></div></div>
           <div class="mood-options" role="radiogroup" aria-label="Como você está se sentindo">
-            ${moods.map(mood => `<button type="button" class="mood-option${selectedMood === mood.value ? ' selected' : ''}" data-mood="${mood.value}" aria-label="${mood.label}" aria-pressed="${selectedMood === mood.value}"><span>${mood.emoji}</span><small>${mood.label}</small></button>`).join('')}
+            ${moods.map(mood => `<button type="button" class="mood-option${selectedMood === mood.value ? ' selected' : ''}" data-mood="${mood.value}" aria-label="${mood.label}" aria-pressed="${selectedMood === mood.value}" ${selectedMood ? 'disabled' : ''}><span>${mood.emoji}</span><small>${mood.label}</small></button>`).join('')}
           </div>
-          <p class="daily-feedback" id="moodFeedback">${selectedMood ? 'Check-in registrado. Você pode alterar a escolha até o fim do dia.' : ''}</p>
+          <p class="daily-feedback" id="moodFeedback">${selectedMood ? 'Check-in registrado. Obrigado por compartilhar!' : ''}</p>
         </article>
         <article class="daily-card challenge-card">
           <div class="daily-card-heading"><span class="daily-step">2</span><div><h2>Desafio do dia</h2><p>Uma pergunta diária para fortalecer seu conhecimento sobre o IXC Provedor.</p></div></div>
-          ${question ? `<div class="challenge-question">${safe(question.pergunta)}</div>
+          ${answered ? challengeCompletedMarkup() : question ? `<div class="challenge-question">${safe(question.pergunta)}</div>
             <div class="challenge-options">
               ${question.alternativas.map((option, index) => `<button type="button" class="challenge-option${answered?.alternativa === index ? ' selected' : ''}" data-answer="${index}" ${answered ? 'disabled' : ''}><span>${String.fromCharCode(65 + index)}</span>${safe(option)}</button>`).join('')}
             </div>
@@ -145,7 +149,7 @@
       });
     });
 
-    root.querySelectorAll('.mood-option').forEach(button => button.addEventListener('click', async () => {
+    root.querySelectorAll('.mood-option:not([disabled])').forEach(button => button.addEventListener('click', async () => {
       const feedback = root.querySelector('#moodFeedback');
       root.querySelectorAll('.mood-option').forEach(item => { item.disabled = true; });
       try {
@@ -158,7 +162,6 @@
         feedback.textContent = 'Check-in registrado. Obrigado por compartilhar!';
       } catch (error) {
         feedback.textContent = error.message;
-      } finally {
         root.querySelectorAll('.mood-option').forEach(item => { item.disabled = false; });
       }
     }));
@@ -182,7 +185,7 @@
         root.querySelectorAll('.challenge-option').forEach(item => { item.disabled = true; });
         event.currentTarget.textContent = 'Resposta enviada';
         const refreshed = await api();
-        root.querySelector('.daily-stats').innerHTML = `<div><strong>${refreshed.stats.points}</strong><span>Pontos no mês</span></div><div><strong>${refreshed.stats.participations}</strong><span>Participações</span></div><div><strong>🔥 ${refreshed.stats.streak}</strong><span>Ofensiva</span></div>`;
+        renderCollaborator(root, refreshed);
         showAnswerCelebration(result, refreshed.stats);
       } catch (error) {
         event.currentTarget.disabled = false;
