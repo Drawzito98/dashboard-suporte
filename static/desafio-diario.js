@@ -10,6 +10,7 @@
     { value: 5, emoji: '😄', label: 'Muito bem' }
   ];
   let rankingRefreshTimer = null;
+  let challengeCountdownTimer = null;
 
   async function authHeaders() {
     const { data } = await sbClient.auth.getSession();
@@ -138,6 +139,10 @@
     const updated = ranking.updatedAt ? new Date(ranking.updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
     return '<section class="daily-card live-ranking-card" id="liveChallengeRanking"><div class="live-ranking-heading"><div><span class="daily-kicker">Ranking mensal</span><h3>Classificação da equipe</h3></div><small>Atualizado ' + safe(updated) + '</small></div><div class="live-ranking-list">' + top.map(row).join('') + (ownOutsideTop ? '<div class="live-ranking-divider"></div>' + row(me) : '') + '</div><p>Pontos definem a posição; ofensiva e acertos resolvem empates.</p></section>';
   }
+  function learningRecapMarkup(recap) {
+    if (!recap) return '';
+    return '<aside class="learning-recap"><span>💡 Aprendizado anterior</span><strong>' + safe(recap.pergunta) + '</strong><p>' + safe(recap.explicacao) + '</p></aside>';
+  }
   function challengeCompletedMarkup() {
     return '<div class="daily-empty challenge-completed"><span>✅</span><strong>Desafio do dia concluído</strong><p>Obrigado por responder! Um novo desafio será liberado amanhã.</p></div>';
   }
@@ -158,7 +163,7 @@
       '<p>' + (result.acertou ? 'Você acertou e ganhou 2 pontos no total.' : 'Você ganhou 1 ponto por participar. Amanhã tem uma nova chance!') + '</p>' +
       '<div class="celebration-streak"><span>🔥</span><strong>' + streak + '</strong><small>' + (streak === 1 ? 'dia de ofensiva' : 'dias de ofensiva') + '</small></div>' +
       '<p class="celebration-message">' + (streak > 1 ? 'Você manteve sua sequência. Continue assim!' : 'Sua ofensiva começou. Volte amanhã para continuar!') + '</p>' +
-      (result.explanation ? '<div class="celebration-explanation"><strong>Saiba mais</strong><span>' + safe(result.explanation) + '</span></div>' : '') +
+      (result.explanationAvailableTomorrow ? '<div class="celebration-explanation"><strong>Explicação protegida</strong><span>Ela será liberada amanhã, depois que a equipe concluir o desafio.</span></div>' : '') +
       '<button type="button" class="btn-primary celebration-continue">Continuar</button></div>';
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('open'));
@@ -209,6 +214,7 @@
           <div><strong>🔥 ${Number(data.stats?.streak || 0)}</strong><span>Ofensiva</span></div>
         </div>
         ${engagementSummaryMarkup(data.stats)}
+        ${learningRecapMarkup(data.learningRecap)}
         <article class="daily-card mood-card">
           <div class="daily-card-heading"><span class="daily-step">1</span><div><h2>Como você está hoje?</h2><p>Seu registro é confidencial e ajuda a liderança a cuidar melhor do time.</p></div></div>
           <div class="mood-options" role="radiogroup" aria-label="Como você está se sentindo">
@@ -218,7 +224,7 @@
         </article>
         <article class="daily-card challenge-card">
           <div class="daily-card-heading"><span class="daily-step">2</span><div><h2>Desafio do dia</h2><p>Uma pergunta diária para fortalecer seu conhecimento sobre o IXC Provedor.</p></div></div>
-          ${answered ? challengeCompletedMarkup() : question ? `<div class="challenge-question">${safe(question.pergunta)}</div>
+          ${answered ? challengeCompletedMarkup() : question ? `<div class="challenge-timer" id="challengeTimer" role="timer"><span>Tempo para responder</span><strong>01:00</strong></div><div class="challenge-question">${safe(question.pergunta)}</div>
             <div class="challenge-options">
               ${question.alternativas.map((option, index) => `<button type="button" class="challenge-option${answered?.alternativa === index ? ' selected' : ''}" data-answer="${index}" ${answered ? 'disabled' : ''}><span>${String.fromCharCode(65 + index)}</span>${safe(option)}</button>`).join('')}
             </div>
@@ -240,6 +246,30 @@
           if (current && !ranking.locked) current.outerHTML = liveRankingMarkup(ranking);
         } catch {}
       }, 30000);
+    }
+
+    if (challengeCountdownTimer) clearInterval(challengeCountdownTimer);
+    if (!answered && question) {
+      const timer = root.querySelector('#challengeTimer');
+      const startedAt = Date.now();
+      const limit = Number(question.timeLimit || 60);
+      const updateTimer = () => {
+        const remaining = Math.max(0, limit - Math.floor((Date.now() - startedAt) / 1000));
+        if (timer) {
+          timer.querySelector('strong').textContent = '00:' + String(remaining).padStart(2, '0');
+          timer.classList.toggle('is-urgent', remaining <= 10);
+        }
+        if (remaining <= 0) {
+          clearInterval(challengeCountdownTimer);
+          root.querySelectorAll('.challenge-option').forEach(item => { item.disabled = true; });
+          const submit = root.querySelector('#challengeSubmit');
+          if (submit) { submit.disabled = true; submit.textContent = 'Tempo encerrado'; }
+          const result = root.querySelector('#challengeResult');
+          if (result) result.textContent = 'O tempo terminou. Um novo desafio será liberado amanhã.';
+        }
+      };
+      updateTimer();
+      challengeCountdownTimer = setInterval(updateTimer, 250);
     }
 
     const periodSelect = root.querySelector('#personalResultsPeriod');
@@ -284,10 +314,10 @@
       }
       event.currentTarget.disabled = true;
       try {
-        const result = await postCollaborator('answer', { alternativa: selectedAnswer });
+        const result = await postCollaborator('answer', { alternativa: selectedAnswer, challengeToken: question.challengeToken });
         const resultEl = root.querySelector('#challengeResult');
         resultEl.className = `challenge-result ${result.acertou ? 'is-correct' : 'is-wrong'}`;
-        resultEl.innerHTML = `${result.acertou ? '🎉 Resposta correta! Você ganhou 2 pontos no total.' : 'Resposta registrada! Você ganhou 1 ponto por participar.'}${result.explanation ? `<small>${safe(result.explanation)}</small>` : ''}`;
+        resultEl.innerHTML = `${result.acertou ? '🎉 Resposta correta! Você ganhou 2 pontos no total.' : 'Resposta registrada! Você ganhou 1 ponto por participar.'}${result.explanationAvailableTomorrow ? '<small>A explicação será liberada amanhã para preservar o desafio da equipe.</small>' : ''}`;
         root.querySelectorAll('.challenge-option').forEach(item => { item.disabled = true; });
         event.currentTarget.textContent = 'Resposta enviada';
         const refreshed = await api();
