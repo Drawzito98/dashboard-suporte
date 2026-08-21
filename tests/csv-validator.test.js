@@ -8,7 +8,8 @@ module.exports = function ({ describe, it, assert }) {
     if (s == null) return '';
     let t = String(s).replace(/\u00A0/g, '').replace(/ /g, '');
     if (t.indexOf('.') !== -1 && t.indexOf(',') !== -1) {
-      t = t.replace(/\./g, '').replace(/,/g, '.');
+      if (t.lastIndexOf(',') > t.lastIndexOf('.')) t = t.replace(/\./g, '').replace(/,/g, '.');
+      else t = t.replace(/,/g, '');
     } else {
       t = t.replace(/\./g, '');
       t = t.replace(/,/g, '.');
@@ -22,6 +23,8 @@ module.exports = function ({ describe, it, assert }) {
     const m1 = raw.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
     if (m1) return `${m1[3]}-${m1[2]}`;
     const m2 = raw.match(/(\d{4})-(\d{2})/);
+    const m3 = raw.match(/^(\d{2})[\/-](\d{4})$/);
+    if (m3) return `${m3[2]}-${m3[1]}`;
     if (m2) return `${m2[1]}-${m2[2]}`;
     return raw;
   }
@@ -80,6 +83,10 @@ module.exports = function ({ describe, it, assert }) {
 
     it('parses DD-MM-YYYY', () => {
       assert.equal(parseMonth('15-03-2025'), '2025-03');
+    });
+
+    it('parses MM/YYYY', () => {
+      assert.equal(parseMonth('03/2025'), '2025-03');
     });
 
     it('parses YYYY-MM', () => {
@@ -196,7 +203,7 @@ module.exports = function ({ describe, it, assert }) {
       const result = validate(rows, ['Setor', 'Mês', 'Atendente', 'Finalizados']);
       assert.ok(result.valid);
       assert.equal(result.stats.validRows, 2);
-      assert.equal(result.stats.uniqueAtendentes, 2);
+      assert.equal(result.stats.uniqueAtendentes.size, 2);
     });
 
     it('skips empty rows', () => {

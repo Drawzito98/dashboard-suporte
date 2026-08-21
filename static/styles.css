@@ -5075,3 +5075,17 @@ body[data-role="admin"] .notif-panel { border-radius: 14px; box-shadow: 0 24px 6
 @media (prefers-reduced-motion: reduce) {
   .command-palette, .loading-skeleton::after { animation: none !important; }
 }
+
+/* Perfil integrado do colaborador */
+.colab-360-section { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--border); }
+.colab-360-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.colab-360-heading span { color: var(--accent); font-size: 9px; font-weight: 750; letter-spacing: .11em; text-transform: uppercase; }
+.colab-360-heading h3 { margin: 2px 0 0; color: var(--text-strong); font-size: 15px; }
+.colab-360-heading small { color: var(--text-muted); font-size: 10px; }
+.colab-360-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 9px; }
+.colab-360-grid > .loading-skeleton { min-height: 86px; }
+.colab-360-card { display: grid; gap: 4px; min-height: 86px; align-content: center; padding: 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--bg-inset); }
+.colab-360-card span { color: var(--text-muted); font-size: 9px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.colab-360-card strong { color: var(--text-strong); font-size: 20px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.colab-360-card small { color: var(--text-secondary); font-size: 10px; }
+@media (max-width: 600px) { .colab-360-heading { align-items: flex-start; flex-direction: column; } }

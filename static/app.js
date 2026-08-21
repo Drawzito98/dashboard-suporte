@@ -3522,12 +3522,39 @@ function initNotificacoesUI() {
     function collectActions() {
       const elements = [...document.querySelectorAll('#tabBar .tab-btn[data-tab], .sidebar .btn-small[id]')];
       const seen = new Set();
-      return elements.map(element => {
+      const actions = elements.map(element => {
         const label = element.textContent.replace(/\s+/g, ' ').trim();
         if (!label || seen.has(label)) return null;
         seen.add(label);
         return { label, kind: element.matches('.tab-btn') ? 'Tela' : 'Ação', run: () => element.click() };
       }).filter(Boolean);
+
+      const records = Array.isArray(window.rawRecords) ? window.rawRecords : (typeof rawRecords !== 'undefined' && Array.isArray(rawRecords) ? rawRecords : []);
+      const people = [...new Set(records.map(row => String(row?.['Atendente'] || '').trim()).filter(name => name && (typeof isAggregateName !== 'function' || !isAggregateName(name)) && (typeof isColabActive !== 'function' || isColabActive(name))))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      people.forEach(name => {
+        const label = 'Abrir perfil de ' + name;
+        if (seen.has(label)) return;
+        seen.add(label);
+        actions.push({ label, kind: 'Colaborador', run: () => { if (typeof openColabDetail === 'function') openColabDetail(name); } });
+      });
+
+      const sectors = [...new Set(records.map(row => String(row?.['Setor'] || '').trim()).filter(name => name && (typeof isSetorActive !== 'function' || isSetorActive(name))))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      sectors.forEach(sector => {
+        const label = 'Filtrar setor ' + sector;
+        if (seen.has(label)) return;
+        seen.add(label);
+        actions.push({ label, kind: 'Setor', run: () => {
+          document.querySelector('#tabBar .tab-btn[data-tab="dashboard"]')?.click();
+          if (typeof globalFilters !== 'undefined' && globalFilters) {
+            globalFilters.setor = sector;
+            globalFilters.colaborador = 'all';
+            globalFilters.pesquisa = '';
+            globalFilters._syncUI();
+            globalFilters._notify();
+          }
+        } });
+      });
+      return actions;
     }
 
     function renderResults(query) {
