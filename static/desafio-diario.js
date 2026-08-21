@@ -482,6 +482,7 @@
       try {
         const imageData = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.')); reader.readAsDataURL(file); });
         await api('', { method: 'POST', body: JSON.stringify({ action: 'leader_image', imageData }) });
+        window.dispatchEvent(new CustomEvent('admin-sidebar-photo-updated'));
         renderAdmin(root, await api('?view=admin'));
         root.querySelector('#leaderImageFeedback').textContent = 'Imagem salva e liberada para os colaboradores.';
       } catch (error) { feedback.textContent = error.message; event.currentTarget.disabled = false; }
@@ -493,6 +494,7 @@
       feedback.textContent = 'Removendo imagem...';
       try {
         await api('', { method: 'POST', body: JSON.stringify({ action: 'leader_image', remove: true }) });
+        window.dispatchEvent(new CustomEvent('admin-sidebar-photo-updated'));
         renderAdmin(root, await api('?view=admin'));
         root.querySelector('#leaderImageFeedback').textContent = 'Imagem removida.';
       } catch (error) { feedback.textContent = error.message; event.currentTarget.disabled = false; }
