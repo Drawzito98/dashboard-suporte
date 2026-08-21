@@ -201,15 +201,48 @@ async function getMonthlyRanking(currentUser, month = localDate().slice(0, 7), t
     updatedAt: new Date().toISOString()
   };
 }
+async function getLeaderImageUrl() {
+  const rows = await rest('notificacoes?select=descricao&tipo=eq.leader_image_config&order=created_at.desc&limit=1').catch(() => []);
+  return String(rows[0]?.descricao || '');
+}
+
+async function saveLeaderImage(user, body) {
+  const storagePath = 'reportes-imagens/desafio/leader-supremo.png';
+  let publicUrl = '';
+  if (body.remove === true) {
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath}`, { method: 'DELETE', headers: jsonHeaders() });
+    if (!response.ok && response.status !== 404) throw new Error('Não foi possível remover a imagem atual.');
+  } else {
+    const match = String(body.imageData || '').match(/^data:image\/png;base64,([A-Za-z0-9+/=]+)$/);
+    if (!match) throw new Error('Envie uma imagem válida no formato PNG.');
+    const buffer = Buffer.from(match[1], 'base64');
+    if (!buffer.length || buffer.length > 1572864) throw new Error('A imagem deve ter no máximo 1,5 MB.');
+    if (buffer.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('O arquivo enviado não é um PNG válido.');
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath}`, {
+      method: 'POST',
+      headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}`, 'Content-Type': 'image/png', 'x-upsert': 'true', 'Cache-Control': '3600' },
+      body: buffer
+    });
+    if (!response.ok) throw new Error('Não foi possível enviar a imagem ao armazenamento.');
+    publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${storagePath}?v=${Date.now()}`;
+  }
+  await rest('notificacoes', {
+    method: 'POST', headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ tipo: 'leader_image_config', descricao: publicUrl, link: 'desafio-diario', lida: true, actor_id: user.id, actor_email: user.email || '' })
+  });
+  return { ok: true, leaderImageUrl: publicUrl };
+}
+
 async function getDaily(user) {
   const today = localDate();
   const month = today.slice(0, 7);
-  const [questions, checkins, answers, history, personalResults] = await Promise.all([
+  const [questions, checkins, answers, history, personalResults, leaderImageUrl] = await Promise.all([
     rest(`perguntas_diarias?select=id,data,pergunta,alternativas,explicacao&data=eq.${today}&ativo=eq.true&limit=1`),
     rest(`checkins_diarios?select=humor&user_id=eq.${user.id}&data=eq.${today}&limit=1`),
     rest(`respostas_diarias?select=alternativa,acertou,pontos&user_id=eq.${user.id}&data=eq.${today}&limit=1`),
     rest(`respostas_diarias?select=data,pontos,acertou&user_id=eq.${user.id}&order=data.desc&limit=180`),
-    getPersonalResults(user).catch(error => ({ linked: true, collaborator: String(user.app_metadata?.csv_nome || ''), months: [], previousMonth: null, error: error.message }))
+    getPersonalResults(user).catch(error => ({ linked: true, collaborator: String(user.app_metadata?.csv_nome || ''), months: [], previousMonth: null, error: error.message })),
+    getLeaderImageUrl()
   ]);
   const previousAnswers = await rest(`respostas_diarias?select=data,acertou,pergunta_id&user_id=eq.${user.id}&data=lt.${today}&order=data.desc&limit=1`).catch(() => []);
   let learningRecap = null;
@@ -240,6 +273,7 @@ async function getDaily(user) {
     stats: { points, participations: monthHistory.length, streak, nextMilestone, monthlyGoal, correctAnswers, weeklyParticipations: weeklyHistory.length, weeklyCorrect: weeklyHistory.filter(row => row.acertou).length, achievements },
     personalResults,
     learningRecap,
+    leaderImageUrl,
     ranking
   };
 }
@@ -321,7 +355,7 @@ function buildAdminActivity(answers, checkins, questions, names, archived = fals
 async function getAdminData(requestedMonth) {
   const today = localDate();
   const month = /^\d{4}-\d{2}$/.test(String(requestedMonth || '')) ? String(requestedMonth) : today.slice(0, 7);
-  const [questions, checkins, answers, usersResponse, resetHistory] = await Promise.all([
+  const [questions, checkins, answers, usersResponse, resetHistory, leaderImageUrl] = await Promise.all([
     rest('perguntas_diarias?select=id,data,pergunta,alternativas,resposta_correta,explicacao,ativo&order=data.desc&limit=400'),
     rest('checkins_diarios?select=user_id,data,humor,created_at&data=gte.' + month + '-01&data=lte.' + month + '-31&order=data.desc'),
     rest('respostas_diarias?select=user_id,data,alternativa,acertou,pontos,pergunta_id,created_at&data=gte.' + month + '-01&data=lte.' + month + '-31&order=data.desc'),
@@ -329,7 +363,8 @@ async function getAdminData(requestedMonth) {
       if (!response.ok) throw new Error('Não foi possível listar colaboradores.');
       return response.json();
     }),
-    rest('notificacoes?select=id,created_at,link,descricao,actor_email&tipo=eq.desafio_reset&order=created_at.desc&limit=24').catch(() => [])
+    rest('notificacoes?select=id,created_at,link,descricao,actor_email&tipo=eq.desafio_reset&order=created_at.desc&limit=24').catch(() => []),
+    getLeaderImageUrl()
   ]);
   const users = (usersResponse.users || usersResponse || []).filter(user => user.user_metadata?.role !== 'admin');
   const names = Object.fromEntries(users.map(user => [user.id, user.user_metadata?.name || user.user_metadata?.csv_nome || user.email]));
@@ -357,6 +392,7 @@ async function getAdminData(requestedMonth) {
     month,
     questions,
     resetHistory,
+    leaderImageUrl,
     ranking,
     activity,
     summary: {
@@ -465,6 +501,10 @@ module.exports = async (req, res) => {
       if (action === 'reset_month') {
         if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
         return res.status(200).json(await resetChallengeMonth(user, req.body));
+      }
+      if (action === 'leader_image') {
+        if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
+        return res.status(200).json(await saveLeaderImage(user, req.body));
       }
       if (action === 'question') {
         if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
