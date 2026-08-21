@@ -5,6 +5,41 @@ let authPromiseResolve = null;
 function getCurrentUser() {
   return currentUser;
 }
+function requireProvisionalPasswordChange(user) {
+  if (!user?.user_metadata?.must_change_password) return;
+  document.getElementById('provisionalPasswordOverlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'provisionalPasswordOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:20000;display:grid;place-items:center;padding:18px;background:rgba(10,18,32,.72);backdrop-filter:blur(6px)';
+  overlay.innerHTML = '<form id="provisionalPasswordForm" style="width:min(390px,100%);padding:28px;border:1px solid var(--border);border-radius:var(--r-xl);background:var(--bg-surface);box-shadow:var(--shadow-lg)"><span style="display:block;margin-bottom:6px;color:var(--accent);font-size:11px;font-weight:800;text-transform:uppercase">Primeiro acesso</span><h2 style="margin:0 0 6px;color:var(--text-strong)">Crie sua nova senha</h2><p style="margin:0 0 18px;color:var(--text-secondary);font-size:13px">Por segurança, substitua a senha provisória antes de continuar.</p><label class="field"><span>Nova senha</span><input id="provisionalNewPassword" type="password" minlength="8" autocomplete="new-password" required placeholder="mínimo 8 caracteres"></label><label class="field" style="margin-top:10px"><span>Confirmar nova senha</span><input id="provisionalConfirmPassword" type="password" minlength="8" autocomplete="new-password" required></label><div id="provisionalPasswordError" style="min-height:18px;margin-top:8px;color:var(--danger);font-size:12px"></div><button class="btn-primary" type="submit" style="width:100%;justify-content:center;margin-top:6px">Salvar nova senha</button></form>';
+  document.body.appendChild(overlay);
+  const form = overlay.querySelector('#provisionalPasswordForm');
+  const newPassword = overlay.querySelector('#provisionalNewPassword');
+  const confirmation = overlay.querySelector('#provisionalConfirmPassword');
+  const errorEl = overlay.querySelector('#provisionalPasswordError');
+  newPassword.focus();
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (newPassword.value.length < 8) { errorEl.textContent = 'Use pelo menos 8 caracteres.'; return; }
+    if (newPassword.value !== confirmation.value) { errorEl.textContent = 'As senhas não coincidem.'; return; }
+    if (newPassword.value === '12345678') { errorEl.textContent = 'Escolha uma senha diferente da provisória.'; return; }
+    const button = form.querySelector('button');
+    button.disabled = true;
+    button.textContent = 'Salvando...';
+    const metadata = { ...(user.user_metadata || {}), must_change_password: false };
+    const { data, error } = await sbClient.auth.updateUser({ password: newPassword.value, data: metadata });
+    if (error) {
+      errorEl.textContent = error.message || 'Não foi possível alterar a senha.';
+      button.disabled = false;
+      button.textContent = 'Salvar nova senha';
+      return;
+    }
+    currentUser = data.user || currentUser;
+    overlay.remove();
+    if (typeof showToast === 'function') showToast('Senha alterada com sucesso.', 'success');
+  });
+}
+
 
 async function initAuth() {
   if (!sbClient) return null;
@@ -15,6 +50,7 @@ async function initAuth() {
     if (session?.user) {
       currentUser = session.user;
       hideAuthOverlay();
+      setTimeout(() => requireProvisionalPasswordChange(currentUser), 0);
       return currentUser;
     }
   } catch (e) {
@@ -30,6 +66,7 @@ async function initAuth() {
   sbClient.auth.onAuthStateChange((event, session) => {
     if (session?.user) {
       currentUser = session.user;
+      setTimeout(() => requireProvisionalPasswordChange(currentUser), 0);
       hideAuthOverlay();
       if (authPromiseResolve) {
         authPromiseResolve(currentUser);

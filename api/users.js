@@ -78,15 +78,75 @@ module.exports = async (req, res) => {
       return res.status(response.ok ? 200 : 400).json(data);
     }
 
-    // POST: criar usuário
+    // POST: criar usuário individual ou sincronizar acessos da equipe
     if (req.method === 'POST') {
+      if (req.body?.action === 'sync_active_team') {
+        const collaborators = Array.isArray(req.body.collaborators) ? req.body.collaborators.slice(0, 300) : [];
+        if (!collaborators.length) return res.status(400).json({ error: 'Nenhum colaborador ativo foi informado.' });
+        const usersResponse = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1000`, {
+          headers: { 'apikey': SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SERVICE_ROLE_KEY}` }
+        });
+        if (!usersResponse.ok) return res.status(400).json({ error: 'Não foi possível consultar os usuários atuais.' });
+        const usersData = await usersResponse.json();
+        const existingEmails = new Map((usersData.users || []).map(user => [String(user.email || '').toLowerCase(), user]));
+        const seenEmails = new Set();
+        const result = { created: [], existing: [], skipped: [], failed: [] };
+
+        for (const item of collaborators) {
+          const name = String(item?.name || '').trim();
+          const email = String(item?.email || '').trim().toLowerCase();
+          const sector = String(item?.sector || '').trim();
+          if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            result.skipped.push({ name: name || 'Sem nome', reason: 'E-mail ausente ou inválido' });
+            continue;
+          }
+          if (seenEmails.has(email)) {
+            result.skipped.push({ name, reason: 'E-mail repetido na equipe' });
+            continue;
+          }
+          seenEmails.add(email);
+          if (existingEmails.has(email)) {
+            const existing = existingEmails.get(email);
+            const existingRole = existing.app_metadata?.role || existing.user_metadata?.role;
+            if (existingRole !== 'admin') {
+              const userMetadata = { ...(existing.user_metadata || {}), role: 'colaborador', ativo: true, name, csv_nome: name };
+              const appMetadata = { ...(existing.app_metadata || {}), role: 'colaborador', csv_nome: name };
+              if (sector) { userMetadata.csv_setor = sector; appMetadata.csv_setor = sector; }
+              const linkage = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${existing.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SERVICE_ROLE_KEY}` },
+                body: JSON.stringify({ user_metadata: userMetadata, app_metadata: appMetadata })
+              });
+              if (!linkage.ok) {
+                result.failed.push({ name, email, reason: 'Conta existente, mas o vínculo falhou' });
+                continue;
+              }
+            }
+            result.existing.push({ name, email });
+            continue;
+          }
+          const userMetadata = { role: 'colaborador', ativo: true, name, csv_nome: name, must_change_password: true };
+          const appMetadata = { role: 'colaborador', csv_nome: name };
+          if (sector) { userMetadata.csv_setor = sector; appMetadata.csv_setor = sector; }
+          const creation = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SERVICE_ROLE_KEY}` },
+            body: JSON.stringify({ email, password: '12345678', email_confirm: true, user_metadata: userMetadata, app_metadata: appMetadata })
+          });
+          if (creation.ok) {
+            result.created.push({ name, email });
+            existingEmails.set(email, await creation.json());
+          } else {
+            const error = await creation.json().catch(() => ({}));
+            result.failed.push({ name, email, reason: error.msg || error.error || 'Falha ao criar usuário' });
+          }
+        }
+        return res.status(200).json(result);
+      }
+
       const { email, password, role, csv_nome, csv_setor, name } = req.body || {};
-      if (!email || !password) {
-        return res.status(400).json({ error: 'Email e senha obrigatórios' });
-      }
-      if (password.length < 6) {
-        return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
-      }
+      if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios' });
+      if (password.length < 6) return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
       const user_metadata = { role: role || 'viewer' };
       const app_metadata = { role: role || 'viewer' };
       if (name) user_metadata.name = name;
@@ -94,18 +154,8 @@ module.exports = async (req, res) => {
       if (csv_setor) { user_metadata.csv_setor = csv_setor; app_metadata.csv_setor = csv_setor; }
       const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${SERVICE_ROLE_KEY}`
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          email_confirm: true,
-          user_metadata,
-          app_metadata
-        })
+        headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SERVICE_ROLE_KEY}` },
+        body: JSON.stringify({ email, password, email_confirm: true, user_metadata, app_metadata })
       });
       const data = await response.json();
       return res.status(response.ok ? 200 : 400).json(data);
