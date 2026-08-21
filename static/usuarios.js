@@ -95,22 +95,22 @@ async function carregarUsuarios() {
       const csvNames = [...new Set(records.map(record => String(record?.Atendente || '').trim()).filter(name => name && (typeof isAggregateName !== 'function' || !isAggregateName(name)) && (typeof isColabActive !== 'function' || isColabActive(name))))];
       const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
       const exactName = value => csvNames.find(name => name.localeCompare(String(value || '').trim(), 'pt-BR', { sensitivity: 'base' }) === 0) || '';
-      const mappings = [];
+      const teamUsers = users.filter(user => (user.app_metadata?.role || user.user_metadata?.role) !== 'admin' && user.user_metadata?.ativo !== false);
       const pending = [];
-      users.filter(user => (user.app_metadata?.role || user.user_metadata?.role) !== 'admin' && user.user_metadata?.ativo !== false).forEach(user => {
+      const mappings = teamUsers.map(user => {
         const email = String(user.email || '').toLowerCase();
         const registeredName = Object.keys(colabInfo).find(name => String(colabInfo[name]?.email || '').trim().toLowerCase() === email);
         const csvName = exactName(user.app_metadata?.csv_nome || user.user_metadata?.csv_nome) || exactName(user.user_metadata?.name) || exactName(registeredName);
-        if (csvName) mappings.push({ user, csvName, sector: findCsvSectorByName(csvName) });
-        else pending.push(user.user_metadata?.name || user.email || 'Sem identificação');
+        if (!csvName) pending.push(user.user_metadata?.name || user.email || 'Sem identificação');
+        return { user, csvName, sector: findCsvSectorByName(csvName) };
       });
       if (!mappings.length) {
-        document.getElementById('syncActiveTeamResult').textContent = 'Nenhuma correspondência exata foi encontrada no CSV.';
+        document.getElementById('syncActiveTeamResult').textContent = 'Nenhum usuário ativo da equipe foi encontrado.';
         return;
       }
-      if (!confirm('Vincular automaticamente ' + mappings.length + ' usuários aos nomes e setores identificados no CSV?')) return;
+      if (!confirm('Padronizar ' + mappings.length + ' acessos como colaborador e aplicar os vínculos CSV identificados?')) return;
       bulkCsvButton.disabled = true;
-      bulkCsvButton.textContent = 'Vinculando...';
+      bulkCsvButton.textContent = 'Padronizando...';
       let updated = 0;
       const failed = [];
       for (const mapping of mappings) {
@@ -118,17 +118,17 @@ async function carregarUsuarios() {
           const response = await fetch('/api/users', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
-            body: JSON.stringify({ id: mapping.user.id, csv_nome: mapping.csvName, csv_setor: mapping.sector || null })
+            body: JSON.stringify({ id: mapping.user.id, role: 'colaborador', ativo: true, ...(mapping.csvName ? { csv_nome: mapping.csvName, csv_setor: mapping.sector || null } : {}) })
           });
           if (response.ok) updated += 1;
-          else failed.push(mapping.csvName);
-        } catch { failed.push(mapping.csvName); }
+          else failed.push(mapping.csvName || mapping.user.user_metadata?.name || mapping.user.email);
+        } catch { failed.push(mapping.csvName || mapping.user.user_metadata?.name || mapping.user.email); }
       }
       const resultEl = document.getElementById('syncActiveTeamResult');
-      const unresolved = [...pending, ...failed];
-      resultEl.innerHTML = '<strong>' + updated + ' vínculos atualizados</strong>' + (unresolved.length ? ' · ' + unresolved.length + ' pendentes<div style="margin-top:6px;color:var(--text-muted)">Revise individualmente: ' + unresolved.map(escapeHtml).join(', ') + '.</div>' : '<div style="margin-top:6px;color:var(--success)">Nomes e setores vinculados com sucesso.</div>');
+      const unresolved = [...new Set([...pending, ...failed])];
+      resultEl.innerHTML = '<strong>' + updated + ' acessos padronizados</strong>' + (unresolved.length ? ' · ' + unresolved.length + ' sem vínculo CSV<div style="margin-top:6px;color:var(--text-muted)">O desafio e o humor já estão liberados. Revise apenas os resultados mensais de: ' + unresolved.map(escapeHtml).join(', ') + '.</div>' : '<div style="margin-top:6px;color:var(--success)">Todos receberam o mesmo acesso e foram vinculados aos resultados.</div>');
       bulkCsvButton.disabled = false;
-      bulkCsvButton.textContent = 'Vincular CSV em massa';
+      bulkCsvButton.textContent = 'Padronizar equipe e CSV';
       carregarUsuarios();
     };
 
@@ -327,7 +327,7 @@ function renderUsuariosAba() {
     <section class="card" style="padding:var(--s-4);margin-bottom:var(--s-5);border-color:var(--accent-soft)">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);flex-wrap:wrap">
         <div><h3 style="margin:0 0 4px">Acessos da equipe ativa</h3><p style="margin:0;color:var(--text-secondary);font-size:12px">Cria somente contas ausentes, vinculadas ao e-mail e aos resultados do colaborador.</p></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-small" id="bulkCsvLinkBtn" type="button">Vincular CSV em massa</button><button class="btn-primary" id="syncActiveTeamBtn" type="button">Criar acessos ausentes</button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-small" id="bulkCsvLinkBtn" type="button">Padronizar equipe e CSV</button><button class="btn-primary" id="syncActiveTeamBtn" type="button">Criar acessos ausentes</button></div>
       </div>
       <p style="margin:10px 0 0;color:var(--text-muted);font-size:11px">Senha provisória: <strong>12345678</strong>. A troca será obrigatória no primeiro acesso.</p>
       <div id="syncActiveTeamResult" style="margin-top:10px;font-size:12px"></div>
@@ -647,7 +647,7 @@ function renderUsuariosAba() {
       const res = await fetch('/api/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
-        body: JSON.stringify({ id, csv_nome: csvNome, csv_setor: csvSetor || null })
+        body: JSON.stringify({ id, role: 'colaborador', ativo: true, csv_nome: csvNome, csv_setor: csvSetor || null })
       });
       if (res.ok) {
         okEl.textContent = 'Vínculo salvo!';
