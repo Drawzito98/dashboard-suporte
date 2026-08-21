@@ -120,9 +120,11 @@ async function saveCheckin(user, body) {
   const humor = Number(body.humor);
   if (!Number.isInteger(humor) || humor < 1 || humor > 5) throw new Error('Humor inválido.');
   const today = localDate();
-  await rest('checkins_diarios?on_conflict=user_id,data', {
+  const existing = await rest(`checkins_diarios?select=humor&user_id=eq.${user.id}&data=eq.${today}&limit=1`);
+  if (existing[0]) return { ok: true, humor: existing[0].humor, alreadyRegistered: true };
+  await rest('checkins_diarios', {
     method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    headers: { Prefer: 'return=minimal' },
     body: JSON.stringify({ user_id: user.id, data: today, humor })
   });
   return { ok: true, humor };
