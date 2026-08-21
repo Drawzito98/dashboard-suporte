@@ -56,8 +56,8 @@ async function carregarUsuarios() {
         const isYou = email === currentEmail;
         const roleLabel = role === 'admin' ? 'Admin' : role === 'colaborador' ? 'Colaborador' : 'Visualizador';
         const isSelf = isYou;
-        const csvNome = u.user_metadata?.csv_nome || '';
-        const csvSetor = u.user_metadata?.csv_setor || '';
+        const csvNome = u.app_metadata?.csv_nome || u.user_metadata?.csv_nome || '';
+        const csvSetor = u.app_metadata?.csv_setor || u.user_metadata?.csv_setor || '';
 
         return `<tr>
           <td>${escapeHtml(name) || '<span style="color:var(--text-muted);font-style:italic">—</span>'}</td>
@@ -67,7 +67,7 @@ async function carregarUsuarios() {
           <td style="display:flex;gap:4px;flex-wrap:wrap">
             <button class="btn-small btn-edit-name" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-name="${escapeHtml(name)}" style="font-size:11px">✏️ Nome</button>
             <button class="btn-small btn-reset-pwd" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔑 Senha</button>
-            ${role === 'colaborador' && !isSelf ? `<button class="btn-small btn-csv-map" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-csv-nome="${escapeHtml(csvNome)}" data-csv-setor="${escapeHtml(csvSetor)}" style="font-size:11px">📋 Vincular CSV</button>` : ''}
+            ${role !== 'admin' && !isSelf ? `<button class="btn-small btn-csv-map" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-csv-nome="${escapeHtml(csvNome)}" data-csv-setor="${escapeHtml(csvSetor)}" style="font-size:11px">📋 Vincular CSV</button>` : ''}
             ${!isSelf ? `<button class="btn-small btn-reset-default" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔢 Padrão</button>` : ''}
             ${!isSelf ? `<button class="btn-small btn-toggle-role" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">${role === 'admin' ? '👁️ Tornar viewer' : role === 'colaborador' ? '👁️ Tornar viewer' : '👑 Tornar admin'}</button>` : ''}
             ${!isSelf && role !== 'colaborador' ? `<button class="btn-small btn-toggle-colab" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">📬 Tornar colaborador</button>` : ''}
@@ -374,7 +374,7 @@ function renderUsuariosAba() {
   document.getElementById('novoUserRole')?.addEventListener('change', () => {
     const field = document.getElementById('csvColabField');
     if (!field) return;
-    if (document.getElementById('novoUserRole').value === 'colaborador') {
+    if (document.getElementById('novoUserRole').value !== 'admin') {
       field.style.display = '';
       // Popula dropdown com colaboradores ativos do CSV
       const select = document.getElementById('novoUserCsvColab');
@@ -440,7 +440,7 @@ function renderUsuariosAba() {
       const name = document.getElementById('novoUserName')?.value.trim() || '';
       const body = { email, password, role };
       if (name) body.name = name;
-      if (role === 'colaborador') {
+      if (role !== 'admin') {
         const csvNome = document.getElementById('novoUserCsvColab')?.value || '';
         if (csvNome) body.csv_nome = csvNome;
       }

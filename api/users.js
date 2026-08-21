@@ -65,9 +65,10 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
       }
       const user_metadata = { role: role || 'viewer' };
+      const app_metadata = { role: role || 'viewer' };
       if (name) user_metadata.name = name;
-      if (csv_nome) user_metadata.csv_nome = csv_nome;
-      if (csv_setor) user_metadata.csv_setor = csv_setor;
+      if (csv_nome) { user_metadata.csv_nome = csv_nome; app_metadata.csv_nome = csv_nome; }
+      if (csv_setor) { user_metadata.csv_setor = csv_setor; app_metadata.csv_setor = csv_setor; }
       const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
         method: 'POST',
         headers: {
@@ -79,7 +80,8 @@ module.exports = async (req, res) => {
           email,
           password,
           email_confirm: true,
-          user_metadata
+          user_metadata,
+          app_metadata
         })
       });
       const data = await response.json();
@@ -88,7 +90,7 @@ module.exports = async (req, res) => {
 
     // PUT/PATCH: atualizar senha, cargo e/ou status
     if (req.method === 'PUT' || req.method === 'PATCH') {
-      const { id, password, role, ativo, name } = req.body || {};
+      const { id, password, role, ativo, name, csv_nome, csv_setor } = req.body || {};
       if (!id) {
         return res.status(400).json({ error: 'ID do usuário obrigatório' });
       }
@@ -98,6 +100,7 @@ module.exports = async (req, res) => {
 
       // Busca metadados atuais para merge
       let currentMeta = {};
+      let currentAppMeta = {};
       try {
         const currentRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
           headers: {
@@ -108,6 +111,7 @@ module.exports = async (req, res) => {
         if (currentRes.ok) {
           const currentData = await currentRes.json();
           currentMeta = currentData.user_metadata || {};
+          currentAppMeta = currentData.app_metadata || {};
         }
       } catch {}
 
@@ -115,8 +119,15 @@ module.exports = async (req, res) => {
       if (role !== undefined) newMeta.role = role;
       if (ativo !== undefined) newMeta.ativo = ativo;
       if (name !== undefined) newMeta.name = name;
+      if (csv_nome !== undefined) newMeta.csv_nome = csv_nome;
+      if (csv_setor !== undefined) newMeta.csv_setor = csv_setor;
 
-      const body = { user_metadata: newMeta };
+      const newAppMeta = { ...currentAppMeta };
+      if (role !== undefined) newAppMeta.role = role;
+      if (csv_nome !== undefined) newAppMeta.csv_nome = csv_nome;
+      if (csv_setor !== undefined) newAppMeta.csv_setor = csv_setor;
+
+      const body = { user_metadata: newMeta, app_metadata: newAppMeta };
       if (password) body.password = password;
 
       const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
