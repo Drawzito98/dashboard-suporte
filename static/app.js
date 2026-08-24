@@ -3576,7 +3576,7 @@ function initNotificacoesUI() {
         button.innerHTML = '<span></span><small></small>';
         button.querySelector('span').textContent = item.label;
         button.querySelector('small').textContent = item.kind;
-        button.addEventListener('mouseenter', () => { activeIndex = index; renderResults(input.value); });
+        button.addEventListener('mouseenter', () => { activeIndex = index; results.querySelectorAll('.command-result').forEach((itemButton, itemIndex) => itemButton.classList.toggle('is-active', itemIndex === activeIndex)); });
         button.addEventListener('click', () => { item.run(); closePalette(); });
         results.appendChild(button);
       });
