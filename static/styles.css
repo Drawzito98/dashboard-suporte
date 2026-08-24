@@ -5113,3 +5113,49 @@ body[data-role="admin"] .notif-panel { border-radius: 14px; box-shadow: 0 24px 6
 .colab-360-card strong { color: var(--text-strong); font-size: 20px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .colab-360-card small { color: var(--text-secondary); font-size: 10px; }
 @media (max-width: 600px) { .colab-360-heading { align-items: flex-start; flex-direction: column; } }
+
+/* Proteção visual rápida */
+.privacy-screen-toggle {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 20001;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
+  color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  opacity: .72;
+  backdrop-filter: blur(8px);
+  transition: opacity .15s ease, transform .15s ease, color .15s ease;
+}
+.privacy-screen-toggle:hover { opacity: 1; color: var(--accent); transform: scale(1.06); }
+.privacy-screen-toggle svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.privacy-eye-closed { display: none; }
+body.privacy-screen-on::before {
+  content: "Tela protegida";
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg-app) 45%, transparent);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  backdrop-filter: blur(18px) saturate(.25);
+  -webkit-backdrop-filter: blur(18px) saturate(.25);
+}
+body.privacy-screen-on .privacy-screen-toggle { opacity: 1; color: var(--accent); }
+body.privacy-screen-on .privacy-eye-open { display: none; }
+body.privacy-screen-on .privacy-eye-closed { display: block; }
+@media (max-width: 600px) { .privacy-screen-toggle { right: 10px; bottom: 76px; } }
+@media (prefers-reduced-motion: reduce) { .privacy-screen-toggle { transition: none; } }
