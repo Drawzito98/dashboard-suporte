@@ -5236,3 +5236,8 @@ body.privacy-screen-on .privacy-eye-closed { display: block; }
 .mc-toggle{display:inline-flex;align-items:center;gap:7px;cursor:pointer}.mc-toggle input{accent-color:var(--accent)}.mc-toggle span{min-width:54px;font-size:10px;font-weight:700;color:var(--text-muted)}.mc-toggle span.is-active{color:var(--success)}
 .mc-footer{display:flex;justify-content:flex-end;padding-top:var(--s-2)}
 @media(max-width:620px){.mc-header{flex-direction:column}.mc-header .btn-primary{width:100%}.mc-summary{grid-template-columns:auto 1fr}.mc-summary small{grid-column:1/-1;margin-top:5px}.mc-table table{min-width:520px}.mc-footer .btn-primary{width:100%}}
+
+/* Perfil da equipe: mantém foto e cabeçalho dentro da área visível */
+#colabDetailOverlay{overflow:hidden}
+#colabDetailOverlay .colab-detail-panel{max-height:calc(100dvh - 48px);overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+@media(max-width:640px){#colabDetailOverlay .colab-detail-panel{max-height:100dvh;max-height:100svh}}

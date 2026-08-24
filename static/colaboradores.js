@@ -400,6 +400,9 @@ function openColabDetailOverlay(nome) {
   overlay.style.removeProperty("display");
   overlay.setAttribute("aria-hidden", "false");
   overlay.classList.add("open");
+  const detailPanel = overlay.querySelector(".colab-detail-panel");
+  overlay.scrollTop = 0;
+  if (detailPanel) detailPanel.scrollTop = 0;
 
   const condutaToggle = document.getElementById("ciCondutaToggle");
   const feitoToggle = document.getElementById("ciFeitoToggle");
