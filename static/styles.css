@@ -5226,3 +5226,13 @@ body.privacy-screen-on .privacy-eye-closed { display: block; }
 /* Exportação do histórico setorial */
 .ih-sector-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px}.ih-sector-actions>small{margin-right:4px;font-size:10px;color:var(--text-muted)}
 @media(max-width:700px){.ih-sector-actions{width:100%;align-items:stretch;flex-direction:column}.ih-sector-actions>small{margin:0}.ih-sector-actions .btn-small{width:100%}}
+
+/* Gestão de colaboradores com cadastro manual */
+.mc-panel{display:grid;gap:var(--s-4)}
+.mc-header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s-4);padding-bottom:var(--s-4);border-bottom:1px solid var(--border)}
+.mc-header>div{min-width:0}.mc-header span{font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--accent)}.mc-header h2{margin:4px 0;font-size:22px;color:var(--text-strong)}.mc-header p{max-width:620px;margin:0;font-size:12px;line-height:1.5;color:var(--text-secondary)}
+.mc-summary{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:0 var(--s-2);padding:var(--s-3) var(--s-4);border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-subtle)}.mc-summary strong{grid-row:1/3;font-size:27px;color:var(--text-strong)}.mc-summary span{font-size:12px;font-weight:700;color:var(--text-primary)}.mc-summary small{font-size:10px;color:var(--text-muted)}
+.mc-table{max-height:480px;overflow:auto;border:1px solid var(--border);border-radius:var(--r-md)}.mc-table thead th{position:sticky;top:0;z-index:1;background:var(--bg-elevated)}.mc-origin{display:inline-flex;padding:4px 7px;border-radius:999px;background:var(--bg-subtle);font-size:9px;font-weight:700;color:var(--text-secondary)}
+.mc-toggle{display:inline-flex;align-items:center;gap:7px;cursor:pointer}.mc-toggle input{accent-color:var(--accent)}.mc-toggle span{min-width:54px;font-size:10px;font-weight:700;color:var(--text-muted)}.mc-toggle span.is-active{color:var(--success)}
+.mc-footer{display:flex;justify-content:flex-end;padding-top:var(--s-2)}
+@media(max-width:620px){.mc-header{flex-direction:column}.mc-header .btn-primary{width:100%}.mc-summary{grid-template-columns:auto 1fr}.mc-summary small{grid-column:1/-1;margin-top:5px}.mc-table table{min-width:520px}.mc-footer .btn-primary{width:100%}}
