@@ -206,6 +206,9 @@ function openAnotacoesOverlay() {
   if (!overlay) return;
   const content = document.getElementById('anotacoesOverlayContent');
   if (!content) return;
+  // Abrir a área sempre inicia uma nova anotação. A edição só é ativada
+  // pelo botão correspondente no histórico.
+  localStorage.removeItem(ANOTACOES_EDITING_KEY);
   content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
   overlay.classList.add('open');
   setTimeout(() => renderAnotacoes(), 50);

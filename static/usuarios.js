@@ -67,7 +67,7 @@ async function carregarUsuarios() {
         const csvNome = u.app_metadata?.csv_nome || u.user_metadata?.csv_nome || '';
         const csvSetor = u.app_metadata?.csv_setor || u.user_metadata?.csv_setor || '';
 
-        return `<tr>
+        return `<tr data-user-role="${role}">
           <td title="${escapeHtml(name)}">${escapeHtml(displayName) || '<span style="color:var(--text-muted);font-style:italic">—</span>'}</td>
           <td>${escapeHtml(email)}${isYou ? ' <strong>(você)</strong>' : ''}</td>
           <td><span class="role-badge role-${role}">${roleLabel}</span></td>
@@ -88,6 +88,37 @@ async function carregarUsuarios() {
     ].join('');
 
     container.innerHTML = html;
+    const sourceTable = container.querySelector("table");
+    const sourceWrap = sourceTable?.closest(".table-wrap");
+    if (sourceTable && sourceWrap) {
+      const grouped = document.createElement("div");
+      grouped.className = "user-role-groups";
+      const groupConfig = [
+        { role: "admin", label: "Administradores", icon: "👑" },
+        { role: "viewer", label: "Visualizadores", icon: "👁️" },
+        { role: "colaborador", label: "Colaboradores", icon: "👥" }
+      ];
+      groupConfig.forEach((group, index) => {
+        const rows = [...sourceTable.querySelectorAll(`tbody tr[data-user-role="${group.role}"]`)];
+        if (!rows.length) return;
+        const details = document.createElement("details");
+        details.className = `user-role-group user-role-group-${group.role}`;
+        details.open = index === 0;
+        const summary = document.createElement("summary");
+        summary.innerHTML = `<span><span class="user-role-group-icon">${group.icon}</span><strong>${group.label}</strong></span><span class="user-role-group-count">${rows.length}</span>`;
+        const wrap = document.createElement("div");
+        wrap.className = "table-wrap user-role-table";
+        const table = sourceTable.cloneNode(false);
+        table.appendChild(sourceTable.tHead.cloneNode(true));
+        const tbody = document.createElement("tbody");
+        rows.forEach(row => tbody.appendChild(row));
+        table.appendChild(tbody);
+        wrap.appendChild(table);
+        details.append(summary, wrap);
+        grouped.appendChild(details);
+      });
+      sourceWrap.replaceWith(grouped);
+    }
 
     const bulkCsvButton = document.getElementById('bulkCsvLinkBtn');
     if (bulkCsvButton) bulkCsvButton.onclick = async () => {
