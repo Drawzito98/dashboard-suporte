@@ -5159,3 +5159,36 @@ body.privacy-screen-on .privacy-eye-open { display: none; }
 body.privacy-screen-on .privacy-eye-closed { display: block; }
 @media (max-width: 600px) { .privacy-screen-toggle { right: 10px; bottom: 76px; } }
 @media (prefers-reduced-motion: reduce) { .privacy-screen-toggle { transition: none; } }
+
+/* Plano de ação executivo — Relatório Setorial */
+.rs-action-section { break-inside: avoid; }
+.rs-action-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.rs-action-heading .rs-section-title { margin-bottom: 4px; border: 0; padding: 0; }
+.rs-action-heading p { margin: 0; color: var(--text-secondary); font-size: 12px; }
+.rs-action-summary { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.rs-action-summary span { padding: 5px 9px; border: 1px solid var(--border); border-radius: 999px; font-size: 10px; font-weight: 750; white-space: nowrap; }
+.rs-action-summary .critical { border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); background: var(--danger-soft); color: var(--danger); }
+.rs-action-summary .high { border-color: color-mix(in srgb, var(--warning) 45%, var(--border)); background: color-mix(in srgb, var(--warning) 10%, var(--bg-surface)); color: var(--warning); }
+.rs-action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.rs-action-card { display: grid; gap: 12px; min-width: 0; padding: 16px; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 11px; background: var(--bg-surface); box-shadow: var(--shadow-sm); break-inside: avoid; }
+.rs-action-card.is-critical { border-left-color: var(--danger); }
+.rs-action-card.is-high { border-left-color: var(--warning); }
+.rs-action-card.is-attention { border-left-color: var(--accent); }
+.rs-action-card.is-monitor { border-left-color: var(--success); }
+.rs-action-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.rs-action-card h3 { margin: 2px 0 0; color: var(--text-strong); font-size: 15px; }
+.rs-action-priority { color: var(--text-muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.is-critical .rs-action-priority { color: var(--danger); }
+.is-high .rs-action-priority { color: var(--warning); }
+.is-monitor .rs-action-priority { color: var(--success); }
+.rs-action-deadline { flex: 0 0 auto; padding: 4px 7px; border-radius: 6px; background: var(--bg-inset); color: var(--text-secondary); font-size: 10px; font-weight: 650; }
+.rs-action-evidence { display: flex; flex-wrap: wrap; gap: 6px; }
+.rs-action-evidence strong { width: 100%; color: var(--text-secondary); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; }
+.rs-action-evidence span { padding: 4px 7px; border-radius: 6px; background: var(--bg-inset); color: var(--text-primary); font-size: 11px; }
+.rs-action-recommendation strong { display: block; margin-bottom: 4px; color: var(--text-secondary); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; }
+.rs-action-recommendation p { margin: 0; color: var(--text-primary); font-size: 12px; line-height: 1.55; }
+.rs-action-card footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-top: 9px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 10px; }
+.rs-action-card footer small { flex: 0 0 auto; color: var(--text-muted); }
+.rs-action-overflow { margin: 10px 0 0; color: var(--text-muted); font-size: 10px; text-align: right; }
+@media (max-width: 760px) { .rs-action-grid { grid-template-columns: 1fr; } .rs-action-heading { flex-direction: column; } .rs-action-summary { justify-content: flex-start; } }
+@media print { .rs-action-grid { grid-template-columns: repeat(2, 1fr); } .rs-action-card { box-shadow: none; } }

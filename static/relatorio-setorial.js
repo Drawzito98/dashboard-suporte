@@ -359,7 +359,7 @@ function renderRelatorioSetorial() {
         </div>`).join('') : '<div style="font-size:12px;color:var(--text-muted)">Nenhum dado de score</div>'}
       </div>
       <div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD3B Piores Score</h3>
+        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD3B Menores Scores</h3>
         ${bottomScore.length ? bottomScore.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
           <span style="font-weight:700;color:var(--danger);min-width:18px">${i + 1}\u00BA</span>
           <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
@@ -367,7 +367,7 @@ function renderRelatorioSetorial() {
         </div>`).join('') : '<div style="font-size:12px;color:var(--text-muted)">Nenhum dado de score</div>'}
       </div>
       <div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD3B Piores Finaliza\u00E7\u00F5es</h3>
+        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD3B Menores Finaliza\u00E7\u00F5es</h3>
         ${bottomFin.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
           <span style="font-weight:700;color:var(--danger);min-width:18px">${i + 1}\u00BA</span>
           <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
@@ -396,8 +396,8 @@ function renderRelatorioSetorial() {
   if (setorMetrics.filter(s => s.scAvg >= 4.7).length >= 2) {
     destaques.push(`${setorMetrics.filter(s => s.scAvg >= 4.7).length} setores com score \u2265 4,70 \u2014 qualidade consistente`);
   }
-  if (avgScore >= 4.2) {
-    destaques.push(`Score médio geral em ${fmtScore(avgScore)} \u2014 acima do ideal`);
+  if (avgScore >= 4.5) {
+    destaques.push(`Score médio geral em ${fmtScore(avgScore)} \u2014 na meta de qualidade`);
   }
   if (traGeral !== null && traGeral < 0.15) {
     destaques.push(`Baixa taxa de transferência geral (${fmtPct(traGeral)})`);
@@ -437,10 +437,76 @@ function renderRelatorioSetorial() {
     </div>`;
   }
 
+  // ── Próximos passos e plano de ação inteligente ──
+  const MEDIA_SCORE = 4.5;
+  const ALTA_TRANSF = 0.25;
+  const BAIXA_PROD = 0.75;
+  const actionItems = setorMetrics.map(s => {
+    const prev = prevSetorMap[s.nome] || null;
+    const dScore = prev && prev.scAvg > 0 ? _calcDeltaPct(prev.scAvg, s.scAvg) : null;
+    const dProd = prev && prev.prod > 0 ? _calcDeltaPct(prev.prod, s.prod) : null;
+    const dTransf = prev && prev.taxaT > 0 ? _calcDeltaPct(prev.taxaT, s.taxaT) : null;
+    const dFin = prev && prev.fin > 0 ? _calcDeltaPct(prev.fin, s.fin) : null;
+    const dAss = prev && prev.ass > 0 ? _calcDeltaPct(prev.ass, s.ass) : null;
+    const issues = [];
+
+    if (s.scAvg > 0 && s.scAvg < MEDIA_SCORE) {
+      const severe = s.scAvg < 4.2;
+      issues.push({ weight: severe ? 3 : 2, evidence: `Score ${fmtScore(s.scAvg)}${dScore !== null ? ` (${dScore < 0 ? "queda" : "alta"} de ${Math.abs(dScore).toFixed(1).replace(".", ",")}%)` : ""}`, action: 'Revisar avaliações com menor nota, identificar os dois motivos mais frequentes e realizar calibração com a equipe.', goal: `Score ≥ ${fmtScore(MEDIA_SCORE)}` });
+    } else if (s.scAvg >= MEDIA_SCORE && dScore !== null && dScore <= -5) {
+      issues.push({ weight: 2, evidence: `Score ainda adequado, mas caiu ${Math.abs(dScore).toFixed(1).replace('.', ',')}%`, action: 'Auditar a queda de qualidade antes que o indicador fique abaixo da meta.', goal: 'Reverter a tendência no próximo período' });
+    }
+    if (s.taxaT > ALTA_TRANSF) {
+      issues.push({ weight: s.taxaT >= 0.35 ? 3 : 2, evidence: `Transferências em ${fmtPct(s.taxaT)}${dTransf !== null ? ` (${dTransf > 0 ? "alta" : "queda"} de ${Math.abs(dTransf).toFixed(1).replace(".", ",")}%)` : ""}`, action: 'Mapear os principais destinos e motivos das transferências e corrigir lacunas de roteamento ou conhecimento.', goal: 'Transferências ≤ 25,0%' });
+    } else if (dTransf !== null && dTransf >= 20) {
+      issues.push({ weight: 1, evidence: `Transferências cresceram ${dTransf.toFixed(1).replace('.', ',')}%`, action: 'Monitorar motivos de transferência antes que a taxa ultrapasse o limite.', goal: 'Interromper a tendência de alta' });
+    }
+    if (s.prod < BAIXA_PROD) {
+      issues.push({ weight: s.prod < 0.65 ? 3 : 2, evidence: `Produtividade em ${fmtPct(s.prod)}${dProd !== null ? ` (${dProd < 0 ? "queda" : "alta"} de ${Math.abs(dProd).toFixed(1).replace(".", ",")}%)` : ""}`, action: 'Revisar carga, distribuição dos chamados e gargalos entre assumidos e finalizados.', goal: 'Produtividade ≥ 75,0%' });
+    } else if (dProd !== null && dProd <= -10) {
+      issues.push({ weight: 2, evidence: `Produtividade caiu ${Math.abs(dProd).toFixed(1).replace('.', ',')}%`, action: 'Comparar escala, volume e tipos de chamados para localizar a origem da queda.', goal: 'Recuperar o nível do período anterior' });
+    }
+    if (dFin !== null && dFin <= -15 && (dAss === null || dAss > -5)) {
+      issues.push({ weight: 2, evidence: `Finalizações caíram ${Math.abs(dFin).toFixed(1).replace('.', ',')}% com demanda estável`, action: 'Verificar formação de fila, ausências e concentração de chamados complexos.', goal: 'Recuperar o volume sem reduzir a qualidade' });
+    }
+    if (hasTma && s.tma !== null && tmaGeral > 0 && s.tma > tmaGeral * 1.2) {
+      issues.push({ weight: 1, evidence: `TMA ${_fmtDuration(s.tma)}, mais de 20% acima da referência`, action: 'Analisar etapas que prolongam o atendimento e compartilhar práticas dos setores mais ágeis.', goal: `TMA próximo de ${_fmtDuration(tmaGeral)}` });
+    }
+    if (hasTmr && s.tmr !== null && tmrGeral > 0 && s.tmr > tmrGeral * 1.2) {
+      issues.push({ weight: 1, evidence: `TMR ${_fmtDuration(s.tmr)}, mais de 20% acima da referência`, action: 'Revisar tempo de primeira resposta, cobertura da fila e horários de pico.', goal: `TMR próximo de ${_fmtDuration(tmrGeral)}` });
+    }
+
+    const score = issues.reduce((sum, issue) => sum + issue.weight, 0);
+    const priority = score >= 6 ? 'critical' : score >= 3 ? 'high' : score > 0 ? 'attention' : 'monitor';
+    const prazo = priority === 'critical' ? '7 dias' : priority === 'high' ? '15 dias' : '30 dias';
+    if (!issues.length) issues.push({ weight: 0, evidence: `Score ${fmtScore(s.scAvg)} · produtividade ${fmtPct(s.prod)} · transferências ${fmtPct(s.taxaT)}`, action: 'Manter o padrão e documentar as práticas que sustentaram o resultado.', goal: 'Preservar os indicadores no próximo período' });
+    return { setor: s.nome, priority, score, prazo, sample: s.ass < 30 ? 'Amostra reduzida' : `${fmtNum(s.ass)} assumidos`, issues };
+  }).sort((a, b) => b.score - a.score || a.setor.localeCompare(b.setor, 'pt-BR'));
+
+  const visibleActions = actionItems.slice(0, __rsFilterState.sector ? actionItems.length : 6);
+  const criticalCount = actionItems.filter(item => item.priority === 'critical').length;
+  const highCount = actionItems.filter(item => item.priority === 'high').length;
+  const priorityLabels = { critical: 'Urgente', high: 'Prioridade alta', attention: 'Atenção', monitor: 'Manutenção' };
+
+  html += `<div class="rs-section rs-action-section">
+    <div class="rs-action-heading">
+      <div><h2 class="rs-section-title">📋 Próximos Passos e Plano de Ação</h2><p>Recomendações calculadas para os filtros atuais${hasPrev ? ` e comparadas com ${escapeHtml(_prevLabel.replace('vs ', ''))}` : ''}.</p></div>
+      <div class="rs-action-summary"><span class="critical">${criticalCount} urgente(s)</span><span class="high">${highCount} prioridade(s) alta(s)</span></div>
+    </div>
+    <div class="rs-action-grid">
+      ${visibleActions.map(item => `<article class="rs-action-card is-${item.priority}">
+        <header><div><span class="rs-action-priority">${priorityLabels[item.priority]}</span><h3>${escapeHtml(item.setor)}</h3></div><span class="rs-action-deadline">Revisão em ${item.prazo}</span></header>
+        <div class="rs-action-evidence"><strong>Diagnóstico</strong>${item.issues.slice(0, 3).map(issue => `<span>${issue.evidence}</span>`).join('')}</div>
+        <div class="rs-action-recommendation"><strong>Ação recomendada</strong><p>${item.issues.slice(0, 3).map(issue => issue.action).join(' ')}</p></div>
+        <footer><span><strong>Meta:</strong> ${item.issues.slice(0, 2).map(issue => issue.goal).join(' · ')}</span><small>${item.sample}</small></footer>
+      </article>`).join('')}
+    </div>
+    ${actionItems.length > visibleActions.length ? `<p class="rs-action-overflow">Exibindo as 6 maiores prioridades entre ${actionItems.length} setores para manter a leitura executiva.</p>` : ''}
+  </div>`;
   // ── Gráfico de pizza — distribuição de finalizados por setor ──
   html += `<div style="display:flex;gap:var(--s-5);align-items:stretch;margin-bottom:var(--s-5);flex-wrap:wrap">
     <div class="card" style="flex:1;min-width:280px;padding:var(--s-4)">
-      <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83C\uDF7E Distribuição por Setor</h3>
+      <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83D\uDCCA Distribuição por Setor</h3>
       <p style="font-size:12px;color:var(--text-secondary);margin-bottom:var(--s-3)">Participação de cada setor no total de finalizados</p>
       <div style="height:280px;position:relative"><canvas id="rsPieChart"></canvas></div>
     </div>
@@ -557,35 +623,6 @@ function renderRelatorioSetorial() {
 
 
 
-  // ── Próximos passos e plano de ação ──
-  const passos = [];
-  const MEDIA_SCORE = 4.5;
-  const ALTA_TRANSF = 0.25;
-  const BAIXA_PROD = 0.7;
-
-  setorMetrics.forEach(s => {
-    if (s.scAvg > 0 && s.scAvg < MEDIA_SCORE) {
-      passos.push(`Revisar processo do setor \u201C${escapeHtml(s.nome)}\u201D para elevar o score (atual: ${fmtScore(s.scAvg)}). Meta: ${MEDIA_SCORE}+`);
-    } else if (s.taxaT > ALTA_TRANSF) {
-      passos.push(`Reduzir taxa de transferência do setor \u201C${escapeHtml(s.nome)}\u201D (${fmtPct(s.taxaT)}). Investigar causas e criar plano de ação.`);
-    } else if (s.prod < BAIXA_PROD) {
-      passos.push(`Melhorar produtividade do setor \u201C${escapeHtml(s.nome)}\u201D (${fmtPct(s.prod)}). Avaliar carga e distribuição de chamados.`);
-    } else {
-      passos.push(`Manter o padrão de qualidade e produtividade do setor \u201C${escapeHtml(s.nome)}\u201D (score ${fmtScore(s.scAvg)}, prod ${fmtPct(s.prod)}).`);
-    }
-  });
-
-  if (avgScore >= MEDIA_SCORE) {
-    passos.push('Monitorar indicadores mensalmente para detecção precoce de desvios.');
-  }
-  passos.push('Agendar próxima revisão de indicadores em 30 dias.');
-
-  html += `<div class="rs-section">
-    <h2 class="rs-section-title">📋 Próximos Passos e Plano de Ação</h2>
-    <div class="rs-list rs-list-info">
-      ${passos.map(p => `<div class="rs-list-item">${p}</div>`).join('')}
-    </div>
-  </div>`;
 
   // ── Relatório Executivo ──
   html += `<div class="reportBox" style="margin-top:var(--s-6)">
