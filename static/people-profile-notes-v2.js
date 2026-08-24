@@ -5,10 +5,23 @@
   const n = v => Number.isFinite(Number(v)) ? Number(v) : 0;
   const labelMonth = v => typeof formatMesLabel === 'function' ? formatMesLabel(v) : v;
   const pct = v => `${n(v).toFixed(1).replace('.', ',')}%`;
-  const names = () => [...new Set((Array.isArray(window.rawRecords) ? rawRecords : []).map(r => r && r.Atendente).filter(v => v && !(typeof isAggregateName === 'function' && isAggregateName(v))))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  function availableRecords() {
+    try { return typeof rawRecords !== 'undefined' && Array.isArray(rawRecords) ? rawRecords : []; }
+    catch (_) { return []; }
+  }
+  const names = () => {
+    const found = availableRecords().map(r => r && r.Atendente).filter(Boolean);
+    try {
+      const info = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+      if (info && typeof info === 'object') {
+        Object.entries(info).forEach(([key, value]) => found.push(value && value.nome ? value.nome : key));
+      }
+    } catch (_) { /* cadastro local indisponível */ }
+    return [...new Set(found.map(v => String(v).trim()).filter(v => v && !(typeof isAggregateName === 'function' && isAggregateName(v))))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  };
 
   function allPersonRows(name) {
-    return (Array.isArray(window.rawRecords) ? rawRecords : []).filter(r => r && String(r.Atendente) === String(name) && !(typeof isAggregateName === 'function' && isAggregateName(r.Atendente)));
+    return availableRecords().filter(r => r && String(r.Atendente) === String(name) && !(typeof isAggregateName === 'function' && isAggregateName(r.Atendente)));
   }
   function score(rows) { const a=rows.map(r=>Number(r.SCORE)).filter(Number.isFinite); return a.length?a.reduce((x,y)=>x+y,0)/a.length:0; }
   function duration(rows,key) { if(typeof parseDurationToSeconds!=='function')return null; const a=rows.map(r=>parseDurationToSeconds(r[key])).filter(Number.isFinite); return a.length?a.reduce((x,y)=>x+y,0)/a.length:null; }
