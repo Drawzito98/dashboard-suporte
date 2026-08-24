@@ -123,13 +123,13 @@ function verificarAlertas() {
           if (avg < config.valor) consec++;
           else break;
         }
-        if (consec >= 2) afetados.push(name);
+        if (consec >= (Number(config.periodos) || 2)) afetados.push(name);
       });
       if (afetados.length) {
         alertasDisparados.push({
           config,
           gravidade: 'media',
-          mensagem: `${afetados.length} colaborador(es) com 2+ períodos abaixo de ${config.valor}: ${afetados.join(', ')}.`,
+          mensagem: `${afetados.length} colaborador(es) com ${Number(config.periodos) || 2}+ períodos abaixo de ${config.valor}: ${afetados.join(', ')}.`,
           afetados: afetados.length
         });
       }
