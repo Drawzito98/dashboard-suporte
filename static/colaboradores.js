@@ -434,8 +434,8 @@ function openColabDetailOverlay(nome) {
       feito_descricao: feitoToggle.checked ? document.getElementById("ciFeitoDescricao").value.trim() : "",
       nivel: document.getElementById("ciNivel").value
     };
-    await dbColabInfoSave(nome, data);
-    showToast(`Dados de ${nome} salvos!`, "success", "Colaboradores");
+    const synced = await dbColabInfoSave(nome, data);
+    showToast(synced ? `Dados de ${nome} salvos!` : `Dados de ${nome} preservados neste dispositivo. A sincronização com o banco está pendente.`, synced ? "success" : "warning", "Colaboradores");
     closeColabDetail();
     renderColaboradores();
   });

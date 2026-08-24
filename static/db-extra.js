@@ -1005,9 +1005,10 @@ async function dbColabInfoLoad() {
     if (!uid) return _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
     const { data } = await sbClient.from('colaboradores_info').select('*').eq('user_id', uid);
     if (data && Array.isArray(data) && data.length > 0) {
-      const map = {};
+      const localMap = _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
+      const map = { ...localMap };
       data.forEach(r => {
-        map[r.nome] = {
+        const remoteInfo = {
           id: r.id,
           data_aniversario: r.data_aniversario || '',
           data_admissao: r.data_admissao || '',
@@ -1022,6 +1023,17 @@ async function dbColabInfoLoad() {
           nivel: r.nivel || '',
           updatedAt: r.updated_at
         };
+        const localInfo = localMap[r.nome] || {};
+        const localTime = Date.parse(localInfo.updatedAt || '') || 0;
+        const remoteTime = Date.parse(r.updated_at || '') || 0;
+        const achievementColumnsMissing = !Object.prototype.hasOwnProperty.call(r, 'feito_relevante') || !Object.prototype.hasOwnProperty.call(r, 'feito_descricao');
+        map[r.nome] = localTime > remoteTime
+          ? { ...remoteInfo, ...localInfo, id: r.id }
+          : { ...remoteInfo,
+              ...(achievementColumnsMissing ? {
+                feito_relevante: localInfo.feito_relevante || '',
+                feito_descricao: localInfo.feito_descricao || ''
+              } : {}) };
       });
       localStorage.setItem(COLAB_INFO_LOCAL_KEY, JSON.stringify(map));
       return map;
@@ -1033,17 +1045,19 @@ async function dbColabInfoLoad() {
 }
 
 async function dbColabInfoSave(nome, data) {
-  if (!requireAdmin()) return;
+  if (!requireAdmin()) return false;
   const map = JSON.parse(localStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
   map[nome] = { ...(map[nome] || {}), ...data, updatedAt: new Date().toISOString() };
   localStorage.setItem(COLAB_INFO_LOCAL_KEY, JSON.stringify(map));
-  if (!sbClient) return;
+  if (!sbClient) return false;
   try {
     const uid = await _getUserId();
-    if (!uid) return;
+    if (!uid) return false;
     const existing = await sbClient.from('colaboradores_info').select('id').eq('user_id', uid).eq('nome', nome).maybeSingle();
+    if (existing?.error) throw existing.error;
+    let result;
     if (existing?.data?.id) {
-      await sbClient.from('colaboradores_info').update({
+      result = await sbClient.from('colaboradores_info').update({
         data_aniversario: data.data_aniversario || null,
         data_admissao: data.data_admissao || null,
         email: data.email || '',
@@ -1058,7 +1072,7 @@ async function dbColabInfoSave(nome, data) {
         updated_at: new Date().toISOString()
       }).eq('id', existing.data.id);
     } else {
-      await sbClient.from('colaboradores_info').insert({
+      result = await sbClient.from('colaboradores_info').insert({
         user_id: uid,
         nome,
         data_aniversario: data.data_aniversario || null,
@@ -1074,7 +1088,12 @@ async function dbColabInfoSave(nome, data) {
         nivel: data.nivel || ''
       });
     }
-  } catch (e) { console.error('[db-extra]', e); }
+    if (result?.error) throw result.error;
+    return true;
+  } catch (e) {
+    console.error('[db-extra] Perfil mantido localmente; sincronização pendente:', e);
+    return false;
+  }
 }
 
 // ─── FALLBACK ────────────────────────────────────────────────────
