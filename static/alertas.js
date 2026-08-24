@@ -58,6 +58,47 @@ function verificarAlertas() {
   alertasConfig.forEach(config => {
     if (!config.ativo) return;
 
+    // Regras personalizadas criadas no editor visual.
+    if (config.custom) {
+      const sum = key => rows.reduce((total, row) => total + (Number(row[key]) || 0), 0);
+      const avgScore = source => {
+        const values = source.map(row => Number(row['SCORE'])).filter(Number.isFinite);
+        return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+      };
+      const metricValue = (source, field) => {
+        const assumed = source.reduce((total, row) => total + (Number(row['Assumidos']) || 0), 0);
+        if (field === 'score') return avgScore(source);
+        if (field === 'produtividade') return assumed ? source.reduce((total, row) => total + (Number(row['Finalizados']) || 0), 0) / assumed * 100 : null;
+        if (field === 'transferencia') return assumed ? source.reduce((total, row) => total + (Number(row['Transferidos']) || 0), 0) / assumed * 100 : null;
+        if (field === 'finalizacoes') return source.reduce((total, row) => total + (Number(row['Finalizados']) || 0), 0);
+        if (field === 'assumidos') return source.reduce((total, row) => total + (Number(row['Assumidos']) || 0), 0);
+        if ((field === 'tma' || field === 'tmr') && typeof parseDurationToSeconds === 'function') {
+          const key = field === 'tma' ? 'TMA' : 'TMR';
+          const values = source.map(row => parseDurationToSeconds(row[key])).filter(Number.isFinite);
+          return values.length ? values.reduce((a, b) => a + b, 0) / values.length / 60 : null;
+        }
+        return null;
+      };
+      let value = metricValue(rows, config.campo);
+      let triggered = false;
+      let detail = '';
+      if (config.operador === 'queda_pct') {
+        const periods = [...new Set(rows.map(row => row['Mês']))].filter(Boolean).sort();
+        if (periods.length >= 2) {
+          const current = metricValue(rows.filter(row => String(row['Mês']) === periods.at(-1)), config.campo);
+          const previous = metricValue(rows.filter(row => String(row['Mês']) === periods.at(-2)), config.campo);
+          value = previous ? (previous - current) / Math.abs(previous) * 100 : null;
+          triggered = value !== null && value >= Number(config.valor);
+          detail = value === null ? '' : `Queda calculada: ${value.toFixed(1)}%.`;
+        }
+      } else {
+        triggered = value !== null && (config.operador === '<' ? value < Number(config.valor) : value > Number(config.valor));
+        detail = value === null ? '' : `Valor atual: ${value.toFixed(2)}.`;
+      }
+      if (triggered) alertasDisparados.push({ config, gravidade: config.gravidade || 'media', mensagem: `${config.desc || config.name} ${detail}`, afetados: 1 });
+      return;
+    }
+
     if (config.id === 'score_baixo') {
       const scores = rows.map(r => r['SCORE']).filter(v => v !== null && v !== undefined && !isNaN(Number(v)));
       const media = scores.length ? scores.reduce((a, b) => a + Number(b), 0) / scores.length : 0;
