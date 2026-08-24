@@ -717,7 +717,11 @@ td.score-cell.score-neutro    { color: var(--score-neutro); }
 .colab-info-btn:hover { background: var(--bg-subtle); }
 .colab-card-conduta { border-color: var(--danger); background: linear-gradient(135deg, var(--danger-soft) 0%, var(--bg-surface) 4px); }
 .colab-card-conduta:hover { box-shadow: 0 0 0 2px var(--danger-ring, rgba(220,38,38,0.3)); }
+.colab-card-feito { border-color: var(--success); background: linear-gradient(135deg, var(--success-soft) 0%, var(--bg-surface) 4px); }
+.colab-card-feito:hover { box-shadow: 0 0 0 2px color-mix(in srgb, var(--success) 30%, transparent); }
+.colab-card-feito.colab-card-conduta { background: linear-gradient(135deg, var(--success-soft) 0 4px, var(--bg-surface) 4px calc(100% - 4px), var(--danger-soft) calc(100% - 4px)); }
 .conduta-badge { font-size: 14px; line-height: 1; animation: conduta-pulse 2s infinite; }
+.feito-badge { font-size: 14px; line-height: 1; }
 @keyframes conduta-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 .sparkline-cell { padding: 4px 8px; text-align: center; }
@@ -4056,6 +4060,13 @@ table td { border-color: var(--border); }
   filter: none;
 }
 .ci-dialog-form textarea:focus { background: var(--bg-surface); }
+.ci-achievement-section { border-color: color-mix(in srgb, var(--success) 32%, var(--border)); }
+.ci-achievement-section.is-active { border-color: var(--success); background: color-mix(in srgb, var(--success-soft) 48%, var(--bg-surface)); }
+.ci-achievement-section .ci-native-toggle input { accent-color: var(--success); }
+.ci-achievement-section.is-active .ci-native-toggle { border-color: var(--success); color: var(--success); }
+.ci-achievement-reason[hidden] { display: none; }
+.ci-achievement-reason textarea { border-color: color-mix(in srgb, var(--success) 60%, var(--border)); background: var(--bg-surface); }
+.ci-achievement-reason small { margin-top: 5px; color: var(--text-muted); font-size: 11px; }
 .ci-detractor-section { border-color: color-mix(in srgb, var(--danger) 32%, var(--border)); }
 .ci-detractor-section.is-active {
   border-color: var(--danger);

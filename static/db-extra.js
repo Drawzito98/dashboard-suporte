@@ -1017,6 +1017,8 @@ async function dbColabInfoLoad() {
           observacoes: r.observacoes || '',
           conduta_negativa: r.conduta_negativa || '',
           conduta_motivo: r.conduta_motivo || '',
+          feito_relevante: r.feito_relevante || '',
+          feito_descricao: r.feito_descricao || '',
           nivel: r.nivel || '',
           updatedAt: r.updated_at
         };
@@ -1050,6 +1052,8 @@ async function dbColabInfoSave(nome, data) {
         observacoes: data.observacoes || '',
         conduta_negativa: data.conduta_negativa || '',
         conduta_motivo: data.conduta_motivo || '',
+        feito_relevante: data.feito_relevante || '',
+        feito_descricao: data.feito_descricao || '',
         nivel: data.nivel || '',
         updated_at: new Date().toISOString()
       }).eq('id', existing.data.id);
@@ -1065,6 +1069,8 @@ async function dbColabInfoSave(nome, data) {
         observacoes: data.observacoes || '',
         conduta_negativa: data.conduta_negativa || '',
         conduta_motivo: data.conduta_motivo || '',
+        feito_relevante: data.feito_relevante || '',
+        feito_descricao: data.feito_descricao || '',
         nivel: data.nivel || ''
       });
     }
@@ -1305,6 +1311,8 @@ async function migrateLocalToSupabase() {
               observacoes: info.observacoes || '',
               conduta_negativa: info.conduta_negativa || '',
               conduta_motivo: info.conduta_motivo || '',
+              feito_relevante: info.feito_relevante || '',
+              feito_descricao: info.feito_descricao || '',
               nivel: info.nivel || ''
             });
           }

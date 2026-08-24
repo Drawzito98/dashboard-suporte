@@ -36,13 +36,14 @@ function renderColaboradores() {
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s-3)">';
   for (const nome of colabs) {
     const info = colabInfo[nome] || {};
-    const hasData = info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa;
+    const hasData = info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa || info.feito_relevante;
     const conduta = info.conduta_negativa === 'true' || info.conduta_negativa === true;
-    html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''}" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Clique para ver/editar">`;
+    const feito = info.feito_relevante === 'true' || info.feito_relevante === true;
+    html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''}" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Clique para ver/editar">`;
     html += '<div style="display:flex;align-items:center;gap:var(--s-3)">';
     html += `<div style="font-size:28px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 36) : '👤'}</div>`;
     html += '<div style="flex:1;min-width:0">';
-    html += `<div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:var(--s-2)">${escapeHtml(nome)}${conduta ? '<span class="conduta-badge" title="Conduta negativa">🚩</span>' : ''}</div>`;
+    html += `<div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:var(--s-2)">${escapeHtml(nome)}${feito ? '<span class="feito-badge" title="Possui feito relevante">🏆</span>' : ''}${conduta ? '<span class="conduta-badge" title="Possui ponto detrator">🚩</span>' : ''}</div>`;
     if (info.nivel) {
       html += `<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-top:1px">${escapeHtml(info.nivel)}</div>`;
     }
@@ -119,7 +120,7 @@ function openNovoColaboradorModal() {
       return;
     }
     setColabActive(nome, true);
-    await dbColabInfoSave(nome, { data_aniversario: "", data_admissao: "", email: "", nivel: "", tarefas_desempenhadas: "", objetivos_futuros: "", observacoes: "", conduta_negativa: "", conduta_motivo: "" });
+    await dbColabInfoSave(nome, { data_aniversario: "", data_admissao: "", email: "", nivel: "", tarefas_desempenhadas: "", objetivos_futuros: "", observacoes: "", conduta_negativa: "", conduta_motivo: "", feito_relevante: "", feito_descricao: "" });
     close();
     renderColaboradores();
     openColabDetailOverlay(nome);
@@ -302,6 +303,7 @@ function openColabDetailOverlay(nome) {
     .filter(r => r && r["Atendente"] === nome && r["Setor"])
     .map(r => String(r["Setor"]).trim()))];
   const condutaChecked = info.conduta_negativa === "true" || info.conduta_negativa === true;
+  const feitoChecked = info.feito_relevante === "true" || info.feito_relevante === true;
   const nivelAtual = info.nivel || "";
 
   let html = `<div class="ci-dialog">`;
@@ -338,6 +340,21 @@ function openColabDetailOverlay(nome) {
       <label class="field ci-span-2"><span>Tarefas que já desempenhou</span><textarea id="ciTarefas" rows="3" placeholder="Ex.: Atendimento N1, suporte por chat, projeto de migração...">${escapeHtml(info.tarefas_desempenhadas || "")}</textarea></label>
       <label class="field ci-span-2"><span>Objetivos futuros</span><textarea id="ciObjetivos" rows="3" placeholder="Ex.: Assumir liderança, aprender uma ferramenta, mudar de nível...">${escapeHtml(info.objetivos_futuros || "")}</textarea></label>
     </div>
+  </section>`;
+
+  html += `<section class="ci-form-section ci-achievement-section${feitoChecked ? " is-active" : ""}" id="ciFeitoField">
+    <div class="ci-form-section-title ci-detractor-title">
+      <div><strong>🏆 Feito relevante</strong><small>Reconheça entregas e atitudes de grande impacto</small></div>
+      <label class="ci-native-toggle">
+        <input type="checkbox" id="ciFeitoToggle" ${feitoChecked ? "checked" : ""}>
+        <span>Possui feito relevante</span>
+      </label>
+    </div>
+    <label class="field ci-achievement-reason" id="ciFeitoDescricaoField" ${feitoChecked ? "" : "hidden"}>
+      <span>Descrição do feito</span>
+      <textarea id="ciFeitoDescricao" rows="4" placeholder="Descreva a realização, o contexto e o impacto gerado...">${escapeHtml(info.feito_descricao || "")}</textarea>
+      <small>Seja específico sobre a contribuição e o resultado alcançado.</small>
+    </label>
   </section>`;
 
   html += `<section class="ci-form-section ci-detractor-section${condutaChecked ? " is-active" : ""}" id="ciCondutaField">
@@ -385,6 +402,13 @@ function openColabDetailOverlay(nome) {
   overlay.classList.add("open");
 
   const condutaToggle = document.getElementById("ciCondutaToggle");
+  const feitoToggle = document.getElementById("ciFeitoToggle");
+  feitoToggle.addEventListener("change", () => {
+    const active = feitoToggle.checked;
+    document.getElementById("ciFeitoDescricaoField").hidden = !active;
+    document.getElementById("ciFeitoField").classList.toggle("is-active", active);
+    if (active) requestAnimationFrame(() => document.getElementById("ciFeitoDescricao").focus({ preventScroll: true }));
+  });
   condutaToggle.addEventListener("change", () => {
     const active = condutaToggle.checked;
     document.getElementById("ciCondutaMotivoField").hidden = !active;
@@ -402,7 +426,9 @@ function openColabDetailOverlay(nome) {
       objetivos_futuros: document.getElementById("ciObjetivos").value.trim(),
       observacoes: document.getElementById("ciObservacoes").value.trim(),
       conduta_negativa: condutaToggle.checked ? "true" : "",
-      conduta_motivo: document.getElementById("ciCondutaMotivo").value.trim(),
+      conduta_motivo: condutaToggle.checked ? document.getElementById("ciCondutaMotivo").value.trim() : "",
+      feito_relevante: feitoToggle.checked ? "true" : "",
+      feito_descricao: feitoToggle.checked ? document.getElementById("ciFeitoDescricao").value.trim() : "",
       nivel: document.getElementById("ciNivel").value
     };
     await dbColabInfoSave(nome, data);
@@ -417,7 +443,7 @@ function openColabDetailOverlay(nome) {
     await dbColabInfoSave(nome, {
       data_aniversario: "", data_admissao: "", email: "", nivel: "",
       tarefas_desempenhadas: "", objetivos_futuros: "", observacoes: "",
-      conduta_negativa: "", conduta_motivo: ""
+      conduta_negativa: "", conduta_motivo: "", feito_relevante: "", feito_descricao: ""
     });
     showToast(`Dados de ${nome} removidos!`, "success", "Colaboradores");
     closeColabDetail();
