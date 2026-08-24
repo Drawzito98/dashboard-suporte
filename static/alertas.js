@@ -4,12 +4,12 @@
 const ALERTAS_STORAGE_KEY = 'sistema_alertas_config_v1';
 
 const DEFAULT_ALERTAS = [
-  { id: 'score_baixo', name: 'Score abaixo de 85%', desc: 'Score médio abaixo de 4.25 (0-5)', icone: '⚠️', campo: 'score', operador: '<', valor: 4.25, ativo: true },
-  { id: 'queda_20', name: 'Queda superior a 20%', desc: 'Queda nas finalizações > 20% vs período anterior', icone: '📉', campo: 'finalizacoes', operador: 'queda_pct', valor: 20, ativo: true },
-  { id: 'meta_nao_atingida', name: 'Meta não atingida', desc: 'Colaborador com objetivo não alcançado', icone: '🎯', campo: 'meta', operador: 'nao_atingiu', valor: 0, ativo: true },
-  { id: 'consecutivo_abaixo', name: 'Períodos consecutivos abaixo da média', desc: '2+ períodos seguidos com score abaixo de 4.0', icone: '🔁', campo: 'score', operador: 'consecutivo', valor: 4.0, ativo: true },
-  { id: 'transferencia_alta', name: 'Taxa de transferência elevada', desc: 'Taxa de transferência acima de 30%', icone: '🔄', campo: 'transferencia', operador: '>', valor: 0.30, ativo: true },
-  { id: 'produtividade_baixa', name: 'Produtividade baixa', desc: 'Produtividade (Fin/Ass) abaixo de 60%', icone: '⚡', campo: 'produtividade', operador: '<', valor: 0.60, ativo: true },
+  { id: 'score_baixo', name: 'Qualidade média do suporte', desc: 'Classifica a média das notas de qualidade do suporte nas faixas ruim, razoável e saudável.', icone: '⭐', campo: 'score', operador: '<', valor: 4.50, metaSaudavel: 4.70, ativo: true },
+  { id: 'queda_20', name: 'Evolução de finalizações', desc: 'Identifica uma queda relevante no total finalizado em comparação ao período anterior.', icone: '📉', campo: 'finalizacoes', operador: 'queda_pct', valor: 20, metaSaudavel: 5, ativo: true },
+  { id: 'meta_nao_atingida', name: 'Objetivo não atingido', desc: 'Compara as finalizações de cada atendente com o campo Objetivo informado nos dados.', icone: '🎯', campo: 'meta', operador: 'nao_atingiu', valor: 0, ativo: true },
+  { id: 'consecutivo_abaixo', name: 'Qualidade baixa recorrente', desc: 'Identifica atendentes com score abaixo da referência por vários períodos consecutivos.', icone: '🔁', campo: 'score', operador: 'consecutivo', valor: 4.0, periodos: 2, ativo: true },
+  { id: 'transferencia_alta', name: 'Taxa de transferência', desc: 'Mostra quanto dos atendimentos assumidos precisou ser transferido para outra pessoa ou área.', icone: '🔄', campo: 'transferencia', operador: '>', valor: 0.30, metaSaudavel: 0.25, ativo: true },
+  { id: 'produtividade_baixa', name: 'Taxa de conclusão', desc: 'Mostra o percentual dos atendimentos assumidos que foi efetivamente finalizado.', icone: '⚡', campo: 'produtividade', operador: '<', valor: 0.60, metaSaudavel: 0.70, ativo: true },
 ];
 
 let alertasConfig = [];
