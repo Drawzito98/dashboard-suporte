@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.8.1';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -2495,7 +2495,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (sbClient) {
     const { data: { user } } = await sbClient.auth.getUser();
     if (user) {
-      const role = user.app_metadata?.role;
+      const role = getTrustedUserRole(user);
       if (role === 'admin') {
         document.body.dataset.role = 'admin';
       } else {
@@ -2512,7 +2512,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { console.error('[App] Erro:', e); }
       }
       // Bloqueio: usuário não-admin com ativo=false não acessa o app
-      if (user.app_metadata?.ativo === false && role !== 'admin') {
+      if (isTrustedAccountBlocked(user)) {
         // Se já viu a tela de erro antes, desloga e volta pro login
         if (sessionStorage.getItem('blocked_error_shown')) {
           await sbClient.auth.signOut();

@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Painel de Suporte"/>
   <link rel="manifest" href="manifest.json"/>
   <link href="static/css/tokens.css?v=79" rel="stylesheet"/>
-  <link href="static/styles.css?v=98" rel="stylesheet"/>
+  <link href="static/styles.css?v=99" rel="stylesheet"/>
   <link href="static/desafio-diario.css?v=68" rel="stylesheet"/>
   <link href="static/home.css?v=80" rel="stylesheet"/>
   <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
@@ -164,6 +164,7 @@
         </div>
       </div>
       <div class="topbar-right">
+        <button class="sync-status" id="syncStatusBtn" type="button" title="Estado da sincronização"><span class="sync-status-dot"></span><span>Sincronizado</span></button>
         <div class="user-menu-wrapper" id="userMenuWrapper">
           <button id="currentUserDisplay" class="current-user user-menu-trigger" type="button" aria-haspopup="true" aria-expanded="false"></button>
           <div class="user-dropdown" id="userDropdown" style="display:none">
@@ -724,11 +725,13 @@
 <script defer src="static/dom-helpers.js"></script>
 <script defer src="static/helpers.js"></script>
 <script defer src="static/inactive-state.js"></script>
+<script defer src="static/auth-policy.js?v=1"></script>
 <script defer src="static/colab-fotos.js?v=1"></script>
 <script defer src="static/ux-helpers.js"></script>
 <script defer src="static/month-filters.js"></script>
 <script defer src="static/auth.js?v=59"></script>
-<script defer src="static/db.js"></script>
+<script defer src="static/db.js?v=1"></script>
+<script defer src="static/sync-status.js?v=1"></script>
 <script defer src="static/db-extra.js?v=98"></script>
 <script defer src="static/perfis.js"></script>
 <script defer src="static/globalFilters.js"></script>
@@ -770,7 +773,7 @@
 <script defer src="static/db-reportes.js"></script>
 <script defer src="static/reportes.js"></script>
 <script defer src="static/home.js?v=80"></script>
-<script defer src="static/app.js?v=94"></script>
+<script defer src="static/app.js?v=95"></script>
 <script defer src="static/manage-colabs-v2.js?v=95"></script>
 <script defer src="static/desafio-diario.js?v=80"></script>
 <script defer src="static/features.js"></script>

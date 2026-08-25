@@ -149,6 +149,14 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-5) var(--s-6) var
   display: flex; align-items: center; gap: var(--s-2);
   flex-wrap: wrap; justify-content: flex-end;
 }
+.sync-status { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-surface); color: var(--text-muted); font-size: 10px; font-weight: 700; white-space: nowrap; cursor: default; }
+.sync-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px var(--success-soft); }
+.sync-status.has-pending { border-color: color-mix(in srgb, var(--warning) 35%, var(--border)); color: var(--warning); cursor: pointer; }
+.sync-status.has-pending .sync-status-dot { background: var(--warning); box-shadow: 0 0 0 3px var(--warning-soft); }
+.sync-status.is-offline { color: var(--text-muted); }
+.sync-status.is-offline .sync-status-dot { background: var(--text-muted); box-shadow: none; }
+.sync-status:disabled { cursor: wait; opacity: .7; }
+body[data-role="colaborador"] .sync-status { display: none; }
 .current-user { overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 
 /* User Menu Dropdown */

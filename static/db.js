@@ -25,12 +25,17 @@ if (!sbClient) {
 // Chave para registros pendentes de sincronização
 const PENDING_SYNC_KEY = 'sistema_pending_sync';
 
+function notifyPendingSyncChanged() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('pending-sync-changed', { detail: { count: getPendingSync().length } }));
+}
+
 function addToPendingSync(record) {
   try {
     const raw = localStorage.getItem(PENDING_SYNC_KEY);
     const arr = raw ? JSON.parse(raw) : [];
     arr.push({ ...record, _pendingAt: Date.now() });
     localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(arr));
+    notifyPendingSyncChanged();
   } catch (e) { console.warn('Erro ao salvar pending sync:', e); }
 }
 
@@ -42,7 +47,7 @@ function getPendingSync() {
 }
 
 function clearPendingSync() {
-  try { localStorage.removeItem(PENDING_SYNC_KEY); } catch {}
+  try { localStorage.removeItem(PENDING_SYNC_KEY); notifyPendingSyncChanged(); } catch {}
 }
 
 async function syncPendingRecords() {
@@ -64,6 +69,7 @@ async function syncPendingRecords() {
 
   if (failed.length) {
     localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(failed));
+    notifyPendingSyncChanged();
   } else {
     clearPendingSync();
   }
