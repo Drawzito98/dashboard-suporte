@@ -5295,3 +5295,5 @@ body.chat-page #chatOverlay #chatContent{max-width:none;width:100%;padding:24px 
 @media(max-width:600px){body.chat-page #chatOverlay #chatContent{padding:14px}body.chat-page #chatOverlay .chat-message{max-width:92%}}
 /* Diferenciação por recuo: recebidas à esquerda, enviadas à direita. */
 body.chat-page #chatOverlay .chat-message{align-self:flex-start!important;margin-right:auto}body.chat-page #chatOverlay .chat-message.is-mine{align-self:flex-end!important;margin-left:auto;margin-right:0}
+
+body.chat-page #chatOverlayClose{display:flex!important;position:fixed;top:16px;right:20px;z-index:20}

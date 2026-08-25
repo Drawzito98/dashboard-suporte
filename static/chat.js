@@ -125,6 +125,7 @@
   document.getElementById('chatBtn')?.addEventListener('click', openChat);
   document.getElementById('chatOverlay')?.addEventListener('click', event => { if (event.target.closest('.chat-minimize')) minimizeChat(); else if (event.target.id === 'chatOverlay' && event.currentTarget.classList.contains('minimized')) restoreChat(); });
   document.getElementById('chatBtnTop')?.addEventListener('click', openChat);
-  document.getElementById('chatOverlayClose')?.addEventListener('click', closeChat);
+  document.getElementById('chatOverlayClose')?.addEventListener('click', event => { event.preventDefault(); closeChat(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && document.body.classList.contains('chat-page')) closeChat(); });
 
 })();
