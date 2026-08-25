@@ -1,7 +1,18 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://agvkmfusyetkicmuvumz.supabase.co';
 const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
 const crypto = require('crypto');
-const CHALLENGE_SECONDS = 60;
+const CHALLENGE_SECONDS = 10;
+const DAILY_QUESTION_BANK = [
+  { level: "fácil", question: "Qual equipamento leva o sinal de fibra até a rede interna da casa do cliente?", options: ["ONU/ONT", "Filtro de linha", "Antena de TV", "Fonte da OLT"], correct: 0, explanation: "A ONU ou ONT converte o sinal óptico em sinal de rede para os equipamentos do cliente." },
+  { level: "fácil", question: "Qual cabo transporta dados por pulsos de luz?", options: ["Fibra óptica", "Cabo de energia", "Cabo de áudio", "Cabo USB"], correct: 0, explanation: "A fibra óptica transmite informações usando luz." },
+  { level: "fácil", question: "Qual unidade é usada para anunciar a velocidade de um plano de internet?", options: ["Mbps", "Volts", "Quilos", "Graus Celsius"], correct: 0, explanation: "Mbps significa megabits por segundo e representa uma taxa de transmissão." },
+  { level: "média", question: "Em uma rede GPON, qual equipamento controla as ONUs dos clientes?", options: ["OLT", "CTO", "Roteador doméstico", "Patch cord"], correct: 0, explanation: "A OLT concentra e gerencia as conexões ópticas das ONUs e ONTs." },
+  { level: "média", question: "Qual é a principal função de uma CTO em uma rede FTTH?", options: ["Distribuir portas ópticas aos clientes", "Hospedar o financeiro", "Gerar e-mails", "Fornecer energia"], correct: 0, explanation: "A CTO organiza a distribuição e oferece portas para os drops dos assinantes." },
+  { level: "média", question: "Por que o teste de velocidade deve ser feito preferencialmente por cabo?", options: ["Para reduzir interferências do Wi-Fi", "Porque fibra só funciona por cabo", "Para aumentar o plano", "Porque o navegador exige cabo"], correct: 0, explanation: "O cabo reduz variações e interferências, oferecendo uma medição mais confiável." },
+  { level: "difícil", question: "Qual leitura de potência óptica indica sinal mais forte?", options: ["-15 dBm", "-28 dBm", "-35 dBm", "-40 dBm"], correct: 0, explanation: "Em dBm negativo, quanto mais próximo de zero, maior é a potência recebida." },
+  { level: "difícil", question: "Qual problema o CGNAT ajuda um provedor a contornar?", options: ["Escassez de IPv4 públicos", "Falta de portas na OLT", "Atenuação da fibra", "Interferência no Wi-Fi"], correct: 0, explanation: "O CGNAT permite que vários clientes compartilhem endereços IPv4 públicos." },
+  { level: "difícil", question: "Qual mecanismo evita loops de camada 2 em uma rede Ethernet redundante?", options: ["STP", "DHCP", "DNS", "NAT"], correct: 0, explanation: "O STP bloqueia caminhos redundantes quando necessário para impedir loops Ethernet." }
+];
 
 function jsonHeaders(extra = {}) {
   return {
@@ -71,6 +82,25 @@ function publicQuestion(question, user) {
   if (!question) return null;
   const order = challengeOrder(user.id, question.id, question.alternativas.length);
   return { id: question.id, data: question.data, pergunta: question.pergunta, alternativas: order.map(index => question.alternativas[index]), challengeToken: createChallengeToken(user.id, question.id), timeLimit: CHALLENGE_SECONDS };
+}
+
+function dailyQuestionTemplate(today) {
+  const levels = ["fácil", "média", "difícil"];
+  const dayNumber = Math.floor(Date.parse(today + "T12:00:00Z") / 86400000);
+  const level = levels[Math.abs(dayNumber) % levels.length];
+  const available = DAILY_QUESTION_BANK.filter(item => item.level === level);
+  return available[Math.abs(Math.floor(dayNumber / levels.length)) % available.length];
+}
+
+async function ensureDailyQuestion(today) {
+  const existing = await rest(`perguntas_diarias?select=id&data=eq.${today}&limit=1`);
+  if (existing[0]) return;
+  const template = dailyQuestionTemplate(today);
+  await rest("perguntas_diarias?on_conflict=data", {
+    method: "POST",
+    headers: { Prefer: "resolution=ignore-duplicates,return=minimal" },
+    body: JSON.stringify({ data: today, pergunta: template.question, alternativas: template.options, resposta_correta: template.correct, explicacao: template.explanation, ativo: true })
+  });
 }
 
 function previousBusinessDay(iso) {
@@ -236,6 +266,7 @@ async function saveLeaderImage(user, body) {
 async function getDaily(user) {
   const today = localDate();
   const month = today.slice(0, 7);
+  await ensureDailyQuestion(today);
   const [questions, checkins, answers, history, personalResults, leaderImageUrl] = await Promise.all([
     rest(`perguntas_diarias?select=id,data,pergunta,alternativas,explicacao&data=eq.${today}&ativo=eq.true&limit=1`),
     rest(`checkins_diarios?select=humor&user_id=eq.${user.id}&data=eq.${today}&limit=1`),

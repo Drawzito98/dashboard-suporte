@@ -249,8 +249,8 @@
           <p class="daily-feedback" id="moodFeedback">${selectedMood ? 'Check-in registrado. Obrigado por compartilhar!' : ''}</p>
         </article>
         <article class="daily-card challenge-card">
-          <div class="daily-card-heading"><span class="daily-step">2</span><div><h2>Desafio do dia</h2><p>Uma pergunta diária para fortalecer seu conhecimento sobre o IXC Provedor.</p></div></div>
-          ${answered ? challengeCompletedMarkup() : question ? `<div class="challenge-timer" id="challengeTimer" role="timer"><span>Tempo para responder</span><strong>01:00</strong></div><div class="challenge-question">${safe(question.pergunta)}</div>
+          <div class="daily-card-heading"><span class="daily-step">2</span><div><h2>Desafio do dia</h2><p>Uma pergunta diária para fortalecer seu conhecimento sobre provedores de internet.</p></div></div>
+          ${answered ? challengeCompletedMarkup() : question ? `<div class="challenge-timer" id="challengeTimer" role="timer"><span>Tempo para responder</span><strong>00:10</strong></div><div class="challenge-question">${safe(question.pergunta)}</div>
             <div class="challenge-options">
               ${question.alternativas.map((option, index) => `<button type="button" class="challenge-option${answered?.alternativa === index ? ' selected' : ''}" data-answer="${index}" ${answered ? 'disabled' : ''}><span>${String.fromCharCode(65 + index)}</span>${safe(option)}</button>`).join('')}
             </div>
@@ -290,7 +290,7 @@
     if (!answered && question) {
       const timer = root.querySelector('#challengeTimer');
       const startedAt = Date.now();
-      const limit = Number(question.timeLimit || 60);
+      const limit = Number(question.timeLimit || 10);
       const updateTimer = () => {
         const remaining = Math.max(0, limit - Math.floor((Date.now() - startedAt) / 1000));
         if (timer) {
