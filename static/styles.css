@@ -3953,6 +3953,7 @@ table td { border-color: var(--border); }
 
 /* Editor de colaborador — estrutura simples e isolada */
 #colabDetailOverlay {
+  z-index: 1400;
   padding: 24px;
   overflow-x: hidden;
   overflow-y: auto;
