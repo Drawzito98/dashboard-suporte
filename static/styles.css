@@ -5277,3 +5277,6 @@ body.privacy-screen-on .privacy-eye-closed { display: block; }
 .chat-person-title{display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px}.chat-person-star,#chatFavoriteBtn.is-favorite{color:#eab308}#chatFavoriteBtn{font-size:18px;padding:3px 8px}
 
 .colab-detail-overlay#chatOverlay .chat-header>button{flex-shrink:0}.colab-detail-overlay#chatOverlay .chat-header>div:first-child{min-width:0}
+.chat-profile-name{border:0;background:transparent;color:var(--text);font:inherit;font-weight:700;cursor:pointer;padding:0;border-bottom:1px dashed var(--border-strong)}.chat-profile-name:hover{color:var(--brand)}
+.chat-message.from-admin{background:#eef3ff;border-color:#d7e1ff}.chat-message.from-colaborador{background:#f3f7f4;border-color:#dce9df}.chat-message.is-mine.from-admin,.chat-message.is-mine.from-colaborador{background:var(--brand);border-color:var(--brand);color:#fff}
+.chat-message.is-mine.from-admin{background:#dce7ff;border-color:#c4d5ff;color:var(--text)}.chat-message.is-mine.from-colaborador{background:#e1efe6;border-color:#c8dfd0;color:var(--text)}

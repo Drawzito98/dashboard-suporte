@@ -40,8 +40,8 @@
     if (error) throw error;
     return data || [];
   }
-  function messagesMarkup(messages, userId) {
-    return messages.length ? messages.map(m => `<div class="chat-message ${m.sender_id === userId ? 'is-mine' : ''}">${m.imagem_url ? `<img class="chat-image" src="${esc(m.imagem_url)}" alt="Imagem enviada" loading="lazy">` : ''}${m.mensagem ? `<p>${esc(m.mensagem)}</p>` : ''}<small>${new Date(m.created_at).toLocaleString('pt-BR')}</small></div>`).join('') : '<p class="chat-empty">Nenhuma mensagem ainda. Inicie a conversa.</p>';
+  function messagesMarkup(messages, userId, conversation = currentConversation) {
+    return messages.length ? messages.map(m => `<div class="chat-message ${m.sender_id === userId ? 'is-mine' : ''} ${conversation && m.sender_id === conversation.admin_id ? 'from-admin' : 'from-colaborador'}">${m.imagem_url ? `<img class="chat-image" src="${esc(m.imagem_url)}" alt="Imagem enviada" loading="lazy">` : ''}${m.mensagem ? `<p>${esc(m.mensagem)}</p>` : ''}<small>${new Date(m.created_at).toLocaleString('pt-BR')}</small></div>`).join('') : '<p class="chat-empty">Nenhuma mensagem ainda. Inicie a conversa.</p>';
   }
   async function renderConversation() {
     const root = document.getElementById('chatContent'); if (!root || !currentConversation) return;
@@ -49,11 +49,12 @@
     let nickname = '';
     try { const profile = await sbClient.from('chat_perfis').select('apelido').eq('user_id', user.id).maybeSingle(); nickname = profile.data?.apelido || ''; } catch {}
     let messages; try { messages = await loadMessages(); } catch (error) { root.innerHTML = `<div class="chat-error">A tabela do chat ainda não foi criada. Execute <strong>migration_v33.sql</strong> no Supabase.</div>`; return; }
-    root.innerHTML = `<div class="chat-header"><div><span class="page-eyebrow">Conversa privada</span><h2>💬 Conversa</h2></div><button class="chat-minimize" type="button" title="Minimizar">−</button><button class="btn-small" id="chatFavoriteBtn" title="Favoritar contato">☆</button><button class="btn-small" id="chatBackBtn">← Conversas</button><button class="btn-small chat-clear" id="chatClearBtn" title="Apagar mensagens desta conversa">🗑 Limpar</button></div>${!isAdminChat() ? `<div class="chat-nickname"><label>Seu apelido (opcional) <input id="chatNicknameInput" maxlength="40" value="${esc(nickname)}" placeholder="Como quer aparecer no chat?"></label><button class="btn-small" id="chatNicknameSave">Salvar apelido</button></div>` : ''}<div id="chatMessages" class="chat-messages">${messagesMarkup(messages, user.id)}</div><form id="chatForm" class="chat-compose"><input id="chatMessageInput" maxlength="4000" placeholder="Escreva uma mensagem..." autocomplete="off"><label class="chat-attach" title="Enviar imagem">📎<input id="chatImageInput" type="file" accept="image/*" hidden></label><button class="btn-primary" type="submit">Enviar</button></form>`;
+    root.innerHTML = `<div class="chat-header"><div><span class="page-eyebrow">Conversa privada</span><h2><button class="chat-profile-name" id="chatProfileName" type="button" title="Alterar apelido do chat">${esc(nickname || (isAdminChat() ? 'Administrador' : 'Você'))}</button></h2></div><button class="chat-minimize" type="button" title="Minimizar">−</button><button class="btn-small" id="chatFavoriteBtn" title="Favoritar contato">☆</button><button class="btn-small" id="chatBackBtn">← Conversas</button><button class="btn-small chat-clear" id="chatClearBtn" title="Apagar mensagens desta conversa">🗑 Limpar</button></div><div id="chatMessages" class="chat-messages">${messagesMarkup(messages, user.id)}</div><form id="chatForm" class="chat-compose"><input id="chatMessageInput" maxlength="4000" placeholder="Escreva uma mensagem..." autocomplete="off"><label class="chat-attach" title="Enviar imagem">📎<input id="chatImageInput" type="file" accept="image/*" hidden></label><button class="btn-primary" type="submit">Enviar</button></form>`;
     root.querySelector('.chat-minimize')?.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); minimizeChat(); });
     const contactId = isAdminChat() ? currentConversation.colaborador_id : currentConversation.admin_id;
     const favoriteBtn = root.querySelector('#chatFavoriteBtn');
     if (favoriteBtn) { favoriteBtn.textContent = isFavorite(user.id, contactId) ? '★' : '☆'; favoriteBtn.classList.toggle('is-favorite', isFavorite(user.id, contactId)); favoriteBtn.addEventListener('click', () => { const active = toggleFavorite(user.id, contactId); favoriteBtn.textContent = active ? '★' : '☆'; favoriteBtn.classList.toggle('is-favorite', active); }); }
+    root.querySelector('#chatProfileName')?.addEventListener('click', async () => { const apelido = prompt('Digite o apelido que aparecerá no chat:', nickname || ''); if (apelido === null) return; const novo = apelido.trim().slice(0, 40); const { error } = await sbClient.from('chat_perfis').upsert({ user_id: user.id, apelido: novo, updated_at: new Date().toISOString() }); if (error) { notice(error.message, 'error'); return; } notice('Apelido atualizado.', 'success'); renderConversation(); });
     root.querySelector('#chatBackBtn').addEventListener('click', renderChatHome);
     root.querySelector('#chatForm').addEventListener('submit', async event => {
       event.preventDefault();
@@ -72,10 +73,10 @@
       const recipientId = currentConversation.admin_id === user.id ? currentConversation.colaborador_id : currentConversation.admin_id;
       await sbClient.from('chat_notificacoes').insert({ recipient_id: recipientId, conversa_id: currentConversation.id, mensagem_id: sent.id });
       const box = root.querySelector('#chatMessages');
-      if (sent && box) { const empty = box.querySelector('.chat-empty'); if (empty) empty.remove(); const html = messagesMarkup([sent], user.id).replace('<div class="chat-message ', `<div data-chat-message-id="${esc(sent.id)}" class="chat-message `); box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight; }
+      if (sent && box) { const empty = box.querySelector('.chat-empty'); if (empty) empty.remove(); const html = messagesMarkup([sent], user.id, currentConversation).replace('<div class="chat-message ', `<div data-chat-message-id="${esc(sent.id)}" class="chat-message `); box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight; }
     });
     root.querySelector('#chatClearBtn')?.addEventListener('click', async () => { if (!confirm('Limpar o histórico apenas para você? A outra pessoa continuará vendo as mensagens.')) return; const campoLimpeza = isAdminChat() ? 'apagada_para_admin' : 'apagada_para_colaborador'; const valores = { [campoLimpeza]: true }; const { data: updated, error } = await sbClient.from('chat_mensagens').update(valores).eq('conversa_id', currentConversation.id).select('id'); if (error) { notice(error.message, 'error'); return; } if (!updated?.length) { notice('Não foi possível salvar a limpeza. Tente novamente.', 'error'); return; } await renderConversation(); notice('Histórico limpo apenas para você.', 'success'); });
-    root.querySelector('#chatNicknameSave')?.addEventListener('click', async () => { const apelido = root.querySelector('#chatNicknameInput').value.trim(); const { error } = await sbClient.from('chat_perfis').upsert({ user_id: user.id, apelido, updated_at: new Date().toISOString() }); notice(error ? error.message : 'Apelido salvo.', error ? 'error' : 'success'); });
+    
     if (realtimeChannel) sbClient.removeChannel(realtimeChannel);
     realtimeChannel = sbClient.channel('chat-' + currentConversation.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensagens', filter: 'conversa_id=eq.' + currentConversation.id }, payload => {
       // Use o payload do realtime diretamente: uma consulta logo após o INSERT
@@ -85,7 +86,7 @@
       if (!message || !box || message.conversa_id !== currentConversation.id) return;
       if (box.querySelector(`[data-chat-message-id=\"${message.id}\"]`)) return;
       const empty = box.querySelector('.chat-empty'); if (empty) empty.remove();
-      const html = messagesMarkup([message], user.id).replace('<div class=\"chat-message ', `<div data-chat-message-id=\"${esc(message.id)}\" class=\"chat-message `);
+      const html = messagesMarkup([message], user.id, currentConversation).replace('<div class=\"chat-message ', `<div data-chat-message-id=\"${esc(message.id)}\" class=\"chat-message `);
       box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight;
     }).subscribe();
     const box = root.querySelector('#chatMessages'); box.scrollTop = box.scrollHeight;
