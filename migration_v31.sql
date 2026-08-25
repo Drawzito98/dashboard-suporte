@@ -4,6 +4,15 @@ ALTER TABLE colaboradores_info
   ADD COLUMN IF NOT EXISTS feito_relevante TEXT DEFAULT '',
   ADD COLUMN IF NOT EXISTS feito_descricao TEXT DEFAULT '';
 
+-- Migra funcoes legadas para metadados protegidos sem sobrescrever contas ja atualizadas.
+UPDATE auth.users
+SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object(
+  'role', raw_user_meta_data ->> 'role',
+  'ativo', COALESCE((raw_user_meta_data ->> 'ativo')::boolean, true)
+)
+WHERE raw_app_meta_data ->> 'role' IS NULL
+  AND raw_user_meta_data ->> 'role' IN ('admin', 'viewer', 'colaborador');
+
 DROP POLICY IF EXISTS "Users can view their own data" ON registros;
 DROP POLICY IF EXISTS "Users can update their own data" ON registros;
 DROP POLICY IF EXISTS "Users can delete their own data" ON registros;
