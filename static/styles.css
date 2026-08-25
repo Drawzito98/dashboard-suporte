@@ -5307,3 +5307,17 @@ body.chat-page.privacy-screen-on .privacy-screen-toggle{left:50%;right:auto;top:
 body.chat-page.privacy-screen-on .privacy-screen-toggle:hover{transform:translate(-50%,-50%) scale(1.06)}
 body.chat-page:not(.privacy-screen-on) .privacy-screen-toggle{left:auto;right:20px;top:auto;bottom:20px;width:auto;height:auto;transform:none}
 body.chat-page.privacy-screen-on .privacy-screen-toggle{top:calc(50% + 42px);bottom:auto;transform:translate(-50%,-50%)}body.chat-page.privacy-screen-on .privacy-screen-toggle:hover{transform:translate(-50%,-50%) scale(1.06)}
+/* Ajustes mobile do acesso do colaborador e chat em tela cheia. */
+@media(max-width:600px){
+  body.chat-page #chatOverlay .chat-header{padding:10px 12px;gap:4px;flex-wrap:nowrap}
+  body.chat-page #chatOverlay .chat-header h2{font-size:13px;max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.chat-page #chatOverlay #chatContent{padding:10px 8px;padding-bottom:8px}
+  body.chat-page #chatOverlay .chat-messages{padding:10px 6px;gap:6px;min-height:0}
+  body.chat-page #chatOverlay .chat-message{max-width:88%;font-size:11px;padding:6px 8px}
+  body.chat-page #chatOverlay .chat-message p{font-size:11px;line-height:1.35}
+  body.chat-page #chatOverlay .chat-compose{grid-template-columns:minmax(0,1fr) 32px 32px;padding:7px 4px;gap:4px}
+  body.chat-page #chatOverlay .chat-compose input{height:34px;padding:7px 9px;font-size:12px}
+  body.chat-page #chatOverlay .chat-attach,.chat-send-btn{width:32px!important;min-width:32px!important;height:32px}
+  body.chat-page #chatOverlay .chat-icon-btn{width:27px;min-width:27px;font-size:14px!important}
+  body.chat-page.privacy-screen-on .privacy-screen-toggle{width:50px;height:50px;top:calc(50% + 38px)}
+}
