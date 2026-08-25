@@ -250,13 +250,13 @@
         </article>
         <article class="daily-card challenge-card">
           <div class="daily-card-heading"><span class="daily-step">2</span><div><h2>Desafio do dia</h2><p>Uma pergunta diária para fortalecer seu conhecimento sobre o IXC Provedor.</p></div></div>
-          ${answered ? challengeCompletedMarkup() : question ? `<div class="challenge-timer" id="challengeTimer" role="timer"><span>Tempo para responder</span><strong>00:10</strong></div><div class="challenge-question">${safe(question.pergunta)}</div>
+          ${answered ? challengeCompletedMarkup() : question ? `<div class="challenge-timer" id="challengeTimer" role="timer"><span>Tempo para responder</span><strong>00:20</strong></div><div class="challenge-question">${safe(question.pergunta)}</div>
             <div class="challenge-options">
               ${question.alternativas.map((option, index) => `<button type="button" class="challenge-option${answered?.alternativa === index ? ' selected' : ''}" data-answer="${index}" ${answered ? 'disabled' : ''}><span>${String.fromCharCode(65 + index)}</span>${safe(option)}</button>`).join('')}
             </div>
             <button type="button" class="btn-primary challenge-submit" id="challengeSubmit" ${answered ? 'disabled' : ''}>${answered ? 'Resposta enviada' : 'Confirmar resposta'}</button>
             <div class="challenge-result${answered ? (answered.acertou ? ' is-correct' : ' is-wrong') : ''}" id="challengeResult">${answered ? (answered.acertou ? '🎉 Resposta correta! Você ganhou 2 pontos no total.' : 'Resposta registrada! Você ganhou 1 ponto por participar.') : ''}</div>`
-            : '<div class="daily-empty"><span>📚</span><strong>Sem desafio programado para hoje</strong><p>Volte mais tarde ou continue sua ofensiva no próximo dia útil.</p></div>'}
+            : data.challengeAvailable ? '<div class="daily-empty challenge-ready"><span>🧠</span><strong>Desafio pronto!</strong><p>A pergunta ficará visível após o início. Você terá 20 segundos para responder.</p><button type="button" class="btn-primary" id="challengeStart">Iniciar desafio</button><p class="daily-feedback" id="challengeStartFeedback"></p></div>' : '<div class="daily-empty"><span>📚</span><strong>Sem desafio programado para hoje</strong><p>Volte mais tarde ou continue sua ofensiva no próximo dia útil.</p></div>'}
         </article>
         ${answered ? liveRankingMarkup(data.ranking) : ''}
         ${personalResultsMarkup(data.personalResults)}
@@ -290,7 +290,7 @@
     if (!answered && question) {
       const timer = root.querySelector('#challengeTimer');
       const startedAt = Date.now();
-      const limit = Number(question.timeLimit || 10);
+      const limit = Number(question.timeLimit || 20);
       const updateTimer = () => {
         const remaining = Math.max(0, limit - Math.floor((Date.now() - startedAt) / 1000));
         if (timer) {
@@ -339,6 +339,20 @@
         root.querySelectorAll('.mood-option').forEach(item => { item.disabled = false; });
       }
     }));
+
+    root.querySelector('#challengeStart')?.addEventListener('click', async event => {
+      event.currentTarget.disabled = true;
+      event.currentTarget.textContent = 'Preparando... ';
+      try {
+        const result = await postCollaborator('start', {});
+        renderCollaborator(root, { ...data, question: result.question });
+      } catch (error) {
+        event.currentTarget.disabled = false;
+        event.currentTarget.textContent = 'Iniciar desafio';
+        const feedback = root.querySelector('#challengeStartFeedback');
+        if (feedback) feedback.textContent = error.message;
+      }
+    });
 
     let selectedAnswer = answered?.alternativa;
     root.querySelectorAll('.challenge-option:not([disabled])').forEach(button => button.addEventListener('click', () => {

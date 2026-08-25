@@ -1,7 +1,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://agvkmfusyetkicmuvumz.supabase.co';
 const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
 const crypto = require('crypto');
-const CHALLENGE_SECONDS = 10;
+const CHALLENGE_SECONDS = 20;
 const DAILY_QUESTION_BANK = [
   { level: "fácil", question: "No IXC Provedor, em qual cadastro ficam reunidos os dados pessoais e de contato do assinante?", options: ["Cadastro do cliente", "Cadastro de produtos", "Cadastro de veículos", "Cadastro de fornecedores"], correct: 0, explanation: "O cadastro do cliente centraliza os dados do assinante e dá acesso às informações relacionadas a ele." },
   { level: "fácil", question: "No IXC Provedor, qual registro representa o serviço contratado pelo cliente?", options: ["Contrato do cliente", "Caixa de atendimento", "Patrimônio", "Plano de contas"], correct: 0, explanation: "O contrato vincula o cliente ao serviço prestado e às configurações comerciais da assinatura." },
@@ -313,7 +313,8 @@ async function getDaily(user) {
   return {
     date: today,
     name: user.user_metadata?.name || user.user_metadata?.csv_nome || user.email,
-    question: answers[0] ? null : publicQuestion(questions[0], user),
+    question: null,
+    challengeAvailable: Boolean(!answers[0] && questions[0]),
     checkin: checkins[0] || null,
     answer: answers[0] || null,
     stats: { points, participations: monthHistory.length, streak, nextMilestone, monthlyGoal, correctAnswers, weeklyParticipations: weeklyHistory.length, weeklyCorrect: weeklyHistory.filter(row => row.acertou).length, achievements },
@@ -336,6 +337,16 @@ async function saveCheckin(user, body) {
     body: JSON.stringify({ user_id: user.id, data: today, humor })
   });
   return { ok: true, humor };
+}
+
+async function startQuestion(user) {
+  const today = localDate();
+  await ensureDailyQuestion(today);
+  const answered = await rest(`respostas_diarias?select=id&user_id=eq.${user.id}&data=eq.${today}&limit=1`);
+  if (answered[0]) throw new Error('Você já respondeu ao desafio de hoje.');
+  const questions = await rest(`perguntas_diarias?select=id,data,pergunta,alternativas&data=eq.${today}&ativo=eq.true&limit=1`);
+  if (!questions[0]) throw new Error('Não há desafio disponível hoje.');
+  return { question: publicQuestion(questions[0], user) };
 }
 
 async function answerQuestion(user, body) {
@@ -558,6 +569,7 @@ module.exports = async (req, res) => {
       }
       if (user.app_metadata?.role === 'admin') return res.status(403).json({ error: 'Área exclusiva de usuários não administradores.' });
       if (action === 'checkin') return res.status(200).json(await saveCheckin(user, req.body));
+      if (action === 'start') return res.status(200).json(await startQuestion(user));
       if (action === 'answer') return res.status(200).json(await answerQuestion(user, req.body));
       return res.status(400).json({ error: 'Ação inválida.' });
     }
