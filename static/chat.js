@@ -8,10 +8,10 @@
   const esc = value => typeof escapeHtml === 'function' ? escapeHtml(value) : String(value || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   const currentUser = async () => (await sbClient.auth.getUser()).data.user;
   const isAdminChat = () => typeof isAdmin === 'function' && isAdmin();
-  function closeChat() { document.getElementById('chatOverlay')?.classList.remove('open'); if (realtimeChannel) { sbClient.removeChannel(realtimeChannel); realtimeChannel = null; } }
+  function closeChat() { document.body.classList.remove('chat-page'); document.getElementById('chatOverlay')?.classList.remove('open'); if (realtimeChannel) { sbClient.removeChannel(realtimeChannel); realtimeChannel = null; } }
   function minimizeChat() { document.getElementById('chatOverlay')?.classList.add('minimized'); }
   function restoreChat() { document.getElementById('chatOverlay')?.classList.remove('minimized'); }
-  function openChat() { document.getElementById('chatOverlay')?.classList.add('open'); renderChatHome(); }
+  function openChat() { document.body.classList.add('chat-page'); document.getElementById('chatOverlay')?.classList.add('open'); renderChatHome(); }
   function notice(text, type = 'info') { if (typeof showToast === 'function') showToast(text, type, 'Chat'); }
   function favoriteKey(userId) { return 'chat_favoritos_' + userId; }
   function getFavorites(userId) { try { return JSON.parse(localStorage.getItem(favoriteKey(userId)) || '[]'); } catch { return []; } }
