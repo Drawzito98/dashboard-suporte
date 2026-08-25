@@ -5287,3 +5287,5 @@ body.privacy-screen-on .privacy-eye-closed { display: block; }
 .colab-detail-overlay#chatOverlay .chat-message.from-admin,.colab-detail-overlay#chatOverlay .chat-message.from-colaborador,.colab-detail-overlay#chatOverlay .chat-message.is-mine.from-admin,.colab-detail-overlay#chatOverlay .chat-message.is-mine.from-colaborador{background:var(--bg-card);border-color:var(--border);color:var(--text)}
 
 .colab-detail-overlay#chatOverlay .chat-message{font-size:12px;padding:7px 10px}.colab-detail-overlay#chatOverlay .chat-message p{font-size:12px}.colab-detail-overlay#chatOverlay .chat-compose{display:grid;grid-template-columns:minmax(0,1fr) 34px 34px;align-items:center;gap:6px}.colab-detail-overlay#chatOverlay .chat-compose input{min-width:0}.chat-send-btn{width:34px!important;min-width:34px!important;height:34px;padding:0!important;font-size:18px;line-height:1}.chat-attach{width:34px;height:34px}
+/* Janela flutuante do chat acima dos demais conteúdos e painéis. */
+.colab-detail-overlay#chatOverlay{z-index:2000;position:fixed}
