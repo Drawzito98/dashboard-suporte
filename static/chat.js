@@ -38,7 +38,7 @@
     let query = sbClient.from('chat_conversas').select('*').eq('admin_id', isAdminChat() ? user.id : collaborator.admin_id).eq('colaborador_id', isAdminChat() ? collaborator.id : user.id).maybeSingle();
     let { data, error } = await query;
     if (error) { notice('Execute a migration_v33.sql no Supabase.', 'error'); return; }
-    if (!data && isAdminChat()) { const created = await sbClient.from('chat_conversas').insert({ admin_id: user.id, colaborador_id: collaborator.id }).select().single(); data = created.data; error = created.error; }
+    if (!data && isAdminChat()) { const created = await sbClient.from('chat_conversas').upsert({ admin_id: user.id, colaborador_id: collaborator.id }, { onConflict: 'admin_id,colaborador_id', ignoreDuplicates: false }).select().single(); data = created.data; error = created.error; }
     if (error || !data) { notice(error?.message || 'Conversa não encontrada.', 'error'); return; }
     currentConversation = { ...data, label: collaborator.label }; renderConversation();
   }
