@@ -5282,3 +5282,4 @@ body.privacy-screen-on .privacy-eye-closed { display: block; }
 .chat-message.is-mine.from-admin{background:#dce7ff;border-color:#c4d5ff;color:var(--text)}.chat-message.is-mine.from-colaborador{background:#e1efe6;border-color:#c8dfd0;color:var(--text)}
 /* O chat flutuante não bloqueia a rolagem da página ao fundo. */
 .colab-detail-overlay#chatOverlay{pointer-events:none}.colab-detail-overlay#chatOverlay .colab-detail-panel,.colab-detail-overlay#chatOverlay.minimized:after{pointer-events:auto}
+.chat-icon-btn{width:30px;min-width:30px;padding:5px 0!important;font-size:16px!important;line-height:1}.colab-detail-overlay#chatOverlay .chat-header{gap:6px}.colab-detail-overlay#chatOverlay .chat-header>div:first-child{margin-right:auto}
