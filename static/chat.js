@@ -27,7 +27,19 @@
     let messages; try { messages = await loadMessages(); } catch (error) { root.innerHTML = `<div class="chat-error">A tabela do chat ainda não foi criada. Execute <strong>migration_v33.sql</strong> no Supabase.</div>`; return; }
     root.innerHTML = `<div class="chat-header"><div><span class="page-eyebrow">Conversa privada</span><h2>💬 Conversa</h2></div><button class="chat-minimize" type="button" title="Minimizar">−</button><button class="btn-small" id="chatBackBtn">← Conversas</button></div>${!isAdminChat() ? `<div class="chat-nickname"><label>Seu apelido (opcional) <input id="chatNicknameInput" maxlength="40" value="${esc(nickname)}" placeholder="Como quer aparecer no chat?"></label><button class="btn-small" id="chatNicknameSave">Salvar apelido</button></div>` : ''}<div id="chatMessages" class="chat-messages">${messagesMarkup(messages, user.id)}</div><form id="chatForm" class="chat-compose"><input id="chatMessageInput" maxlength="4000" placeholder="Escreva uma mensagem..." autocomplete="off"><button class="btn-primary" type="submit">Enviar</button></form>`;
     root.querySelector('#chatBackBtn').addEventListener('click', renderChatHome);
-    root.querySelector('#chatForm').addEventListener('submit', async event => { event.preventDefault(); const input = root.querySelector('#chatMessageInput'); const mensagem = input.value.trim(); if (!mensagem) return; const { error } = await sbClient.from('chat_mensagens').insert({ conversa_id: currentConversation.id, sender_id: user.id, mensagem }); if (error) notice(error.message, 'error'); else input.value = ''; });
+    root.querySelector('#chatForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const input = root.querySelector('#chatMessageInput');
+      const mensagem = input.value.trim();
+      if (!mensagem) return;
+      input.disabled = true;
+      const { data: sent, error } = await sbClient.from('chat_mensagens').insert({ conversa_id: currentConversation.id, sender_id: user.id, mensagem }).select().single();
+      input.disabled = false;
+      if (error) { notice(error.message, 'error'); return; }
+      input.value = '';
+      const box = root.querySelector('#chatMessages');
+      if (sent && box) { box.insertAdjacentHTML('beforeend', messagesMarkup([sent], user.id)); box.scrollTop = box.scrollHeight; }
+    });
     root.querySelector('#chatNicknameSave')?.addEventListener('click', async () => { const apelido = root.querySelector('#chatNicknameInput').value.trim(); const { error } = await sbClient.from('chat_perfis').upsert({ user_id: user.id, apelido, updated_at: new Date().toISOString() }); notice(error ? error.message : 'Apelido salvo.', error ? 'error' : 'success'); });
     if (realtimeChannel) sbClient.removeChannel(realtimeChannel);
     realtimeChannel = sbClient.channel('chat-' + currentConversation.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensagens', filter: 'conversa_id=eq.' + currentConversation.id }, async () => { const box = root.querySelector('#chatMessages'); if (box) { const fresh = await loadMessages(); box.innerHTML = messagesMarkup(fresh, user.id); box.scrollTop = box.scrollHeight; } }).subscribe();
