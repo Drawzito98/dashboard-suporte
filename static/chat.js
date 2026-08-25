@@ -6,7 +6,7 @@
   let notificationChannel = null;
   let unreadChatCount = 0;
   const originalTitle = document.title;
-  function updateTabIndicator() { document.title = unreadChatCount ? '🟢 Nova mensagem · ' + originalTitle : originalTitle; }
+  function updateTabIndicator() { document.title = unreadChatCount ? '🟢 ' + unreadChatCount + ' · Nova mensagem · ' + originalTitle : originalTitle; }
   function playChatBeep() { try { const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return; const ctx = new Ctx(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.frequency.value = 880; gain.gain.setValueAtTime(0.045, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16); osc.connect(gain).connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.16); } catch {} }
   const esc = value => typeof escapeHtml === 'function' ? escapeHtml(value) : String(value || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   const currentUser = async () => (await sbClient.auth.getUser()).data.user;
