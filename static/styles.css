@@ -5301,3 +5301,4 @@ body.chat-page #chatOverlayClose{display:flex!important;position:fixed;top:16px;
 body.chat-page.privacy-screen-on .privacy-screen-toggle{display:flex!important;position:fixed;z-index:10001;left:50%;right:auto;bottom:28px;transform:translateX(-50%);opacity:1}
 body.chat-page.privacy-screen-on .privacy-screen-toggle:hover{transform:translateX(-50%) scale(1.06)}
 body.chat-page #privacyScreenToggle{visibility:visible!important;display:flex!important}
+body.chat-page.privacy-screen-on .privacy-screen-toggle{z-index:20001!important;pointer-events:auto!important}
