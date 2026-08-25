@@ -46,7 +46,16 @@ async function initAuth() {
 
   // Verifica sessão existente
   try {
-    const { data: { session } } = await sbClient.auth.getSession();
+    const { data: { session: cachedSession } } = await sbClient.auth.getSession();
+    let session = cachedSession;
+    if (cachedSession?.user) {
+      const { data: refreshedData, error: refreshError } = await sbClient.auth.refreshSession();
+      if (refreshedData?.session?.user) {
+        session = refreshedData.session;
+      } else if (refreshError) {
+        console.warn("[Auth] Não foi possível renovar a sessão; usando a sessão local:", refreshError.message);
+      }
+    }
     if (session?.user) {
       currentUser = session.user;
       hideAuthOverlay();
