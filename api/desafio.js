@@ -168,7 +168,7 @@ async function getMonthlyRanking(currentUser, month = localDate().slice(0, 7), t
       return response.json();
     })
   ]);
-  const users = (usersResponse.users || usersResponse || []).filter(user => (user.app_metadata?.role || user.user_metadata?.role) === 'colaborador' && user.user_metadata?.ativo !== false);
+  const users = (usersResponse.users || usersResponse || []).filter(user => user.app_metadata?.role === 'colaborador' && user.app_metadata?.ativo !== false);
   const userMap = Object.fromEntries(users.map(user => [user.id, user]));
   const rankingMap = answers.reduce((acc, row) => {
     if (!userMap[row.user_id]) return acc;
@@ -366,7 +366,7 @@ async function getAdminData(requestedMonth) {
     rest('notificacoes?select=id,created_at,link,descricao,actor_email&tipo=eq.desafio_reset&order=created_at.desc&limit=24').catch(() => []),
     getLeaderImageUrl()
   ]);
-  const users = (usersResponse.users || usersResponse || []).filter(user => user.user_metadata?.role !== 'admin');
+  const users = (usersResponse.users || usersResponse || []).filter(user => user.app_metadata?.role !== 'admin');
   const names = Object.fromEntries(users.map(user => [user.id, user.user_metadata?.name || user.user_metadata?.csv_nome || user.email]));
   const ranking = Object.entries(answers.reduce((acc, row) => {
     const item = acc[row.user_id] || { user_id: row.user_id, name: names[row.user_id] || 'Colaborador', points: 0, participations: 0, correct: 0, dates: [] };
@@ -396,7 +396,7 @@ async function getAdminData(requestedMonth) {
     ranking,
     activity,
     summary: {
-      collaborators: users.filter(user => user.user_metadata?.ativo !== false).length,
+      collaborators: users.filter(user => user.app_metadata?.ativo !== false).length,
       checkinsToday: todayCheckins.length,
       averageMood: todayCheckins.length ? todayCheckins.reduce((sum, row) => sum + Number(row.humor), 0) / todayCheckins.length : null,
       answersToday: answers.filter(row => row.data === today).length
@@ -477,40 +477,40 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   const user = await getCaller(req);
   if (!user) return res.status(401).json({ error: 'Sessão inválida.' });
-  if (user.user_metadata?.ativo === false) return res.status(403).json({ error: 'Usuário bloqueado.' });
+  if (user.app_metadata?.ativo === false) return res.status(403).json({ error: 'Usuário bloqueado.' });
 
   try {
     if (req.method === 'GET') {
       if (req.query?.view === 'ranking') {
-        if (user.user_metadata?.role === 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
+        if (user.app_metadata?.role === 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
         const today = localDate();
         const answered = await rest('respostas_diarias?select=id&user_id=eq.' + user.id + '&data=eq.' + today + '&limit=1');
         if (!answered[0]) return res.status(200).json({ locked: true });
         return res.status(200).json(await getMonthlyRanking(user, today.slice(0, 7), today));
       }
       if (req.query?.view === 'admin') {
-        if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
+        if (user.app_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
         return res.status(200).json(await getAdminData(req.query?.month));
       }
-      if (user.user_metadata?.role === 'admin') return res.status(403).json({ error: 'Área exclusiva de usuários não administradores.' });
+      if (user.app_metadata?.role === 'admin') return res.status(403).json({ error: 'Área exclusiva de usuários não administradores.' });
       return res.status(200).json(await getDaily(user));
     }
 
     if (req.method === 'POST') {
       const action = req.body?.action;
       if (action === 'reset_month') {
-        if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
+        if (user.app_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
         return res.status(200).json(await resetChallengeMonth(user, req.body));
       }
       if (action === 'leader_image') {
-        if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
+        if (user.app_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
         return res.status(200).json(await saveLeaderImage(user, req.body));
       }
       if (action === 'question') {
-        if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
+        if (user.app_metadata?.role !== 'admin') return res.status(403).json({ error: 'Acesso restrito.' });
         return res.status(200).json(await saveQuestion(user, req.body));
       }
-      if (user.user_metadata?.role === 'admin') return res.status(403).json({ error: 'Área exclusiva de usuários não administradores.' });
+      if (user.app_metadata?.role === 'admin') return res.status(403).json({ error: 'Área exclusiva de usuários não administradores.' });
       if (action === 'checkin') return res.status(200).json(await saveCheckin(user, req.body));
       if (action === 'answer') return res.status(200).json(await answerQuestion(user, req.body));
       return res.status(400).json({ error: 'Ação inválida.' });

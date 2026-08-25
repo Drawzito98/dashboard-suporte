@@ -4,7 +4,7 @@ let editingUserId = null;
 async function getCurrentUserRole() {
   try {
     const { data: { user } } = await sbClient.auth.getUser();
-    return user?.user_metadata?.role || 'admin';
+    return user?.app_metadata?.role || 'viewer';
   } catch {
     return 'viewer';
   }
@@ -60,7 +60,7 @@ async function carregarUsuarios() {
         const email = u.email || u.id;
         const name = u.user_metadata?.name || '';
         const displayName = name.trim().split(/\s+/)[0] || '';
-        const role = u.user_metadata?.role || 'admin';
+        const role = u.app_metadata?.role || 'viewer';
         const isYou = email === currentEmail;
         const roleLabel = role === 'admin' ? 'Admin' : role === 'colaborador' ? 'Colaborador' : 'Visualizador';
         const isSelf = isYou;
@@ -79,7 +79,7 @@ async function carregarUsuarios() {
             ${!isSelf ? `<button class="btn-small btn-reset-default" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔢 Padrão</button>` : ''}
             ${!isSelf ? `<button class="btn-small btn-toggle-role" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">${role === 'admin' ? '👁️ Tornar viewer' : role === 'colaborador' ? '👁️ Tornar viewer' : '👑 Tornar admin'}</button>` : ''}
             ${!isSelf && role !== 'colaborador' ? `<button class="btn-small btn-toggle-colab" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">📬 Tornar colaborador</button>` : ''}
-            ${!isSelf ? `<button class="btn-small btn-toggle-block" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-ativo="${u.user_metadata?.ativo !== false}" style="font-size:11px">${u.user_metadata?.ativo === false ? '🔓 Desbloquear' : '🔒 Bloquear'}</button>` : ''}
+            ${!isSelf ? `<button class="btn-small btn-toggle-block" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-ativo="${u.app_metadata?.ativo !== false}" style="font-size:11px">${u.app_metadata?.ativo === false ? '🔓 Desbloquear' : '🔒 Bloquear'}</button>` : ''}
             ${!isSelf ? `<button class="btn-small btn-delete-user" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="color:var(--danger);font-size:11px">🗑️</button>` : ''}
           </td>
         </tr>`;
@@ -129,8 +129,8 @@ async function carregarUsuarios() {
       const registeredEmails = new Set(Object.values(colabInfo).map(info => String(info?.email || '').trim().toLowerCase()).filter(Boolean));
       const teamUsers = users.filter(user => {
         const email = String(user.email || '').toLowerCase();
-        const role = user.app_metadata?.role || user.user_metadata?.role;
-        return user.user_metadata?.ativo !== false && email !== currentEmail.toLowerCase() && (role !== 'admin' || registeredEmails.has(email));
+        const role = user.app_metadata?.role;
+        return user.app_metadata?.ativo !== false && email !== currentEmail.toLowerCase() && (role !== 'admin' || registeredEmails.has(email));
       });
       const pending = [];
       const mappings = teamUsers.map(user => {

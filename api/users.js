@@ -14,7 +14,7 @@ async function getCallerRole(req) {
     });
     if (!response.ok) return null;
     const user = await response.json();
-    return user?.user_metadata?.role || null;
+    return user?.app_metadata?.role || null;
   } catch {
     return null;
   }
@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
           if (!legacyName || user.app_metadata?.csv_nome) return;
           const appMetadata = {
             ...(user.app_metadata || {}),
-            role: user.user_metadata?.role || user.app_metadata?.role || 'viewer',
+            role: user.app_metadata?.role || user.user_metadata?.role || 'viewer',
             csv_nome: legacyName,
             csv_setor: user.user_metadata?.csv_setor || null
           };
@@ -107,7 +107,7 @@ module.exports = async (req, res) => {
           seenEmails.add(email);
           if (existingEmails.has(email)) {
             const existing = existingEmails.get(email);
-            const existingRole = existing.app_metadata?.role || existing.user_metadata?.role;
+            const existingRole = existing.app_metadata?.role;
             if (existingRole === 'admin') {
               result.skipped.push({ name, email, reason: 'E-mail já pertence a uma conta administrativa' });
               continue;
@@ -119,7 +119,7 @@ module.exports = async (req, res) => {
             }
             if (existingRole !== 'admin') {
               const userMetadata = { ...(existing.user_metadata || {}), role: 'colaborador', ativo: true, name, csv_nome: name };
-              const appMetadata = { ...(existing.app_metadata || {}), role: 'colaborador', csv_nome: name };
+              const appMetadata = { ...(existing.app_metadata || {}), role: 'colaborador', ativo: true, csv_nome: name };
               if (sector) { userMetadata.csv_setor = sector; appMetadata.csv_setor = sector; }
               const linkage = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${existing.id}`, {
                 method: 'PUT',
@@ -135,7 +135,7 @@ module.exports = async (req, res) => {
             continue;
           }
           const userMetadata = { role: 'colaborador', ativo: true, name, csv_nome: name, must_change_password: true };
-          const appMetadata = { role: 'colaborador', csv_nome: name };
+          const appMetadata = { role: 'colaborador', ativo: true, csv_nome: name };
           if (sector) { userMetadata.csv_setor = sector; appMetadata.csv_setor = sector; }
           const creation = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
             method: 'POST',
@@ -157,7 +157,7 @@ module.exports = async (req, res) => {
       if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios' });
       if (password.length < 6) return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
       const user_metadata = { role: role || 'viewer' };
-      const app_metadata = { role: role || 'viewer' };
+      const app_metadata = { role: role || 'viewer', ativo: true };
       if (name) user_metadata.name = name;
       if (csv_nome) { user_metadata.csv_nome = csv_nome; app_metadata.csv_nome = csv_nome; }
       if (csv_setor) { user_metadata.csv_setor = csv_setor; app_metadata.csv_setor = csv_setor; }
@@ -206,6 +206,7 @@ module.exports = async (req, res) => {
 
       const newAppMeta = { ...currentAppMeta };
       if (role !== undefined) newAppMeta.role = role;
+      if (ativo !== undefined) newAppMeta.ativo = ativo;
       if (csv_nome !== undefined) newAppMeta.csv_nome = csv_nome;
       if (csv_setor !== undefined) newAppMeta.csv_setor = csv_setor;
 
