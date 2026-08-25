@@ -91,7 +91,6 @@
     }).on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_mensagens', filter: 'conversa_id=eq.' + currentConversation.id }, () => {
       const box = root.querySelector('#chatMessages');
       if (box) box.innerHTML = messagesMarkup([], user.id, currentConversation);
-      notice('A conversa foi limpa pelo administrador.', 'info');
     }).subscribe();
     const box = root.querySelector('#chatMessages'); box.scrollTop = box.scrollHeight;
     markChatNotificationsRead(currentConversation.id);
