@@ -3,6 +3,8 @@
   'use strict';
   let currentConversation = null;
   let realtimeChannel = null;
+  let notificationChannel = null;
+  let unreadChatCount = 0;
   const esc = value => typeof escapeHtml === 'function' ? escapeHtml(value) : String(value || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   const currentUser = async () => (await sbClient.auth.getUser()).data.user;
   const isAdminChat = () => typeof isAdmin === 'function' && isAdmin();
@@ -11,6 +13,22 @@
   function restoreChat() { document.getElementById('chatOverlay')?.classList.remove('minimized'); }
   function openChat() { document.getElementById('chatOverlay')?.classList.add('open'); renderChatHome(); }
   function notice(text, type = 'info') { if (typeof showToast === 'function') showToast(text, type, 'Chat'); }
+  function updateChatBadge() { document.querySelectorAll('.chat-unread-badge').forEach(el => { el.textContent = unreadChatCount ? String(unreadChatCount) : ''; el.classList.toggle('visible', unreadChatCount > 0); }); }
+  async function initChatNotifications() {
+    const user = await currentUser(); if (!user || notificationChannel) return;
+    const { count } = await sbClient.from('chat_notificacoes').select('id', { count: 'exact', head: true }).eq('recipient_id', user.id).eq('lida', false);
+    unreadChatCount = count || 0; updateChatBadge();
+    notificationChannel = sbClient.channel('chat-notifications-' + user.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_notificacoes', filter: 'recipient_id=eq.' + user.id }, payload => {
+      if (payload?.new?.recipient_id !== user.id) return;
+      unreadChatCount += 1; updateChatBadge(); notice('Você recebeu uma nova mensagem no chat.', 'info');
+    }).subscribe();
+  }
+  async function markChatNotificationsRead(conversationId) {
+    const user = await currentUser(); if (!user) return;
+    await sbClient.from('chat_notificacoes').update({ lida: true }).eq('recipient_id', user.id).eq('conversa_id', conversationId).eq('lida', false);
+    const { count } = await sbClient.from('chat_notificacoes').select('id', { count: 'exact', head: true }).eq('recipient_id', user.id).eq('lida', false);
+    unreadChatCount = count || 0; updateChatBadge();
+  }
   async function loadMessages() {
     const { data, error } = await sbClient.from('chat_mensagens').select('*').eq('conversa_id', currentConversation.id).order('created_at', { ascending: true });
     if (error) throw error;
@@ -41,6 +59,8 @@
       input.disabled = false;
       if (error) { notice(error.message, 'error'); return; }
       input.value = ''; if (imageInput) imageInput.value = '';
+      const recipientId = currentConversation.admin_id === user.id ? currentConversation.colaborador_id : currentConversation.admin_id;
+      await sbClient.from('chat_notificacoes').insert({ recipient_id: recipientId, conversa_id: currentConversation.id, mensagem_id: sent.id });
       const box = root.querySelector('#chatMessages');
       if (sent && box) { const empty = box.querySelector('.chat-empty'); if (empty) empty.remove(); const html = messagesMarkup([sent], user.id).replace('<div class="chat-message ', `<div data-chat-message-id="${esc(sent.id)}" class="chat-message `); box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight; }
     });
@@ -59,6 +79,7 @@
       box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight;
     }).subscribe();
     const box = root.querySelector('#chatMessages'); box.scrollTop = box.scrollHeight;
+    markChatNotificationsRead(currentConversation.id);
   }
   async function openConversation(collaborator) {
     const user = await currentUser();
@@ -82,6 +103,7 @@
       currentConversation = data[0]; renderConversation();
     }
   }
+  initChatNotifications();
   document.getElementById('chatBtn')?.addEventListener('click', openChat);
   document.getElementById('chatOverlay')?.addEventListener('click', event => { if (event.target.closest('.chat-minimize')) minimizeChat(); else if (event.target.id === 'chatOverlay' && event.currentTarget.classList.contains('minimized')) restoreChat(); });
   document.getElementById('chatBtnTop')?.addEventListener('click', openChat);

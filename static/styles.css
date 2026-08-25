@@ -5269,3 +5269,4 @@ body.privacy-screen-on .privacy-eye-closed { display: block; }
 .chat-attach{display:flex;align-items:center;justify-content:center;width:38px;cursor:pointer;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-input);font-size:18px}
 .chat-clear{margin-left:0;color:var(--danger-text,#991b1b)}
 @media(max-width:600px){.colab-detail-overlay#chatOverlay .colab-detail-panel{max-height:calc(100dvh - 20px)}.colab-detail-overlay#chatOverlay .chat-messages{max-height:calc(100dvh - 245px)}}
+.chat-launch{position:relative}.chat-unread-badge{display:none;position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:var(--danger,#ef4444);color:#fff;font-size:10px;line-height:17px;text-align:center}.chat-unread-badge.visible{display:inline-block}
