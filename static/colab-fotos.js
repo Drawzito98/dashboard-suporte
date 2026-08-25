@@ -61,8 +61,9 @@ function setColabFoto(name, url) {
   } catch (e) { console.warn('[ColabFotos] Erro ao obter URL foto:', e); }
   if (typeof dbFotoSave === 'function') {
     const finalUrl = url ? normalizeFotoUrl(url) : '';
-    dbFotoSave(name, finalUrl);
+    return dbFotoSave(name, finalUrl);
   }
+  return Promise.resolve();
 }
 
 window.addEventListener('colab-fotos-updated', () => {

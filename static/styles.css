@@ -4183,6 +4183,12 @@ table td { border-color: var(--border); }
 .novo-colaborador-header h3 { margin: 2px 0 0; color: var(--text-strong); font-size: 18px; }
 .novo-colaborador-header p { margin: 4px 0 0; color: var(--text-secondary); font-size: 12px; }
 .novo-colaborador-modal input { min-height: 44px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-inset); color: var(--text-primary); }
+.novo-colaborador-photo-row { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 16px; margin-bottom: 16px; }
+.novo-colaborador-photo-preview { display: grid; place-items: center; width: 88px; height: 88px; overflow: hidden; border: 1px dashed var(--border-strong); border-radius: 50%; background: var(--bg-inset); color: var(--text-muted); font-size: 34px; }
+.novo-colaborador-photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+.novo-colaborador-photo-row .field { min-width: 0; margin: 0; }
+.novo-colaborador-photo-row input[type="file"] { width: 100%; min-height: 0; padding: 8px; font-size: 11px; }
+.novo-colaborador-photo-row small { display: block; margin-top: 5px; color: var(--text-muted); font-size: 10px; }
 .novo-colaborador-modal .modal-actions { align-items: center; }
 .novo-colaborador-modal .modal-actions .btn-primary { width: auto; margin: 0; }
 @media (max-width: 560px) {

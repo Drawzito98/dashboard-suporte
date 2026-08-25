@@ -36,7 +36,7 @@ function renderColaboradores() {
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s-3)">';
   for (const nome of colabs) {
     const info = colabInfo[nome] || {};
-    const hasData = info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa || info.feito_relevante;
+    const hasData = info.setor_atual || info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa || info.feito_relevante;
     const conduta = info.conduta_negativa === 'true' || info.conduta_negativa === true;
     const feito = info.feito_relevante === 'true' || info.feito_relevante === true;
     html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''}" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Clique para ver/editar">`;
@@ -48,8 +48,9 @@ function renderColaboradores() {
       html += `<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-top:1px">${escapeHtml(info.nivel)}</div>`;
     }
     const setores = setorMap[nome];
-    if (setores && setores.size) {
-      html += `<div style="font-size:12px;color:var(--text-muted);margin-top:1px">🏢 ${escapeHtml([...setores].join(', '))}</div>`;
+    const setorExibido = info.setor_atual || (setores && setores.size ? [...setores].join(', ') : '');
+    if (setorExibido) {
+      html += `<div style="font-size:12px;color:var(--text-muted);margin-top:1px">🏢 ${escapeHtml(setorExibido)}</div>`;
     }
     if (info.data_aniversario) {
       const [a,m,d] = info.data_aniversario.split('-');
@@ -87,44 +88,96 @@ function renderColaboradores() {
   });
 }
 
+async function prepareColabProfilePhoto(file) {
+  if (!file) return '';
+  if (!file.type.startsWith('image/')) throw new Error('Selecione um arquivo de imagem válido.');
+  if (file.size > 8 * 1024 * 1024) throw new Error('A foto deve ter no máximo 8 MB.');
+  const source = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Não foi possível ler a foto.'));
+    reader.readAsDataURL(file);
+  });
+  const image = await new Promise((resolve, reject) => {
+    const element = new Image();
+    element.onload = () => resolve(element);
+    element.onerror = () => reject(new Error('Não foi possível processar a foto.'));
+    element.src = source;
+  });
+  const limit = 512;
+  const scale = Math.min(1, limit / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+  return canvas.toDataURL('image/webp', .84);
+}
+
 function openNovoColaboradorModal() {
   if (!requireAdmin()) return;
   document.getElementById("novoColaboradorModal")?.remove();
+  const colabInfo = JSON.parse(localStorage.getItem("sistema_colaboradores_info_v1") || "{}");
+  const setoresDisponiveis = [...new Set([
+    ...(rawRecords || []).map(r => r && r["Setor"]),
+    ...Object.values(colabInfo).map(info => info && info.setor_atual)
+  ].filter(Boolean).map(value => String(value).trim()))].sort((a, b) => a.localeCompare(b, "pt-BR"));
   const modal = document.createElement("div");
   modal.id = "novoColaboradorModal";
   modal.className = "modal-overlay";
   modal.innerHTML = `<div class="modal-box novo-colaborador-modal" role="dialog" aria-modal="true" aria-labelledby="novoColaboradorTitulo">
-    <div class="novo-colaborador-header"><div><span>Novo cadastro</span><h3 id="novoColaboradorTitulo">Adicionar colaborador</h3><p>Crie o perfil agora e complete os demais dados na próxima etapa.</p></div><button class="btn-small" id="novoColaboradorFechar" type="button" aria-label="Fechar">✕</button></div>
-    <form id="novoColaboradorForm"><label class="field"><span>Nome completo</span><input type="text" id="novoColaboradorNome" autocomplete="off" maxlength="120" placeholder="Digite o nome do colaborador" required></label><div class="modal-actions"><button class="btn-small" id="novoColaboradorCancelar" type="button">Cancelar</button><button class="btn-primary" type="submit">Criar e completar perfil</button></div></form>
+    <div class="novo-colaborador-header"><div><span>Novo cadastro</span><h3 id="novoColaboradorTitulo">Adicionar colaborador</h3><p>Defina os dados principais para criar o perfil da pessoa.</p></div><button class="btn-small" id="novoColaboradorFechar" type="button" aria-label="Fechar">✕</button></div>
+    <form id="novoColaboradorForm">
+      <div class="novo-colaborador-photo-row"><div class="novo-colaborador-photo-preview" id="novoColaboradorFotoPreview">👤</div><label class="field"><span>Foto de perfil</span><input type="file" id="novoColaboradorFoto" accept="image/*"><small>JPG, PNG ou WebP · máximo 8 MB</small></label></div>
+      <label class="field"><span>Nome completo</span><input type="text" id="novoColaboradorNome" autocomplete="off" maxlength="120" placeholder="Digite o nome do colaborador" required></label>
+      <label class="field"><span>Setor atual</span><input type="text" id="novoColaboradorSetor" list="novoColaboradorSetores" autocomplete="off" maxlength="120" placeholder="Selecione ou digite o setor" required><datalist id="novoColaboradorSetores">${setoresDisponiveis.map(setor => `<option value="${escapeHtml(setor)}">`).join("")}</datalist></label>
+      <div class="modal-actions"><button class="btn-small" id="novoColaboradorCancelar" type="button">Cancelar</button><button class="btn-primary" type="submit">Criar e completar perfil</button></div>
+    </form>
   </div>`;
   document.body.appendChild(modal);
-  const close = () => modal.remove();
+  let previewUrl = '';
+  const close = () => { if (previewUrl) URL.revokeObjectURL(previewUrl); modal.remove(); };
   document.getElementById("novoColaboradorFechar").addEventListener("click", close);
   document.getElementById("novoColaboradorCancelar").addEventListener("click", close);
   modal.addEventListener("click", event => { if (event.target === modal) close(); });
+  const photoInput = document.getElementById("novoColaboradorFoto");
+  photoInput.addEventListener("change", () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    const file = photoInput.files?.[0];
+    previewUrl = file ? URL.createObjectURL(file) : '';
+    document.getElementById("novoColaboradorFotoPreview").innerHTML = previewUrl ? `<img src="${previewUrl}" alt="Prévia da foto">` : '👤';
+  });
   document.getElementById("novoColaboradorNome").focus();
   document.getElementById("novoColaboradorForm").addEventListener("submit", async event => {
     event.preventDefault();
     const input = document.getElementById("novoColaboradorNome");
+    const sectorInput = document.getElementById("novoColaboradorSetor");
     const nome = input.value.trim().replace(/\s+/g, " ");
+    const setorAtual = sectorInput.value.trim().replace(/\s+/g, " ");
     if (nome.length < 2) { showToast("Informe um nome válido.", "error", "Colaboradores"); input.focus(); return; }
-    const colabInfo = JSON.parse(localStorage.getItem("sistema_colaboradores_info_v1") || "{}");
-    const recordNames = (rawRecords || []).map(r => r && r["Atendente"]).filter(Boolean).map(String);
-    const existingName = [...recordNames, ...Object.keys(colabInfo)].find(item => item.trim().localeCompare(nome, "pt-BR", { sensitivity: "base" }) === 0);
-    if (existingName) {
+    if (setorAtual.length < 2) { showToast("Informe o setor atual.", "error", "Colaboradores"); sectorInput.focus(); return; }
+    const submit = event.submitter || event.currentTarget.querySelector('[type="submit"]');
+    submit.disabled = true;
+    submit.textContent = "Salvando...";
+    try {
+      const photoData = await prepareColabProfilePhoto(photoInput.files?.[0]);
+      const recordNames = (rawRecords || []).map(r => r && r["Atendente"]).filter(Boolean).map(String);
+      const existingName = [...recordNames, ...Object.keys(colabInfo)].find(item => item.trim().localeCompare(nome, "pt-BR", { sensitivity: "base" }) === 0);
+      const savedName = existingName || nome;
+      const existingInfo = colabInfo[savedName] || {};
+      setColabActive(savedName, true);
+      const synced = await dbColabInfoSave(savedName, { ...existingInfo, setor_atual: setorAtual });
+      if (photoData) await setColabFoto(savedName, photoData);
       close();
-      if (!isColabActive(existingName)) setColabActive(existingName, true);
       renderColaboradores();
-      openColabDetailOverlay(existingName);
-      showToast("Esse colaborador já existia. O perfil foi aberto para edição.", "info", "Colaboradores");
-      return;
+      openColabDetailOverlay(savedName);
+      showToast(existingName ? "Cadastro existente atualizado." : (synced ? `${savedName} foi adicionado!` : `${savedName} foi salvo neste dispositivo; sincronização pendente.`), synced ? "success" : "warning", "Colaboradores");
+    } catch (error) {
+      submit.disabled = false;
+      submit.textContent = "Criar e completar perfil";
+      showToast(error.message || "Não foi possível criar o colaborador.", "error", "Colaboradores");
     }
-    setColabActive(nome, true);
-    await dbColabInfoSave(nome, { data_aniversario: "", data_admissao: "", email: "", nivel: "", tarefas_desempenhadas: "", objetivos_futuros: "", observacoes: "", conduta_negativa: "", conduta_motivo: "", feito_relevante: "", feito_descricao: "" });
-    close();
-    renderColaboradores();
-    openColabDetailOverlay(nome);
-    showToast(`${nome} foi adicionado. Complete o perfil.`, "success", "Colaboradores");
   });
 }
 
@@ -302,6 +355,8 @@ function openColabDetailOverlay(nome) {
   const setores = [...new Set((rawRecords || [])
     .filter(r => r && r["Atendente"] === nome && r["Setor"])
     .map(r => String(r["Setor"]).trim()))];
+  const setorAtual = info.setor_atual || setores[setores.length - 1] || "";
+  const setoresDisponiveis = [...new Set([setorAtual, ...(rawRecords || []).map(r => r && r["Setor"])].filter(Boolean).map(value => String(value).trim()))].sort((a, b) => a.localeCompare(b, "pt-BR"));
   const condutaChecked = info.conduta_negativa === "true" || info.conduta_negativa === true;
   const feitoChecked = info.feito_relevante === "true" || info.feito_relevante === true;
   const nivelAtual = info.nivel || "";
@@ -312,7 +367,7 @@ function openColabDetailOverlay(nome) {
     <div class="ci-dialog-title">
       <span>Perfil do colaborador</span>
       <h2>${escapeHtml(nome)}</h2>
-      <p>${setores.length ? escapeHtml(setores.join(", ")) : "Setor não identificado"}</p>
+      <p>${setorAtual ? escapeHtml(setorAtual) : "Setor não identificado"}</p>
     </div>
   </header>`;
 
@@ -323,6 +378,7 @@ function openColabDetailOverlay(nome) {
       <label class="field"><span>Aniversário</span><input type="date" id="ciAniversario" value="${info.data_aniversario || ""}"></label>
       <label class="field"><span>Admissão</span><input type="date" id="ciAdmissao" value="${info.data_admissao || ""}"></label>
       <label class="field ci-span-2"><span>E-mail</span><input type="email" id="ciEmail" placeholder="email@exemplo.com" value="${escapeHtml(info.email || "")}"></label>
+      <label class="field ci-span-2"><span>Setor atual</span><input type="text" id="ciSetorAtual" list="ciSetoresDisponiveis" maxlength="120" placeholder="Selecione ou digite o setor" value="${escapeHtml(setorAtual)}"><datalist id="ciSetoresDisponiveis">${setoresDisponiveis.map(setor => `<option value="${escapeHtml(setor)}">`).join("")}</datalist></label>
     </div>
   </section>`;
 
@@ -425,6 +481,7 @@ function openColabDetailOverlay(nome) {
       data_aniversario: document.getElementById("ciAniversario").value || "",
       data_admissao: document.getElementById("ciAdmissao").value || "",
       email: document.getElementById("ciEmail").value.trim(),
+      setor_atual: document.getElementById("ciSetorAtual").value.trim(),
       tarefas_desempenhadas: document.getElementById("ciTarefas").value.trim(),
       objetivos_futuros: document.getElementById("ciObjetivos").value.trim(),
       observacoes: document.getElementById("ciObservacoes").value.trim(),
@@ -444,7 +501,7 @@ function openColabDetailOverlay(nome) {
     if (!requireAdmin()) return;
     if (!confirm(`Limpar todos os dados cadastrais de ${nome}?`)) return;
     await dbColabInfoSave(nome, {
-      data_aniversario: "", data_admissao: "", email: "", nivel: "",
+      data_aniversario: "", data_admissao: "", email: "", setor_atual: "", nivel: "",
       tarefas_desempenhadas: "", objetivos_futuros: "", observacoes: "",
       conduta_negativa: "", conduta_motivo: "", feito_relevante: "", feito_descricao: ""
     });
