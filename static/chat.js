@@ -14,7 +14,7 @@
   function closeChat() { document.body.classList.remove('chat-page'); document.getElementById('chatOverlay')?.classList.remove('open'); if (realtimeChannel) { sbClient.removeChannel(realtimeChannel); realtimeChannel = null; } }
   function minimizeChat() { document.getElementById('chatOverlay')?.classList.add('minimized'); }
   function restoreChat() { document.getElementById('chatOverlay')?.classList.remove('minimized'); }
-  function openChat() { unreadChatCount = 0; updateChatBadge(); document.body.classList.toggle('chat-page', !isAdminChat()); if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); document.body.classList.add('chat-page'); document.getElementById('chatOverlay')?.classList.add('open'); renderChatHome(); }
+  function openChat() { unreadChatCount = 0; updateChatBadge(); document.body.classList.toggle('chat-page', !isAdminChat()); if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); document.getElementById('chatOverlay')?.classList.add('open'); renderChatHome(); }
   function notice(text, type = 'info') { if (typeof showToast === 'function') showToast(text, type, 'Chat'); }
   function favoriteKey(userId) { return 'chat_favoritos_' + userId; }
   function getFavorites(userId) { try { return JSON.parse(localStorage.getItem(favoriteKey(userId)) || '[]'); } catch { return []; } }
