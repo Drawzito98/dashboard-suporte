@@ -88,6 +88,10 @@
       const empty = box.querySelector('.chat-empty'); if (empty) empty.remove();
       const html = messagesMarkup([message], user.id, currentConversation).replace('<div class=\"chat-message ', `<div data-chat-message-id=\"${esc(message.id)}\" class=\"chat-message `);
       box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight;
+    }).on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_mensagens', filter: 'conversa_id=eq.' + currentConversation.id }, () => {
+      const box = root.querySelector('#chatMessages');
+      if (box) box.innerHTML = messagesMarkup([], user.id, currentConversation);
+      notice('A conversa foi limpa pelo administrador.', 'info');
     }).subscribe();
     const box = root.querySelector('#chatMessages'); box.scrollTop = box.scrollHeight;
     markChatNotificationsRead(currentConversation.id);
