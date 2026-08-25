@@ -569,6 +569,12 @@ async function dbTarefasLoad() {
         data: r.data,
         prioridade: r.prioridade,
         status: r.status,
+        rotinaAtiva: Boolean(r.rotina_ativa),
+        rotinaUnidade: r.rotina_unidade || "dias",
+        rotinaIntervalo: Number(r.rotina_intervalo || 1),
+        rotinaLembreteDias: Number(r.rotina_lembrete_dias || 0),
+        rotinaUltimaConclusao: r.rotina_ultima_conclusao || "",
+        rotinaProximaData: r.rotina_proxima_data || "",
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
@@ -599,6 +605,12 @@ async function dbTarefasSave(tarefa) {
         data: tarefa.data,
         prioridade: tarefa.prioridade,
         status: tarefa.status,
+        rotina_ativa: Boolean(tarefa.rotinaAtiva),
+        rotina_unidade: tarefa.rotinaUnidade || "dias",
+        rotina_intervalo: Number(tarefa.rotinaIntervalo || 1),
+        rotina_lembrete_dias: Number(tarefa.rotinaLembreteDias || 0),
+        rotina_ultima_conclusao: tarefa.rotinaUltimaConclusao || null,
+        rotina_proxima_data: tarefa.rotinaProximaData || tarefa.data,
         updated_at: new Date().toISOString()
       }).eq('id', tarefa.id);
     } else {
@@ -608,7 +620,13 @@ async function dbTarefasSave(tarefa) {
         descricao: tarefa.descricao || '',
         data: tarefa.data,
         prioridade: tarefa.prioridade,
-        status: tarefa.status || 'pendente'
+        status: tarefa.status || 'pendente',
+        rotina_ativa: Boolean(tarefa.rotinaAtiva),
+        rotina_unidade: tarefa.rotinaUnidade || "dias",
+        rotina_intervalo: Number(tarefa.rotinaIntervalo || 1),
+        rotina_lembrete_dias: Number(tarefa.rotinaLembreteDias || 0),
+        rotina_ultima_conclusao: tarefa.rotinaUltimaConclusao || null,
+        rotina_proxima_data: tarefa.rotinaProximaData || tarefa.data
       });
     }
   } catch (e) { console.error('[db-extra]', e); }

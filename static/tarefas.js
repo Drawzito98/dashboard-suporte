@@ -33,14 +33,40 @@ function formatarData(dataStr) {
   return `${dia}/${mes}/${ano}`;
 }
 
+function verificarLembretesRotina(tarefas) {
+  const hojeKey = hoje();
+  const avisados = JSON.parse(localStorage.getItem('sistema_rotina_lembretes_v1') || '{}');
+  tarefas.filter(function(t) { return t.rotinaAtiva && t.status === 'pendente' && t.rotinaProximaData; }).forEach(function(t) {
+    const alvo = new Date(t.rotinaProximaData + 'T12:00:00');
+    const agora = new Date(hojeKey + 'T12:00:00');
+    const dias = Math.round((alvo - agora) / 86400000);
+    const antecedencia = Number(t.rotinaLembreteDias || 0);
+    if (dias <= antecedencia && dias >= 0 && avisados[t.id] !== hojeKey) {
+      const texto = dias === 0 ? 'Hoje: ' + t.titulo : 'Em ' + dias + ' dia' + (dias === 1 ? '' : 's') + ': ' + t.titulo;
+      if (typeof showToast === 'function') showToast(texto, 'info', 'Lembrete de rotina');
+      if ('Notification' in window && Notification.permission === 'granted') new Notification('Lembrete de rotina', { body: texto });
+      avisados[t.id] = hojeKey;
+    }
+  });
+  localStorage.setItem('sistema_rotina_lembretes_v1', JSON.stringify(avisados));
+}
 const PRIORIDADE_LABEL = { baixa: '🟢 Baixa', media: '🟡 Média', alta: '🔴 Alta' };
 const STATUS_LABEL = { pendente: '⏳ Pendente', concluida: '✅ Concluída', cancelada: '❌ Cancelada' };
+
+function proximaRotina(data, intervalo, unidade) {
+  const d = new Date(`T12:00:00`);
+  if (unidade === 'semanas') d.setDate(d.getDate() + intervalo * 7);
+  else if (unidade === 'meses') d.setMonth(d.getMonth() + intervalo);
+  else d.setDate(d.getDate() + intervalo);
+  return d.toISOString().slice(0, 10);
+}
 
 function renderTarefas() {
   const container = document.getElementById('tarefasContent');
   if (!container) return;
 
   const saved = JSON.parse(localStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
+  verificarLembretesRotina(saved);
   const filtroStatus = sessionStorage.getItem('tarefas_filtro_status') || 'todas';
 
   let html = '';
@@ -74,6 +100,11 @@ function renderTarefas() {
   html += '<div class="field" style="margin-bottom:var(--s-3)">';
   html += '<span>Descrição</span>';
   html += '<textarea id="tarefaDescricaoInput" style="width:100%;min-height:80px;font-size:13px;line-height:1.6" placeholder="Detalhes da tarefa..."></textarea>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap;margin-bottom:var(--s-3)">';
+  html += '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="tarefaRotinaAtiva"> Repetir verificação</label>';
+  html += '<label>a cada <input type="number" min="1" value="15" id="tarefaRotinaIntervalo" style="width:62px"> <select id="tarefaRotinaUnidade"><option value="dias">dias</option><option value="semanas">semanas</option><option value="meses">meses</option></select></label>';
+  html += '<label>avisar <select id="tarefaRotinaLembrete"><option value="0">no dia</option><option value="1">1 dia antes</option><option value="3">3 dias antes</option><option value="7">7 dias antes</select></label>';
   html += '</div>';
 
   html += '<div style="display:flex;gap:var(--s-3)">';
@@ -133,7 +164,7 @@ function renderTarefas() {
 const priorColor = t.prioridade === 'alta' ? 'var(--text-on-danger)' : t.prioridade === 'media' ? 'var(--text-on-warning)' : 'var(--text-on-success)';
 html += `<span style="font-size:11px;padding:1px 6px;border-radius:var(--r-sm);background:${priorBg};color:${priorColor}">${PRIORIDADE_LABEL[t.prioridade] || t.prioridade}</span>`;
       html += `</div>`;
-      html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">📅 ${formatarData(t.data)} ${STATUS_LABEL[t.status] || t.status}</div>`;
+      html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">📅 ${formatarData(t.data)} ${STATUS_LABEL[t.status] || t.status}${t.rotinaAtiva ? ' · 🔁 Próxima: ' + formatarData(t.rotinaProximaData || t.data) : ''}</div>`;
       if (t.descricao) {
         const preview = t.descricao.slice(0, 80) + (t.descricao.length > 80 ? '…' : '');
         html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${escapeHtml(preview)}</div>`;
@@ -161,6 +192,7 @@ function bindTarefaEvents(saved) {
   document.getElementById("rotinaAnotacoesBtn")?.addEventListener("click", () => {
     if (typeof openAnotacoesOverlay === "function") openAnotacoesOverlay();
   });
+      if (rotinaAtiva && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
 
   // Salvar nova tarefa
   const salvarBtn = document.getElementById('tarefaSalvarBtn');
@@ -171,25 +203,23 @@ function bindTarefaEvents(saved) {
       const data = document.getElementById('tarefaDataInput').value;
       const prioridade = document.getElementById('tarefaPrioridadeInput').value;
       const descricao = document.getElementById('tarefaDescricaoInput').value;
-      if (!titulo.trim() || !data) {
-        showToast('Preencha o título e a data.', 'error', 'Tarefa');
-        return;
-      }
+      const rotinaAtiva = document.getElementById('tarefaRotinaAtiva')?.checked || false;
+      const rotinaIntervalo = Math.max(1, Number(document.getElementById('tarefaRotinaIntervalo')?.value || 15));
+      const rotinaUnidade = document.getElementById('tarefaRotinaUnidade')?.value || 'dias';
+      const rotinaLembreteDias = Number(document.getElementById('tarefaRotinaLembrete')?.value || 0);
+      if (!titulo.trim() || !data) { showToast('Preencha o título e a data.', 'error', 'Tarefa'); return; }
       const tarefa = {
         id: Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-        titulo: titulo.trim(),
-        descricao: descricao.trim(),
-        data: data,
-        prioridade: prioridade,
-        status: 'pendente',
+        titulo: titulo.trim(), descricao: descricao.trim(), data, prioridade, status: 'pendente',
+        rotinaAtiva, rotinaIntervalo, rotinaUnidade, rotinaLembreteDias, rotinaProximaData: rotinaAtiva ? data : '',
         createdAt: new Date().toISOString()
       };
       await dbTarefasSave(tarefa);
-      // Limpa formulário
       document.getElementById('tarefaTituloInput').value = '';
       document.getElementById('tarefaDescricaoInput').value = '';
       document.getElementById('tarefaDataInput').value = hoje();
       document.getElementById('tarefaPrioridadeInput').value = 'media';
+      document.getElementById('tarefaRotinaAtiva').checked = false;
       showToast('Tarefa salva!', 'success', 'Tarefas');
       renderTarefas();
     });
@@ -210,7 +240,13 @@ function bindTarefaEvents(saved) {
       if (!requireAdmin()) return;
       const t = saved.find(x => x.id === sel.dataset.id);
       if (!t) return;
-      t.status = sel.value;
+      if (sel.value === 'concluida' && t.rotinaAtiva) {
+        t.rotinaUltimaConclusao = hoje();
+        t.data = t.rotinaProximaData || t.data;
+        t.rotinaProximaData = proximaRotina(t.data, t.rotinaIntervalo || 1, t.rotinaUnidade || 'dias');
+        t.status = 'pendente';
+        showToast('Verificação concluída. Próxima: ' + formatarData(t.rotinaProximaData), 'success', 'Rotina');
+      } else t.status = sel.value;
       await dbTarefasSave(t);
       renderTarefas();
     });
