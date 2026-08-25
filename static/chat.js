@@ -30,7 +30,9 @@
     unreadChatCount = count || 0; updateChatBadge();
   }
   async function loadMessages() {
-    const { data, error } = await sbClient.from('chat_mensagens').select('*').eq('conversa_id', currentConversation.id).order('created_at', { ascending: true });
+    let query = sbClient.from('chat_mensagens').select('*').eq('conversa_id', currentConversation.id).order('created_at', { ascending: true });
+    query = isAdminChat() ? query.eq('apagada_para_admin', false) : query.eq('apagada_para_colaborador', false);
+    const { data, error } = await query;
     if (error) throw error;
     return data || [];
   }
@@ -64,7 +66,7 @@
       const box = root.querySelector('#chatMessages');
       if (sent && box) { const empty = box.querySelector('.chat-empty'); if (empty) empty.remove(); const html = messagesMarkup([sent], user.id).replace('<div class="chat-message ', `<div data-chat-message-id="${esc(sent.id)}" class="chat-message `); box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight; }
     });
-    root.querySelector('#chatClearBtn')?.addEventListener('click', async () => { if (!confirm('Limpar todas as mensagens desta conversa?')) return; const { error } = await sbClient.from('chat_mensagens').delete().eq('conversa_id', currentConversation.id); if (error) { notice(error.message, 'error'); return; } const box = root.querySelector('#chatMessages'); if (box) box.innerHTML = messagesMarkup([], user.id); notice('Conversa limpa.', 'success'); });
+    root.querySelector('#chatClearBtn')?.addEventListener('click', async () => { if (!confirm('Limpar o histórico apenas para você? A outra pessoa continuará vendo as mensagens.')) return; const campoLimpeza = isAdminChat() ? 'apagada_para_admin' : 'apagada_para_colaborador'; const valores = { [campoLimpeza]: true }; const { error } = await sbClient.from('chat_mensagens').update(valores).eq('conversa_id', currentConversation.id); if (error) { notice(error.message, 'error'); return; } const box = root.querySelector('#chatMessages'); if (box) box.innerHTML = messagesMarkup([], user.id); notice('Histórico limpo apenas para você.', 'success'); });
     root.querySelector('#chatNicknameSave')?.addEventListener('click', async () => { const apelido = root.querySelector('#chatNicknameInput').value.trim(); const { error } = await sbClient.from('chat_perfis').upsert({ user_id: user.id, apelido, updated_at: new Date().toISOString() }); notice(error ? error.message : 'Apelido salvo.', error ? 'error' : 'success'); });
     if (realtimeChannel) sbClient.removeChannel(realtimeChannel);
     realtimeChannel = sbClient.channel('chat-' + currentConversation.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensagens', filter: 'conversa_id=eq.' + currentConversation.id }, payload => {
