@@ -11,7 +11,7 @@
   function closeChat() { document.body.classList.remove('chat-page'); document.getElementById('chatOverlay')?.classList.remove('open'); if (realtimeChannel) { sbClient.removeChannel(realtimeChannel); realtimeChannel = null; } }
   function minimizeChat() { document.getElementById('chatOverlay')?.classList.add('minimized'); }
   function restoreChat() { document.getElementById('chatOverlay')?.classList.remove('minimized'); }
-  function openChat() { document.body.classList.add('chat-page'); document.getElementById('chatOverlay')?.classList.add('open'); renderChatHome(); }
+  function openChat() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); document.body.classList.add('chat-page'); document.getElementById('chatOverlay')?.classList.add('open'); renderChatHome(); }
   function notice(text, type = 'info') { if (typeof showToast === 'function') showToast(text, type, 'Chat'); }
   function favoriteKey(userId) { return 'chat_favoritos_' + userId; }
   function getFavorites(userId) { try { return JSON.parse(localStorage.getItem(favoriteKey(userId)) || '[]'); } catch { return []; } }
@@ -24,7 +24,7 @@
     unreadChatCount = count || 0; updateChatBadge();
     notificationChannel = sbClient.channel('chat-notifications-' + user.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_notificacoes', filter: 'recipient_id=eq.' + user.id }, payload => {
       if (payload?.new?.recipient_id !== user.id) return;
-      unreadChatCount += 1; updateChatBadge(); notice('Você recebeu uma nova mensagem no chat.', 'info');
+      unreadChatCount += 1; updateChatBadge(); notice('Você recebeu uma nova mensagem no chat.', 'info'); if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') { new Notification('Nova mensagem no chat', { body: 'Você recebeu uma nova mensagem.', icon: 'static/icons/icon-192.png', tag: 'chat-nova-mensagem' }); }
     }).subscribe();
   }
   async function markChatNotificationsRead(conversationId) {
