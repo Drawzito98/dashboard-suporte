@@ -5270,3 +5270,7 @@ body.privacy-screen-on .privacy-eye-closed { display: block; }
 .chat-clear{margin-left:0;color:var(--danger-text,#991b1b)}
 @media(max-width:600px){.colab-detail-overlay#chatOverlay .colab-detail-panel{max-height:calc(100dvh - 20px)}.colab-detail-overlay#chatOverlay .chat-messages{max-height:calc(100dvh - 245px)}}
 .chat-launch{position:relative}.chat-unread-badge{display:none;position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:var(--danger,#ef4444);color:#fff;font-size:10px;line-height:17px;text-align:center}.chat-unread-badge.visible{display:inline-block}
+/* Chat compacto e redimensionável */
+.colab-detail-overlay#chatOverlay .colab-detail-panel{width:420px;height:455px;max-width:calc(100vw - 28px);max-height:calc(100dvh - 24px);resize:both;overflow:hidden}
+.colab-detail-overlay#chatOverlay .chat-messages{max-height:none}
+@media(max-width:600px){.colab-detail-overlay#chatOverlay .colab-detail-panel{width:calc(100vw - 20px);height:calc(100dvh - 34px);resize:none}}
