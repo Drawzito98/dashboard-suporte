@@ -5275,3 +5275,5 @@ body.privacy-screen-on .privacy-eye-closed { display: block; }
 .colab-detail-overlay#chatOverlay .chat-messages{max-height:none}
 @media(max-width:600px){.colab-detail-overlay#chatOverlay .colab-detail-panel{width:calc(100vw - 20px);height:calc(100dvh - 34px);resize:none}}
 .chat-person-title{display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px}.chat-person-star,#chatFavoriteBtn.is-favorite{color:#eab308}#chatFavoriteBtn{font-size:18px;padding:3px 8px}
+
+.colab-detail-overlay#chatOverlay .chat-header>button{flex-shrink:0}.colab-detail-overlay#chatOverlay .chat-header>div:first-child{min-width:0}
