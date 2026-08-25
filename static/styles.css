@@ -5297,3 +5297,6 @@ body.chat-page #chatOverlay #chatContent{max-width:none;width:100%;padding:24px 
 body.chat-page #chatOverlay .chat-message{align-self:flex-start!important;margin-right:auto}body.chat-page #chatOverlay .chat-message.is-mine{align-self:flex-end!important;margin-left:auto;margin-right:0}
 
 body.chat-page #chatOverlayClose{display:flex!important;position:fixed;top:16px;right:20px;z-index:20}
+/* Controle de privacidade visível no chat protegido. */
+body.chat-page.privacy-screen-on .privacy-screen-toggle{display:flex!important;position:fixed;z-index:10001;left:50%;right:auto;bottom:28px;transform:translateX(-50%);opacity:1}
+body.chat-page.privacy-screen-on .privacy-screen-toggle:hover{transform:translateX(-50%) scale(1.06)}
