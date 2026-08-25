@@ -38,11 +38,21 @@
       if (error) { notice(error.message, 'error'); return; }
       input.value = '';
       const box = root.querySelector('#chatMessages');
-      if (sent && box) { box.insertAdjacentHTML('beforeend', messagesMarkup([sent], user.id)); box.scrollTop = box.scrollHeight; }
+      if (sent && box) { const empty = box.querySelector('.chat-empty'); if (empty) empty.remove(); const html = messagesMarkup([sent], user.id).replace('<div class="chat-message ', `<div data-chat-message-id="${esc(sent.id)}" class="chat-message `); box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight; }
     });
     root.querySelector('#chatNicknameSave')?.addEventListener('click', async () => { const apelido = root.querySelector('#chatNicknameInput').value.trim(); const { error } = await sbClient.from('chat_perfis').upsert({ user_id: user.id, apelido, updated_at: new Date().toISOString() }); notice(error ? error.message : 'Apelido salvo.', error ? 'error' : 'success'); });
     if (realtimeChannel) sbClient.removeChannel(realtimeChannel);
-    realtimeChannel = sbClient.channel('chat-' + currentConversation.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensagens', filter: 'conversa_id=eq.' + currentConversation.id }, async () => { const box = root.querySelector('#chatMessages'); if (box) { const fresh = await loadMessages(); box.innerHTML = messagesMarkup(fresh, user.id); box.scrollTop = box.scrollHeight; } }).subscribe();
+    realtimeChannel = sbClient.channel('chat-' + currentConversation.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensagens', filter: 'conversa_id=eq.' + currentConversation.id }, payload => {
+      // Use o payload do realtime diretamente: uma consulta logo após o INSERT
+      // pode ficar atrasada pela replicação e só exibir no próximo evento.
+      const message = payload?.new;
+      const box = root.querySelector('#chatMessages');
+      if (!message || !box || message.conversa_id !== currentConversation.id) return;
+      if (box.querySelector(`[data-chat-message-id=\"${message.id}\"]`)) return;
+      const empty = box.querySelector('.chat-empty'); if (empty) empty.remove();
+      const html = messagesMarkup([message], user.id).replace('<div class=\"chat-message ', `<div data-chat-message-id=\"${esc(message.id)}\" class=\"chat-message `);
+      box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight;
+    }).subscribe();
     const box = root.querySelector('#chatMessages'); box.scrollTop = box.scrollHeight;
   }
   async function openConversation(collaborator) {
