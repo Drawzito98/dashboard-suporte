@@ -5321,3 +5321,5 @@ body.chat-page.privacy-screen-on .privacy-screen-toggle{top:calc(50% + 42px);bot
   body.chat-page #chatOverlay .chat-icon-btn{width:27px;min-width:27px;font-size:14px!important}
   body.chat-page.privacy-screen-on .privacy-screen-toggle{width:50px;height:50px;top:calc(50% + 38px)}
 }
+
+body[data-role="colaborador"] #chatOverlayClose{display:none!important}
