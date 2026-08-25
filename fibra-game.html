@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#123d40">
+  <title>FibraVille — Construa sua rede</title>
+  <link rel="stylesheet" href="static/fibra-game.css?v=1">
+</head>
+<body>
+  <header class="game-header">
+    <a href="/" class="back-link" aria-label="Voltar ao dashboard">← Dashboard</a>
+    <div><span>Mini jogo de provedor</span><h1>FibraVille</h1></div>
+    <button id="resetGameBtn" class="secondary-btn" type="button">Recomeçar</button>
+  </header>
+  <main class="game-shell">
+    <section class="game-board-card">
+      <div class="mission-bar"><div><span>Missão atual</span><strong id="missionText">Conecte os quatro clientes do bairro</strong></div><b id="missionProgress">0/4</b></div>
+      <div class="game-board" id="gameBoard" role="grid" aria-label="Mapa da rede"></div>
+      <div class="game-legend"><span><i class="legend-pop"></i> POP</span><span><i class="legend-cable"></i> Fibra</span><span><i class="legend-house"></i> Cliente</span><span><i class="legend-blocked"></i> Obstáculo</span></div>
+    </section>
+    <aside class="game-panel">
+      <div class="stats-grid">
+        <article><span>Dia</span><strong id="dayValue">1</strong></article>
+        <article><span>Caixa</span><strong id="budgetValue">R$ 1.200</strong></article>
+        <article><span>Clientes</span><strong id="clientsValue">0</strong></article>
+        <article><span>Satisfação</span><strong id="satisfactionValue">100%</strong></article>
+      </div>
+      <section class="how-to"><span>Como jogar</span><h2>Expanda sua rede</h2><ol><li>Clique ao lado do POP para passar fibra.</li><li>Continue o caminho até uma casa.</li><li>Clique na casa para instalar o cliente.</li><li>Avance o dia e resolva chamados em vermelho.</li></ol></section>
+      <div class="cost-list"><span><b>Trecho de fibra</b><em>R$ 40</em></span><span><b>Instalação</b><em>R$ 80</em></span><span><b>Reparo</b><em>R$ 60</em></span></div>
+      <div class="game-message" id="gameMessage" role="status">Leve a fibra do POP até os quatro clientes.</div>
+      <button id="nextDayBtn" class="primary-btn" type="button">Encerrar dia</button>
+    </aside>
+  </main>
+  <script src="static/fibra-game-engine.js?v=1"></script>
+  <script src="static/fibra-game.js?v=1"></script>
+</body>
+</html>

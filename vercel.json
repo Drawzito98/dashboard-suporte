@@ -12,6 +12,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/fibra-game", "destination": "/fibra-game.html" },
     { "source": "/reportlider", "destination": "/reporte.html" }
   ]
 }
