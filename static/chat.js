@@ -17,7 +17,7 @@
     return data || [];
   }
   function messagesMarkup(messages, userId) {
-    return messages.length ? messages.map(m => `<div class="chat-message ${m.sender_id === userId ? 'is-mine' : ''}"><p>${esc(m.mensagem)}</p><small>${new Date(m.created_at).toLocaleString('pt-BR')}</small></div>`).join('') : '<p class="chat-empty">Nenhuma mensagem ainda. Inicie a conversa.</p>';
+    return messages.length ? messages.map(m => `<div class="chat-message ${m.sender_id === userId ? 'is-mine' : ''}">${m.imagem_url ? `<img class="chat-image" src="${esc(m.imagem_url)}" alt="Imagem enviada" loading="lazy">` : ''}${m.mensagem ? `<p>${esc(m.mensagem)}</p>` : ''}<small>${new Date(m.created_at).toLocaleString('pt-BR')}</small></div>`).join('') : '<p class="chat-empty">Nenhuma mensagem ainda. Inicie a conversa.</p>';
   }
   async function renderConversation() {
     const root = document.getElementById('chatContent'); if (!root || !currentConversation) return;
@@ -25,21 +25,26 @@
     let nickname = '';
     try { const profile = await sbClient.from('chat_perfis').select('apelido').eq('user_id', user.id).maybeSingle(); nickname = profile.data?.apelido || ''; } catch {}
     let messages; try { messages = await loadMessages(); } catch (error) { root.innerHTML = `<div class="chat-error">A tabela do chat ainda não foi criada. Execute <strong>migration_v33.sql</strong> no Supabase.</div>`; return; }
-    root.innerHTML = `<div class="chat-header"><div><span class="page-eyebrow">Conversa privada</span><h2>💬 Conversa</h2></div><button class="chat-minimize" type="button" title="Minimizar">−</button><button class="btn-small" id="chatBackBtn">← Conversas</button></div>${!isAdminChat() ? `<div class="chat-nickname"><label>Seu apelido (opcional) <input id="chatNicknameInput" maxlength="40" value="${esc(nickname)}" placeholder="Como quer aparecer no chat?"></label><button class="btn-small" id="chatNicknameSave">Salvar apelido</button></div>` : ''}<div id="chatMessages" class="chat-messages">${messagesMarkup(messages, user.id)}</div><form id="chatForm" class="chat-compose"><input id="chatMessageInput" maxlength="4000" placeholder="Escreva uma mensagem..." autocomplete="off"><button class="btn-primary" type="submit">Enviar</button></form>`;
+    root.innerHTML = `<div class="chat-header"><div><span class="page-eyebrow">Conversa privada</span><h2>💬 Conversa</h2></div><button class="chat-minimize" type="button" title="Minimizar">−</button><button class="btn-small" id="chatBackBtn">← Conversas</button><button class="btn-small chat-clear" id="chatClearBtn" title="Apagar mensagens desta conversa">🗑</button></div>${!isAdminChat() ? `<div class="chat-nickname"><label>Seu apelido (opcional) <input id="chatNicknameInput" maxlength="40" value="${esc(nickname)}" placeholder="Como quer aparecer no chat?"></label><button class="btn-small" id="chatNicknameSave">Salvar apelido</button></div>` : ''}<div id="chatMessages" class="chat-messages">${messagesMarkup(messages, user.id)}</div><form id="chatForm" class="chat-compose"><input id="chatMessageInput" maxlength="4000" placeholder="Escreva uma mensagem..." autocomplete="off"><label class="chat-attach" title="Enviar imagem">📎<input id="chatImageInput" type="file" accept="image/*" hidden></label><button class="btn-primary" type="submit">Enviar</button></form>`;
     root.querySelector('#chatBackBtn').addEventListener('click', renderChatHome);
     root.querySelector('#chatForm').addEventListener('submit', async event => {
       event.preventDefault();
       const input = root.querySelector('#chatMessageInput');
       const mensagem = input.value.trim();
-      if (!mensagem) return;
+      const imageInput = root.querySelector('#chatImageInput');
+      const file = imageInput?.files?.[0];
+      if (!mensagem && !file) return;
+      let imagem_url = null;
+      if (file) { if (file.size > 2 * 1024 * 1024) { notice('A imagem deve ter no máximo 2 MB.', 'error'); return; } imagem_url = await new Promise(resolve => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.readAsDataURL(file); }); }
       input.disabled = true;
-      const { data: sent, error } = await sbClient.from('chat_mensagens').insert({ conversa_id: currentConversation.id, sender_id: user.id, mensagem }).select().single();
+      const { data: sent, error } = await sbClient.from('chat_mensagens').insert({ conversa_id: currentConversation.id, sender_id: user.id, mensagem: mensagem || '', imagem_url }).select().single();
       input.disabled = false;
       if (error) { notice(error.message, 'error'); return; }
-      input.value = '';
+      input.value = ''; if (imageInput) imageInput.value = '';
       const box = root.querySelector('#chatMessages');
       if (sent && box) { const empty = box.querySelector('.chat-empty'); if (empty) empty.remove(); const html = messagesMarkup([sent], user.id).replace('<div class="chat-message ', `<div data-chat-message-id="${esc(sent.id)}" class="chat-message `); box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight; }
     });
+    root.querySelector('#chatClearBtn')?.addEventListener('click', async () => { if (!confirm('Limpar todas as mensagens desta conversa?')) return; const { error } = await sbClient.from('chat_mensagens').delete().eq('conversa_id', currentConversation.id); if (error) { notice(error.message, 'error'); return; } const box = root.querySelector('#chatMessages'); if (box) box.innerHTML = messagesMarkup([], user.id); notice('Conversa limpa.', 'success'); });
     root.querySelector('#chatNicknameSave')?.addEventListener('click', async () => { const apelido = root.querySelector('#chatNicknameInput').value.trim(); const { error } = await sbClient.from('chat_perfis').upsert({ user_id: user.id, apelido, updated_at: new Date().toISOString() }); notice(error ? error.message : 'Apelido salvo.', error ? 'error' : 'success'); });
     if (realtimeChannel) sbClient.removeChannel(realtimeChannel);
     realtimeChannel = sbClient.channel('chat-' + currentConversation.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensagens', filter: 'conversa_id=eq.' + currentConversation.id }, payload => {
@@ -81,5 +86,5 @@
   document.getElementById('chatOverlay')?.addEventListener('click', event => { if (event.target.closest('.chat-minimize')) minimizeChat(); else if (event.target.id === 'chatOverlay' && event.currentTarget.classList.contains('minimized')) restoreChat(); });
   document.getElementById('chatBtnTop')?.addEventListener('click', openChat);
   document.getElementById('chatOverlayClose')?.addEventListener('click', closeChat);
-  document.getElementById('chatOverlay')?.addEventListener('click', event => { if (event.target.id === 'chatOverlay') closeChat(); });
+
 })();
