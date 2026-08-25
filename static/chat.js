@@ -5,26 +5,29 @@
   let realtimeChannel = null;
   let notificationChannel = null;
   let unreadChatCount = 0;
+  const originalTitle = document.title;
+  function updateTabIndicator() { document.title = unreadChatCount ? '🔴 Nova mensagem · ' + originalTitle : originalTitle; }
+  function playChatBeep() { try { const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return; const ctx = new Ctx(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.frequency.value = 880; gain.gain.setValueAtTime(0.045, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16); osc.connect(gain).connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.16); } catch {} }
   const esc = value => typeof escapeHtml === 'function' ? escapeHtml(value) : String(value || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   const currentUser = async () => (await sbClient.auth.getUser()).data.user;
   const isAdminChat = () => typeof isAdmin === 'function' && isAdmin();
   function closeChat() { document.body.classList.remove('chat-page'); document.getElementById('chatOverlay')?.classList.remove('open'); if (realtimeChannel) { sbClient.removeChannel(realtimeChannel); realtimeChannel = null; } }
   function minimizeChat() { document.getElementById('chatOverlay')?.classList.add('minimized'); }
   function restoreChat() { document.getElementById('chatOverlay')?.classList.remove('minimized'); }
-  function openChat() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); document.body.classList.add('chat-page'); document.getElementById('chatOverlay')?.classList.add('open'); renderChatHome(); }
+  function openChat() { unreadChatCount = 0; updateChatBadge(); if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); document.body.classList.add('chat-page'); document.getElementById('chatOverlay')?.classList.add('open'); renderChatHome(); }
   function notice(text, type = 'info') { if (typeof showToast === 'function') showToast(text, type, 'Chat'); }
   function favoriteKey(userId) { return 'chat_favoritos_' + userId; }
   function getFavorites(userId) { try { return JSON.parse(localStorage.getItem(favoriteKey(userId)) || '[]'); } catch { return []; } }
   function isFavorite(userId, contactId) { return getFavorites(userId).includes(contactId); }
   function toggleFavorite(userId, contactId) { const list = getFavorites(userId); const next = list.includes(contactId) ? list.filter(id => id !== contactId) : [...list, contactId]; localStorage.setItem(favoriteKey(userId), JSON.stringify(next)); return next.includes(contactId); }
-  function updateChatBadge() { document.querySelectorAll('.chat-unread-badge').forEach(el => { el.textContent = unreadChatCount ? String(unreadChatCount) : ''; el.classList.toggle('visible', unreadChatCount > 0); }); }
+  function updateChatBadge() { updateTabIndicator(); document.querySelectorAll('.chat-unread-badge').forEach(el => { el.textContent = unreadChatCount ? String(unreadChatCount) : ''; el.classList.toggle('visible', unreadChatCount > 0); }); }
   async function initChatNotifications() {
     const user = await currentUser(); if (!user || notificationChannel) return;
     const { count } = await sbClient.from('chat_notificacoes').select('id', { count: 'exact', head: true }).eq('recipient_id', user.id).eq('lida', false);
     unreadChatCount = count || 0; updateChatBadge();
     notificationChannel = sbClient.channel('chat-notifications-' + user.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_notificacoes', filter: 'recipient_id=eq.' + user.id }, payload => {
       if (payload?.new?.recipient_id !== user.id) return;
-      unreadChatCount += 1; updateChatBadge(); notice('Você recebeu uma nova mensagem no chat.', 'info'); if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') { new Notification('Nova mensagem no chat', { body: 'Você recebeu uma nova mensagem.', icon: 'static/icons/icon-192.png', tag: 'chat-nova-mensagem' }); }
+      unreadChatCount += 1; updateChatBadge(); playChatBeep(); notice('Você recebeu uma nova mensagem no chat.', 'info'); if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') { new Notification('Nova mensagem no chat', { body: 'Você recebeu uma nova mensagem.', icon: 'static/icons/icon-192.png', tag: 'chat-nova-mensagem' }); }
     }).subscribe();
   }
   async function markChatNotificationsRead(conversationId) {
