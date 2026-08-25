@@ -54,6 +54,7 @@
     }
   }
   document.getElementById('chatBtn')?.addEventListener('click', openChat);
+  document.getElementById('chatBtnTop')?.addEventListener('click', openChat);
   document.getElementById('chatOverlayClose')?.addEventListener('click', closeChat);
   document.getElementById('chatOverlay')?.addEventListener('click', event => { if (event.target.id === 'chatOverlay') closeChat(); });
 })();
