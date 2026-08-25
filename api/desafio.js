@@ -3,15 +3,15 @@ const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
 const crypto = require('crypto');
 const CHALLENGE_SECONDS = 10;
 const DAILY_QUESTION_BANK = [
-  { level: "fácil", question: "Qual equipamento leva o sinal de fibra até a rede interna da casa do cliente?", options: ["ONU/ONT", "Filtro de linha", "Antena de TV", "Fonte da OLT"], correct: 0, explanation: "A ONU ou ONT converte o sinal óptico em sinal de rede para os equipamentos do cliente." },
-  { level: "fácil", question: "Qual cabo transporta dados por pulsos de luz?", options: ["Fibra óptica", "Cabo de energia", "Cabo de áudio", "Cabo USB"], correct: 0, explanation: "A fibra óptica transmite informações usando luz." },
-  { level: "fácil", question: "Qual unidade é usada para anunciar a velocidade de um plano de internet?", options: ["Mbps", "Volts", "Quilos", "Graus Celsius"], correct: 0, explanation: "Mbps significa megabits por segundo e representa uma taxa de transmissão." },
-  { level: "média", question: "Em uma rede GPON, qual equipamento controla as ONUs dos clientes?", options: ["OLT", "CTO", "Roteador doméstico", "Patch cord"], correct: 0, explanation: "A OLT concentra e gerencia as conexões ópticas das ONUs e ONTs." },
-  { level: "média", question: "Qual é a principal função de uma CTO em uma rede FTTH?", options: ["Distribuir portas ópticas aos clientes", "Hospedar o financeiro", "Gerar e-mails", "Fornecer energia"], correct: 0, explanation: "A CTO organiza a distribuição e oferece portas para os drops dos assinantes." },
-  { level: "média", question: "Por que o teste de velocidade deve ser feito preferencialmente por cabo?", options: ["Para reduzir interferências do Wi-Fi", "Porque fibra só funciona por cabo", "Para aumentar o plano", "Porque o navegador exige cabo"], correct: 0, explanation: "O cabo reduz variações e interferências, oferecendo uma medição mais confiável." },
-  { level: "difícil", question: "Qual leitura de potência óptica indica sinal mais forte?", options: ["-15 dBm", "-28 dBm", "-35 dBm", "-40 dBm"], correct: 0, explanation: "Em dBm negativo, quanto mais próximo de zero, maior é a potência recebida." },
-  { level: "difícil", question: "Qual problema o CGNAT ajuda um provedor a contornar?", options: ["Escassez de IPv4 públicos", "Falta de portas na OLT", "Atenuação da fibra", "Interferência no Wi-Fi"], correct: 0, explanation: "O CGNAT permite que vários clientes compartilhem endereços IPv4 públicos." },
-  { level: "difícil", question: "Qual mecanismo evita loops de camada 2 em uma rede Ethernet redundante?", options: ["STP", "DHCP", "DNS", "NAT"], correct: 0, explanation: "O STP bloqueia caminhos redundantes quando necessário para impedir loops Ethernet." }
+  { level: "fácil", question: "No IXC Provedor, em qual cadastro ficam reunidos os dados pessoais e de contato do assinante?", options: ["Cadastro do cliente", "Cadastro de produtos", "Cadastro de veículos", "Cadastro de fornecedores"], correct: 0, explanation: "O cadastro do cliente centraliza os dados do assinante e dá acesso às informações relacionadas a ele." },
+  { level: "fácil", question: "No IXC Provedor, qual registro representa o serviço contratado pelo cliente?", options: ["Contrato do cliente", "Caixa de atendimento", "Patrimônio", "Plano de contas"], correct: 0, explanation: "O contrato vincula o cliente ao serviço prestado e às configurações comerciais da assinatura." },
+  { level: "fácil", question: "Qual recurso do IXC Provedor é usado para registrar e acompanhar uma solicitação de suporte?", options: ["Atendimento", "Inventário", "Contabilidade", "Comissão"], correct: 0, explanation: "O atendimento registra a solicitação e permite acompanhar o contato e as providências tomadas." },
+  { level: "média", question: "Quando um atendimento exige uma visita técnica, o que pode ser gerado no IXC Provedor?", options: ["Uma ordem de serviço", "Um novo fornecedor", "Uma conta bancária", "Um produto de estoque"], correct: 0, explanation: "Uma ordem de serviço organiza a execução em campo quando o atendimento exige atividade técnica." },
+  { level: "média", question: "Onde o atendente deve consultar os títulos financeiros vinculados a um assinante no IXC Provedor?", options: ["No financeiro do cadastro do cliente", "No cadastro de veículos", "No monitoramento da OLT", "No controle patrimonial"], correct: 0, explanation: "Os títulos e cobranças relacionados ao assinante podem ser consultados na área financeira do cliente." },
+  { level: "média", question: "Antes de alterar o vencimento de um boleto no IXC Provedor, qual é a atitude mais segura?", options: ["Confirmar o título e os dados do cliente", "Excluir o contrato", "Derrubar a conexão Radius", "Criar outro cliente"], correct: 0, explanation: "Confirmar o cliente e o título evita alterações no lançamento financeiro errado." },
+  { level: "difícil", question: "Para investigar se um acesso autenticou no provedor, qual recurso do IXC é mais adequado consultar?", options: ["Conexões Radius", "Cadastro de feriados", "Contas a pagar", "Controle de combustível"], correct: 0, explanation: "A consulta de Conexões Radius ajuda a verificar sessões e autenticações dos acessos dos clientes." },
+  { level: "difícil", question: "Qual é a finalidade do desbloqueio de confiança no IXC Provedor?", options: ["Liberar temporariamente um contrato bloqueado conforme as regras configuradas", "Apagar definitivamente a dívida", "Trocar o plano sem autorização", "Excluir o login do cliente"], correct: 0, explanation: "O desbloqueio de confiança permite uma liberação temporária, respeitando as configurações e políticas do provedor." },
+  { level: "difícil", question: "Ao finalizar uma ordem de serviço no IXC Provedor, por que é importante registrar corretamente o que foi executado?", options: ["Para manter o histórico e permitir rastreabilidade do atendimento", "Para excluir o cadastro do cliente", "Para impedir novas cobranças", "Para alterar automaticamente o plano"], correct: 0, explanation: "O registro da execução mantém o histórico confiável para consultas, auditoria e próximos atendimentos." }
 ];
 
 function jsonHeaders(extra = {}) {
@@ -263,9 +263,24 @@ async function saveLeaderImage(user, body) {
   return { ok: true, leaderImageUrl: publicUrl };
 }
 
+async function ensureIxcChallengeTestReset(user) {
+  const markerType = 'desafio_ixc_reset_v1';
+  const markers = await rest(`notificacoes?select=id&tipo=eq.${markerType}&limit=1`);
+  if (markers[0]) return;
+  await rest('respostas_diarias?id=not.is.null', { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  await rest('checkins_diarios?id=not.is.null', { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  await rest('perguntas_diarias?id=not.is.null', { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  await rest('notificacoes', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ tipo: markerType, descricao: 'Desafio diário reiniciado para o teste de perguntas sobre o IXC.', link: 'desafio-diario', lida: true, actor_id: user.id, actor_email: user.email || '' })
+  });
+}
+
 async function getDaily(user) {
   const today = localDate();
   const month = today.slice(0, 7);
+  await ensureIxcChallengeTestReset(user);
   await ensureDailyQuestion(today);
   const [questions, checkins, answers, history, personalResults, leaderImageUrl] = await Promise.all([
     rest(`perguntas_diarias?select=id,data,pergunta,alternativas,explicacao&data=eq.${today}&ativo=eq.true&limit=1`),
