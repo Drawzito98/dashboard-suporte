@@ -589,7 +589,10 @@ async function dbTarefasLoad() {
 
 async function dbTarefasSave(tarefa) {
   const list = JSON.parse(localStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
-  const idx = list.findIndex(t => t.id === tarefa.id);
+  const originalId = tarefa.id;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(tarefa.id || ''));
+  if (!isUuid) tarefa = { ...tarefa, id: crypto.randomUUID() };
+  const idx = list.findIndex(t => t.id === originalId || t.id === tarefa.id);
   if (idx >= 0) list[idx] = tarefa;
   else list.unshift(tarefa);
   localStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(list));
@@ -615,6 +618,7 @@ async function dbTarefasSave(tarefa) {
       }).eq('id', tarefa.id);
     } else {
       await sbClient.from('tarefas').insert({
+        id: tarefa.id,
         user_id: uid,
         titulo: tarefa.titulo,
         descricao: tarefa.descricao || '',

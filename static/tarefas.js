@@ -54,7 +54,7 @@ const PRIORIDADE_LABEL = { baixa: '🟢 Baixa', media: '🟡 Média', alta: '�
 const STATUS_LABEL = { pendente: '⏳ Pendente', concluida: '✅ Concluída', cancelada: '❌ Cancelada' };
 
 function proximaRotina(data, intervalo, unidade) {
-  const d = new Date(`T12:00:00`);
+  const d = new Date(`${data || hoje()}T12:00:00`);
   if (unidade === 'semanas') d.setDate(d.getDate() + intervalo * 7);
   else if (unidade === 'meses') d.setMonth(d.getMonth() + intervalo);
   else d.setDate(d.getDate() + intervalo);
@@ -192,8 +192,6 @@ function bindTarefaEvents(saved) {
   document.getElementById("rotinaAnotacoesBtn")?.addEventListener("click", () => {
     if (typeof openAnotacoesOverlay === "function") openAnotacoesOverlay();
   });
-      if (rotinaAtiva && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
-
   // Salvar nova tarefa
   const salvarBtn = document.getElementById('tarefaSalvarBtn');
   if (salvarBtn) {
@@ -208,8 +206,9 @@ function bindTarefaEvents(saved) {
       const rotinaUnidade = document.getElementById('tarefaRotinaUnidade')?.value || 'dias';
       const rotinaLembreteDias = Number(document.getElementById('tarefaRotinaLembrete')?.value || 0);
       if (!titulo.trim() || !data) { showToast('Preencha o título e a data.', 'error', 'Tarefa'); return; }
+      if (rotinaAtiva && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
       const tarefa = {
-        id: Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+        id: crypto.randomUUID(),
         titulo: titulo.trim(), descricao: descricao.trim(), data, prioridade, status: 'pendente',
         rotinaAtiva, rotinaIntervalo, rotinaUnidade, rotinaLembreteDias, rotinaProximaData: rotinaAtiva ? data : '',
         createdAt: new Date().toISOString()
