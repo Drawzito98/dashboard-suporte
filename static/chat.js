@@ -57,7 +57,7 @@
     const grouped = reactionEmojis.map(emoji => ({ emoji, items: reactions.filter(item => item.emoji === emoji) })).filter(group => group.items.length);
     const chips = grouped.map(group => `<button class="chat-reaction-chip${group.items.some(item => item.user_id === userId) ? ' is-mine' : ''}" type="button" data-reaction-emoji="${group.emoji}" aria-label="Reagir com ${group.emoji}">${group.emoji}<span>${group.items.length}</span></button>`).join('');
     const picker = reactionEmojis.map(emoji => `<button type="button" data-reaction-emoji="${emoji}" aria-label="Reagir com ${emoji}">${emoji}</button>`).join('');
-    return `<div class="chat-reactions">${chips}<span class="chat-reaction-picker-wrap"><button class="chat-reaction-add" type="button" aria-label="Adicionar reação">☺+</button><span class="chat-reaction-picker">${picker}</span></span></div>`;
+    return `<div class="chat-reactions">${chips}<span class="chat-reaction-picker-wrap"><span class="chat-reaction-picker">${picker}</span></span></div>`;
   }
   function messagesMarkup(messages, userId, conversation = currentConversation) {
     return messages.length ? messages.map(m => `<div data-chat-message-id="${esc(m.id)}" class="chat-message ${m.sender_id === userId ? 'is-mine' : ''} ${conversation && m.sender_id === conversation.admin_id ? 'from-admin' : 'from-colaborador'}">${m.imagem_url ? `<img class="chat-image" src="${esc(m.imagem_url)}" alt="Imagem enviada" loading="lazy">` : ''}${m.mensagem ? `<p>${esc(m.mensagem)}</p>` : ''}<small>${new Date(m.created_at).toLocaleString('pt-BR')}</small>${reactionsMarkup(m, userId)}</div>`).join('') : '<p class="chat-empty">Nenhuma mensagem ainda. Inicie a conversa.</p>';
@@ -76,16 +76,19 @@
   function bindReactionEvents(root, user) {
     root.querySelector('#chatMessages')?.addEventListener('click', async event => {
       const button = event.target.closest('button');
-      if (!button) return;
-      if (button.classList.contains('chat-reaction-add')) {
-        event.stopPropagation();
-        button.closest('.chat-reaction-picker-wrap')?.classList.toggle('is-open');
+      if (!button) {
+        const message = event.target.closest('[data-chat-message-id]');
+        root.querySelectorAll('.chat-message.reaction-open').forEach(item => {
+          if (item !== message) item.classList.remove('reaction-open');
+        });
+        message?.classList.toggle('reaction-open');
         return;
       }
       if (!button.dataset.reactionEmoji) return;
       const message = button.closest('[data-chat-message-id]');
       const emoji = button.dataset.reactionEmoji;
       if (!message || !reactionEmojis.includes(emoji)) return;
+      message.classList.remove('reaction-open');
       const key = { conversa_id: currentConversation.id, mensagem_id: message.dataset.chatMessageId, user_id: user.id, emoji };
       const existing = await sbClient.from('chat_reacoes').select('id').match(key).maybeSingle();
       const result = existing.data
@@ -94,6 +97,9 @@
       if (result.error) { notice('Não foi possível salvar a reação.', 'error'); return; }
       await renderConversation();
     });
+    document.addEventListener('click', event => {
+      if (!root.contains(event.target)) root.querySelectorAll('.chat-message.reaction-open').forEach(item => item.classList.remove('reaction-open'));
+    }, { once: true });
   }
   async function renderConversation() {
     const root = document.getElementById('chatContent'); if (!root || !currentConversation) return;
@@ -101,7 +107,7 @@
     let nickname = '';
     try { const profile = await sbClient.from('chat_perfis').select('apelido').eq('user_id', user.id).maybeSingle(); nickname = profile.data?.apelido || ''; } catch {}
     let messages; try { messages = await loadMessages(); } catch (error) { root.innerHTML = `<div class="chat-error">A tabela do chat ainda não foi criada. Execute <strong>migration_v33.sql</strong> no Supabase.</div>`; return; }
-    root.innerHTML = `<div class="chat-header"><div><span class="page-eyebrow">Conversa privada</span><h2><button class="chat-profile-name" id="chatProfileName" type="button" title="Alterar seu apelido">${esc(nickname || 'Conversa privada')}</button></h2></div><button class="chat-minimize" type="button" title="Minimizar" aria-label="Minimizar">−</button><button class="btn-small chat-icon-btn" id="chatFavoriteBtn" title="Favoritar contato" aria-label="Favoritar contato">☆</button><button class="btn-small chat-icon-btn" id="chatBackBtn" title="Voltar para conversas" aria-label="Voltar para conversas">←</button><button class="btn-small chat-clear chat-icon-btn" id="chatClearBtn" title="Limpar conversa para mim" aria-label="Limpar conversa para mim">🗑</button></div><div id="chatMessages" class="chat-messages">${messagesMarkup(messages, user.id)}</div><form id="chatForm" class="chat-compose"><input id="chatMessageInput" maxlength="4000" placeholder="Escreva uma mensagem..." autocomplete="off"><label class="chat-attach" title="Enviar imagem">📎<input id="chatImageInput" type="file" accept="image/*" hidden></label><button class="btn-primary chat-send-btn" type="submit" title="Enviar mensagem" aria-label="Enviar mensagem">➤</button></form>`;
+    root.innerHTML = `<div class="chat-header"><div><span class="page-eyebrow">Conversa privada</span><h2><button class="chat-profile-name" id="chatProfileName" type="button" title="Alterar seu apelido">${esc(nickname || 'Conversa privada')}</button></h2></div><button class="chat-minimize" type="button" title="Minimizar" aria-label="Minimizar">−</button><button class="btn-small chat-icon-btn" id="chatFavoriteBtn" title="Favoritar contato" aria-label="Favoritar contato">☆</button><button class="btn-small chat-icon-btn" id="chatBackBtn" title="Voltar para conversas" aria-label="Voltar para conversas">←</button><button class="btn-small chat-clear chat-icon-btn" id="chatClearBtn" title="Limpar conversa para mim" aria-label="Limpar conversa para mim">🗑</button></div><div id="chatMessages" class="chat-messages">${messagesMarkup(messages, user.id)}</div><form id="chatForm" class="chat-compose"><div id="chatImagePreview" class="chat-image-preview" hidden><img alt="Prévia da imagem anexada"><button id="chatImageRemove" type="button" aria-label="Remover imagem" title="Remover imagem">✕</button></div><input id="chatMessageInput" maxlength="4000" placeholder="Escreva uma mensagem..." autocomplete="off"><label class="chat-attach" title="Enviar imagem">📎<input id="chatImageInput" type="file" accept="image/*" hidden></label><button class="btn-primary chat-send-btn" type="submit" title="Enviar mensagem" aria-label="Enviar mensagem">➤</button></form>`;
     bindReactionEvents(root, user);
     root.querySelector('.chat-minimize')?.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); minimizeChat(); });
     const contactId = isAdminChat() ? currentConversation.colaborador_id : currentConversation.admin_id;
@@ -111,7 +117,18 @@
     root.querySelector('#chatBackBtn').addEventListener('click', renderChatHome);
     const messageInput = root.querySelector('#chatMessageInput');
     const attachmentInput = root.querySelector('#chatImageInput');
+    const imagePreview = root.querySelector('#chatImagePreview');
+    const previewImage = imagePreview.querySelector('img');
     const defaultPlaceholder = messageInput.placeholder;
+    let previewUrl = null;
+    const updateImagePreview = file => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = file ? URL.createObjectURL(file) : null;
+      imagePreview.hidden = !file;
+      previewImage.removeAttribute('src');
+      if (previewUrl) previewImage.src = previewUrl;
+      messageInput.placeholder = file ? 'Imagem anexada — pressione Enter para enviar' : defaultPlaceholder;
+    };
     messageInput.addEventListener('paste', event => {
       const imageItem = Array.from(event.clipboardData?.items || []).find(item => item.type.startsWith('image/'));
       if (!imageItem) return;
@@ -122,11 +139,16 @@
       const transfer = new DataTransfer();
       transfer.items.add(new File([file], file.name || `captura-${Date.now()}.png`, { type: file.type || 'image/png' }));
       attachmentInput.files = transfer.files;
-      messageInput.placeholder = 'Imagem anexada — pressione Enter para enviar';
+      updateImagePreview(attachmentInput.files[0]);
       messageInput.focus();
     });
     attachmentInput.addEventListener('change', () => {
-      messageInput.placeholder = attachmentInput.files?.length ? 'Imagem anexada — pressione Enter para enviar' : defaultPlaceholder;
+      updateImagePreview(attachmentInput.files?.[0] || null);
+    });
+    root.querySelector('#chatImageRemove').addEventListener('click', () => {
+      attachmentInput.value = '';
+      updateImagePreview(null);
+      messageInput.focus();
     });
     root.querySelector('#chatForm').addEventListener('submit', async event => {
       event.preventDefault();
@@ -142,7 +164,7 @@
       input.disabled = false;
       input.focus();
       if (error) { notice(error.message, 'error'); return; }
-      input.value = ''; input.placeholder = defaultPlaceholder; if (imageInput) imageInput.value = '';
+      input.value = ''; if (imageInput) imageInput.value = ''; updateImagePreview(null);
       const recipientId = currentConversation.admin_id === user.id ? currentConversation.colaborador_id : currentConversation.admin_id;
       await sbClient.from('chat_notificacoes').insert({ recipient_id: recipientId, conversa_id: currentConversation.id, mensagem_id: sent.id });
       const box = root.querySelector('#chatMessages');
