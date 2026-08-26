@@ -210,18 +210,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
+  const logoutButtons = [
+    document.getElementById('logoutBtn'),
+    document.getElementById('switchAccountBtn')
+  ].filter(Boolean);
+  logoutButtons.forEach((logoutBtn) => {
     logoutBtn.addEventListener('click', async () => {
+      logoutButtons.forEach(button => { button.disabled = true; });
       try {
-        await sbClient.auth.signOut();
+        const { error } = await sbClient.auth.signOut({ scope: 'local' });
+        if (error) throw error;
       } catch (e) {
         console.warn('[Auth] Erro no logout:', e);
       }
       currentUser = null;
-      window.location.reload();
+      sessionStorage.removeItem('blocked_error_shown');
+      window.location.replace(window.location.pathname + window.location.search);
     });
-  }
+  });
 
   // ── Esqueci minha senha ──
   const forgotPwdBtn = document.getElementById('forgotPwdBtn');

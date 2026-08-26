@@ -4210,6 +4210,7 @@ table td { border-color: var(--border); }
 /* Interface review v3 — hierarchy, readability and responsive controls */
 .user-dropdown-mobile-actions { display: none; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 6px; }
 .user-dropdown-danger { color: var(--danger) !important; }
+#switchAccountBtn { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 10px; }
 .btn-danger-subtle { color: var(--danger) !important; }
 .btn-danger-subtle:hover { border-color: color-mix(in srgb, var(--danger) 35%, var(--border)) !important; background: var(--danger-soft) !important; }
 :where(button, a, input, select, textarea, [tabindex]):focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 2px; }

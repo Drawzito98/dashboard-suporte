@@ -3739,7 +3739,7 @@ function initNotificacoesUI() {
     const proxyActions = [
       ["mobilePresentationBtn", "presentationModeToggle"],
       ["mobileThemeBtn", "themeToggle"],
-      ["mobileLogoutBtn", "logoutBtn"]
+      ["mobileLogoutBtn", "switchAccountBtn"]
     ];
     proxyActions.forEach(([proxyId, targetId]) => {
       const proxy = document.getElementById(proxyId);
