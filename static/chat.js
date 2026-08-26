@@ -5,6 +5,8 @@
   let realtimeChannel = null;
   let notificationChannel = null;
   let unreadChatCount = 0;
+  let reactionsAvailable = true;
+  const reactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
   const originalTitle = document.title;
   function updateTabIndicator() { document.title = unreadChatCount ? '🟢 ' + unreadChatCount + ' · Nova mensagem · ' + originalTitle : originalTitle; }
   function playChatBeep() { try { const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return; const ctx = new Ctx(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.frequency.value = 880; gain.gain.setValueAtTime(0.045, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16); osc.connect(gain).connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.16); } catch {} }
@@ -41,10 +43,24 @@
     query = isAdminChat() ? query.eq('apagada_para_admin', false) : query.eq('apagada_para_colaborador', false);
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    const messages = data || [];
+    const reactions = await sbClient.from('chat_reacoes').select('mensagem_id,user_id,emoji').eq('conversa_id', currentConversation.id);
+    reactionsAvailable = !reactions.error;
+    if (reactionsAvailable) {
+      messages.forEach(message => { message._reactions = (reactions.data || []).filter(reaction => reaction.mensagem_id === message.id); });
+    }
+    return messages;
+  }
+  function reactionsMarkup(message, userId) {
+    if (!reactionsAvailable) return '';
+    const reactions = message._reactions || [];
+    const grouped = reactionEmojis.map(emoji => ({ emoji, items: reactions.filter(item => item.emoji === emoji) })).filter(group => group.items.length);
+    const chips = grouped.map(group => `<button class="chat-reaction-chip${group.items.some(item => item.user_id === userId) ? ' is-mine' : ''}" type="button" data-reaction-emoji="${group.emoji}" aria-label="Reagir com ${group.emoji}">${group.emoji}<span>${group.items.length}</span></button>`).join('');
+    const picker = reactionEmojis.map(emoji => `<button type="button" data-reaction-emoji="${emoji}" aria-label="Reagir com ${emoji}">${emoji}</button>`).join('');
+    return `<div class="chat-reactions">${chips}<span class="chat-reaction-picker-wrap"><button class="chat-reaction-add" type="button" aria-label="Adicionar reação">☺+</button><span class="chat-reaction-picker">${picker}</span></span></div>`;
   }
   function messagesMarkup(messages, userId, conversation = currentConversation) {
-    return messages.length ? messages.map(m => `<div class="chat-message ${m.sender_id === userId ? 'is-mine' : ''} ${conversation && m.sender_id === conversation.admin_id ? 'from-admin' : 'from-colaborador'}">${m.imagem_url ? `<img class="chat-image" src="${esc(m.imagem_url)}" alt="Imagem enviada" loading="lazy">` : ''}${m.mensagem ? `<p>${esc(m.mensagem)}</p>` : ''}<small>${new Date(m.created_at).toLocaleString('pt-BR')}</small></div>`).join('') : '<p class="chat-empty">Nenhuma mensagem ainda. Inicie a conversa.</p>';
+    return messages.length ? messages.map(m => `<div data-chat-message-id="${esc(m.id)}" class="chat-message ${m.sender_id === userId ? 'is-mine' : ''} ${conversation && m.sender_id === conversation.admin_id ? 'from-admin' : 'from-colaborador'}">${m.imagem_url ? `<img class="chat-image" src="${esc(m.imagem_url)}" alt="Imagem enviada" loading="lazy">` : ''}${m.mensagem ? `<p>${esc(m.mensagem)}</p>` : ''}<small>${new Date(m.created_at).toLocaleString('pt-BR')}</small>${reactionsMarkup(m, userId)}</div>`).join('') : '<p class="chat-empty">Nenhuma mensagem ainda. Inicie a conversa.</p>';
   }
   function appendMessageOnce(box, message, userId, conversation = currentConversation) {
     if (!box || !message?.id) return false;
@@ -52,11 +68,32 @@
       .some(element => element.dataset.chatMessageId === String(message.id));
     if (alreadyRendered) return false;
     box.querySelector('.chat-empty')?.remove();
-    const html = messagesMarkup([message], userId, conversation)
-      .replace('<div class="chat-message ', `<div data-chat-message-id="${esc(message.id)}" class="chat-message `);
+    const html = messagesMarkup([message], userId, conversation);
     box.insertAdjacentHTML('beforeend', html);
     box.scrollTop = box.scrollHeight;
     return true;
+  }
+  function bindReactionEvents(root, user) {
+    root.querySelector('#chatMessages')?.addEventListener('click', async event => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      if (button.classList.contains('chat-reaction-add')) {
+        event.stopPropagation();
+        button.closest('.chat-reaction-picker-wrap')?.classList.toggle('is-open');
+        return;
+      }
+      if (!button.dataset.reactionEmoji) return;
+      const message = button.closest('[data-chat-message-id]');
+      const emoji = button.dataset.reactionEmoji;
+      if (!message || !reactionEmojis.includes(emoji)) return;
+      const key = { conversa_id: currentConversation.id, mensagem_id: message.dataset.chatMessageId, user_id: user.id, emoji };
+      const existing = await sbClient.from('chat_reacoes').select('id').match(key).maybeSingle();
+      const result = existing.data
+        ? await sbClient.from('chat_reacoes').delete().eq('id', existing.data.id)
+        : await sbClient.from('chat_reacoes').insert(key);
+      if (result.error) { notice('Não foi possível salvar a reação.', 'error'); return; }
+      await renderConversation();
+    });
   }
   async function renderConversation() {
     const root = document.getElementById('chatContent'); if (!root || !currentConversation) return;
@@ -65,12 +102,32 @@
     try { const profile = await sbClient.from('chat_perfis').select('apelido').eq('user_id', user.id).maybeSingle(); nickname = profile.data?.apelido || ''; } catch {}
     let messages; try { messages = await loadMessages(); } catch (error) { root.innerHTML = `<div class="chat-error">A tabela do chat ainda não foi criada. Execute <strong>migration_v33.sql</strong> no Supabase.</div>`; return; }
     root.innerHTML = `<div class="chat-header"><div><span class="page-eyebrow">Conversa privada</span><h2><button class="chat-profile-name" id="chatProfileName" type="button" title="Alterar seu apelido">${esc(nickname || 'Conversa privada')}</button></h2></div><button class="chat-minimize" type="button" title="Minimizar" aria-label="Minimizar">−</button><button class="btn-small chat-icon-btn" id="chatFavoriteBtn" title="Favoritar contato" aria-label="Favoritar contato">☆</button><button class="btn-small chat-icon-btn" id="chatBackBtn" title="Voltar para conversas" aria-label="Voltar para conversas">←</button><button class="btn-small chat-clear chat-icon-btn" id="chatClearBtn" title="Limpar conversa para mim" aria-label="Limpar conversa para mim">🗑</button></div><div id="chatMessages" class="chat-messages">${messagesMarkup(messages, user.id)}</div><form id="chatForm" class="chat-compose"><input id="chatMessageInput" maxlength="4000" placeholder="Escreva uma mensagem..." autocomplete="off"><label class="chat-attach" title="Enviar imagem">📎<input id="chatImageInput" type="file" accept="image/*" hidden></label><button class="btn-primary chat-send-btn" type="submit" title="Enviar mensagem" aria-label="Enviar mensagem">➤</button></form>`;
+    bindReactionEvents(root, user);
     root.querySelector('.chat-minimize')?.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); minimizeChat(); });
     const contactId = isAdminChat() ? currentConversation.colaborador_id : currentConversation.admin_id;
     const favoriteBtn = root.querySelector('#chatFavoriteBtn');
     if (favoriteBtn) { favoriteBtn.textContent = isFavorite(user.id, contactId) ? '★' : '☆'; favoriteBtn.classList.toggle('is-favorite', isFavorite(user.id, contactId)); favoriteBtn.addEventListener('click', () => { const active = toggleFavorite(user.id, contactId); favoriteBtn.textContent = active ? '★' : '☆'; favoriteBtn.classList.toggle('is-favorite', active); }); }
     root.querySelector('#chatProfileName')?.addEventListener('click', async () => { const apelido = prompt('Digite o apelido que aparecerá no chat:', nickname || ''); if (apelido === null) return; const novo = apelido.trim().slice(0, 40); const { error } = await sbClient.from('chat_perfis').upsert({ user_id: user.id, apelido: novo, updated_at: new Date().toISOString() }); if (error) { notice(error.message, 'error'); return; } notice('Apelido atualizado.', 'success'); renderConversation(); });
     root.querySelector('#chatBackBtn').addEventListener('click', renderChatHome);
+    const messageInput = root.querySelector('#chatMessageInput');
+    const attachmentInput = root.querySelector('#chatImageInput');
+    const defaultPlaceholder = messageInput.placeholder;
+    messageInput.addEventListener('paste', event => {
+      const imageItem = Array.from(event.clipboardData?.items || []).find(item => item.type.startsWith('image/'));
+      if (!imageItem) return;
+      event.preventDefault();
+      const file = imageItem.getAsFile();
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { notice('A imagem colada deve ter no máximo 2 MB.', 'error'); return; }
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([file], file.name || `captura-${Date.now()}.png`, { type: file.type || 'image/png' }));
+      attachmentInput.files = transfer.files;
+      messageInput.placeholder = 'Imagem anexada — pressione Enter para enviar';
+      messageInput.focus();
+    });
+    attachmentInput.addEventListener('change', () => {
+      messageInput.placeholder = attachmentInput.files?.length ? 'Imagem anexada — pressione Enter para enviar' : defaultPlaceholder;
+    });
     root.querySelector('#chatForm').addEventListener('submit', async event => {
       event.preventDefault();
       const input = root.querySelector('#chatMessageInput');
@@ -85,7 +142,7 @@
       input.disabled = false;
       input.focus();
       if (error) { notice(error.message, 'error'); return; }
-      input.value = ''; if (imageInput) imageInput.value = '';
+      input.value = ''; input.placeholder = defaultPlaceholder; if (imageInput) imageInput.value = '';
       const recipientId = currentConversation.admin_id === user.id ? currentConversation.colaborador_id : currentConversation.admin_id;
       await sbClient.from('chat_notificacoes').insert({ recipient_id: recipientId, conversa_id: currentConversation.id, mensagem_id: sent.id });
       const box = root.querySelector('#chatMessages');
@@ -104,6 +161,8 @@
     }).on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_mensagens', filter: 'conversa_id=eq.' + currentConversation.id }, () => {
       const box = root.querySelector('#chatMessages');
       if (box) box.innerHTML = messagesMarkup([], user.id, currentConversation);
+    }).on('postgres_changes', { event: '*', schema: 'public', table: 'chat_reacoes', filter: 'conversa_id=eq.' + currentConversation.id }, () => {
+      renderConversation();
     }).subscribe();
     const box = root.querySelector('#chatMessages'); box.scrollTop = box.scrollHeight;
     markChatNotificationsRead(currentConversation.id);
