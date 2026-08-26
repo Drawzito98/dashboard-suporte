@@ -5324,3 +5324,6 @@ body.chat-page.privacy-screen-on .privacy-screen-toggle{top:calc(50% + 42px);bot
 }
 
 body[data-role="colaborador"] #chatOverlayClose{display:none!important}
+.chat-logout-btn{display:none}
+body[data-role="colaborador"].chat-page #chatLogoutBtn{display:inline-flex!important;position:fixed;top:16px;right:20px;z-index:30;align-items:center;justify-content:center;min-height:38px;padding:8px 14px;border-color:color-mix(in srgb,var(--danger) 45%,var(--border));background:var(--bg-card);color:var(--danger);font-weight:750;visibility:visible!important;pointer-events:auto!important}
+@media(max-width:600px){body[data-role="colaborador"].chat-page #chatLogoutBtn{top:10px;right:10px;min-height:34px;padding:6px 11px}}

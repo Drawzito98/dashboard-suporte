@@ -212,7 +212,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const logoutButtons = [
     document.getElementById('logoutBtn'),
-    document.getElementById('switchAccountBtn')
+    document.getElementById('switchAccountBtn'),
+    document.getElementById('chatLogoutBtn')
   ].filter(Boolean);
   logoutButtons.forEach((logoutBtn) => {
     logoutBtn.addEventListener('click', async () => {
