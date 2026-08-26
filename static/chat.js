@@ -6,8 +6,8 @@
   let notificationChannel = null;
   let unreadChatCount = 0;
   let reactionsAvailable = true;
-  const quickReactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
-  const extraReactionEmojis = ['🤤', '🔥', '🎉', '👏', '🤔', '👀', '💯', '🚀'];
+  const quickReactionEmojis = ['👍', '❤️', '😂', '🤤', '🔥', '🙏'];
+  const extraReactionEmojis = ['😮', '😢', '🎉', '👏', '🤔', '👀', '💯', '🚀'];
   const reactionEmojis = [...quickReactionEmojis, ...extraReactionEmojis];
   const originalTitle = document.title;
   function updateTabIndicator() { document.title = unreadChatCount ? '🟢 ' + unreadChatCount + ' · Nova mensagem · ' + originalTitle : originalTitle; }
