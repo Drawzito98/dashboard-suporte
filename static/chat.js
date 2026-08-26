@@ -6,7 +6,9 @@
   let notificationChannel = null;
   let unreadChatCount = 0;
   let reactionsAvailable = true;
-  const reactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+  const quickReactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+  const extraReactionEmojis = ['🤤', '🔥', '🎉', '👏', '🤔', '👀', '💯', '🚀'];
+  const reactionEmojis = [...quickReactionEmojis, ...extraReactionEmojis];
   const originalTitle = document.title;
   function updateTabIndicator() { document.title = unreadChatCount ? '🟢 ' + unreadChatCount + ' · Nova mensagem · ' + originalTitle : originalTitle; }
   function playChatBeep() { try { const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return; const ctx = new Ctx(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.frequency.value = 880; gain.gain.setValueAtTime(0.045, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16); osc.connect(gain).connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.16); } catch {} }
@@ -56,7 +58,9 @@
     const reactions = message._reactions || [];
     const grouped = reactionEmojis.map(emoji => ({ emoji, items: reactions.filter(item => item.emoji === emoji) })).filter(group => group.items.length);
     const chips = grouped.map(group => `<button class="chat-reaction-chip${group.items.some(item => item.user_id === userId) ? ' is-mine' : ''}" type="button" data-reaction-emoji="${group.emoji}" aria-label="Reagir com ${group.emoji}">${group.emoji}<span>${group.items.length}</span></button>`).join('');
-    const picker = reactionEmojis.map(emoji => `<button type="button" data-reaction-emoji="${emoji}" aria-label="Reagir com ${emoji}">${emoji}</button>`).join('');
+    const quickPicker = quickReactionEmojis.map(emoji => `<button type="button" data-reaction-emoji="${emoji}" aria-label="Reagir com ${emoji}">${emoji}</button>`).join('');
+    const extraPicker = extraReactionEmojis.map(emoji => `<button class="chat-reaction-extra" type="button" data-reaction-emoji="${emoji}" aria-label="Reagir com ${emoji}">${emoji}</button>`).join('');
+    const picker = `${quickPicker}<button class="chat-reaction-more" type="button" aria-label="Mostrar mais emojis" title="Mais emojis">+</button>${extraPicker}`;
     return `<div class="chat-reactions">${chips}<span class="chat-reaction-picker-wrap"><span class="chat-reaction-picker">${picker}</span></span></div>`;
   }
   function messagesMarkup(messages, userId, conversation = currentConversation) {
@@ -82,6 +86,12 @@
           if (item !== message) item.classList.remove('reaction-open');
         });
         message?.classList.toggle('reaction-open');
+        return;
+      }
+      if (button.classList.contains('chat-reaction-more')) {
+        event.stopPropagation();
+        button.closest('.chat-reaction-picker')?.classList.toggle('show-more');
+        button.textContent = button.closest('.chat-reaction-picker')?.classList.contains('show-more') ? '−' : '+';
         return;
       }
       if (!button.dataset.reactionEmoji) return;
