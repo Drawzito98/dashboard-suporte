@@ -83,6 +83,7 @@
       input.disabled = true;
       const { data: sent, error } = await sbClient.from('chat_mensagens').insert({ conversa_id: currentConversation.id, sender_id: user.id, mensagem: mensagem || '', imagem_url }).select().single();
       input.disabled = false;
+      input.focus();
       if (error) { notice(error.message, 'error'); return; }
       input.value = ''; if (imageInput) imageInput.value = '';
       const recipientId = currentConversation.admin_id === user.id ? currentConversation.colaborador_id : currentConversation.admin_id;
