@@ -46,6 +46,18 @@
   function messagesMarkup(messages, userId, conversation = currentConversation) {
     return messages.length ? messages.map(m => `<div class="chat-message ${m.sender_id === userId ? 'is-mine' : ''} ${conversation && m.sender_id === conversation.admin_id ? 'from-admin' : 'from-colaborador'}">${m.imagem_url ? `<img class="chat-image" src="${esc(m.imagem_url)}" alt="Imagem enviada" loading="lazy">` : ''}${m.mensagem ? `<p>${esc(m.mensagem)}</p>` : ''}<small>${new Date(m.created_at).toLocaleString('pt-BR')}</small></div>`).join('') : '<p class="chat-empty">Nenhuma mensagem ainda. Inicie a conversa.</p>';
   }
+  function appendMessageOnce(box, message, userId, conversation = currentConversation) {
+    if (!box || !message?.id) return false;
+    const alreadyRendered = Array.from(box.querySelectorAll('[data-chat-message-id]'))
+      .some(element => element.dataset.chatMessageId === String(message.id));
+    if (alreadyRendered) return false;
+    box.querySelector('.chat-empty')?.remove();
+    const html = messagesMarkup([message], userId, conversation)
+      .replace('<div class="chat-message ', `<div data-chat-message-id="${esc(message.id)}" class="chat-message `);
+    box.insertAdjacentHTML('beforeend', html);
+    box.scrollTop = box.scrollHeight;
+    return true;
+  }
   async function renderConversation() {
     const root = document.getElementById('chatContent'); if (!root || !currentConversation) return;
     const user = await currentUser();
@@ -76,7 +88,7 @@
       const recipientId = currentConversation.admin_id === user.id ? currentConversation.colaborador_id : currentConversation.admin_id;
       await sbClient.from('chat_notificacoes').insert({ recipient_id: recipientId, conversa_id: currentConversation.id, mensagem_id: sent.id });
       const box = root.querySelector('#chatMessages');
-      if (sent && box) { const empty = box.querySelector('.chat-empty'); if (empty) empty.remove(); const html = messagesMarkup([sent], user.id, currentConversation).replace('<div class="chat-message ', `<div data-chat-message-id="${esc(sent.id)}" class="chat-message `); box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight; }
+      appendMessageOnce(box, sent, user.id);
     });
     root.querySelector('#chatClearBtn')?.addEventListener('click', async () => { if (!confirm(isAdminChat() ? 'Apagar todas as mensagens para você e para o colaborador?' : 'Limpar o histórico apenas para você? A outra pessoa continuará vendo as mensagens.')) return; let updated, error; if (isAdminChat()) { const result = await sbClient.from('chat_mensagens').delete().eq('conversa_id', currentConversation.id).select('id'); updated = result.data; error = result.error; } else { const valores = { apagada_para_colaborador: true }; const result = await sbClient.from('chat_mensagens').update(valores).eq('conversa_id', currentConversation.id).select('id'); updated = result.data; error = result.error; } if (error) { notice(error.message, 'error'); return; } if (!updated?.length) { notice('Não foi possível salvar a limpeza. Tente novamente.', 'error'); return; } await renderConversation(); notice(isAdminChat() ? 'Conversa apagada para os dois.' : 'Histórico limpo apenas para você.', 'success'); });
     
@@ -87,10 +99,7 @@
       const message = payload?.new;
       const box = root.querySelector('#chatMessages');
       if (!message || !box || message.conversa_id !== currentConversation.id) return;
-      if (box.querySelector(`[data-chat-message-id=\"${message.id}\"]`)) return;
-      const empty = box.querySelector('.chat-empty'); if (empty) empty.remove();
-      const html = messagesMarkup([message], user.id, currentConversation).replace('<div class=\"chat-message ', `<div data-chat-message-id=\"${esc(message.id)}\" class=\"chat-message `);
-      box.insertAdjacentHTML('beforeend', html); box.scrollTop = box.scrollHeight;
+      appendMessageOnce(box, message, user.id);
     }).on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_mensagens', filter: 'conversa_id=eq.' + currentConversation.id }, () => {
       const box = root.querySelector('#chatMessages');
       if (box) box.innerHTML = messagesMarkup([], user.id, currentConversation);
