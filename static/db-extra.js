@@ -646,6 +646,46 @@ async function dbTarefasDelete(id) {
   } catch (e) { console.error('[db-extra]', e); }
 }
 
+
+// ─── REGRAS ────────────────────────────────────────────────────
+
+const REGRAS_LOCAL_KEY = 'sistema_regras_v1';
+
+async function dbRegrasLoad() {
+  if (!sbClient) return _fallbackLoad(REGRAS_LOCAL_KEY, []);
+  try {
+    const { data, error } = await sbClient.from('regras').select('*').order('posicao', { ascending: true });
+    if (error) throw error;
+    if (Array.isArray(data)) {
+      const list = data.map(r => ({ id: r.id, titulo: r.titulo, descricao: r.descricao || '', categoria: r.categoria || 'Geral', status: r.status || 'vigente', posicao: Number(r.posicao || 0), createdAt: r.created_at, updatedAt: r.updated_at }));
+      localStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(list));
+      return list;
+    }
+  } catch (e) { console.warn('[db-extra] Regras usando armazenamento local:', e.message || e); }
+  return _fallbackLoad(REGRAS_LOCAL_KEY, []);
+}
+
+async function dbRegrasSave(regra) {
+  const list = _fallbackLoad(REGRAS_LOCAL_KEY, []);
+  const index = list.findIndex(r => r.id === regra.id);
+  if (index >= 0) list[index] = regra; else list.push(regra);
+  localStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(list));
+  if (!sbClient) return;
+  try {
+    const uid = await _getUserId();
+    const { error } = await sbClient.from('regras').upsert({ id: regra.id, titulo: regra.titulo, descricao: regra.descricao || '', categoria: regra.categoria || 'Geral', status: regra.status || 'vigente', posicao: Number(regra.posicao || 0), created_at: regra.createdAt || new Date().toISOString(), updated_at: regra.updatedAt || new Date().toISOString(), user_id: uid });
+    if (error) throw error;
+  } catch (e) { console.warn('[db-extra] Regra salva apenas localmente:', e.message || e); }
+}
+
+async function dbRegrasDelete(id) {
+  localStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(_fallbackLoad(REGRAS_LOCAL_KEY, []).filter(r => r.id !== id)));
+  if (!sbClient) return;
+  try {
+    const { error } = await sbClient.from('regras').delete().eq('id', id);
+    if (error) throw error;
+  } catch (e) { console.warn('[db-extra] Regra removida apenas localmente:', e.message || e); }
+}
 // ─── PONTOS EXTRAS (Bônus Manuais) ──────────────────────────────
 
 const PONTOS_EXTRAS_LOCAL_KEY = 'sistema_pontos_extras_v1';
@@ -1471,6 +1511,7 @@ async function initDbExtra() {
       dbFeedbacksLoad(),
       dbAnotacoesLoad(),
       dbTarefasLoad(),
+      dbRegrasLoad(),
       dbPontosExtrasLoad(),
       dbColabInfoLoad(),
       typeof dbAvaliacoesLoad === 'function' ? dbAvaliacoesLoad() : Promise.resolve(),

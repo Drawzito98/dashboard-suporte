@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.9.0';
+const APP_VERSION = '1.10.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -272,7 +272,7 @@ document.addEventListener('keydown', (e) => {
 
   // Keyboard shortcuts (only when not in input)
   if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    const tabOrder = ['home','dashboard','relatorio-setorial','tarefas','colaboradores','lider','insights','avaliacao'];
+    const tabOrder = ['home','dashboard','relatorio-setorial','tarefas','regras','colaboradores','lider','insights','avaliacao'];
     const num = parseInt(e.key);
     if (num >= 1 && num <= tabOrder.length) {
       e.preventDefault();
@@ -2895,6 +2895,7 @@ if (!rawRecords || !rawRecords.length) {
       dashboard: ['Indicadores', 'Desempenho, qualidade e produtividade do suporte'],
       'relatorio-setorial': ['Relatório Setorial', 'Resultados, evolução e destaques por setor'],
       tarefas: ['Rotina', 'Agenda, tarefas e anotações diárias'],
+      regras: ['Regras', 'Quadro de normas e orientações atuais'],
       colaboradores: ['Colaboradores', 'Cadastro e informações da equipe'],
       lider: ['Gestão', 'Acompanhamento gerencial e alertas da operação'],
       insights: ['Análises avançadas', 'Diagnósticos automáticos e oportunidades de melhoria'],
@@ -2940,6 +2941,9 @@ if (!rawRecords || !rawRecords.length) {
       }
       if (tab === 'tarefas' && typeof onTarefasTabActivated === 'function') {
         onTarefasTabActivated();
+      }
+      if (tab === 'regras' && typeof onRegrasTabActivated === 'function') {
+        onRegrasTabActivated();
       }
       if (tab === 'colaboradores' && typeof onColaboradoresTabActivated === 'function') {
         onColaboradoresTabActivated();

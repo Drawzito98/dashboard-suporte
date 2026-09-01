@@ -303,7 +303,7 @@ function renderRelatorioSetorial() {
   };
   const kpiCards = [
     { label: 'Assumidos', value: fmtNum(totalAss), sub: _deltaSpan(_calcDeltaPct(prevAss, totalAss)) },
-    { label: 'Transferidos', value: fmtNum(totalTra), sub: _deltaSpan(_calcDeltaPct(prevTra, totalTra)) },
+    { label: 'Transferidos', value: fmtNum(totalTra), sub: _deltaSpan(_calcDeltaPct(prevTra, totalTra), true) },
     { label: 'Finalizados', value: fmtNum(totalFin), sub: _deltaSpan(_calcDeltaPct(prevFin, totalFin)) },
     { label: 'Score médio', value: fmtScore(avgScore), sub: _deltaSpan(_calcDeltaPct(prevAvg, avgScore)) },
     { label: 'Produtividade', value: fmtPct(prodGeral), sub: _deltaSpan(_calcDeltaPct(prevProd, prodGeral)) },
