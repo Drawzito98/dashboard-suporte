@@ -45,6 +45,10 @@ const globalFilters = {
     this._listeners.forEach(cb => { try { cb(); } catch (e) {} });
   },
 
+  correspondeNivel(record) {
+    return !this.nivel || this.nivel === 'all' || _nivelColaborador(record?.['Atendente']) === this.nivel;
+  },
+
   aplicar(records) {
     if (!records || !records.length) return records;
     let data = records;

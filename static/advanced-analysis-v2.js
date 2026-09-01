@@ -10,7 +10,9 @@
   function context() {
     const gf = window.globalFilters || {}, q = String(gf.pesquisa || '').toLowerCase();
     return (Array.isArray(window.rawRecords) ? rawRecords : []).filter(valid).filter(r =>
-      (!gf.setor || String(r.Setor) === String(gf.setor)) && (!gf.colaborador || String(r.Atendente) === String(gf.colaborador)) &&
+      (!gf.setor || gf.setor === 'all' || String(r.Setor) === String(gf.setor)) &&
+      (!gf.colaborador || gf.colaborador === 'all' || String(r.Atendente) === String(gf.colaborador)) &&
+      (typeof gf.correspondeNivel !== 'function' || gf.correspondeNivel(r)) &&
       (!q || Object.values(r).some(v => String(v ?? '').toLowerCase().includes(q))) &&
       (typeof isSetorActive !== 'function' || isSetorActive(r.Setor)) && (typeof isColabActive !== 'function' || isColabActive(r.Atendente)));
   }

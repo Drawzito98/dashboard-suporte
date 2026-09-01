@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.12.0';
+const APP_VERSION = '1.12.1';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -991,7 +991,8 @@ function updateView() {
   }
 
   const qLower = (searchAtendenteInput?.value || '').trim().toLowerCase();
-  const filtered = rawRecords.filter(r => {
+  const globalSource = typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : rawRecords;
+  const filtered = globalSource.filter(r => {
     if (!r) return false;
     if (setorSelect.value !== 'all' && String(r['Setor']) !== setorSelect.value) return false;
     if (setorSelect.value === 'all' && typeof isSetorActive === 'function' && !isSetorActive(String(r['Setor']).trim())) return false;
@@ -1028,7 +1029,7 @@ function updateView() {
 function filtersActive() {
   const compareActive = compareChosen && compareChosen.length>0;
   const q = (searchAtendenteInput?.value || '').trim();
-  return setorSelect.value !== 'all' || monthFilterActive() || (arquivoSelect && arquivoSelect.value !== 'all') || compareActive || (atendenteSelect && atendenteSelect.value !== 'all') || q.length>0;
+  return setorSelect.value !== 'all' || monthFilterActive() || (arquivoSelect && arquivoSelect.value !== 'all') || compareActive || (atendenteSelect && atendenteSelect.value !== 'all') || q.length>0 || (typeof globalFilters !== 'undefined' && globalFilters.nivel && globalFilters.nivel !== 'all');
 }
 
 
@@ -1142,6 +1143,7 @@ function renderSummary(filtered) {
     const prev = prevMonthKey(mesSel[0]);
     if (prev) {
       const prevRows = rawRecords.filter(r => r && !isAggregateName(r['Atendente']))
+        .filter(r => typeof globalFilters === 'undefined' || globalFilters.correspondeNivel(r))
         .filter(r => (setorSel === 'all' || String(r['Setor']) === setorSel))
         .filter(r => (arquivoSel === 'all' || String(r['Arquivo']) === arquivoSel))
         .filter(r => String(r['Mês']) === prev)
@@ -1251,7 +1253,8 @@ function showKpiBreakdown(kpiType, rows) {
     const arquivoVal = arquivoSelect ? arquivoSelect.value : 'all';
     const selectedAt = getSelectedAtendentes();
     const qLower = (searchAtendenteInput?.value || '').trim().toLowerCase();
-    return (rawRecords || []).filter(r => {
+    const source = (rawRecords || []).filter(r => typeof globalFilters === 'undefined' || globalFilters.correspondeNivel(r));
+    return source.filter(r => {
       if (!r) return false;
       if (String(r['Mês']) !== String(month)) return false;
       if (isAggregateName(r['Atendente'])) return false;
@@ -2237,7 +2240,8 @@ function getCurrentFilteredRows() {
   const arquivoVal = arquivoSelect ? arquivoSelect.value : 'all';
   const selectedAt = getSelectedAtendentes();
 
-  return rawRecords.filter(r => {
+  const source = typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : rawRecords;
+  return source.filter(r => {
     if (!r) return false;
     if (setorVal !== 'all' && String(r['Setor']) !== setorVal) return false;
     if (setorVal === 'all' && typeof isSetorActive === 'function' && !isSetorActive(String(r['Setor']).trim())) return false;
