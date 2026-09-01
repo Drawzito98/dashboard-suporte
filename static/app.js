@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.13.0';
+const APP_VERSION = '1.14.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -272,7 +272,7 @@ document.addEventListener('keydown', (e) => {
 
   // Keyboard shortcuts (only when not in input)
   if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    const tabOrder = ['home','dashboard','relatorio-setorial','tarefas','regras','colaboradores','lider','insights','avaliacao'];
+    const tabOrder = ['home','dashboard','relatorio-setorial','saude-operacional','tarefas','regras','colaboradores','lider','insights','avaliacao'];
     const num = parseInt(e.key);
     if (num >= 1 && num <= tabOrder.length) {
       e.preventDefault();
@@ -720,6 +720,7 @@ function _rerenderActiveNonDashboardTab() {
   const tab = active.getAttribute('data-tab');
   if (tab === 'home' && typeof onHomeTabActivated === 'function') onHomeTabActivated();
   else if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
+  else if (tab === 'saude-operacional' && typeof onSaudeOperacionalTabActivated === 'function') onSaudeOperacionalTabActivated();
   else if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') { onGamificationTabActivated(); if (typeof onMetasTabActivated === 'function') onMetasTabActivated(); }
   else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();
   else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
@@ -2902,6 +2903,7 @@ if (!rawRecords || !rawRecords.length) {
       home: ['Início', 'Visão geral da operação e acessos rápidos'],
       dashboard: ['Indicadores', 'Desempenho, qualidade e produtividade do suporte'],
       'relatorio-setorial': ['Relatório Setorial', 'Resultados, evolução e destaques por setor'],
+      'saude-operacional': ['Saúde Operacional', 'Resultados consolidados dos setores e desempenho individual'],
       tarefas: ['Rotina', 'Agenda, tarefas e anotações diárias'],
       regras: ['Regras', 'Quadro de normas e orientações atuais'],
       colaboradores: ['Colaboradores', 'Cadastro e informações da equipe'],
@@ -2958,6 +2960,9 @@ if (!rawRecords || !rawRecords.length) {
       }
       if (tab === 'mapeamento-time' && typeof onMapeamentoTimeTabActivated === 'function') {
         onMapeamentoTimeTabActivated();
+      }
+      if (tab === 'saude-operacional' && typeof onSaudeOperacionalTabActivated === 'function') {
+        onSaudeOperacionalTabActivated();
       }
       if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') {
         onRelatorioSetorialTabActivated();
@@ -3215,6 +3220,7 @@ if (!rawRecords || !rawRecords.length) {
         else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();
         else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
         else if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
+        else if (tab === 'saude-operacional' && typeof onSaudeOperacionalTabActivated === 'function') onSaudeOperacionalTabActivated();
         else if (tab === 'avaliacao' && typeof onAvaliacaoTabActivated === 'function') { onAvaliacaoTabActivated(); if (typeof onFeedbacksTabActivated === 'function') onFeedbacksTabActivated(); }
       }
     });
@@ -3422,7 +3428,7 @@ function initNotificacoesUI() {
     tabBar.querySelectorAll(".tab-btn[data-tab]").forEach(btn => { buttons[btn.dataset.tab] = btn; });
     const groups = [
       ["Principal", ["home"]],
-      ["Desempenho", ["dashboard", "relatorio-setorial", "insights"]],
+      ["Desempenho", ["dashboard", "relatorio-setorial", "saude-operacional", "insights"]],
       ["Pessoas", ["colaboradores", "mapeamento-time", "lider", "avaliacao"]],
       ["Organização", ["tarefas", "regras"]]
     ];

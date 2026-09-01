@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Painel de Suporte"/>
   <link rel="manifest" href="manifest.json"/>
   <link href="static/css/tokens.css?v=79" rel="stylesheet"/>
-  <link href="static/styles.css?v=112" rel="stylesheet"/>
+  <link href="static/styles.css?v=113" rel="stylesheet"/>
   <link href="static/desafio-diario.css?v=68" rel="stylesheet"/>
   <link href="static/home.css?v=80" rel="stylesheet"/>
   <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
@@ -233,6 +233,9 @@
       </button>
       <button class="tab-btn" data-tab="relatorio-setorial" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="8" y="13" width="3" height="4"/><rect x="13" y="11" width="3" height="6"/></svg></span> Relatório Setorial
+      </button>
+      <button class="tab-btn" data-tab="saude-operacional" role="tab" aria-selected="false">
+        <span class="tab-icon">🩺</span> Saúde Operacional
       </button>
       <button class="nav-section-label nav-section-toggle" id="equipeGestaoToggle" type="button" aria-expanded="true" aria-controls="equipeGestaoNav">
         <span>Equipe e gestão</span>
@@ -530,6 +533,11 @@
           </section>
         </div>
 
+        <!-- ===== TAB: SAÚDE OPERACIONAL ===== -->
+        <div class="tab-content" id="tab-saude-operacional" role="tabpanel">
+          <div id="saudeOperacionalContent"></div>
+        </div>
+
         <!-- ===== TAB: RELATÓRIO SETORIAL ===== -->
         <div class="tab-content" id="tab-relatorio-setorial" role="tabpanel">
           <section class="card">
@@ -772,6 +780,7 @@
 <script defer src="static/advanced-analysis-v2.js?v=87"></script>
 <script defer src="static/alert-goals-editor.js?v=92"></script>
 <script defer src="static/indicator-health-v3.js?v=94"></script>
+<script defer src="static/saude-operacional.js?v=1"></script>
 <script defer src="static/conquistas.js"></script>
 <script defer src="static/projecao.js"></script>
 <script defer src="static/historico.js"></script>
@@ -797,7 +806,7 @@
 <script defer src="static/db-reportes.js"></script>
 <script defer src="static/reportes.js"></script>
 <script defer src="static/home.js?v=80"></script>
-<script defer src="static/app.js?v=104"></script>
+<script defer src="static/app.js?v=105"></script>
 <script defer src="static/manage-colabs-v2.js?v=95"></script>
 <script defer src="static/desafio-diario.js?v=83"></script>
 <script defer src="static/features.js"></script>
