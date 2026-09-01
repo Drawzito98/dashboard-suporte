@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.11.0';
+const APP_VERSION = '1.11.1';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -3464,10 +3464,13 @@ function initNotificacoesUI() {
       const fallback = identity.querySelector('.sidebar-identity-fallback');
       if (fallback) fallback.textContent = firstName.charAt(0).toUpperCase() || 'A';
 
+      const fallbackImageUrl = 'https://agvkmfusyetkicmuvumz.supabase.co/storage/v1/object/public/reportes-imagens/desafio/leader-supremo.png';
       const response = await fetch('/api/desafio?view=admin', { headers: { Authorization: 'Bearer ' + session.access_token } });
-      if (!response.ok) return;
-      const payload = await response.json();
-      const imageUrl = String(payload.leaderImageUrl || '').trim();
+      let imageUrl = fallbackImageUrl;
+      if (response.ok) {
+        const payload = await response.json();
+        imageUrl = String(payload.leaderImageUrl || fallbackImageUrl).trim();
+      }
       if (!imageUrl) {
         const currentAvatar = identity.querySelector('.sidebar-identity-avatar');
         if (currentAvatar?.tagName === 'IMG') {
@@ -3483,6 +3486,12 @@ function initNotificacoesUI() {
       image.src = imageUrl;
       image.alt = 'Foto de ' + firstName;
       image.decoding = 'async';
+      image.addEventListener('error', () => {
+        const initial = document.createElement('span');
+        initial.className = 'sidebar-identity-avatar sidebar-identity-fallback';
+        initial.textContent = firstName.charAt(0).toUpperCase() || 'A';
+        image.replaceWith(initial);
+      }, { once: true });
       identity.querySelector('.sidebar-identity-avatar')?.replaceWith(image);
     } catch (error) {
       console.warn('[Sidebar] Não foi possível carregar a foto do administrador:', error);
