@@ -30,7 +30,7 @@
     return { ass,fin,tra,people,periods,score:scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:0,prod:ass?fin/ass*100:0,tx:ass?tra/ass*100:0,per:people?fin/people:0,perMonth:people?fin/people/periods:0,tma:avgTime(rows,'TMA'),tmr:avgTime(rows,'TMR') };
   }
   const rel = (a,b) => b ? (a-b)/Math.abs(b)*100 : null;
-  function scope() { const g=window.globalFilters||{},p=[]; if(g.setor)p.push(`setor ${g.setor}`); if(g.colaborador)p.push(`colaborador ${g.colaborador}`); if(g.pesquisa)p.push(`busca “${g.pesquisa}”`); return p.length?p.join(' • '):'toda a operação'; }
+  function scope() { const g=window.globalFilters||{},p=[]; if(g.setor&&g.setor!=='all')p.push(`setor ${g.setor}`); if(g.nivel&&g.nivel!=='all')p.push(`nível ${g.nivel}`); if(g.colaborador&&g.colaborador!=='all')p.push(`colaborador ${g.colaborador}`); if(g.pesquisa)p.push(`busca “${g.pesquisa}”`); return p.length?p.join(' • '):'toda a operação'; }
   function kpi(label,value,change,inverse,note,unit=' p.p.') {
     const known=change!==null&&Number.isFinite(change), good=known&&(inverse?change<=0:change>=0), cls=!known?'aa-neutral':good?'aa-good':'aa-bad';
     return `<article class="aa-kpi"><span>${esc(label)}</span><strong>${esc(value)}</strong><b class="${cls}">${known?`${change>0?'↑':change<0?'↓':'→'} ${Math.abs(change).toFixed(1).replace('.',',')}${unit}`:'Sem base anterior'}</b><small>${esc(note)}</small></article>`;

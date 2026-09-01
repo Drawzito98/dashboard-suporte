@@ -495,6 +495,7 @@ function openColabDetailOverlay(nome) {
     showToast(synced ? `Dados de ${nome} salvos!` : `Dados de ${nome} preservados neste dispositivo. A sincronização com o banco está pendente.`, synced ? "success" : "warning", "Colaboradores");
     closeColabDetail();
     renderColaboradores();
+    if (typeof globalFilters !== 'undefined') globalFilters.popularOptions();
   });
 
   document.getElementById("ciLimparBtn").addEventListener("click", async () => {
@@ -508,6 +509,7 @@ function openColabDetailOverlay(nome) {
     showToast(`Dados de ${nome} removidos!`, "success", "Colaboradores");
     closeColabDetail();
     renderColaboradores();
+    if (typeof globalFilters !== 'undefined') globalFilters.popularOptions();
   });
 }
 

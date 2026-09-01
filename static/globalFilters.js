@@ -9,10 +9,20 @@ function _normalizeName(n) {
   return typeof normalizeNameShared === 'function' ? normalizeNameShared(n) : String(n || '').trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s*[^\p{L}\p{N}\s]\s*(?:multi[\s\-]?setor)?\s*$/ui, '').replace(/\s*(?:multi[\s\-]?setor)\s*$/i, '').replace(/[^\p{L}\p{N}\s]/gu, '').trim().toLowerCase();
 }
 
+function _nivelColaborador(nome) {
+  try {
+    const info = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+    const alvo = _normalizeName(nome);
+    const entry = Object.entries(info).find(([key]) => _normalizeName(key) === alvo);
+    return String(entry?.[1]?.nivel || '').trim().toUpperCase();
+  } catch (_) { return ''; }
+}
+
 const globalFilters = {
   periodo: 'all',
   colaborador: 'all',
   setor: 'all',
+  nivel: 'all',
   pesquisa: '',
   mesesSelecionados: [],
   _colabNames: [],
@@ -52,6 +62,10 @@ const globalFilters = {
       data = data.filter(r => isSetorActive(String(r['Setor']).trim()));
     }
 
+    if (this.nivel && this.nivel !== 'all') {
+      data = data.filter(r => _nivelColaborador(r['Atendente']) === this.nivel);
+    }
+
     if (this.colaborador && this.colaborador !== 'all') {
       data = data.filter(r => String(r['Atendente']) === this.colaborador);
     }
@@ -73,6 +87,7 @@ const globalFilters = {
         periodo: this.periodo,
         colaborador: this.colaborador,
         setor: this.setor,
+        nivel: this.nivel,
         pesquisa: this.pesquisa,
         mesesSelecionados: this.mesesSelecionados
       };
@@ -96,6 +111,7 @@ const globalFilters = {
     this.periodo = 'all';
     this.colaborador = 'all';
     this.setor = 'all';
+    this.nivel = 'all';
     this.pesquisa = '';
     this.mesesSelecionados = [];
     this._syncUI();
@@ -118,6 +134,10 @@ const globalFilters = {
           <label class="global-filter-field">
             <span>Setor</span>
             <select id="gfSetor"><option value="all">Todos</option></select>
+          </label>
+          <label class="global-filter-field">
+            <span>Nível</span>
+            <select id="gfNivel"><option value="all">Todos</option></select>
           </label>
           <label class="global-filter-field global-filter-field--flex" style="min-width:180px">
             <span>Colaborador / Busca</span>
@@ -198,8 +218,12 @@ const globalFilters = {
       periodoEl.addEventListener('change', () => this._updateColaboradorOptions());
     }
     const setor = document.getElementById('gfSetor');
+    const nivel = document.getElementById('gfNivel');
     if (setor) {
       setor.addEventListener('change', () => this._updateColaboradorOptions());
+    }
+    if (nivel) {
+      nivel.addEventListener('change', () => this._updateColaboradorOptions());
     }
   },
 
@@ -207,9 +231,11 @@ const globalFilters = {
     const periodo = document.getElementById('gfPeriodo');
     const setor = document.getElementById('gfSetor');
     const pesq = document.getElementById('gfPesquisa');
+    const nivel = document.getElementById('gfNivel');
 
     this.periodo = periodo ? periodo.value : 'all';
     this.setor = setor ? setor.value : 'all';
+    this.nivel = nivel ? nivel.value : 'all';
 
     const q = pesq ? pesq.value.trim() : '';
     if (q && this._colabNames.some(n => n.toLowerCase() === q.toLowerCase())) {
@@ -242,6 +268,7 @@ const globalFilters = {
     };
     setVal('gfPeriodo', this.periodo);
     setVal('gfSetor', this.setor);
+    setVal('gfNivel', this.nivel);
 
     const pesq = document.getElementById('gfPesquisa');
     if (pesq) {
@@ -270,6 +297,7 @@ const globalFilters = {
       }
     }
     if (this.setor && this.setor !== 'all') parts.push(`Setor: ${this.setor}`);
+    if (this.nivel && this.nivel !== 'all') parts.push(`Nível: ${this.nivel}`);
     if (this.colaborador && this.colaborador !== 'all') parts.push(`Colab: ${this.colaborador}`);
     if (this.pesquisa) parts.push(`Busca: ${this.pesquisa}`);
     chips.innerHTML = parts.length
@@ -281,6 +309,7 @@ const globalFilters = {
     const setorEl = document.getElementById('gfSetor');
     if (!setorEl) return;
     const setorVal = setorEl.value;
+    const nivelVal = document.getElementById('gfNivel')?.value || this.nivel || 'all';
 
     let activeMonths = null;
     if (this.periodo && this.periodo !== 'all' && this.periodo !== '__multi__') {
@@ -294,6 +323,7 @@ const globalFilters = {
     for (const r of raw) {
       if (!r || !r['Atendente']) continue;
       if (setorVal !== 'all' && String(r['Setor']) !== setorVal) continue;
+      if (nivelVal !== 'all' && _nivelColaborador(r['Atendente']) !== nivelVal) continue;
       if (activeMonths && !activeMonths.includes(String(r['Mês']))) continue;
       const orig = String(r['Atendente']).trim();
       const key = _normalizeName(orig);
@@ -332,6 +362,12 @@ const globalFilters = {
 
     fill('gfPeriodo', meses, { includeMulti: true });
     fill('gfSetor', filteredSetores);
+    let niveis = [];
+    try {
+      const info = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+      niveis = [...new Set(Object.values(info).map(item => String(item?.nivel || '').trim().toUpperCase()).filter(Boolean))].sort();
+    } catch (_) {}
+    fill('gfNivel', niveis);
     this._updateColaboradorOptions();
 
     const checkList = document.getElementById('gfMonthChecklist');
