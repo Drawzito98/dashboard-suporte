@@ -21,7 +21,9 @@
       (typeof isSetorActive !== 'function' || isSetorActive(row.Setor)));
   }
   function selectedRows() {
-    return ((typeof getDataFiltered === 'function' ? getDataFiltered() : contextRows()) || []).filter(valid);
+    const records = typeof rawRecords !== 'undefined' ? rawRecords : [];
+    const filtered = typeof globalFilters !== 'undefined' && typeof globalFilters.aplicar === 'function' ? globalFilters.aplicar(records) : records;
+    return (filtered || []).filter(valid);
   }
   function calculate(rows) {
     const assumed = rows.reduce((sum,row)=>sum+num(row.Assumidos),0), finished=rows.reduce((sum,row)=>sum+num(row.Finalizados),0), transferred=rows.reduce((sum,row)=>sum+num(row.Transferidos),0);
