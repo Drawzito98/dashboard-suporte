@@ -502,6 +502,8 @@ async function dbAnotacoesLoad() {
         id: r.id,
         data: r.data,
         conteudo: r.conteudo || '',
+        etiquetas: r.etiquetas || '',
+        favorito: Boolean(r.favorito),
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
@@ -529,13 +531,18 @@ async function dbAnotacoesSave(anotacao) {
       await sbClient.from('anotacoes_diarias').update({
         data: anotacao.data,
         conteudo: anotacao.conteudo || '',
+        etiquetas: anotacao.etiquetas || '',
+        favorito: Boolean(anotacao.favorito),
         updated_at: new Date().toISOString()
       }).eq('id', anotacao.id);
     } else {
       await sbClient.from('anotacoes_diarias').insert({
+        id: anotacao.id,
         user_id: uid,
         data: anotacao.data,
-        conteudo: anotacao.conteudo || ''
+        conteudo: anotacao.conteudo || '',
+        etiquetas: anotacao.etiquetas || '',
+        favorito: Boolean(anotacao.favorito)
       });
     }
   } catch (e) { console.error('[db-extra]', e); }

@@ -5370,3 +5370,48 @@ body[data-role="colaborador"].chat-page #chatLogoutBtn{display:inline-flex!impor
 .regra-empty { display:grid; place-items:center; min-height:100px; padding:16px; border:1px dashed var(--border); border-radius:var(--r-md); color:var(--text-muted); font-size:12px; text-align:center; }
 @media (max-width:900px) { .regras-board { grid-template-columns:repeat(3,minmax(280px,82vw)); } }
 @media (max-width:560px) { .regras-header { align-items:flex-start; flex-direction:column; } .regras-header .btn-primary { width:100%; } .regra-form-card .grid-2col { grid-template-columns:1fr; } }
+
+/* Rotina Kanban e biblioteca de anotações */
+.rotina-header-actions,.rotina-repeat,.view-switch,.rotina-card-top,.rotina-card-meta { display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
+.rotina-form-card,.rotina-board-card,.nota-form-card { margin-bottom:var(--s-4); }
+.rotina-form-card textarea,.nota-form-card textarea { width:100%; resize:vertical; }
+.rotina-form-card .field,.nota-form-card .field { margin-bottom:var(--s-3); }
+.rotina-repeat { margin:var(--s-2) 0 var(--s-4); font-size:12px; }
+.rotina-repeat label { display:flex; align-items:center; gap:5px; }
+.rotina-repeat input[type=number] { width:58px; }
+.view-switch .active,.notas-toolbar .active { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
+.rotina-kanban { display:grid; grid-template-columns:repeat(4,minmax(230px,1fr)); gap:var(--s-3); overflow-x:auto; align-items:start; }
+.rotina-column { min-width:0; padding:var(--s-3); background:var(--bg-subtle); border:1px solid var(--border); border-radius:var(--r-lg); }
+.rotina-column > header { display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--s-3); }
+.rotina-column > header h3 { margin:0; font-size:13px; }
+.rotina-column > header span { display:grid; place-items:center; min-width:23px; height:23px; padding:0 5px; border:1px solid var(--border); border-radius:99px; background:var(--bg-card); font-size:10px; font-weight:700; }
+.rotina-dropzone { min-height:120px; display:flex; flex-direction:column; gap:var(--s-2); border-radius:var(--r-md); }
+.rotina-dropzone.drag-over { outline:2px dashed var(--accent); background:color-mix(in srgb,var(--accent) 9%,transparent); }
+.rotina-card { padding:var(--s-3); border:1px solid var(--border); border-radius:var(--r-md); background:var(--bg-card); box-shadow:var(--shadow-sm); cursor:grab; }
+.rotina-card.is-done { opacity:.65; }
+.rotina-card.is-done h4 { text-decoration:line-through; }
+.rotina-card h4 { margin:8px 0 6px; font-size:13px; line-height:1.35; color:var(--text-strong); }
+.rotina-card > p { margin:0 0 9px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; color:var(--text-secondary); font-size:11px; line-height:1.45; }
+.rotina-card-meta { justify-content:space-between; margin-bottom:8px; color:var(--text-muted); font-size:10px; }
+.rotina-card-meta .is-overdue { color:var(--danger); font-weight:700; }
+.rotina-card select { width:100%; padding:5px 7px; font-size:10px; }
+.rotina-prioridade { padding:2px 7px; border-radius:99px; font-size:9px; font-weight:800; text-transform:uppercase; }
+.prioridade-alta { background:color-mix(in srgb,var(--danger) 15%,transparent); color:var(--danger); }
+.prioridade-media { background:color-mix(in srgb,var(--warning) 18%,transparent); color:var(--warning-text,#9a6700); }
+.prioridade-baixa { background:color-mix(in srgb,var(--success) 14%,transparent); color:var(--success); }
+.rotina-lista { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:var(--s-3); }
+.notas-toolbar { display:flex; gap:var(--s-2); margin-bottom:var(--s-4); }
+.notas-toolbar input { flex:1; min-width:150px; }
+.notas-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:var(--s-3); }
+.nota-card { display:flex; flex-direction:column; min-height:190px; padding:var(--s-4); border:1px solid var(--border); border-radius:var(--r-lg); background:var(--bg-card); box-shadow:var(--shadow-sm); }
+.nota-card.is-favorite { border-color:color-mix(in srgb,#f59e0b 55%,var(--border)); }
+.nota-card-top { display:flex; justify-content:space-between; align-items:center; font-size:12px; }
+.nota-fav-btn { border:0; background:transparent; color:#f59e0b; font-size:21px; cursor:pointer; }
+.nota-card > p { flex:1; margin:12px 0; display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-wrap; color:var(--text-secondary); font-size:12px; line-height:1.5; }
+.nota-tags { display:flex; gap:5px; flex-wrap:wrap; }
+.nota-tags span { padding:2px 7px; border-radius:99px; background:color-mix(in srgb,var(--accent) 11%,transparent); color:var(--accent); font-size:9px; font-weight:700; }
+.nota-card footer { display:flex; gap:5px; margin-top:12px; padding-top:10px; border-top:1px solid var(--border); }
+.nota-view { padding:var(--s-5); }
+.nota-view pre { margin-top:var(--s-4); padding:var(--s-4); max-height:60vh; overflow:auto; white-space:pre-wrap; border-radius:var(--r-md); background:var(--bg-subtle); font:13px/1.6 inherit; }
+@media(max-width:1000px){.rotina-kanban{grid-template-columns:repeat(4,minmax(260px,78vw));}.rotina-overview{align-items:flex-start;}}
+@media(max-width:560px){.rotina-header-actions{width:100%;}.rotina-header-actions button{flex:1}.notas-toolbar{flex-direction:column}.notas-grid{grid-template-columns:1fr}}
