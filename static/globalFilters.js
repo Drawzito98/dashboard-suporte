@@ -25,6 +25,8 @@ const globalFilters = {
   nivel: 'all',
   pesquisa: '',
   mesesSelecionados: [],
+  mesInicio: '',
+  mesFim: '',
   _colabNames: [],
 
   _listeners: [],
@@ -53,8 +55,10 @@ const globalFilters = {
     if (!records || !records.length) return records;
     let data = records;
 
-    if (this.periodo && this.periodo !== 'all' && this.periodo !== '__multi__') {
+    if (this.periodo && this.periodo !== 'all' && this.periodo !== '__multi__' && this.periodo !== '__range__') {
       data = data.filter(r => String(r['Mês']) === this.periodo);
+    } else if (this.periodo === '__range__' && this.mesInicio && this.mesFim) {
+      data = data.filter(r => String(r['Mês']) >= this.mesInicio && String(r['Mês']) <= this.mesFim);
     } else if (this.periodo === '__multi__' && Array.isArray(this.mesesSelecionados) && this.mesesSelecionados.length) {
       const set = new Set(this.mesesSelecionados.map(String));
       data = data.filter(r => set.has(String(r['Mês'])));
@@ -93,7 +97,9 @@ const globalFilters = {
         setor: this.setor,
         nivel: this.nivel,
         pesquisa: this.pesquisa,
-        mesesSelecionados: this.mesesSelecionados
+        mesesSelecionados: this.mesesSelecionados,
+        mesInicio: this.mesInicio,
+        mesFim: this.mesFim
       };
       localStorage.setItem(GLOBAL_FILTERS_KEY, JSON.stringify(obj));
     } catch (e) { console.warn('[GlobalFilters] Erro:', e); }
@@ -118,6 +124,8 @@ const globalFilters = {
     this.nivel = 'all';
     this.pesquisa = '';
     this.mesesSelecionados = [];
+    this.mesInicio = '';
+    this.mesFim = '';
     this._syncUI();
     this._notify();
   },
@@ -132,7 +140,7 @@ const globalFilters = {
       <div class="global-filter-inner">
         <div class="global-filter-row">
           <label class="global-filter-field">
-            <span>Período</span>
+            <span>Período mensal</span>
             <select id="gfPeriodo"><option value="all">Todos</option></select>
           </label>
           <label class="global-filter-field">
@@ -152,6 +160,12 @@ const globalFilters = {
             <button class="btn-small" id="gfApplyBtn" type="button" style="padding:6px 12px;font-size:12px">Filtrar</button>
             <button class="btn-small" id="gfClearBtn" type="button" style="padding:6px 12px;font-size:12px">Limpar</button>
           </div>
+        </div>
+        <div id="gfMonthRange" class="global-filter-multi global-filter-range" style="display:none">
+          <div class="multi-label">Intervalo mensal:</div>
+          <label class="global-filter-field"><span>De</span><select id="gfMonthStart"></select></label>
+          <label class="global-filter-field"><span>Até</span><select id="gfMonthEnd"></select></label>
+          <div class="multi-actions"><button type="button" class="btn-small gf-range-shortcut" data-months="3">Últimos 3 meses</button><button type="button" class="btn-small gf-range-shortcut" data-months="6">Últimos 6 meses</button><button type="button" class="btn-small gf-range-shortcut" data-months="12">Últimos 12 meses</button></div>
         </div>
         <div id="gfMonthMulti" class="global-filter-multi" style="display:none">
           <div class="multi-label">Selecione os meses desejados:</div>
@@ -181,13 +195,25 @@ const globalFilters = {
     const periodo = document.getElementById('gfPeriodo');
     if (periodo) {
       periodo.addEventListener('change', () => {
-        const panel = document.getElementById('gfMonthMulti');
-        if (panel) panel.style.display = periodo.value === '__multi__' ? '' : 'none';
-        if (periodo.value !== '__multi__' && periodo.value !== 'all') {
-          this.mesesSelecionados = [];
-        }
+        const multiPanel = document.getElementById('gfMonthMulti');
+        const rangePanel = document.getElementById('gfMonthRange');
+        if (multiPanel) multiPanel.style.display = periodo.value === '__multi__' ? '' : 'none';
+        if (rangePanel) rangePanel.style.display = periodo.value === '__range__' ? '' : 'none';
+        if (periodo.value !== '__multi__') this.mesesSelecionados = [];
       });
     }
+
+    document.querySelectorAll('.gf-range-shortcut').forEach(button => button.addEventListener('click', () => {
+      const options = [...(document.getElementById('gfMonthEnd')?.options || [])].map(o => o.value).filter(Boolean);
+      if (!options.length) return;
+      const count = Number(button.dataset.months || 3);
+      const end = options[options.length - 1];
+      const start = options[Math.max(0, options.length - count)];
+      document.getElementById('gfPeriodo').value = '__range__';
+      document.getElementById('gfMonthStart').value = start;
+      document.getElementById('gfMonthEnd').value = end;
+      this._collectAndNotify();
+    }));
 
     const selAll = document.getElementById('gfSelectAllMonths');
     const clearM = document.getElementById('gfClearMonths');
@@ -240,6 +266,11 @@ const globalFilters = {
     this.periodo = periodo ? periodo.value : 'all';
     this.setor = setor ? setor.value : 'all';
     this.nivel = nivel ? nivel.value : 'all';
+    this.mesInicio = document.getElementById('gfMonthStart')?.value || '';
+    this.mesFim = document.getElementById('gfMonthEnd')?.value || '';
+    if (this.periodo === '__range__' && this.mesInicio > this.mesFim) {
+      const temp = this.mesInicio; this.mesInicio = this.mesFim; this.mesFim = temp;
+    }
 
     const q = pesq ? pesq.value.trim() : '';
     if (q && this._colabNames.some(n => n.toLowerCase() === q.toLowerCase())) {
@@ -273,12 +304,16 @@ const globalFilters = {
     setVal('gfPeriodo', this.periodo);
     setVal('gfSetor', this.setor);
     setVal('gfNivel', this.nivel);
+    setVal('gfMonthStart', this.mesInicio);
+    setVal('gfMonthEnd', this.mesFim);
 
     const pesq = document.getElementById('gfPesquisa');
     if (pesq) {
       pesq.value = this.colaborador !== 'all' ? this.colaborador : this.pesquisa;
     }
 
+    const rangePanel = document.getElementById('gfMonthRange');
+    if (rangePanel) rangePanel.style.display = this.periodo === '__range__' ? '' : 'none';
     const panel = document.getElementById('gfMonthMulti');
     if (panel) panel.style.display = this.periodo === '__multi__' ? '' : 'none';
     if (this.periodo === '__multi__') {
@@ -296,6 +331,8 @@ const globalFilters = {
       if (this.periodo === '__multi__') {
         const sel = Array.isArray(this.mesesSelecionados) ? this.mesesSelecionados : [];
         parts.push(`Período: ${sel.length ? sel.slice().sort().join(', ') : 'Nenhum'}`);
+      } else if (this.periodo === '__range__') {
+        parts.push(`Período: ${this.mesInicio || '—'} até ${this.mesFim || '—'}`);
       } else {
         parts.push(`Período: ${this.periodo}`);
       }
@@ -316,8 +353,10 @@ const globalFilters = {
     const nivelVal = document.getElementById('gfNivel')?.value || this.nivel || 'all';
 
     let activeMonths = null;
-    if (this.periodo && this.periodo !== 'all' && this.periodo !== '__multi__') {
+    if (this.periodo && this.periodo !== 'all' && this.periodo !== '__multi__' && this.periodo !== '__range__') {
       activeMonths = [this.periodo];
+    } else if (this.periodo === '__range__' && this.mesInicio && this.mesFim) {
+      activeMonths = [...new Set((rawRecords || []).map(r => String(r['Mês'] || '')).filter(m => m >= this.mesInicio && m <= this.mesFim))];
     } else if (this.periodo === '__multi__' && Array.isArray(this.mesesSelecionados) && this.mesesSelecionados.length) {
       activeMonths = this.mesesSelecionados;
     }
@@ -358,13 +397,23 @@ const globalFilters = {
       if (!sel) return;
       const current = sel.value;
       let html = '<option value="all">Todos</option>';
-      if (opts && opts.includeMulti) html += '<option value="__multi__">Seleção múltipla</option>';
+      if (opts && opts.includeRange) html += '<option value="__range__">Intervalo de meses</option>';
+      if (opts && opts.includeMulti) html += '<option value="__multi__">Meses específicos (avançado)</option>';
       html += vals.map(v => `<option value="${String(v).replace(/"/g, '&quot;')}">${String(v).replace(/"/g, '&quot;')}</option>`).join('');
       sel.innerHTML = html;
       if (current && [...sel.options].some(o => o.value === current)) sel.value = current;
     };
 
-    fill('gfPeriodo', meses, { includeMulti: true });
+    fill('gfPeriodo', meses, { includeRange: true, includeMulti: true });
+    const monthOptions = meses.map(m => `<option value="${String(m).replace(/"/g, '&quot;')}">${String(m).replace(/"/g, '&quot;')}</option>`).join('');
+    const rangeStart = document.getElementById('gfMonthStart');
+    const rangeEnd = document.getElementById('gfMonthEnd');
+    if (rangeStart) rangeStart.innerHTML = monthOptions;
+    if (rangeEnd) rangeEnd.innerHTML = monthOptions;
+    if (!this.mesInicio && meses.length) this.mesInicio = meses[Math.max(0, meses.length - 5)];
+    if (!this.mesFim && meses.length) this.mesFim = meses[meses.length - 1];
+    if (rangeStart) rangeStart.value = this.mesInicio;
+    if (rangeEnd) rangeEnd.value = this.mesFim;
     fill('gfSetor', filteredSetores);
     let niveis = [];
     try {
@@ -381,6 +430,8 @@ const globalFilters = {
       ).join('');
     }
 
+    const rangePanel = document.getElementById('gfMonthRange');
+    if (rangePanel) rangePanel.style.display = this.periodo === '__range__' ? '' : 'none';
     const panel = document.getElementById('gfMonthMulti');
     if (panel) panel.style.display = this.periodo === '__multi__' ? '' : 'none';
     if (this.periodo === '__multi__' && Array.isArray(this.mesesSelecionados)) {

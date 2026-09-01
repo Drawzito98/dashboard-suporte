@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.12.1';
+const APP_VERSION = '1.13.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -921,6 +921,10 @@ function syncGlobalState() {
   if (typeof searchAtendenteInput !== 'undefined' && searchAtendenteInput) searchAtendenteInput.value = globalFilters.pesquisa || '';
   if (typeof mesSelect !== 'undefined' && mesSelect) {
     const p = globalFilters.periodo || 'all';
+    if (p === '__range__') {
+      mesSelect.value = 'all';
+      selectedMonths = [];
+    } else
     if (p === '__multi__') {
       mesSelect.value = '__multi__';
       selectedMonths = Array.isArray(globalFilters.mesesSelecionados) ? globalFilters.mesesSelecionados.slice() : [];
@@ -1029,7 +1033,7 @@ function updateView() {
 function filtersActive() {
   const compareActive = compareChosen && compareChosen.length>0;
   const q = (searchAtendenteInput?.value || '').trim();
-  return setorSelect.value !== 'all' || monthFilterActive() || (arquivoSelect && arquivoSelect.value !== 'all') || compareActive || (atendenteSelect && atendenteSelect.value !== 'all') || q.length>0 || (typeof globalFilters !== 'undefined' && globalFilters.nivel && globalFilters.nivel !== 'all');
+  return setorSelect.value !== 'all' || monthFilterActive() || (arquivoSelect && arquivoSelect.value !== 'all') || compareActive || (atendenteSelect && atendenteSelect.value !== 'all') || q.length>0 || (typeof globalFilters !== 'undefined' && ((globalFilters.nivel && globalFilters.nivel !== 'all') || (globalFilters.periodo && globalFilters.periodo !== 'all')));
 }
 
 

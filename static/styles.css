@@ -5415,3 +5415,10 @@ body[data-role="colaborador"].chat-page #chatLogoutBtn{display:inline-flex!impor
 .nota-view pre { margin-top:var(--s-4); padding:var(--s-4); max-height:60vh; overflow:auto; white-space:pre-wrap; border-radius:var(--r-md); background:var(--bg-subtle); font:13px/1.6 inherit; }
 @media(max-width:1000px){.rotina-kanban{grid-template-columns:repeat(4,minmax(260px,78vw));}.rotina-overview{align-items:flex-start;}}
 @media(max-width:560px){.rotina-header-actions{width:100%;}.rotina-header-actions button{flex:1}.notas-toolbar{flex-direction:column}.notas-grid{grid-template-columns:1fr}}
+
+/* Intervalo mensal nos filtros globais */
+.global-filter-range { display:flex; align-items:flex-end; gap:var(--s-3); flex-wrap:wrap; }
+.global-filter-range .multi-label { flex:0 0 100%; margin:0; }
+.global-filter-range .global-filter-field { min-width:150px; }
+.global-filter-range .multi-actions { margin:0; flex-wrap:wrap; }
+@media(max-width:560px){.global-filter-range .global-filter-field{flex:1 1 42%;min-width:0}.global-filter-range .multi-actions{width:100%}.global-filter-range .multi-actions button{flex:1 1 30%}}
