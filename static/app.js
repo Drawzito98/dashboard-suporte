@@ -2661,7 +2661,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (homeScreen) homeScreen.style.display = "none";
     if (appScreen) appScreen.style.display = "block";
     setLoading(false);
-    setTimeout(() => window.openChat?.(), 80);
     return;
   }
 

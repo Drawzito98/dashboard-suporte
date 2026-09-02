@@ -198,7 +198,6 @@
             <div class="notif-panel-body" id="notifPanelBody"></div>
           </div>
         </div>
-        <button class="btn-small chat-launch" id="chatBtnTop" type="button" title="Chat privado com colaboradores" onclick="document.getElementById('chatOverlay')?.classList.add('open')">💬 Chat<span class="chat-unread-badge" id="chatUnreadBadge"></span></button>
         <button class="btn-small theme-toggle" id="themeToggle" type="button" aria-label="Alternar tema">
         <span class="theme-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
           <span class="theme-label">Alternar tema</span>
@@ -316,7 +315,6 @@
               <button class="btn-small" id="feriasBtn" type="button" title="Registrar férias de colaboradores"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-4-4-4-7c0-2.2 1.8-4 4-4s4 1.8 4 4c0 3-4 7-4 7z"/><circle cx="12" cy="11" r="1"/><path d="M19 17.67c0-3.87-3.13-7-7-7s-7 3.13-7 7"/><path d="M8 17.67c0-3.87 3.13-7 7-7"/></svg> Férias</button>
               <button class="btn-small" id="linksBtn" type="button" title="Links importantes"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Links</button>
               <button class="btn-small" id="reportesBtn" type="button" title="Mensagens de usuários externos"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Reportes<span class="tab-badge" id="reportesBadgeSide"></span></button>
-              <button class="btn-small chat-launch" id="chatBtn" type="button" title="Chat privado com colaboradores">💬 Chat<span class="chat-unread-badge"></span></button>
               <button class="btn-small" id="feedbacksBtn" type="button" title="Gerar feedbacks por colaborador"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Feedbacks</button>
               <button class="btn-small" id="relatorioFeedbackBtn" type="button" title="Relatório de feedback por colaborador com PDF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Relatório Feedback</button>
             </div>
@@ -691,14 +689,6 @@
   </div>
 </div>
 
-<!-- Chat privado -->
-<div class="colab-detail-overlay" id="chatOverlay" role="dialog" aria-modal="true" aria-label="Chat privado">
-  <div class="colab-detail-panel" style="max-width:900px">
-    <button class="colab-detail-close" id="chatOverlayClose" type="button" aria-label="Fechar">✕</button>
-    <button class="btn-small chat-logout-btn" id="chatLogoutBtn" type="button" aria-label="Sair e trocar de conta">Sair</button>
-    <div id="chatContent"></div>
-  </div>
-</div>
 <!-- Feedbacks Overlay -->
 <div class="colab-detail-overlay" id="feedbacksOverlay" role="dialog" aria-modal="true" aria-label="Feedbacks">
   <div class="colab-detail-panel" style="max-width:900px">
@@ -795,7 +785,6 @@
 <script defer src="static/bonus.js"></script>
 <script defer src="static/relatorio-setorial.js?v=85"></script>
 <script defer src="static/avaliacao.js"></script>
-<script defer src="static/chat.js?v=16"></script>
 <script defer src="static/relatorio-feedback.js"></script>
 <script defer src="static/colaboradores.js?v=100"></script>
 <script defer src="static/mapeamento-time.js"></script>
