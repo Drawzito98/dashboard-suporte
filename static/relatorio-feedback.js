@@ -378,8 +378,13 @@ function rfRenderForm() {
   [colabSel, mesSel, obsTa, fbTa].forEach(el => el.addEventListener('input', saveCfg));
   document.querySelectorAll('.rf-metrica-cb').forEach(cb => cb.addEventListener('change', saveCfg));
 
-  document.getElementById('rfGerarSugestaoBtn').addEventListener('click', () => {
+  document.getElementById('rfGerarSugestaoBtn').addEventListener('click', async () => {
     if (!colabSel.value) { showToast('Selecione um colaborador primeiro.', 'warn'); return; }
+    const button = document.getElementById('rfGerarSugestaoBtn');
+    button.disabled = true;
+    try { await AtividadesMes.load(); }
+    catch { showToast('Não foi possível carregar as atividades. Tente novamente.', 'error'); return; }
+    finally { button.disabled = false; }
     const sugestao = gerarSugestaoFeedback(colabSel.value, mesSel.value, obsTa.value);
     fbTa.value = sugestao;
     saveCfg();

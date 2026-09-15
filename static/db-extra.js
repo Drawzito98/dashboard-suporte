@@ -496,7 +496,7 @@ async function dbAnotacoesLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(ANOTACOES_LOCAL_KEY, []);
-    const { data } = await sbClient.from('anotacoes_diarias').select('*').eq('user_id', uid).order('data', { ascending: false });
+    const { data } = await sbClient.from('anotacoes_diarias').select('*').eq('user_id', uid).not('conteudo', 'like', 'atividade-colaborador:v1:%').order('data', { ascending: false });
     if (data && Array.isArray(data) && data.length > 0) {
       const list = data.map(r => ({
         id: r.id,

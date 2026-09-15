@@ -1,0 +1,68 @@
+<!doctype html><meta charset="utf-8"><title>Teste de atividades</title>
+<button id="atividadesMesBtn">Atividades</button><div id="feedbacksOverlay"><div id="feedbacksOverlayContent"></div></div><pre id="result">RUNNING</pre>
+<script>
+const rawRecords = [{Atendente:'Ana', 'Mês':'2026-09'}, {Atendente:'Bia', 'Mês':'2026-09'}];
+const isAdmin = () => true, isAggregateName = () => false, isColabActive = () => true;
+const _getUserId = async () => 'gestor-1';
+const showToast = () => {}, escapeHtml = text => String(text).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+window.confirm = () => true;
+let rows = [], fail = false;
+const sbClient = { from(table) {
+  if (table !== 'anotacoes_diarias') throw Error('Tabela inesperada');
+  let mode = 'read', value, filters = [];
+  const q = {
+    select(){ return q; }, eq(key,val){ filters.push(row=>row[key]===val); return q; },
+    like(key,val){ filters.push(row=>row[key].startsWith(val.slice(0,-1))); return q; },
+    order(){ return q; }, range(){ return q; },
+    insert(row){ mode='insert'; value=row; return q; }, update(row){ mode='update'; value=row; return q; }, delete(){mode='delete';return q;},
+    single(){return q;}, then(resolve,reject){
+      if(fail) return Promise.resolve({error:Error('offline')}).then(resolve,reject);
+      const matching=rows.filter(row=>filters.every(f=>f(row)));
+      if(mode==='insert') {rows.push(value);return Promise.resolve({data:{id:value.id}}).then(resolve,reject);}
+      if(mode==='update') matching.forEach(row=>Object.assign(row,value));
+      if(mode==='delete') rows=rows.filter(row=>!matching.includes(row));
+      return Promise.resolve({data:mode==='read'?matching:matching[0]}).then(resolve,reject);
+    }
+  };return q;
+}};
+const FEEDBACKS_LOCAL_KEY='test_feedbacks';
+</script>
+<script src="../static/atividades-mes.js"></script><script src="../static/feedbacks.js"></script>
+<script>
+window.addEventListener('DOMContentLoaded', async () => {
+  const tick = () => new Promise(resolve=>setTimeout(resolve,0));
+  const check = (condition,message) => {if(!condition)throw Error(message);};
+  const get = id => document.getElementById(id);
+  const change = (id,value) => { get(id).value=value; get(id).dispatchEvent(new Event('change')); };
+  async function save(description,type='positivo') { get('atividadeDescricao').value=description;get('atividadeTipo').value=type;get('atividadeForm').dispatchEvent(new Event('submit',{cancelable:true}));await tick(); }
+  try {
+    localStorage.removeItem('sistema_feedback_editando_v1');
+    get('atividadesMesBtn').click();await tick();
+    change('atividadeMes','2026-09');change('atividadePessoa','Ana');
+    await save('Ajudou <script>equipe</'+'script>');
+    check(rows.length===1 && rows[0].user_id==='gestor-1','persistência privada');
+    check(document.querySelectorAll('.atividade-positivo').length===1,'registro verde');
+    check(!document.querySelector('.atividade-item p script'),'escape HTML');
+    document.querySelector('[data-edit]').click();await save('Precisa acompanhar prazos','atencao');
+    check(rows.length===1 && document.querySelector('.atividade-atencao'),'edição vermelha');
+    change('atividadeMes','2026-08');check(!document.querySelector('.atividade-item'),'filtro de mês');
+    change('atividadeMes','2026-09');change('atividadePessoa','Bia');check(!document.querySelector('.atividade-item'),'filtro de pessoa');
+    await save('Ajudou no treinamento');
+    fail=true;await save('Não deve ser salvo');check(rows.length===2 && get('atividadeErro').textContent,'falha não confirma salvamento');
+    check(get('atividadeDescricao').value==='Não deve ser salvo','preserva descrição ao falhar');
+    fail=false;get('atividadeDescricao').value='';
+    change('atividadePessoa','Ana');
+    await AtividadesMes.load();
+    // Sem métricas: atividades ainda devem permitir gerar o feedback.
+    rawRecords.length=0;
+    await openFeedbacksOverlay();
+    change('fbColabSelect','Ana');change('fbMesSelect','2026-09');get('fbGerarBtn').click();await tick();
+    check(get('fbFinalTexto').value.includes('Precisa acompanhar prazos'),'integração feedback');
+    check(!get('fbFinalTexto').value.includes('treinamento'),'feedback não mistura pessoas');
+    document.querySelector('[data-delete]').click();await tick();
+    check(rows.length===1 && !document.querySelector('.atividade-item'),'exclusão');
+    await AtividadesMes.load();check(!AtividadesMes.feedback('Ana','2026-09'),'exclusão refletida no feedback');
+    get('result').textContent='PASS: criação, edição, exclusão, filtros, privacidade, falha de rede, HTML e feedback sem métricas';
+  } catch(error) {get('result').textContent='FAIL: '+error.stack;}
+});
+</script>

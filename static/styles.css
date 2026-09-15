@@ -5363,3 +5363,14 @@ html[data-theme="dark"] .so-report{background:#0f141d!important;color:#e2e8f0!im
 
 .preview-sort-column { appearance: none; background: none; border: 0; padding: 4px 0; color: inherit; font: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; white-space: nowrap; }
 .preview-sort-column:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+
+.atividades-filters { display: flex; flex-wrap: wrap; gap: 16px; margin: 20px 0; }
+.atividades-filters .field { flex: 1; min-width: 180px; }
+#atividadeForm { display: grid; gap: 12px; margin-bottom: 24px; }
+.atividades-history { display: grid; gap: 12px; }
+.atividade-item { padding: 16px; border: 1px solid var(--border); border-left: 5px solid; border-radius: 8px; }
+.atividade-positivo { border-left-color: #16a34a; }
+.atividade-atencao { border-left-color: #dc2626; }
+.atividade-item > span { display: block; margin-top: 6px; }
+.atividade-item p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0; }
+#atividadeErro { color: var(--text-primary); }

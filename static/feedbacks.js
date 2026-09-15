@@ -55,12 +55,13 @@ function _trend(records, colaborador, key, months) {
 // ─── Geração de sugestão ────────────────────────────────────────
 
 function gerarSugestaoFeedback(colaborador, mes, anotacoesTexto) {
-  const data = _fbData();
+  const data = typeof rawRecords !== 'undefined' ? (rawRecords || []) : _fbData();
+  const atividades = AtividadesMes.feedback(colaborador, mes);
   let records = data.filter(r => r && r['Atendente'] === colaborador);
-  if (mes && mes !== 'all') records = records.filter(r => r['Mês'] === mes);
+  if (mes && mes !== 'all') records = records.filter(r => AtividadesMes.monthKey(r['Mês']) === AtividadesMes.monthKey(mes));
 
   if (!records.length) {
-    return `Não encontrei seus dados no período selecionado. Pode ser que você não tenha registros ou o período esteja vazio.`;
+    return atividades ? `Oi ${colaborador}, segue o registro do período selecionado.\n\n${atividades}` : 'Não encontrei seus dados no período selecionado.';
   }
 
   const totalFin = _sum(records, 'Finalizados');
@@ -69,7 +70,7 @@ function gerarSugestaoFeedback(colaborador, mes, anotacoesTexto) {
   const scores = records.map(r => parseFloat(r['SCORE'])).filter(s => s != null && !isNaN(s));
   const avgScore = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
-  const teamRecords = mes && mes !== 'all' ? data.filter(r => r['Mês'] === mes) : data;
+  const teamRecords = mes && mes !== 'all' ? data.filter(r => AtividadesMes.monthKey(r['Mês']) === AtividadesMes.monthKey(mes)) : data;
   const teamFin = _avg(teamRecords, 'Finalizados');
   const teamScores = teamRecords.map(r => parseFloat(r['SCORE'])).filter(s => s != null && !isNaN(s));
   const teamAvgScore = teamScores.length ? teamScores.reduce((a, b) => a + b, 0) / teamScores.length : 0;
@@ -195,6 +196,7 @@ function gerarSugestaoFeedback(colaborador, mes, anotacoesTexto) {
 
   partes.push(fechamento);
 
+  if (atividades) partes.push('\n' + atividades);
   return partes.join('\n');
 }
 
@@ -206,14 +208,14 @@ function renderFeedbacks() {
   const container = document.getElementById('feedbacksOverlayContent') || document.getElementById('feedbacksContent');
   if (!container) return;
 
-  const data = _fbData();
-  if (!data || !data.length) {
+  const data = typeof rawRecords !== 'undefined' ? (rawRecords || []) : _fbData();
+  if ((!data || !data.length) && !AtividadesMes.months().length) {
     container.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado disponível</div><div class="empty-sub">Importe um CSV para começar.</div></div>';
     return;
   }
 
-  const colabs = _uniqueColabs(data);
-  const meses = _uniqueMonths(data);
+  const colabs = AtividadesMes.people();
+  const meses = [...new Set([..._uniqueMonths(typeof rawRecords !== 'undefined' ? rawRecords : data).map(AtividadesMes.monthKey).filter(Boolean), ...AtividadesMes.months()])].sort();
   const saved = JSON.parse(localStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
 
   const editingRaw = localStorage.getItem(FB_EDITING_KEY);
@@ -325,7 +327,8 @@ function renderFeedbacks() {
 // ─── Event Bindings ─────────────────────────────────────────────
 
 function bindFbEvents(colabs, meses, saved) {
-  const container = document.getElementById('feedbacksContent');
+  const container = document.getElementById('feedbacksOverlayContent') || document.getElementById('feedbacksContent');
+  if (!container) return;
   const colabSel = document.getElementById('fbColabSelect');
   const mesSel = document.getElementById('fbMesSelect');
   const gerarBtn = document.getElementById('fbGerarBtn');
@@ -344,11 +347,15 @@ function bindFbEvents(colabs, meses, saved) {
     colabSel.addEventListener('change', updateGerarBtn);
     mesSel.addEventListener('change', updateGerarBtn);
 
-    gerarBtn.addEventListener('click', () => {
+    gerarBtn.addEventListener('click', async () => {
       const colab = colabSel.value;
       const mes = mesSel.value;
       if (!colab) return;
       const anotacoesAtuais = document.getElementById('fbAnotacoesTexto')?.value || '';
+      gerarBtn.disabled = true;
+      try { await AtividadesMes.load(); }
+      catch { showToast('Não foi possível carregar as atividades. Tente novamente.', 'error'); return; }
+      finally { gerarBtn.disabled = false; }
       const sugestao = gerarSugestaoFeedback(colab, mes, anotacoesAtuais);
       const fbArea = document.getElementById('fbSugestaoArea');
       if (fbArea) {
@@ -519,14 +526,15 @@ function criarOverlay() {
 
 // ─── Overlay ────────────────────────────────────────────────────
 
-function openFeedbacksOverlay() {
+async function openFeedbacksOverlay() {
   const overlay = document.getElementById('feedbacksOverlay');
   if (!overlay) return;
   const content = document.getElementById('feedbacksOverlayContent');
   if (!content) return;
   content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
   overlay.classList.add('open');
-  setTimeout(() => renderFeedbacks(), 50);
+  try { await AtividadesMes.load(); renderFeedbacks(); }
+  catch { content.textContent = 'Não foi possível carregar as atividades para o feedback. Feche e tente novamente.'; }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
