@@ -1522,7 +1522,9 @@ function renderPreviewDisplay(rows) {
   let headerHtml = '';
   keys.forEach(k => {
     const thClass = k === 'Observações' ? ' class="cell-obs"' : '';
-    headerHtml += `<th${thClass}>${escapeHtml(k)}</th>`;
+    const active = currentSort.key === k;
+    const direction = active ? (currentSort.desc ? 'descending' : 'ascending') : 'none';
+    headerHtml += `<th${thClass} aria-sort="${direction}"><button type="button" class="preview-sort-column" data-sort-index="${keys.indexOf(k)}" title="Clique para ordenar">${escapeHtml(k)} <span aria-hidden="true">${active ? (currentSort.desc ? '▼' : '▲') : '↕'}</span></button></th>`;
     if (k === 'Finalizados') {
       headerHtml += '<th>Var.%</th>';
     }
@@ -1600,6 +1602,15 @@ function renderPreviewDisplay(rows) {
   });
   html.push('</tbody></table></div>');
   previewTable.innerHTML = html.join('');
+  previewTable.querySelectorAll('[data-sort-index]').forEach(button => {
+    button.addEventListener('click', () => {
+      const key = keys[Number(button.dataset.sortIndex)];
+      currentSort.desc = currentSort.key === key ? !currentSort.desc : true;
+      currentSort.key = key;
+      renderPreview(previewRows);
+      previewTable.querySelector(`[data-sort-index="${keys.indexOf(key)}"]`)?.focus();
+    });
+  });
 
   // Highlight rows based on performance
   const _tbody = previewTable.querySelector('tbody');
@@ -1730,6 +1741,13 @@ function sortRows(rows, key, desc=true) {
   const regular = rows.filter(r => r && !isAggregateName(r['Atendente']));
 
   const isDuration = key === 'TMA' || key === 'TMR';
+  const numericValue = value => {
+    if (value === null || value === undefined || String(value).trim() === '') return null;
+    let text = String(value).trim().replace(/\s/g, '').replace(/%$/, '');
+    if (text.includes(',')) text = text.replace(/\./g, '').replace(',', '.');
+    const number = Number(text);
+    return Number.isFinite(number) ? number : null;
+  };
   // Sort only regular rows
   regular.sort((a,b) => {
     const va = a && a[key];
@@ -1738,16 +1756,16 @@ function sortRows(rows, key, desc=true) {
     if (isDuration) {
       na = parseDurationToSeconds(va);
       nb = parseDurationToSeconds(vb);
-      if (na === null) na = -Infinity;
-      if (nb === null) nb = -Infinity;
     } else {
-      na = (va === null || va === undefined || va === '') ? -Infinity : Number(String(va).replace(/[^0-9.-]/g, ''));
-      nb = (vb === null || vb === undefined || vb === '') ? -Infinity : Number(String(vb).replace(/[^0-9.-]/g, ''));
+      na = numericValue(va);
+      nb = numericValue(vb);
     }
-    if (isNaN(na) || isNaN(nb)) {
+    if (na === null && nb === null) {
       const sa = String(va || '').localeCompare(String(vb || ''), 'pt');
       return desc ? -sa : sa;
     }
+    if (na === null) return 1;
+    if (nb === null) return -1;
     return desc ? (nb - na) : (na - nb);
   });
 
