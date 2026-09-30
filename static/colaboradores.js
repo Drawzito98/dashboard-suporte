@@ -10,6 +10,7 @@ function renderColaboradores() {
     .map(r => String(r["Atendente"]).trim());
   const colabs = [...new Set([...recordNames, ...Object.keys(colabInfo)])]
     .filter(nome => nome && isColabActive(nome))
+    .filter(nome => typeof globalFilters === 'undefined' || globalFilters.correspondeNivel({ Atendente: nome }))
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   // Mapa setor por colaborador
@@ -27,7 +28,8 @@ function renderColaboradores() {
   html += `<div class="colab-list-header"><div><h3>Meus Colaboradores</h3><p>${colabs.length} colaborador(es) ativos · ${Object.keys(colabInfo).length} com cadastro</p></div><button class="btn-primary" id="novoColaboradorBtn" type="button">+ Novo colaborador</button></div>`;
 
   if (!colabs.length) {
-    html += '<div class="empty-state" style="padding:var(--s-5)"><div class="empty-title">Nenhum colaborador</div><div class="empty-sub">Cadastre um colaborador ou importe um CSV para começar.</div></div>';
+    const nivelAtivo = typeof globalFilters !== 'undefined' && globalFilters.nivel !== 'all';
+    html += `<div class="empty-state" style="padding:var(--s-5)"><div class="empty-title">${nivelAtivo ? 'Nenhum colaborador neste nível' : 'Nenhum colaborador'}</div><div class="empty-sub">${nivelAtivo ? 'Selecione outro nível ou limpe os filtros para ver a equipe.' : 'Cadastre um colaborador ou importe um CSV para começar.'}</div></div>`;
     container.innerHTML = html;
     document.getElementById("novoColaboradorBtn")?.addEventListener("click", openNovoColaboradorModal);
     return;

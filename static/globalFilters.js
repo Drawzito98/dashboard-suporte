@@ -253,7 +253,10 @@ const globalFilters = {
       setor.addEventListener('change', () => this._updateColaboradorOptions());
     }
     if (nivel) {
-      nivel.addEventListener('change', () => this._updateColaboradorOptions());
+      nivel.addEventListener('change', () => {
+        this._collectAndNotify();
+        this._updateColaboradorOptions();
+      });
     }
   },
 
@@ -387,9 +390,9 @@ const globalFilters = {
   },
 
   popularOptions() {
-    if (!rawRecords || !rawRecords.length) return;
-    const meses = [...new Set(rawRecords.filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
-    const setores = [...new Set(rawRecords.filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
+    const records = rawRecords || [];
+    const meses = [...new Set(records.filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
+    const setores = [...new Set(records.filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
     const filteredSetores = typeof isSetorActive === 'function' ? setores.filter(s => isSetorActive(s)) : setores;
 
     const fill = (id, vals, opts) => {

@@ -2686,6 +2686,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof initDbExtra === 'function') {
     setLoading(true, 'Carregando dados...');
     initDbExtra().then(() => {
+      if (typeof globalFilters !== 'undefined') {
+        globalFilters.popularOptions();
+        globalFilters._notify();
+      }
       setLoading(false);
       if (isAdmin() && typeof dbNotificacoesLoad === 'function') {
             dbNotificacoesLoad().then(initNotificacoesUI).catch(() => {});
@@ -3234,6 +3238,7 @@ if (!rawRecords || !rawRecords.length) {
         if (tab === 'home' && typeof onHomeTabActivated === 'function') onHomeTabActivated();
         else if (tab === 'dashboard') { updateView(); const compSec = document.getElementById('comparativosDashboardSection'); if (compSec && compSec.style.display !== 'none' && typeof renderComparativos === 'function') renderComparativos(); }
         else if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') { onGamificationTabActivated(); if (typeof onMetasTabActivated === 'function') onMetasTabActivated(); }
+        else if (tab === 'colaboradores' && typeof renderColaboradores === 'function') renderColaboradores();
         else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();
         else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
         else if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
