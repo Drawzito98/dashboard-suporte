@@ -1091,6 +1091,9 @@ async function dbColabInfoLoad() {
           feito_relevante: r.feito_relevante || '',
           feito_descricao: r.feito_descricao || '',
           nivel: r.nivel || '',
+          salario: Object.prototype.hasOwnProperty.call(r, 'salario')
+            ? (r.salario == null ? null : Number(r.salario))
+            : (localMap[r.nome]?.salario ?? null),
           updatedAt: r.updated_at
         };
         const localInfo = localMap[r.nome] || {};
@@ -1125,40 +1128,33 @@ async function dbColabInfoSave(nome, data) {
     if (!uid) return false;
     const existing = await sbClient.from('colaboradores_info').select('id').eq('user_id', uid).eq('nome', nome).maybeSingle();
     if (existing?.error) throw existing.error;
-    let result;
-    if (existing?.data?.id) {
-      result = await sbClient.from('colaboradores_info').update({
-        data_aniversario: data.data_aniversario || null,
-        data_admissao: data.data_admissao || null,
-        email: data.email || '',
-        setor_atual: data.setor_atual || '',
-        tarefas_desempenhadas: data.tarefas_desempenhadas || '',
-        objetivos_futuros: data.objetivos_futuros || '',
-        observacoes: data.observacoes || '',
-        conduta_negativa: data.conduta_negativa || '',
-        conduta_motivo: data.conduta_motivo || '',
-        feito_relevante: data.feito_relevante || '',
-        feito_descricao: data.feito_descricao || '',
-        nivel: data.nivel || '',
-        updated_at: new Date().toISOString()
-      }).eq('id', existing.data.id);
-    } else {
-      result = await sbClient.from('colaboradores_info').insert({
-        user_id: uid,
-        nome,
-        data_aniversario: data.data_aniversario || null,
-        data_admissao: data.data_admissao || null,
-        email: data.email || '',
-        setor_atual: data.setor_atual || '',
-        tarefas_desempenhadas: data.tarefas_desempenhadas || '',
-        objetivos_futuros: data.objetivos_futuros || '',
-        observacoes: data.observacoes || '',
-        conduta_negativa: data.conduta_negativa || '',
-        conduta_motivo: data.conduta_motivo || '',
-        feito_relevante: data.feito_relevante || '',
-        feito_descricao: data.feito_descricao || '',
-        nivel: data.nivel || ''
-      });
+    const payload = {
+      data_aniversario: data.data_aniversario || null,
+      data_admissao: data.data_admissao || null,
+      email: data.email || '',
+      setor_atual: data.setor_atual || '',
+      tarefas_desempenhadas: data.tarefas_desempenhadas || '',
+      objetivos_futuros: data.objetivos_futuros || '',
+      observacoes: data.observacoes || '',
+      conduta_negativa: data.conduta_negativa || '',
+      conduta_motivo: data.conduta_motivo || '',
+      feito_relevante: data.feito_relevante || '',
+      feito_descricao: data.feito_descricao || '',
+      nivel: data.nivel || '',
+      salario: data.salario == null || data.salario === '' ? null : Number(data.salario),
+      updated_at: new Date().toISOString()
+    };
+    const persist = values => existing?.data?.id
+      ? sbClient.from('colaboradores_info').update(values).eq('id', existing.data.id)
+      : sbClient.from('colaboradores_info').insert({ user_id: uid, nome, ...values });
+    let result = await persist(payload);
+    // Compatibilidade enquanto a migration_v45 ainda não foi aplicada.
+    if (result?.error && ['PGRST204', '42703'].includes(result.error.code)
+        && /salario/i.test(result.error.message || '')) {
+      const { salario, ...withoutSalary } = payload;
+      result = await persist(withoutSalary);
+      if (result?.error) throw result.error;
+      return salario == null;
     }
     if (result?.error) throw result.error;
     return true;
@@ -1405,7 +1401,8 @@ async function migrateLocalToSupabase() {
               conduta_motivo: info.conduta_motivo || '',
               feito_relevante: info.feito_relevante || '',
               feito_descricao: info.feito_descricao || '',
-              nivel: info.nivel || ''
+              nivel: info.nivel || '',
+              ...(info.salario == null || info.salario === '' ? {} : { salario: Number(info.salario) })
             });
           }
         }

@@ -36,7 +36,7 @@ function renderColaboradores() {
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s-3)">';
   for (const nome of colabs) {
     const info = colabInfo[nome] || {};
-    const hasData = info.setor_atual || info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa || info.feito_relevante;
+    const hasData = info.salario != null || info.setor_atual || info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa || info.feito_relevante;
     const conduta = info.conduta_negativa === 'true' || info.conduta_negativa === true;
     const feito = info.feito_relevante === 'true' || info.feito_relevante === true;
     html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''}" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Clique para ver/editar">`;
@@ -46,6 +46,9 @@ function renderColaboradores() {
     html += `<div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:var(--s-2)">${escapeHtml(nome)}${feito ? '<span class="feito-badge" title="Possui feito relevante">🏆</span>' : ''}${conduta ? '<span class="conduta-badge" title="Possui ponto detrator">🚩</span>' : ''}</div>`;
     if (info.nivel) {
       html += `<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-top:1px">${escapeHtml(info.nivel)}</div>`;
+    }
+    if (info.salario != null && info.salario !== '') {
+      html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Salário: ${escapeHtml(Number(info.salario).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))}</div>`;
     }
     const setores = setorMap[nome];
     const setorExibido = info.setor_atual || (setores && setores.size ? [...setores].join(', ') : '');
@@ -377,6 +380,7 @@ function openColabDetailOverlay(nome) {
     <div class="ci-form-grid">
       <label class="field"><span>Aniversário</span><input type="date" id="ciAniversario" value="${info.data_aniversario || ""}"></label>
       <label class="field"><span>Admissão</span><input type="date" id="ciAdmissao" value="${info.data_admissao || ""}"></label>
+      <label class="field ci-span-2"><span>Salário (R$)</span><input type="number" id="ciSalario" min="0" max="99999999.99" step="0.01" inputmode="decimal" placeholder="Ex.: 3066,17" value="${info.salario != null && info.salario !== '' ? escapeHtml(String(Number(info.salario))) : ''}"></label>
       <label class="field ci-span-2"><span>E-mail</span><input type="email" id="ciEmail" placeholder="email@exemplo.com" value="${escapeHtml(info.email || "")}"></label>
       <label class="field ci-span-2"><span>Setor atual</span><input type="text" id="ciSetorAtual" list="ciSetoresDisponiveis" maxlength="120" placeholder="Selecione ou digite o setor" value="${escapeHtml(setorAtual)}"><datalist id="ciSetoresDisponiveis">${setoresDisponiveis.map(setor => `<option value="${escapeHtml(setor)}">`).join("")}</datalist></label>
     </div>
@@ -477,6 +481,8 @@ function openColabDetailOverlay(nome) {
 
   document.getElementById("ciSalvarBtn").addEventListener("click", async () => {
     if (!requireAdmin()) return;
+    const salarioInput = document.getElementById("ciSalario");
+    if (!salarioInput.reportValidity()) return;
     const data = {
       data_aniversario: document.getElementById("ciAniversario").value || "",
       data_admissao: document.getElementById("ciAdmissao").value || "",
@@ -489,7 +495,8 @@ function openColabDetailOverlay(nome) {
       conduta_motivo: condutaToggle.checked ? document.getElementById("ciCondutaMotivo").value.trim() : "",
       feito_relevante: feitoToggle.checked ? "true" : "",
       feito_descricao: feitoToggle.checked ? document.getElementById("ciFeitoDescricao").value.trim() : "",
-      nivel: document.getElementById("ciNivel").value
+      nivel: document.getElementById("ciNivel").value,
+      salario: salarioInput.value === '' ? null : Number(salarioInput.value)
     };
     const synced = await dbColabInfoSave(nome, data);
     showToast(synced ? `Dados de ${nome} salvos!` : `Dados de ${nome} preservados neste dispositivo. A sincronização com o banco está pendente.`, synced ? "success" : "warning", "Colaboradores");
@@ -502,7 +509,7 @@ function openColabDetailOverlay(nome) {
     if (!requireAdmin()) return;
     if (!confirm(`Limpar todos os dados cadastrais de ${nome}?`)) return;
     await dbColabInfoSave(nome, {
-      data_aniversario: "", data_admissao: "", email: "", setor_atual: "", nivel: "",
+      data_aniversario: "", data_admissao: "", email: "", setor_atual: "", nivel: "", salario: null,
       tarefas_desempenhadas: "", objetivos_futuros: "", observacoes: "",
       conduta_negativa: "", conduta_motivo: "", feito_relevante: "", feito_descricao: ""
     });
