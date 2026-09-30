@@ -30,6 +30,7 @@ const globalFilters = {
   _colabNames: [],
 
   _listeners: [],
+  _searchTimer: null,
 
   init() {
     this._renderBar();
@@ -47,6 +48,33 @@ const globalFilters = {
     this._listeners.forEach(cb => { try { cb(); } catch (e) {} });
   },
 
+  contextoEquipe() {
+    return document.body?.dataset?.activeTab === 'colaboradores';
+  },
+
+  atualizarContexto() {
+    this._updateColaboradorOptions();
+    this._updateChips();
+  },
+
+  correspondeCadastro(nome, info = {}, setores = []) {
+    if (!this.correspondeNivel({ Atendente: nome })) return false;
+    const setoresAtuais = info.setor_atual ? [info.setor_atual] : setores;
+    if (this.setor && this.setor !== 'all' && !setoresAtuais.some(setor => String(setor).trim() === this.setor)) return false;
+    if (this.colaborador && this.colaborador !== 'all' && _normalizeName(nome) !== _normalizeName(this.colaborador)) return false;
+    if (this.pesquisa) {
+      const texto = [nome, ...setoresAtuais].join(' ');
+      if (!_normalizeName(texto).includes(_normalizeName(this.pesquisa))) return false;
+    }
+    return true;
+  },
+
+  correspondePesquisa(record, pesquisa = this.pesquisa) {
+    if (!pesquisa) return true;
+    const q = _normalizeName(pesquisa);
+    return ['Atendente', 'Setor', 'Mês', 'Arquivo'].some(campo => _normalizeName(record?.[campo]).includes(q));
+  },
+
   correspondeNivel(record) {
     return !this.nivel || this.nivel === 'all' || _nivelColaborador(record?.['Atendente']) === this.nivel;
   },
@@ -59,7 +87,7 @@ const globalFilters = {
       data = data.filter(r => String(r['Mês']) === this.periodo);
     } else if (this.periodo === '__range__' && this.mesInicio && this.mesFim) {
       data = data.filter(r => String(r['Mês']) >= this.mesInicio && String(r['Mês']) <= this.mesFim);
-    } else if (this.periodo === '__multi__' && Array.isArray(this.mesesSelecionados) && this.mesesSelecionados.length) {
+    } else if (this.periodo === '__multi__' && Array.isArray(this.mesesSelecionados)) {
       const set = new Set(this.mesesSelecionados.map(String));
       data = data.filter(r => set.has(String(r['Mês'])));
     }
@@ -78,13 +106,7 @@ const globalFilters = {
       data = data.filter(r => String(r['Atendente']) === this.colaborador);
     }
 
-    if (this.pesquisa) {
-      const q = String(this.pesquisa).toLowerCase();
-      data = data.filter(r => {
-        const cols = [r['Atendente'], r['Setor'], r['Mês'], r['Arquivo']];
-        return cols.some(v => String(v || '').toLowerCase().includes(q));
-      });
-    }
+    if (this.pesquisa) data = data.filter(r => this.correspondePesquisa(r));
 
     return data;
   },
@@ -118,6 +140,7 @@ const globalFilters = {
   },
 
   limpar() {
+    clearTimeout(this._searchTimer);
     this.periodo = 'all';
     this.colaborador = 'all';
     this.setor = 'all';
@@ -127,6 +150,7 @@ const globalFilters = {
     this.mesInicio = '';
     this.mesFim = '';
     this._syncUI();
+    this._updateColaboradorOptions();
     this._notify();
   },
 
@@ -138,8 +162,9 @@ const globalFilters = {
 
     container.innerHTML = `
       <div class="global-filter-inner">
+        <p id="gfFilterHint" class="filter-hint">Os filtros são aplicados automaticamente.</p>
         <div class="global-filter-row">
-          <label class="global-filter-field">
+          <label class="global-filter-field gf-performance-filter">
             <span>Período mensal</span>
             <select id="gfPeriodo"><option value="all">Todos</option></select>
           </label>
@@ -153,21 +178,21 @@ const globalFilters = {
           </label>
           <label class="global-filter-field global-filter-field--flex" style="min-width:180px">
             <span>Colaborador / Busca</span>
-            <input type="text" id="gfPesquisa" placeholder="Digite um nome ou busque..." list="gfColabList" autocomplete="off" style="padding:6px 10px;font-size:12px"/>
+            <input type="text" id="gfPesquisa" placeholder="Buscar nome ou termo..." list="gfColabList" autocomplete="off" style="padding:6px 10px;font-size:12px"/>
             <datalist id="gfColabList"></datalist>
           </label>
           <div style="display:flex;align-items:flex-end;padding-bottom:2px;gap:4px">
-            <button class="btn-small" id="gfApplyBtn" type="button" style="padding:6px 12px;font-size:12px">Filtrar</button>
-            <button class="btn-small" id="gfClearBtn" type="button" style="padding:6px 12px;font-size:12px">Limpar</button>
+            <button class="btn-small" id="gfApplyBtn" type="button" hidden style="padding:6px 12px;font-size:12px">Aplicar filtros</button>
+            <button class="btn-small" id="gfClearBtn" type="button" style="padding:6px 12px;font-size:12px">Limpar filtros</button>
           </div>
         </div>
-        <div id="gfMonthRange" class="global-filter-multi global-filter-range" style="display:none">
+        <div id="gfMonthRange" class="global-filter-multi global-filter-range gf-performance-filter" style="display:none">
           <div class="multi-label">Intervalo mensal:</div>
           <label class="global-filter-field"><span>De</span><select id="gfMonthStart"></select></label>
           <label class="global-filter-field"><span>Até</span><select id="gfMonthEnd"></select></label>
           <div class="multi-actions"><button type="button" class="btn-small gf-range-shortcut" data-months="3">Últimos 3 meses</button><button type="button" class="btn-small gf-range-shortcut" data-months="6">Últimos 6 meses</button><button type="button" class="btn-small gf-range-shortcut" data-months="12">Últimos 12 meses</button></div>
         </div>
-        <div id="gfMonthMulti" class="global-filter-multi" style="display:none">
+        <div id="gfMonthMulti" class="global-filter-multi gf-performance-filter" style="display:none">
           <div class="multi-label">Selecione os meses desejados:</div>
           <div class="multi-actions">
             <button type="button" class="btn-small" id="gfSelectAllMonths">Selecionar tudo</button>
@@ -189,7 +214,13 @@ const globalFilters = {
 
     const pesquisa = document.getElementById('gfPesquisa');
     if (pesquisa) {
-      pesquisa.addEventListener('keydown', (e) => { if (e.key === 'Enter') this._collectAndNotify(); });
+      pesquisa.addEventListener('input', () => {
+        clearTimeout(this._searchTimer);
+        this._searchTimer = setTimeout(() => this._collectAndNotify(), 250);
+      });
+      pesquisa.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { clearTimeout(this._searchTimer); this._collectAndNotify(); }
+      });
     }
 
     const periodo = document.getElementById('gfPeriodo');
@@ -200,6 +231,7 @@ const globalFilters = {
         if (multiPanel) multiPanel.style.display = periodo.value === '__multi__' ? '' : 'none';
         if (rangePanel) rangePanel.style.display = periodo.value === '__range__' ? '' : 'none';
         if (periodo.value !== '__multi__') this.mesesSelecionados = [];
+        this._collectAndNotify();
       });
     }
 
@@ -222,12 +254,12 @@ const globalFilters = {
       const meses = [];
       checks.forEach(cb => { cb.checked = true; meses.push(cb.value); });
       this.mesesSelecionados = meses;
-      this._updateChips();
+      this._collectAndNotify();
     });
     if (clearM) clearM.addEventListener('click', () => {
       document.querySelectorAll('#gfMonthChecklist input[type="checkbox"]').forEach(cb => cb.checked = false);
       this.mesesSelecionados = [];
-      this._updateChips();
+      this._collectAndNotify();
     });
 
     const checkList = document.getElementById('gfMonthChecklist');
@@ -238,26 +270,14 @@ const globalFilters = {
           document.querySelectorAll('#gfMonthChecklist input[type="checkbox"]:checked').forEach(cb => {
             this.mesesSelecionados.push(cb.value);
           });
-          this._updateChips();
+          this._collectAndNotify();
         }
       });
     }
 
-    const periodoEl = document.getElementById('gfPeriodo');
-    if (periodoEl) {
-      periodoEl.addEventListener('change', () => this._updateColaboradorOptions());
-    }
-    const setor = document.getElementById('gfSetor');
-    const nivel = document.getElementById('gfNivel');
-    if (setor) {
-      setor.addEventListener('change', () => this._updateColaboradorOptions());
-    }
-    if (nivel) {
-      nivel.addEventListener('change', () => {
-        this._collectAndNotify();
-        this._updateColaboradorOptions();
-      });
-    }
+    ['gfSetor', 'gfNivel', 'gfMonthStart', 'gfMonthEnd'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', () => this._collectAndNotify());
+    });
   },
 
   _collectAndNotify() {
@@ -269,19 +289,20 @@ const globalFilters = {
     this.periodo = periodo ? periodo.value : 'all';
     this.setor = setor ? setor.value : 'all';
     this.nivel = nivel ? nivel.value : 'all';
-    this.mesInicio = document.getElementById('gfMonthStart')?.value || '';
-    this.mesFim = document.getElementById('gfMonthEnd')?.value || '';
-    if (this.periodo === '__range__' && this.mesInicio > this.mesFim) {
-      const temp = this.mesInicio; this.mesInicio = this.mesFim; this.mesFim = temp;
+    const rangeStart = document.getElementById('gfMonthStart');
+    const rangeEnd = document.getElementById('gfMonthEnd');
+    this.mesInicio = rangeStart?.value || '';
+    this.mesFim = rangeEnd?.value || '';
+    if (this.periodo === '__range__') {
+      this.mesInicio ||= rangeStart?.options[0]?.value || '';
+      this.mesFim ||= [...(rangeEnd?.options || [])].at(-1)?.value || '';
+      if (rangeStart) rangeStart.value = this.mesInicio;
+      if (rangeEnd) rangeEnd.value = this.mesFim;
     }
-
-    const q = pesq ? pesq.value.trim() : '';
-    if (q && this._colabNames.some(n => n.toLowerCase() === q.toLowerCase())) {
-      this.colaborador = q;
-      this.pesquisa = '';
-    } else {
-      this.colaborador = 'all';
-      this.pesquisa = q;
+    if (this.periodo === '__range__' && this.mesInicio && this.mesFim && this.mesInicio > this.mesFim) {
+      const temp = this.mesInicio; this.mesInicio = this.mesFim; this.mesFim = temp;
+      document.getElementById('gfMonthStart').value = this.mesInicio;
+      document.getElementById('gfMonthEnd').value = this.mesFim;
     }
 
     if (this.periodo === '__multi__') {
@@ -291,6 +312,17 @@ const globalFilters = {
       });
     } else {
       this.mesesSelecionados = [];
+    }
+
+    this._updateColaboradorOptions();
+    const q = pesq ? pesq.value.trim() : '';
+    const matchedName = q && this._colabNames.find(n => _normalizeName(n) === _normalizeName(q));
+    if (matchedName) {
+      this.colaborador = matchedName;
+      this.pesquisa = '';
+    } else {
+      this.colaborador = 'all';
+      this.pesquisa = q;
     }
 
     this._notify();
@@ -327,10 +359,14 @@ const globalFilters = {
   },
 
   _updateChips() {
+    const hint = document.getElementById('gfFilterHint');
+    if (hint) hint.textContent = this.contextoEquipe()
+      ? 'Filtre os cadastros por setor atual, nível ou nome. Os filtros são aplicados automaticamente.'
+      : 'Os filtros são aplicados automaticamente aos indicadores.';
     const chips = document.getElementById('globalFilterChips');
     if (!chips) return;
     const parts = [];
-    if (this.periodo && this.periodo !== 'all') {
+    if (!this.contextoEquipe() && this.periodo && this.periodo !== 'all') {
       if (this.periodo === '__multi__') {
         const sel = Array.isArray(this.mesesSelecionados) ? this.mesesSelecionados : [];
         parts.push(`Período: ${sel.length ? sel.slice().sort().join(', ') : 'Nenhum'}`);
@@ -356,11 +392,11 @@ const globalFilters = {
     const nivelVal = document.getElementById('gfNivel')?.value || this.nivel || 'all';
 
     let activeMonths = null;
-    if (this.periodo && this.periodo !== 'all' && this.periodo !== '__multi__' && this.periodo !== '__range__') {
+    if (!this.contextoEquipe() && this.periodo && this.periodo !== 'all' && this.periodo !== '__multi__' && this.periodo !== '__range__') {
       activeMonths = [this.periodo];
-    } else if (this.periodo === '__range__' && this.mesInicio && this.mesFim) {
+    } else if (!this.contextoEquipe() && this.periodo === '__range__' && this.mesInicio && this.mesFim) {
       activeMonths = [...new Set((rawRecords || []).map(r => String(r['Mês'] || '')).filter(m => m >= this.mesInicio && m <= this.mesFim))];
-    } else if (this.periodo === '__multi__' && Array.isArray(this.mesesSelecionados) && this.mesesSelecionados.length) {
+    } else if (!this.contextoEquipe() && this.periodo === '__multi__' && Array.isArray(this.mesesSelecionados) && this.mesesSelecionados.length) {
       activeMonths = this.mesesSelecionados;
     }
 
@@ -374,6 +410,20 @@ const globalFilters = {
       const orig = String(r['Atendente']).trim();
       const key = _normalizeName(orig);
       if (!nameMap.has(key)) nameMap.set(key, orig);
+    }
+    if (this.contextoEquipe()) {
+      let info = {};
+      try { info = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (_) {}
+      for (const nome of Object.keys(info)) {
+        const current = info[nome];
+        if (setorVal !== 'all' && current.setor_atual !== setorVal) continue;
+        if (nivelVal !== 'all' && _nivelColaborador(nome) !== nivelVal) continue;
+        if (!nameMap.has(_normalizeName(nome))) nameMap.set(_normalizeName(nome), nome);
+      }
+      for (const [key, nome] of nameMap) {
+        const current = Object.entries(info).find(([name]) => _normalizeName(name) === key)?.[1];
+        if (current?.setor_atual && setorVal !== 'all' && current.setor_atual !== setorVal) nameMap.delete(key);
+      }
     }
     let cols = Array.from(nameMap.values()).sort();
     if (typeof isColabActive === 'function') {
@@ -392,7 +442,12 @@ const globalFilters = {
   popularOptions() {
     const records = rawRecords || [];
     const meses = [...new Set(records.filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
-    const setores = [...new Set(records.filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
+    let cadastro = {};
+    try { cadastro = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (_) {}
+    const setores = [...new Set([
+      ...records.filter(r => r && r['Setor']).map(r => r['Setor']),
+      ...Object.values(cadastro).map(info => info?.setor_atual).filter(Boolean)
+    ])].sort();
     const filteredSetores = typeof isSetorActive === 'function' ? setores.filter(s => isSetorActive(s)) : setores;
 
     const fill = (id, vals, opts) => {

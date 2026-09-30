@@ -1004,8 +1004,9 @@ function updateView() {
     if (!monthMatches(r['Mês'])) return false;
     if (arquivoSelect && arquivoSelect.value !== 'all' && String(r['Arquivo']) !== arquivoSelect.value) return false;
     if (qLower) {
-      const name = String(r['Atendente'] || '').toLowerCase();
-      if (!name.includes(qLower)) return false;
+      if (typeof globalFilters !== 'undefined') {
+        if (!globalFilters.correspondePesquisa(r, qLower)) return false;
+      } else if (!String(r['Atendente'] || '').toLowerCase().includes(qLower)) return false;
     }
     if (atendenteSelect && atendenteSelect.value !== 'all') {
       if (String(r['Atendente']) !== atendenteSelect.value) return false;
@@ -1154,8 +1155,9 @@ function renderSummary(filtered) {
         .filter(r => String(r['Mês']) === prev)
         .filter(r => {
           if (qLower) {
-      const name = String(r['Atendente'] || '').toLowerCase();
-      if (!name.includes(qLower)) return false;
+      if (typeof globalFilters !== 'undefined') {
+        if (!globalFilters.correspondePesquisa(r, qLower)) return false;
+      } else if (!String(r['Atendente'] || '').toLowerCase().includes(qLower)) return false;
     }
     const selectedAt = getSelectedAtendentes();
           if (selectedAt && selectedAt.length && !selectedAt.includes('all')) return selectedAt.includes(String(r['Atendente']));
@@ -1266,7 +1268,7 @@ function showKpiBreakdown(kpiType, rows) {
       if (setorVal !== 'all' && String(r['Setor']) !== setorVal) return false;
       if (setorVal === 'all' && typeof isSetorActive === 'function' && !isSetorActive(String(r['Setor']).trim())) return false;
       if (arquivoVal !== 'all' && String(r['Arquivo']) !== arquivoVal) return false;
-      if (qLower && !String(r['Atendente'] || '').toLowerCase().includes(qLower)) return false;
+      if (qLower && !(typeof globalFilters !== 'undefined' ? globalFilters.correspondePesquisa(r, qLower) : String(r['Atendente'] || '').toLowerCase().includes(qLower))) return false;
       if (selectedAt && selectedAt.length && !selectedAt.includes('all')) {
         if (!selectedAt.includes(String(r['Atendente']))) return false;
       } else if (atendenteSelect && atendenteSelect.value !== 'all') {
@@ -2927,15 +2929,16 @@ if (!rawRecords || !rawRecords.length) {
       'saude-operacional': ['Saúde Operacional', 'Resultados consolidados dos setores e desempenho individual'],
       tarefas: ['Rotina', 'Agenda, tarefas e anotações diárias'],
       regras: ['Regras', 'Quadro de normas e orientações atuais'],
-      colaboradores: ['Colaboradores', 'Cadastro e informações da equipe'],
-      lider: ['Gestão', 'Acompanhamento gerencial e alertas da operação'],
+      colaboradores: ['Equipe', 'Cadastro e informações da equipe'],
+      lider: ['Acompanhamento da equipe', 'Acompanhamento gerencial e alertas da operação'],
       insights: ['Análises avançadas', 'Diagnósticos automáticos e oportunidades de melhoria'],
-      avaliacao: ['Avaliação', 'Avaliações de desempenho e feedback estruturado'],
+      avaliacao: ['Avaliação de desempenho', 'Avaliações de desempenho e feedback estruturado'],
       'mapeamento-time': ['Mapeamento de Time', 'Perfis, talentos e ações de desenvolvimento']
     };
     const updatePageContext = (tab) => {
       const context = pageContext[tab] || pageContext.home;
       document.body.dataset.activeTab = tab;
+      if (typeof globalFilters !== 'undefined') globalFilters.atualizarContexto();
       const title = document.getElementById('appPageTitle');
       const description = document.getElementById('appPageDescription');
       if (title) title.textContent = context[0];

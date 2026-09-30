@@ -1,4 +1,4 @@
-// colaboradores.js — Meus Colaboradores (cadastro com dados pessoais)
+// colaboradores.js — Equipe (cadastro com dados pessoais)
 
 function renderColaboradores() {
   const container = document.getElementById('colaboradoresContent');
@@ -8,10 +8,7 @@ function renderColaboradores() {
   const recordNames = (rawRecords || [])
     .filter(r => r && r["Atendente"] && !isAggregateName(r["Atendente"]))
     .map(r => String(r["Atendente"]).trim());
-  const colabs = [...new Set([...recordNames, ...Object.keys(colabInfo)])]
-    .filter(nome => nome && isColabActive(nome))
-    .filter(nome => typeof globalFilters === 'undefined' || globalFilters.correspondeNivel({ Atendente: nome }))
-    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
 
   // Mapa setor por colaborador
   const setorMap = {};
@@ -23,13 +20,18 @@ function renderColaboradores() {
     }
   });
 
+  const colabs = [...new Set([...recordNames, ...Object.keys(colabInfo)])]
+    .filter(nome => nome && isColabActive(nome))
+    .filter(nome => typeof globalFilters === 'undefined' || globalFilters.correspondeCadastro(nome, colabInfo[nome] || {}, [...(setorMap[nome] || [])]))
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
   let html = '';
 
-  html += `<div class="colab-list-header"><div><h3>Meus Colaboradores</h3><p>${colabs.length} colaborador(es) ativos · ${Object.keys(colabInfo).length} com cadastro</p></div><button class="btn-primary" id="novoColaboradorBtn" type="button">+ Novo colaborador</button></div>`;
+  html += `<div class="colab-list-header"><div><h3>Equipe</h3><p>${colabs.length} colaborador(es) exibidos · ${Object.keys(colabInfo).length} com cadastro</p></div><button class="btn-primary" id="novoColaboradorBtn" type="button">+ Novo colaborador</button></div>`;
 
   if (!colabs.length) {
-    const nivelAtivo = typeof globalFilters !== 'undefined' && globalFilters.nivel !== 'all';
-    html += `<div class="empty-state" style="padding:var(--s-5)"><div class="empty-title">${nivelAtivo ? 'Nenhum colaborador neste nível' : 'Nenhum colaborador'}</div><div class="empty-sub">${nivelAtivo ? 'Selecione outro nível ou limpe os filtros para ver a equipe.' : 'Cadastre um colaborador ou importe um CSV para começar.'}</div></div>`;
+    const filtroAtivo = typeof globalFilters !== 'undefined' && (globalFilters.nivel !== 'all' || globalFilters.setor !== 'all' || globalFilters.colaborador !== 'all' || globalFilters.pesquisa);
+    html += `<div class="empty-state" style="padding:var(--s-5)"><div class="empty-title">${filtroAtivo ? 'Nenhum colaborador encontrado' : 'Nenhum colaborador'}</div><div class="empty-sub">${filtroAtivo ? 'Altere a busca ou limpe os filtros para ver a equipe.' : 'Cadastre um colaborador ou importe um CSV para começar.'}</div></div>`;
     container.innerHTML = html;
     document.getElementById("novoColaboradorBtn")?.addEventListener("click", openNovoColaboradorModal);
     return;
@@ -76,7 +78,9 @@ function renderColaboradores() {
     }
     html += '</div>';
     html += `<div style="font-size:18px;color:var(--text-muted)">${hasData ? '✅' : '➕'}</div>`;
-    html += '</div></div>';
+    html += '</div>';
+    html += `<div class="colab-card-actions"><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button></div>`;
+    html += '</div>';
   }
   html += '</div>';
 

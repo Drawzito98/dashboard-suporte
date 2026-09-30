@@ -5374,3 +5374,26 @@ html[data-theme="dark"] .so-report{background:#0f141d!important;color:#e2e8f0!im
 .atividade-item > span { display: block; margin-top: 6px; }
 .atividade-item p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0; }
 #atividadeErro { color: var(--text-primary); }
+
+/* Filtros e ações claras em cada contexto. */
+.filter-hint, .score-legend { margin: 0; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.score-legend { margin: 0 0 var(--s-4); }
+body[data-active-tab="colaboradores"] .gf-performance-filter { display: none !important; }
+.tool-group + .tool-group { border-top: 1px solid var(--border); padding-top: var(--s-3); }
+.tool-group h3 { margin: 0 0 4px; font-size: 12px; color: var(--text-strong); }
+.tool-group p { margin: 0 0 var(--s-2); font-size: 11px; line-height: 1.5; color: var(--text-muted); }
+.team-management-actions { display: flex; justify-content: flex-end; margin-bottom: var(--s-3); }
+.colab-card-actions { display: flex; justify-content: flex-end; margin-top: var(--s-3); }
+@media (max-width: 600px) {
+  .team-management-actions .btn-small { width: 100%; justify-content: center; white-space: normal; }
+}
+
+.global-filter-row #gfApplyBtn[hidden] { display: none !important; }
+body[data-active-tab="tarefas"] .global-filter-bar,
+body[data-active-tab="regras"] .global-filter-bar,
+body[data-active-tab="avaliacao"] .global-filter-bar,
+body[data-active-tab="mapeamento-time"] .global-filter-bar { display: none; }
+body[data-role="admin"] .shell-navigation .tab-bar { flex-direction: column; }
+body[data-role="admin"] .shell-navigation .tool-group h3 { color: #c7e4e3; }
+body[data-role="admin"] .shell-navigation .tool-group p { color: #90b3b2; }
+body[data-role="admin"] .shell-navigation .tool-group + .tool-group { border-color: rgba(198,229,227,.14); }

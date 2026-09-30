@@ -141,7 +141,7 @@ function renderHome() {
     <div class="home-kpi home-kpi-clickable" id="homeColabsKpi" role="button" tabindex="0" title="Clique para ver os colaboradores">
       <div class="home-kpi-icon" style="background:var(--accent-soft);color:var(--accent)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div class="home-kpi-value">${activeCount}</div>
-      <div class="home-kpi-label">Colaboradores ativos</div>
+      <div class="home-kpi-label">Colaboradores no período</div>
       <div class="home-kpi-hint">clique para ver</div>
     </div>
     <div class="home-kpi">
@@ -151,7 +151,7 @@ function renderHome() {
     </div>
     <div class="home-kpi home-kpi-clickable" id="homeScoreKpi" role="button" tabindex="0" title="Clique para ver o score por colaborador">
       <div class="home-kpi-icon" style="background:var(--warning-soft);color:var(--warning)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-      <div class="home-kpi-value ${Number(avgScore) >= 4.5 ? 'score-excelente' : Number(avgScore) < 4 ? 'score-critico' : ''}">${avgScore}</div>
+      <div class="home-kpi-value ${getClasseScore(avgScore)}">${avgScore}</div>
       <div class="home-kpi-label">Score médio · ${lastMonth || '—'}</div>
       <div class="home-kpi-hint">clique para ver</div>
     </div>
@@ -162,6 +162,7 @@ function renderHome() {
       <div class="home-kpi-hint">clique para ver</div>
     </div>
   </div>`;
+  html += '<p class="score-legend">Score: excelente a partir de 4,70 · atenção de 4,50 a 4,69 · crítico abaixo de 4,50.</p>';
 
   // ── Section 2: Operational priorities ──
   const priorityItems = [
@@ -322,7 +323,7 @@ function renderHome() {
     <div id="homeColabsModal" class="modal-overlay" style="display:none">
       <div class="modal-box" style="max-width:480px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-4)">
-          <h3 style="margin:0">Colaboradores ativos (${activeCount})</h3>
+          <h3 style="margin:0">Colaboradores no período (${activeCount})</h3>
           <button class="btn-small" id="homeColabsModalClose" type="button" style="font-size:18px;padding:4px 8px">✕</button>
         </div>
         <div style="display:flex;gap:var(--s-2);margin-bottom:var(--s-3)">
@@ -392,7 +393,7 @@ function renderHome() {
 
   if (scoreListEl) {
     scoreListEl.innerHTML = scoreList.length ? scoreList.map(s => {
-      const cls = s.avg >= 4.5 ? 'score-excelente' : s.avg < 4 ? 'score-critico' : '';
+      const cls = getClasseScore(s.avg);
       return `<div class="home-colab-item">
         <span class="home-colab-name">${escapeHtml(s.name)}</span>
         <div style="display:flex;align-items:center;gap:8px">
