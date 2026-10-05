@@ -41,14 +41,19 @@ window.addEventListener('load',async()=>{try{
   document.getElementById('pontoStart').value='2026-09-01';document.getElementById('pontoEnd').value='2026-10-03';document.getElementById('pontoImportForm').requestSubmit();
   await until(()=>document.getElementById('pontoAnalyze'));
   assert(document.getElementById('pontoFile').files.length===0,'Arquivo mantido após extração');
+  assert(!document.querySelector('#pontoRows .ponto-stats'),'Prévia mostra contagens antes da análise');
+  assert(document.getElementById('pontoRows').textContent.includes('Não analisado'),'Prévia não distingue extração e análise');
   assert(document.getElementById('pontoEmployee').value===employee.id,'Nome não associado exatamente');
   ['entrada_1','saida_1','entrada_2','saida_2'].forEach((k,i)=>document.getElementById('pontoMap_'+k).value=i+1);
   document.getElementById('pontoConfirm').checked=true;document.getElementById('pontoAnalyze').click();
   assert(document.getElementById('pontoRows').textContent.includes('REGULAR'),'Resultado não renderizado');
+  document.getElementById('pontoTolerance').dispatchEvent(new Event('input'));
+  assert(!document.querySelector('#pontoRows .ponto-stats'),'Mudança mantém análise desatualizada');
+  document.getElementById('pontoAnalyze').click();
   document.getElementById('pontoSave').click();await until(()=>document.getElementById('pontoResultRows'));
   assert(uploadCount===0,'PDF enviado ao Storage');assert(stored.length===(useReal?33:1),'Quantidade de registros salvos incorreta');assert(stored[0].extraido.tokens[0]==='08:01','Valor original alterado');assert(!('storage_path' in imported),'Caminho de PDF persistido');assert(!document.getElementById('pontoOpenPDF'),'Link de PDF permanece no histórico');
   assert(imported.snapshot.regras.tolerancia_diaria===10,'Snapshot sem regras');
-  if(useReal){assert(storedJustifications.length===52,'Justificativas não salvas');assert(imported.snapshot.totais_documento.saldo==='-00:09','Saldo não salvo');assert(document.getElementById('pontoResultRows').textContent.includes('saida diferente'),'Histórico sem justificativas');assert(stored.find(r=>r.data==='2026-09-04').extraido.campos_documento.entrada_2==='13:39*','Alteração sobrescreveu batida original')}
+  if(useReal){assert(stored.some(r=>r.calculado.classificacao==='REGULAR'),'Todos os dias continuam para conferir após aplicar regras');assert(storedJustifications.length===52,'Justificativas não salvas');assert(imported.snapshot.totais_documento.saldo==='-00:09','Saldo não salvo');assert(document.getElementById('pontoResultRows').textContent.includes('saida diferente'),'Histórico sem justificativas');assert(stored.find(r=>r.data==='2026-09-04').extraido.campos_documento.entrada_2==='13:39*','Alteração sobrescreveu batida original')}
   else assert(stored[0].calculado.classificacao==='REGULAR','Diferença pequena gerou falso positivo');
   document.querySelector('[data-view="importar"]').click();const cancelDt=new DataTransfer();cancelDt.items.add(makePDF());const cancelFile=document.getElementById('pontoFile');cancelFile.files=cancelDt.files;cancelFile.dispatchEvent(new Event('change'));cancelDt.items.clear();document.getElementById('pontoCancelImport').click();assert(document.getElementById('pontoFile').files.length===0,'Cancelamento mantém arquivo');
   const invalidDt=new DataTransfer();invalidDt.items.add(new File(['arquivo inválido'],'invalido.pdf',{type:'application/pdf'}));const invalid=document.getElementById('pontoFile');invalid.files=invalidDt.files;invalid.dispatchEvent(new Event('change'));invalidDt.items.clear();document.getElementById('pontoStart').value='2026-09-01';document.getElementById('pontoEnd').value='2026-10-03';document.getElementById('pontoImportForm').requestSubmit();await until(()=>document.getElementById('pontoNotice').textContent.includes('PDF válido'));assert(document.getElementById('pontoFile').files.length===0,'Erro mantém arquivo');

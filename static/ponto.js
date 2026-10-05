@@ -9,7 +9,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const root = () => document.getElementById('pontoRoot');
   const get = id => document.getElementById(id);
-  const badge = v => `<span class="ponto-status ${v === 'REGULAR' ? 'regular' : v === 'CONFERIR' ? 'conferir' : 'inconsistencia'}">${esc(v)}</span>`;
+  const badge = v => `<span class="ponto-status ${v === 'REGULAR' ? 'regular' : v === 'INCONSISTÊNCIA' ? 'inconsistencia' : 'conferir'}">${esc(v)}</span>`;
   const fmt = v => v == null ? 'Não calculado' : `${v < 0 ? '-' : '+'}${String(Math.floor(Math.abs(v) / 60)).padStart(2, '0')}:${String(Math.abs(v) % 60).padStart(2, '0')}`;
   const documentSchedule = schedules => schedules?.length ? `<details><summary>Jornada apresentada no documento</summary>${schedules.map(j => `<p>${esc(j.dia_documento)}: ${Object.entries(j.campos_documento).filter(([k]) => /^(entrada|saida)_\d+$/.test(k)).map(([, v]) => esc(v ?? '—')).join(' | ')}</p>`).join('')}</details>` : '<p>Jornada do documento não identificada com segurança. A análise utiliza o cadastro confirmado.</p>';
   const checked = async promise => { const { data, error } = await promise; if (error) throw error; return data; };
@@ -155,7 +155,17 @@
       <div class="ponto-actions"><button class="btn-primary" id="pontoAnalyze" type="button">Aplicar regras e atualizar prévia</button><button class="btn-small" id="pontoSave" type="button">Salvar análise</button></div><div id="pontoRows"></div></section>`;
     get('pontoAnalyze').onclick = () => { try { calculate(); notice('Prévia atualizada. Dados originais preservados.'); } catch (e) { notice(e.message, true); } };
     get('pontoSave').onclick = () => action(savePreview);
-    renderRows(preview.rows.map(r => ({ data: r.data, extraido: r, interpretado: {}, calculado: { classificacao: 'CONFERIR', ocorrencias: [{ descricao: E.UNCERTAIN }] } })), get('pontoRows'));
+    renderPendingPreview();
+    ['pontoEmployee', 'pontoConfirm', 'pontoTolerance', 'pontoDaily', ...keys.map(k => 'pontoMap_' + k)].forEach(id => {
+      get(id).addEventListener('change', renderPendingPreview);
+      get(id).addEventListener('input', renderPendingPreview);
+    });
+  }
+  function renderPendingPreview() {
+    if (!preview) return;
+    preview.records = [];
+    preview.confirmed = false;
+    renderRows(preview.rows.map(r => ({ data: r.data, extraido: r, interpretado: {}, calculado: { classificacao: 'Não analisado', ocorrencias: [{ descricao: 'Aguardando confirmação dos dados e aplicação das regras.' }] } })), get('pontoRows'), false);
   }
   function calculate() {
     if (!preview) throw new Error('Importe um PDF primeiro.');
@@ -178,9 +188,9 @@
     Object.assign(preview, { mapping, rules, employeeId: employee.id, confirmed: true, scheduleSnapshot: employee.ponto_jornadas });
     renderRows(preview.records, get('pontoRows'));
   }
-  function renderRows(records, target) {
+  function renderRows(records, target, analyzed = true) {
     const counts = ['REGULAR', 'CONFERIR', 'INCONSISTÊNCIA'].map(s => ({ s, count: records.filter(r => r.calculado.classificacao === s).length }));
-    target.innerHTML = `<div class="ponto-stats">${counts.map(c => `<div>${badge(c.s)}<strong>${c.count}</strong></div>`).join('')}</div><div class="ponto-table"><table><thead><tr><th>Data</th><th>Entrada</th><th>Intervalo</th><th>Retorno</th><th>Saída</th><th>Resultado</th><th>Motivo e documento</th><th>Justificativa/Alteração</th></tr></thead><tbody>${records.map(r => `<tr><td>${esc(r.data || r.extraido.data_documento)}<small>${r.data ? days[new Date(r.data + 'T12:00:00Z').getUTCDay()] : 'Data não interpretada'}</small></td>${[0, 1, 2, 3].map(i => `<td>${esc(r.extraido.campos_documento?.[E.TABLE_KEYS[i]] ?? r.interpretado.batidas?.[i] ?? '—')}</td>`).join('')}<td>${badge(r.calculado.classificacao)}</td><td>${r.calculado.ocorrencias.map(o => esc(o.descricao)).join('<br>') || 'Nenhuma ocorrência relevante.'}<details><summary>Valores extraídos e cálculo</summary><p>${esc(r.extraido.tokens.map((t, i) => `${i + 1}: ${t}`).join(' | ')) || 'Sem horários reconhecidos'}</p><p>Tipo: ${esc(r.extraido.tipo_dia)} · Página ${esc(r.extraido.pagina)}</p><p>Terceira batida: ${esc(r.extraido.campos_documento?.entrada_3 ?? '—')} / ${esc(r.extraido.campos_documento?.saida_3 ?? '—')}</p><p>Saldo calculado: ${fmt(r.calculado.saldo_calculado)} · Saldo informado: ${esc(r.interpretado.totais?.saldo ?? r.extraido.campos_documento?.saldo ?? 'Não identificado')}</p></details></td><td>${(r.justificativas || r.extraido.justificativas || []).map(j => `<p>${esc(j.hora)} · ${esc(j.codigo_ocorrencia)} · ${esc(j.descricao)}<small>${j.batidas_relacionadas?.length ? 'Relacionada a: ' + esc(j.batidas_relacionadas.join(', ')) : 'Contexto do dia; sem batida idêntica na tabela principal'}</small></p>`).join('') || '—'}</td></tr>`).join('')}</tbody></table></div>`;
+    target.innerHTML = `${analyzed ? `<div class="ponto-stats">${counts.map(c => `<div>${badge(c.s)}<strong>${c.count}</strong></div>`).join('')}</div>` : '<p class="ponto-notice">Dados extraídos; análise ainda não realizada. Selecione o colaborador com jornada cadastrada, confirme os dados e clique em “Aplicar regras e atualizar prévia”.</p>'}<div class="ponto-table"><table><thead><tr><th>Data</th><th>Entrada</th><th>Intervalo</th><th>Retorno</th><th>Saída</th><th>Resultado</th><th>Motivo e documento</th><th>Justificativa/Alteração</th></tr></thead><tbody>${records.map(r => `<tr><td>${esc(r.data || r.extraido.data_documento)}<small>${r.data ? days[new Date(r.data + 'T12:00:00Z').getUTCDay()] : 'Data não interpretada'}</small></td>${[0, 1, 2, 3].map(i => `<td>${esc(r.extraido.campos_documento?.[E.TABLE_KEYS[i]] ?? r.interpretado.batidas?.[i] ?? '—')}</td>`).join('')}<td>${badge(r.calculado.classificacao)}</td><td>${r.calculado.ocorrencias.map(o => esc(o.descricao)).join('<br>') || 'Nenhuma ocorrência relevante.'}<details><summary>Valores extraídos e cálculo</summary><p>${esc(r.extraido.tokens.map((t, i) => `${i + 1}: ${t}`).join(' | ')) || 'Sem horários reconhecidos'}</p><p>Tipo: ${esc(r.extraido.tipo_dia)} · Página ${esc(r.extraido.pagina)}</p><p>Terceira batida: ${esc(r.extraido.campos_documento?.entrada_3 ?? '—')} / ${esc(r.extraido.campos_documento?.saida_3 ?? '—')}</p><p>Saldo calculado: ${fmt(r.calculado.saldo_calculado)} · Saldo informado: ${esc(r.interpretado.totais?.saldo ?? r.extraido.campos_documento?.saldo ?? 'Não identificado')}</p></details></td><td>${(r.justificativas || r.extraido.justificativas || []).map(j => `<p>${esc(j.hora)} · ${esc(j.codigo_ocorrencia)} · ${esc(j.descricao)}<small>${j.batidas_relacionadas?.length ? 'Relacionada a: ' + esc(j.batidas_relacionadas.join(', ')) : 'Contexto do dia; sem batida idêntica na tabela principal'}</small></p>`).join('') || '—'}</td></tr>`).join('')}</tbody></table></div>`;
   }
   async function digest(value) { const b = await crypto.subtle.digest('SHA-256', value); return [...new Uint8Array(b)].map(v => v.toString(16).padStart(2, '0')).join(''); }
   async function savePreview() {
