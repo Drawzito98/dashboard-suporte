@@ -2,7 +2,7 @@
 <script>
 // Test data are fictional. This verifies browser extraction and UI, not Supabase RLS.
 const employee = { id: 'test-person', nome: 'Pessoa de Teste', setor: 'Teste', ativo: true, ponto_jornadas: Array.from({length:7},(_,dia_semana)=>({dia_semana,trabalha:dia_semana>0&&dia_semana<6,entrada_1:'08:00:00',saida_1:'12:00:00',entrada_2:'13:00:00',saida_2:'17:36:00',minutos_esperados:516})) };
-let imported = null, stored = [], storedJustifications = [], uploadCount = 0;
+let imported = null, stored = [], storedJustifications = [], uploadCount = 0, savedEmployee = null;
 function query(table) {
   let filters = {}, single = false;
   const q = { select(){return q}, order(){return q}, limit(){return q}, eq(k,v){filters[k]=v;return q}, maybeSingle(){single=true;return q}, single(){single=true;return q}, then(resolve,reject){
@@ -13,7 +13,7 @@ function query(table) {
 }
 const sbClient = { auth:{getUser:async()=>({data:{user:{id:'test-owner',app_metadata:{role:'admin'}}}}),onAuthStateChange(){}},from:query,
   storage:{from:()=>{uploadCount++;throw new Error('Storage não pode ser usado na importação')}},
-  rpc:async(name,args)=>{if(name==='ponto_salvar_importacao'){imported={...args.p_importacao,data_importacao:new Date().toISOString()};stored=args.p_registros.map((r,i)=>({...r,id:'registro-'+i,importacao_id:imported.id}));storedJustifications=args.p_justificativas.map(j=>({...j,importacao_id:imported.id,registro_ponto_id:stored.find(r=>r.data===j.data).id}));return {data:imported.id,error:null}}return {data:employee.id,error:null}}
+  rpc:async(name,args)=>{if(name==='ponto_salvar_importacao'){imported={...args.p_importacao,data_importacao:new Date().toISOString()};stored=args.p_registros.map((r,i)=>({...r,id:'registro-'+i,importacao_id:imported.id}));storedJustifications=args.p_justificativas.map(j=>({...j,importacao_id:imported.id,registro_ponto_id:stored.find(r=>r.data===j.data).id}));return {data:imported.id,error:null}}savedEmployee=args;return {data:employee.id,error:null}}
 };
 function getTrustedUserRole(user){return user.app_metadata.role}
 </script><script src="../static/ponto-engine.js"></script><script src="../static/ponto.js"></script><script>
@@ -36,6 +36,22 @@ window.addEventListener('load',async()=>{try{
   onPontoTabActivated();await until(()=>document.getElementById('pontoFile'));
   document.querySelector('[data-view="colaboradores"]').click();document.getElementById('pontoNew').click();
   assert(document.querySelectorAll('[data-day]').length===7,'Cadastro não apresenta sete dias');
+  assert(document.getElementById('pontoFixedSchedule').checked,'Novo cadastro sem horário fixo');
+  assert(document.querySelector('[name=entrada_11]').disabled,'Horários diários editáveis no modo fixo');
+  document.getElementById('pontoFixedSchedule').checked=false;
+  document.getElementById('pontoFixedSchedule').dispatchEvent(new Event('change'));
+  assert(!document.querySelector('[name=entrada_11]').disabled,'Modo por dia deixou de funcionar');
+  document.getElementById('pontoFixedSchedule').checked=true;
+  document.getElementById('pontoFixedSchedule').dispatchEvent(new Event('change'));
+  ['entrada_1','saida_1','entrada_2','saida_2'].forEach((k,i)=>document.getElementsByName('fixed_'+k)[0].value=['08:00','12:00','13:00','17:36'][i]);
+  document.getElementsByName('fixed_expected')[0].value='08:36';
+  document.getElementsByName('nome')[0].value='Pessoa de Teste';
+  [1,2,3,4,5].forEach(i=>document.getElementsByName('work'+i)[0].checked=true);
+  document.getElementById('pontoEmployeeForm').requestSubmit();
+  await until(()=>savedEmployee && !document.getElementById('pontoRoot').hasAttribute('aria-busy'));
+  assert(savedEmployee.p_jornadas.filter(j=>j.trabalha).length===5,'Dias trabalhados incorretos');
+  assert(savedEmployee.p_jornadas.filter(j=>j.trabalha).every(j=>j.entrada_1==='08:00' && j.saida_2==='17:36' && j.minutos_esperados===516),'Horário fixo não aplicado');
+  assert(savedEmployee.p_jornadas.filter(j=>!j.trabalha).every(j=>j.minutos_esperados===0),'Folgas receberam jornada');
   document.querySelector('[data-view="importar"]').click();
   const dt=new DataTransfer();dt.items.add(inputFile);const file=document.getElementById('pontoFile');file.files=dt.files;file.dispatchEvent(new Event('change'));dt.items.clear();inputFile=null;
   document.getElementById('pontoStart').value='2026-09-01';document.getElementById('pontoEnd').value='2026-10-03';document.getElementById('pontoImportForm').requestSubmit();

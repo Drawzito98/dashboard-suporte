@@ -69,21 +69,36 @@
   }
   function editEmployee(employee) {
     const schedules = employee?.ponto_jornadas || [];
+    const working = schedules.filter(j => j.trabalha);
+    const base = working[0];
+    const signature = j => JSON.stringify([j.minutos_esperados, ...keys.slice(0, 4).map(k => j[k]?.slice(0, 5))]);
+    const varied = working.some(j => signature(j) !== signature(base));
     get('pontoEditor').innerHTML = `<form id="pontoEmployeeForm" class="ponto-card"><h3>${employee ? 'Editar' : 'Cadastrar'} colaborador</h3><div class="ponto-grid">
       <label>Nome completo<input name="nome" required maxlength="200" value="${esc(employee?.nome)}"></label><label>Setor<input name="setor" maxlength="120" value="${esc(employee?.setor)}"></label>
       <label>Status<select name="ativo"><option value="true">Ativo</option><option value="false" ${employee?.ativo === false ? 'selected' : ''}>Inativo</option></select></label><label>Observações<textarea name="observacoes" maxlength="2000">${esc(employee?.observacoes)}</textarea></label></div>
-      <h4>Jornada por dia da semana</h4><p>Marque os dias trabalhados e informe os horários. A jornada esperada pode incluir compensação semanal.</p>
+      <h4>Jornada do colaborador</h4><p>Informe o horário fixo da pessoa e marque os dias trabalhados abaixo.</p>
+      <label class="ponto-check"><input type="checkbox" name="fixed" id="pontoFixedSchedule" ${varied ? '' : 'checked'}>Usar o mesmo horário em todos os dias trabalhados</label>
+      ${varied ? '<p>Este cadastro possui horários diferentes. Eles serão preservados até você selecionar e salvar o horário fixo.</p>' : ''}
+      <div class="ponto-grid" id="pontoFixedFields">${keys.slice(0, 4).map((k, n) => `<label>${labels[n]}<input type="time" name="fixed_${k}" value="${esc(base?.[k]?.slice(0, 5))}"></label>`).join('')}<label>Jornada diária (hh:mm)<input name="fixed_expected" placeholder="08:36" pattern="[0-9]{2}:[0-5][0-9]" value="${base ? fmt(base.minutos_esperados).slice(1) : ''}"></label></div>
       <div class="ponto-table"><table><thead><tr><th>Dia</th><th>Trabalha</th><th>Entrada</th><th>Intervalo</th><th>Retorno</th><th>Saída</th><th>Jornada (hh:mm)</th></tr></thead><tbody>${days.map((d, i) => {
         const j = schedules.find(s => s.dia_semana === i);
         return `<tr data-day="${i}"><td>${d}</td><td><input type="checkbox" name="work${i}" aria-label="Trabalha ${d}" ${j?.trabalha ? 'checked' : ''}></td>${keys.slice(0, 4).map((k, n) => `<td><input type="time" name="${k}${i}" aria-label="${labels[n]} ${d}" value="${esc(j?.[k]?.slice(0, 5))}"></td>`).join('')}<td><input name="expected${i}" placeholder="08:36" pattern="[0-9]{2}:[0-5][0-9]" aria-label="Jornada ${d}" value="${j?.trabalha ? fmt(j.minutos_esperados).slice(1) : ''}"></td></tr>`;
       }).join('')}</tbody></table></div><div class="ponto-actions"><button class="btn-primary" type="submit">Salvar colaborador e jornada</button><button id="pontoCancelEdit" class="btn-small" type="button">Cancelar</button></div></form>`;
+    const toggleSchedule = () => {
+      const fixed = get('pontoFixedSchedule').checked;
+      get('pontoFixedFields').hidden = !fixed;
+      get('pontoEmployeeForm').querySelectorAll('[data-day] input:not([type=checkbox])').forEach(input => { input.disabled = fixed; input.closest('td').hidden = fixed; });
+      get('pontoEmployeeForm').querySelectorAll('thead th').forEach((th, i) => { if (i > 1) th.hidden = fixed; });
+    };
+    get('pontoFixedSchedule').onchange = toggleSchedule;
+    toggleSchedule();
     get('pontoCancelEdit').onclick = () => { get('pontoEditor').innerHTML = ''; };
     get('pontoEmployeeForm').onsubmit = event => { event.preventDefault(); action(async () => {
       const form = new FormData(event.target);
       const journeys = days.map((_, i) => {
         const works = form.get(`work${i}`) === 'on';
-        const j = { dia_semana: i, trabalha: works, minutos_esperados: works ? E.minutes(form.get(`expected${i}`), true) : 0 };
-        keys.slice(0, 4).forEach(k => { j[k] = works ? form.get(k + i) : ''; });
+        const j = { dia_semana: i, trabalha: works, minutos_esperados: works ? E.minutes(form.get(form.get('fixed') === 'on' ? 'fixed_expected' : `expected${i}`), true) : 0 };
+        keys.slice(0, 4).forEach(k => { j[k] = works ? form.get(form.get('fixed') === 'on' ? 'fixed_' + k : k + i) : ''; });
         if (works && (!j.minutos_esperados || j.minutos_esperados > 1440 || keys.slice(0, 4).some(k => E.minutes(j[k]) === null))) throw new Error(`Complete os horários e a jornada de ${days[i]}.`);
         return j;
       });
