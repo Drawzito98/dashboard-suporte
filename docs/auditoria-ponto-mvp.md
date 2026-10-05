@@ -54,3 +54,12 @@ Segundo cartão real: 2 páginas, 77 dias, sem justificativas, período 01/06/20
 **Ainda não liberado para produção:** foram validados dois colaboradores reais. São necessários mais 2–3 cartões com jornadas/situações diferentes para atingir o mínimo solicitado de 4–5. Testes sintéticos não contam como colaboradores reais. Etapas seguintes — revisão do líder, regras globais, lote e exportações — permanecem pendentes conforme o plano original.
 
 PDF.js 5.4.149 é distribuído localmente com licença Apache 2.0. Referência: https://mozilla.github.io/pdf.js/examples/.
+
+
+### Jornada fixa e trabalho eventual
+
+O cadastro oferece horário fixo por colaborador nos dias trabalhados. Cadastros antigos com jornadas diferentes mantêm seus valores até edição explícita.
+
+Na prévia da importação, “Jornadas excepcionais por data” permite informar o horário previsto para um sábado eventual ou outra data. A exceção não se repete nos demais dias e não é inferida das batidas realizadas. Aceita quatro batidas com intervalo ou duas sem intervalo. Os dados originais permanecem intactos; a jornada excepcional e sua observação ficam no snapshot da importação e no resultado calculado do dia, disponíveis no histórico. Não exige migration.
+
+Sem uma exceção informada, trabalho em folga continua para conferência. Feriados e folgas explicitamente indicados no documento mantêm suas regras de conferência, mesmo com jornada excepcional. Documentos com estrutura incerta continuam para conferência.

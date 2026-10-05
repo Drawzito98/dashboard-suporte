@@ -3,6 +3,19 @@ module.exports = ({ describe, it, assert }) => {
   const journey = { trabalha: true, entrada_1: '08:00', saida_1: '12:00', entrada_2: '13:00', saida_2: '17:36', minutos_esperados: 516 };
   const record = (punches, extra = {}) => ({ data: '2026-09-14', segura: true, batidas: punches, totais: {}, tipo_dia: 'trabalho', marcacao_manual: false, ...extra });
   const mapping = { entrada_1: 0, saida_1: 1, entrada_2: 2, saida_2: 3 };
+  describe('Auditoria de ponto — jornada excepcional sem intervalo', () => {
+    const saturday = { trabalha: true, sem_intervalo: true, entrada_1: '09:00', saida_1: '13:00', minutos_esperados: 240 };
+    it('aceita horário combinado com duas batidas e preserva as folgas', () => {
+      const r = record(['09:00', '13:00', null, null]);
+      assert.equal(E.analyze(r, saturday).classificacao, 'REGULAR');
+      assert.equal(E.analyze(r, saturday).minutos_trabalhados, 240);
+      assert.equal(E.analyze(r, { trabalha: false, minutos_esperados: 0 }).classificacao, 'CONFERIR');
+    });
+    it('identifica déficit e não ignora batidas adicionais', () => {
+      assert.equal(E.analyze(record(['09:30', '13:00', null, null]), saturday).classificacao, 'INCONSISTÊNCIA');
+      assert.equal(E.analyze(record(['09:00', '13:00', '14:00', '15:00']), saturday).classificacao, 'CONFERIR');
+    });
+  });
   describe('Auditoria de ponto — extração conservadora', () => {
     it('valida datas sem normalizar silenciosamente dias impossíveis', () => {
       assert.equal(E.dateISO('31/09/2026'), null); assert.equal(E.dateISO('29/02/2024'), '2024-02-29'); assert.equal(E.dateISO('29/02/2026'), null);

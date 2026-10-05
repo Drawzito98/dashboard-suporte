@@ -166,11 +166,27 @@
       ${positioned ? '<p>Colunas identificadas pelo cabeçalho e pela posição no PDF. Batidas vazias e terceira entrada/saída são preservadas.</p>' : '<h4>Ordem dos valores no cartão</h4><p>Informe a posição de cada coluna entre os valores de horário da linha (1, 2, 3…). Deixe os totais em branco se não existirem. Linhas incompletas ficam para conferir.</p>'}
       <div class="ponto-grid" ${positioned ? 'hidden' : ''}>${keys.map((k, i) => `<label>${labels[i]}<input type="number" min="1" max="20" id="pontoMap_${k}" ${i < 4 && !positioned ? 'required' : ''} value="${preview.mapping[k] >= 0 ? preview.mapping[k] + 1 : ''}" placeholder="Posição"></label>`).join('')}</div>
       <div class="ponto-grid"><label>Tolerância por batida (min)<input id="pontoTolerance" type="number" min="0" max="120" value="5"></label><label>Limite diário (min)<input id="pontoDaily" type="number" min="0" max="240" value="10"></label></div>
+      <details id="pontoExceptions"><summary>Jornadas excepcionais por data (como sábado eventual)</summary><p>Ative somente a data combinada e informe os horários previstos, sem copiá-los das batidas realizadas. Os demais dias continuam usando o cadastro.</p>${preview.rows.filter(r => r.data && !r.ambigua).map(r => `<div class="ponto-card" data-exception="${esc(r.data)}"><label class="ponto-check"><input type="checkbox" name="enabled">Jornada excepcional em ${esc(r.data)} · ${days[new Date(r.data + 'T12:00:00Z').getUTCDay()]}</label><div class="ponto-grid" data-exception-fields hidden><label>Formato<select name="format"><option value="4">Com intervalo (quatro batidas)</option><option value="2">Sem intervalo (entrada e saída)</option></select></label>${keys.slice(0, 4).map((k, i) => `<label>${labels[i]}<input name="${k}" type="time"></label>`).join('')}<label>Jornada esperada (hh:mm)<input name="expected" placeholder="04:00"></label><label>Observação<input name="note" maxlength="2000" placeholder="Sábado previsto na escala"></label></div></div>`).join('')}</details>
       <label class="ponto-check"><input id="pontoConfirm" type="checkbox">Conferi no PDF o colaborador, o período e o significado das colunas.</label>
       <div class="ponto-actions"><button class="btn-primary" id="pontoAnalyze" type="button">Aplicar regras e atualizar prévia</button><button class="btn-small" id="pontoSave" type="button">Salvar análise</button></div><div id="pontoRows"></div></section>`;
     get('pontoAnalyze').onclick = () => { try { calculate(); notice('Prévia atualizada. Dados originais preservados.'); } catch (e) { notice(e.message, true); } };
     get('pontoSave').onclick = () => action(savePreview);
+    get('pontoExceptions').oninput = event => {
+      const card = event.target.closest('[data-exception]');
+      if (card) {
+        card.querySelector('[data-exception-fields]').hidden = !card.querySelector('[name=enabled]').checked;
+        const short = card.querySelector('[name=format]').value === '2';
+        keys.slice(2, 4).forEach(k => { card.querySelector('[name=' + k + ']').closest('label').hidden = short; });
+        card.querySelector('[name=saida_1]').closest('label').firstChild.textContent = short ? 'Saída' : 'Saída intervalo';
+      }
+      renderPendingPreview();
+    };
     renderPendingPreview();
+    get('pontoEmployee').addEventListener('change', () => {
+      get('pontoExceptions').querySelectorAll('[name=enabled]').forEach(input => { input.checked = false; });
+      get('pontoExceptions').querySelectorAll('[data-exception-fields]').forEach(el => { el.hidden = true; });
+      renderPendingPreview();
+    });
     ['pontoEmployee', 'pontoConfirm', 'pontoTolerance', 'pontoDaily', ...keys.map(k => 'pontoMap_' + k)].forEach(id => {
       get(id).addEventListener('change', renderPendingPreview);
       get(id).addEventListener('input', renderPendingPreview);
@@ -192,20 +208,32 @@
     if (new Set(vals).size !== vals.length) throw new Error('Cada coluna deve usar uma posição diferente.');
     const rules = { ...E.DEFAULT_RULES, tolerancia_batida: Number(get('pontoTolerance').value), tolerancia_diaria: Number(get('pontoDaily').value) };
     if (get('pontoTolerance').value === '' || get('pontoDaily').value === '' || !Number.isInteger(rules.tolerancia_batida) || !Number.isInteger(rules.tolerancia_diaria) || rules.tolerancia_batida < 0 || rules.tolerancia_batida > 120 || rules.tolerancia_diaria < 0 || rules.tolerancia_diaria > 240) throw new Error('Informe tolerâncias válidas.');
+    const exceptions = {};
+    get('pontoExceptions').querySelectorAll('[data-exception]').forEach(card => {
+      if (!card.querySelector('[name=enabled]').checked) return;
+      const date = card.dataset.exception;
+      const read = name => card.querySelector('[name=' + name + ']').value;
+      const short = read('format') === '2';
+      const schedule = { trabalha: true, sem_intervalo: short, minutos_esperados: E.minutes(read('expected'), true), observacao: read('note') };
+      keys.slice(0, 4).forEach((k, i) => { schedule[k] = short && i > 1 ? null : read(k); });
+      const times = keys.slice(0, short ? 2 : 4).map(k => E.minutes(schedule[k]));
+      if (!schedule.minutos_esperados || schedule.minutos_esperados > 1440 || times.some(v => v === null) || times.some((v, i) => i && v <= times[i - 1])) throw new Error('Complete a jornada excepcional de ' + date + ' com horários em sequência e duração válida.');
+      exceptions[date] = schedule;
+    });
     preview.records = preview.rows.map(row => {
       const interpretation = E.interpret(row, mapping, true);
       const weekday = row.data ? new Date(row.data + 'T12:00:00Z').getUTCDay() : null;
-      const schedule = employee.ponto_jornadas.find(j => j.dia_semana === weekday);
+      const schedule = exceptions[row.data] || employee.ponto_jornadas.find(j => j.dia_semana === weekday);
       // PostgreSQL time values include seconds; comparison is performed in minutes.
       const normalized = schedule ? { ...schedule, ...Object.fromEntries(keys.slice(0, 4).map(k => [k, schedule[k]?.slice(0, 5)])) } : null;
-      return { data: row.data, extraido: row, interpretado: interpretation, calculado: E.analyze(interpretation, normalized, rules) };
+      return { data: row.data, extraido: row, interpretado: interpretation, calculado: { ...E.analyze(interpretation, normalized, rules), jornada_excepcional: exceptions[row.data] || null } };
     });
-    Object.assign(preview, { mapping, rules, employeeId: employee.id, confirmed: true, scheduleSnapshot: employee.ponto_jornadas });
+    Object.assign(preview, { mapping, rules, employeeId: employee.id, confirmed: true, scheduleSnapshot: employee.ponto_jornadas, exceptions });
     renderRows(preview.records, get('pontoRows'));
   }
   function renderRows(records, target, analyzed = true) {
     const counts = ['REGULAR', 'CONFERIR', 'INCONSISTÊNCIA'].map(s => ({ s, count: records.filter(r => r.calculado.classificacao === s).length }));
-    target.innerHTML = `${analyzed ? `<div class="ponto-stats">${counts.map(c => `<div>${badge(c.s)}<strong>${c.count}</strong></div>`).join('')}</div>` : '<p class="ponto-notice">Dados extraídos; análise ainda não realizada. Selecione o colaborador com jornada cadastrada, confirme os dados e clique em “Aplicar regras e atualizar prévia”.</p>'}<div class="ponto-table"><table><thead><tr><th>Data</th><th>Entrada</th><th>Intervalo</th><th>Retorno</th><th>Saída</th><th>Resultado</th><th>Motivo e documento</th><th>Justificativa/Alteração</th></tr></thead><tbody>${records.map(r => `<tr><td>${esc(r.data || r.extraido.data_documento)}<small>${r.data ? days[new Date(r.data + 'T12:00:00Z').getUTCDay()] : 'Data não interpretada'}</small></td>${[0, 1, 2, 3].map(i => `<td>${esc(r.extraido.campos_documento?.[E.TABLE_KEYS[i]] ?? r.interpretado.batidas?.[i] ?? '—')}</td>`).join('')}<td>${badge(r.calculado.classificacao)}</td><td>${r.calculado.ocorrencias.map(o => esc(o.descricao)).join('<br>') || 'Nenhuma ocorrência relevante.'}<details><summary>Valores extraídos e cálculo</summary><p>${esc(r.extraido.tokens.map((t, i) => `${i + 1}: ${t}`).join(' | ')) || 'Sem horários reconhecidos'}</p><p>Tipo: ${esc(r.extraido.tipo_dia)} · Página ${esc(r.extraido.pagina)}</p><p>Terceira batida: ${esc(r.extraido.campos_documento?.entrada_3 ?? '—')} / ${esc(r.extraido.campos_documento?.saida_3 ?? '—')}</p><p>Saldo calculado: ${fmt(r.calculado.saldo_calculado)} · Saldo informado: ${esc(r.interpretado.totais?.saldo ?? r.extraido.campos_documento?.saldo ?? 'Não identificado')}</p></details></td><td>${(r.justificativas || r.extraido.justificativas || []).map(j => `<p>${esc(j.hora)} · ${esc(j.codigo_ocorrencia)} · ${esc(j.descricao)}<small>${j.batidas_relacionadas?.length ? 'Relacionada a: ' + esc(j.batidas_relacionadas.join(', ')) : 'Contexto do dia; sem batida idêntica na tabela principal'}</small></p>`).join('') || '—'}</td></tr>`).join('')}</tbody></table></div>`;
+    target.innerHTML = `${analyzed ? `<div class="ponto-stats">${counts.map(c => `<div>${badge(c.s)}<strong>${c.count}</strong></div>`).join('')}</div>` : '<p class="ponto-notice">Dados extraídos; análise ainda não realizada. Selecione o colaborador com jornada cadastrada, confirme os dados e clique em “Aplicar regras e atualizar prévia”.</p>'}<div class="ponto-table"><table><thead><tr><th>Data</th><th>Entrada</th><th>Intervalo</th><th>Retorno</th><th>Saída</th><th>Resultado</th><th>Motivo e documento</th><th>Justificativa/Alteração</th></tr></thead><tbody>${records.map(r => `<tr><td>${esc(r.data || r.extraido.data_documento)}<small>${r.data ? days[new Date(r.data + 'T12:00:00Z').getUTCDay()] : 'Data não interpretada'}</small></td>${[0, 1, 2, 3].map(i => `<td>${esc(r.extraido.campos_documento?.[E.TABLE_KEYS[i]] ?? r.interpretado.batidas?.[i] ?? '—')}</td>`).join('')}<td>${badge(r.calculado.classificacao)}</td><td>${r.calculado.ocorrencias.map(o => esc(o.descricao)).join('<br>') || 'Nenhuma ocorrência relevante.'}<details><summary>Valores extraídos e cálculo</summary><p>${esc(r.extraido.tokens.map((t, i) => `${i + 1}: ${t}`).join(' | ')) || 'Sem horários reconhecidos'}</p>${r.calculado.jornada_excepcional ? `<p>Jornada excepcional: ${keys.slice(0, r.calculado.jornada_excepcional.sem_intervalo ? 2 : 4).map(k => esc(r.calculado.jornada_excepcional[k])).join(' | ')} · ${esc(r.calculado.jornada_excepcional.observacao)}</p>` : ''}<p>Tipo: ${esc(r.extraido.tipo_dia)} · Página ${esc(r.extraido.pagina)}</p><p>Terceira batida: ${esc(r.extraido.campos_documento?.entrada_3 ?? '—')} / ${esc(r.extraido.campos_documento?.saida_3 ?? '—')}</p><p>Saldo calculado: ${fmt(r.calculado.saldo_calculado)} · Saldo informado: ${esc(r.interpretado.totais?.saldo ?? r.extraido.campos_documento?.saldo ?? 'Não identificado')}</p></details></td><td>${(r.justificativas || r.extraido.justificativas || []).map(j => `<p>${esc(j.hora)} · ${esc(j.codigo_ocorrencia)} · ${esc(j.descricao)}<small>${j.batidas_relacionadas?.length ? 'Relacionada a: ' + esc(j.batidas_relacionadas.join(', ')) : 'Contexto do dia; sem batida idêntica na tabela principal'}</small></p>`).join('') || '—'}</td></tr>`).join('')}</tbody></table></div>`;
   }
   async function digest(value) { const b = await crypto.subtle.digest('SHA-256', value); return [...new Uint8Array(b)].map(v => v.toString(16).padStart(2, '0')).join(''); }
   async function savePreview() {
@@ -220,7 +248,7 @@
     const id = crypto.randomUUID();
     notice('Salvando somente dados estruturados…');
     const payload = { id, colaborador_id: preview.employeeId, arquivo: preview.arquivo, arquivo_sha256: preview.sha, registros_sha256: recordsHash, periodo_inicio: preview.start, periodo_fim: preview.end,
-      snapshot: { versao: E.VERSION, versao_extracao: 'multipagina-2', nome_documento: preview.nome || null, paginas_processadas: preview.paginas_processadas, totais_documento: preview.totais_documento, jornadas_documento: preview.jornadas_documento, legendas_documento: preview.legendas_documento, regras: preview.rules, jornadas: preview.scheduleSnapshot, mapping: preview.mapping, colaborador: employees.find(e => e.id === preview.employeeId).nome, setor: employees.find(e => e.id === preview.employeeId).setor, confirmacao_extracao: true, confirmada_em: new Date().toISOString() } };
+      snapshot: { versao: E.VERSION, versao_extracao: 'multipagina-2', nome_documento: preview.nome || null, paginas_processadas: preview.paginas_processadas, totais_documento: preview.totais_documento, jornadas_documento: preview.jornadas_documento, legendas_documento: preview.legendas_documento, regras: preview.rules, jornadas: preview.scheduleSnapshot, jornadas_excepcionais: preview.exceptions, mapping: preview.mapping, colaborador: employees.find(e => e.id === preview.employeeId).nome, setor: employees.find(e => e.id === preview.employeeId).setor, confirmacao_extracao: true, confirmada_em: new Date().toISOString() } };
     try { await checked(sbClient.rpc('ponto_salvar_importacao', { p_importacao: payload, p_registros: preview.records, p_justificativas: preview.justificativas })); }
     catch (error) {
       // A network failure may occur after commit; structured history remains the source of truth.

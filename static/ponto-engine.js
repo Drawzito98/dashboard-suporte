@@ -1,6 +1,6 @@
 (function (root) {
   'use strict';
-  const VERSION = 'mvp-1';
+  const VERSION = 'mvp-2';
   const UNCERTAIN = 'Não foi possível interpretar este registro com segurança.';
   const UNCERTAIN_CARD = 'Não foi possível interpretar este cartão de ponto com segurança. Revise os dados antes de continuar.';
   const DEFAULT_RULES = Object.freeze({ tolerancia_batida: 5, tolerancia_diaria: 10, regra_batida_manual: 'conferir', regra_hora_extra: 'informar', regra_folga: 'conferir', regra_batida_ausente: 'inconsistencia', regra_debito: 'inconsistencia', regra_adicional: 'conferir' });
@@ -214,24 +214,25 @@
     if (!record.segura || !record.data) add('extracao', 'CONFERIR', UNCERTAIN);
     else if (!schedule) add('jornada', 'CONFERIR', 'Não há jornada cadastrada para este dia.');
     else {
-      const punches = record.batidas, values = punches.map(p => minutes(p));
+      const punches = record.batidas, short = schedule.sem_intervalo === true, unexpected = short && punches.slice(2).some(p => minutes(p) !== null), values = punches.slice(0, short ? 2 : 4).map(p => minutes(p));
       const hasPunches = values.some(v => v !== null);
       if (record.marcacao_manual) action('manual', rules.regra_batida_manual, 'O documento indica marcação manual.');
       if (record.tipo_dia === 'justificativa') add('justificativa', 'CONFERIR', 'O cartão indica justificativa, compensação ou registro pré-assinalado.');
       else if (!schedule.trabalha || ['folga', 'feriado'].includes(record.tipo_dia)) {
         if (hasPunches) action('folga', rules.regra_folga, 'Trabalho em folga ou feriado.');
-      } else if (values.some(v => v === null)) {
+      } else if (unexpected) add('jornada', 'CONFERIR', 'Há batidas adicionais para a jornada excepcional sem intervalo.');
+      else if (values.some(v => v === null)) {
         if (record.ausente_explicita) action('ausente', rules.regra_batida_ausente, 'O cartão indica batida ausente.');
         else add('extracao', 'CONFERIR', UNCERTAIN);
       } else if (values.some((v, i) => i > 0 && v <= values[i - 1])) {
         add('sequencia', 'CONFERIR', 'Batidas fora de sequência; verificar possível jornada noturna ou inversão.');
       } else if (!Number.isInteger(expected) || expected <= 0) add('jornada', 'CONFERIR', 'Jornada diária não definida.');
       else {
-        worked = values[1] - values[0] + values[3] - values[2];
-        const planned = ['entrada_1', 'saida_1', 'entrada_2', 'saida_2'].map(k => minutes(schedule[k]));
+        worked = values[1] - values[0] + (short ? 0 : values[3] - values[2]);
+        const planned = ['entrada_1', 'saida_1', 'entrada_2', 'saida_2'].slice(0, short ? 2 : 4).map(k => minutes(schedule[k]));
         if (planned.some(v => v === null) || planned.some((v, i) => i > 0 && v <= planned[i - 1])) add('jornada', 'CONFERIR', 'Horários cadastrados incompletos ou jornada noturna; conferir a jornada.');
         else {
-          const deviations = [Math.max(0, values[0] - planned[0]), Math.max(0, planned[1] - values[1]), Math.max(0, values[2] - planned[2]), Math.max(0, planned[3] - values[3])];
+          const deviations = values.map((v, i) => Math.max(0, i % 2 ? planned[i] - v : v - planned[i]));
           const sum = deviations.reduce((a, b) => a + b, 0);
           const exceeds = deviations.some(d => d > rules.tolerancia_batida) || sum > rules.tolerancia_diaria;
           const debit = minutes(record.totais?.debito, true), credit = minutes(record.totais?.credito, true);
