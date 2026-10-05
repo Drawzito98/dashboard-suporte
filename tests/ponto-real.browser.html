@@ -1,0 +1,40 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Validação local de PDFs externos</title><pre id="testResult">RUNNING</pre><script src="../static/ponto-engine.js"></script><script type="module">
+// PDFs are read from an ephemeral localhost test server, never copied into the repo.
+const E=window.PontoEngine;
+const assert=(v,m)=>{if(!v)throw new Error(m)};
+try {
+  const pdfjs=await import('../static/vendor/pdfjs/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc='/static/vendor/pdfjs/pdf.worker.mjs';
+  const summaries=[];
+  for(const name of ['dayane','michele']){
+    let bytes=new Uint8Array(await (await fetch('/__test_pdf_'+name,{cache:'no-store'})).arrayBuffer());
+    const task=pdfjs.getDocument({data:bytes,isEvalSupported:false});
+    try{
+      const pdf=await task.promise;let lines=[];
+      for(let page=1;page<=pdf.numPages;page++)lines.push(...E.pageLines((await (await pdf.getPage(page)).getTextContent()).items,page));
+      const extracted=E.extract(lines,name==='dayane'?'2026-09-01':null,name==='dayane'?'2026-10-03':null);
+      const result={paginas:pdf.numPages,registros:extracted.rows.length,justificativas:extracted.justificativas.length,cols:extracted.rows.filter(r=>r.colunas_seguras).length,jornadas:extracted.jornadas_documento.length,nome_identificado:!!extracted.nome,periodos:extracted.periodos_documento,saldo:extracted.totais_documento?.saldo??null,pendencias_justificativas:extracted.justificativas_nao_interpretadas.length+extracted.justificativas_sem_registro.length};
+      assert(extracted.rows.length>0,'Nenhum registro diário');
+      assert(extracted.nome,'Nome no documento não identificado');
+      assert(extracted.rows.every(r=>r.campos_documento && r.colunas_seguras),'Colunas ambíguas');
+      assert(!extracted.rows.some(r=>r.ambigua),'Datas ambíguas');
+      assert(result.pendencias_justificativas===0,'Justificativas pendentes');
+      const first=extracted.rows[0],interpretation=E.interpret(first,{},true);
+      assert(E.identify(extracted.nome.toLowerCase(),[{id:'pessoa',nome:extracted.nome}])==='pessoa','Associação dinâmica falhou');
+      assert(JSON.stringify(first.campos_documento)===JSON.stringify(extracted.rows[0].campos_documento),'Original alterado');
+      if(name==='dayane'){
+        assert(pdf.numPages===2,'Esperadas duas páginas');assert(extracted.rows.length===33,'Esperados 33 dias');
+        assert(extracted.periodos_documento.length===1&&extracted.periodos_documento[0].inicio==='2026-09-01'&&extracted.periodos_documento[0].fim==='2026-10-03','Período incorreto');
+        assert(extracted.totais_documento?.saldo==='-00:09','Saldo final incorreto');
+        assert([1,2,3,4,5].every(d=>extracted.jornadas_documento.some(j=>j.dia_semana===d&&j.campos_documento.entrada_1==='08:00'&&j.campos_documento.saida_1==='12:00'&&j.campos_documento.entrada_2==='13:00'&&j.campos_documento.saida_2==='17:36')),'Jornada do documento incorreta');
+        const day=extracted.rows.find(r=>r.data==='2026-09-04');assert(day.campos_documento.entrada_2==='13:39*','Batida original de 04/09 alterada');
+        assert(day.justificativas.some(j=>j.hora==='13:38'&&j.codigo_ocorrencia==='D'&&j.descricao==='saida diferente'&&j.batidas_relacionadas.length===0),'Justificativa D ausente ou sobreposta');
+        assert(day.justificativas.some(j=>j.hora==='13:39'&&j.codigo_ocorrencia==='I'&&j.batidas_relacionadas.includes('entrada_2')),'Justificativa I não relacionada');
+        assert(extracted.justificativas.some(j=>j.data==='2026-09-08'&&j.hora==='18:01'&&j.pagina===2),'Data da continuação entre páginas perdida');
+        const unusual=extracted.rows.find(r=>r.data==='2026-10-02');assert(unusual.campos_documento.entrada_3==='17:56','Quinta batida perdida');assert(!E.interpret(unusual,{},true).segura,'Batida adicional ignorada pelo cálculo');
+      }
+      summaries.push(result);lines=[];
+    }finally{await task.destroy();if(bytes?.byteLength)bytes.fill(0);bytes=null}
+  }
+  document.getElementById('testResult').textContent='PASS: '+JSON.stringify(summaries);
+}catch(error){document.getElementById('testResult').textContent='FAIL: '+error.message}
+</script></html>

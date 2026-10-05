@@ -4,7 +4,7 @@
    - Estáticos (mesmo domínio + CDNs): stale-while-revalidate
    - /api/* e métodos não-GET: sempre pela rede (nunca cacheia)
 */
-const CACHE = 'painel-suporte-v126';
+const CACHE = 'painel-suporte-v128';
 const SHELL = [
   '/',
   '/index.html',
@@ -36,6 +36,9 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   const url = new URL(req.url);
+
+  // Nunca armazenar respostas autenticadas ou documentos pessoais.
+  if (url.hostname.endsWith('.supabase.co') || req.headers.has('authorization')) return;
 
   // Só lida com GET
   if (req.method !== 'GET') return;

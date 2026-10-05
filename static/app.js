@@ -2930,6 +2930,7 @@ if (!rawRecords || !rawRecords.length) {
       tarefas: ['Rotina', 'Agenda, tarefas e anotações diárias'],
       regras: ['Regras', 'Quadro de normas e orientações atuais'],
       colaboradores: ['Equipe', 'Cadastro e informações da equipe'],
+      ponto: ['Auditoria de Ponto', 'Importação, jornadas e conferência dos cartões de ponto'],
       lider: ['Acompanhamento da equipe', 'Acompanhamento gerencial e alertas da operação'],
       insights: ['Análises avançadas', 'Diagnósticos automáticos e oportunidades de melhoria'],
       avaliacao: ['Avaliação de desempenho', 'Avaliações de desempenho e feedback estruturado'],
@@ -2964,6 +2965,7 @@ if (!rawRecords || !rawRecords.length) {
       if (target) target.classList.add('active');
 
       // Call per-tab initialization
+      if (tab === 'ponto' && typeof onPontoTabActivated === 'function') onPontoTabActivated();
       if (tab === 'home' && typeof onHomeTabActivated === 'function') {
         onHomeTabActivated();
       }
@@ -3454,7 +3456,7 @@ function initNotificacoesUI() {
     const groups = [
       ["Principal", ["home"]],
       ["Desempenho", ["dashboard", "relatorio-setorial", "saude-operacional", "insights"]],
-      ["Pessoas", ["colaboradores", "mapeamento-time", "lider", "avaliacao"]],
+      ["Pessoas", ["colaboradores", "ponto", "mapeamento-time", "lider", "avaliacao"]],
       ["Organização", ["tarefas", "regras"]]
     ];
     const fragment = document.createDocumentFragment();

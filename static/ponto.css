@@ -1,0 +1,35 @@
+.ponto-module { max-width: 1400px; margin: 0 auto; color: var(--text, #172033); }
+.ponto-header { display:flex; justify-content:space-between; gap:20px; align-items:center; margin-bottom:24px; }
+.ponto-module h2,.ponto-module h3 { margin:0 0 12px; }
+.ponto-module p { line-height:1.6; color:var(--text-muted, #637083); }
+.ponto-pill { border:1px solid #b8c8e4; padding:8px 12px; border-radius:20px; font-size:12px; white-space:nowrap; }
+.ponto-nav,.ponto-actions { display:flex; flex-wrap:wrap; gap:12px; margin:20px 0; }
+.ponto-nav .selected { outline:2px solid #477ee9; }
+.ponto-card { background:var(--card, #fff); border:1px solid var(--border, #dae1eb); border-radius:14px; padding:24px; margin-bottom:20px; }
+.ponto-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; margin:20px 0; }
+.ponto-module label { display:flex; flex-direction:column; gap:8px; font-size:14px; }
+.ponto-module input:not([type=checkbox]),.ponto-module select,.ponto-module textarea { width:100%; min-height:42px; border:1px solid var(--border, #ccd5e1); border-radius:7px; padding:8px; background:var(--card, #fff); color:inherit; box-sizing:border-box; }
+.ponto-module input[type=checkbox] { width:18px; height:18px; }
+.ponto-check { flex-direction:row!important; align-items:center; margin:20px 0; }
+.ponto-drop { border:2px dashed #9bb0d2; border-radius:12px; padding:24px; margin:20px 0; background:rgba(71,126,233,.04); }
+.ponto-drop span { display:block; margin-top:12px; font-size:13px; overflow-wrap:anywhere; }
+.ponto-table { overflow-x:auto; margin-top:20px; }
+.ponto-table table { width:100%; border-collapse:collapse; font-size:13px; }
+.ponto-table th { text-align:left; color:var(--text-muted, #637083); background:rgba(127,145,172,.07); padding:12px; }
+.ponto-table td { padding:12px; border-bottom:1px solid var(--border, #e1e7ef); vertical-align:top; }
+.ponto-table input { min-width:100px; }
+.ponto-table small { display:block; margin-top:6px; color:var(--text-muted, #637083); }
+.ponto-table details { margin-top:12px; max-width:480px; overflow-wrap:anywhere; }
+.ponto-table summary { cursor:pointer; }
+.ponto-status { display:inline-block; font-size:11px; font-weight:700; border-radius:6px; padding:6px 8px; white-space:nowrap; }
+.ponto-status.regular { color:#14603d; background:#e4f5eb; }
+.ponto-status.conferir { color:#805305; background:#fff1cd; }
+.ponto-status.inconsistencia { color:#9f2630; background:#fce4e6; }
+.ponto-stats { display:flex; flex-wrap:wrap; gap:16px; margin:24px 0; }
+.ponto-stats>div { flex:1; min-width:140px; border:1px solid var(--border, #dce3ed); border-radius:10px; padding:16px; }
+.ponto-stats strong { display:block; font-size:28px; margin-top:10px; }
+.ponto-notice:not(:empty) { border-radius:8px; padding:14px; background:#e7effe; color:#204a89; margin:16px 0; }
+.ponto-notice.error { background:#fff1cd; color:#805305; }
+.ponto-module[aria-busy=true] { cursor:progress; }
+body:not([data-role=admin]) [data-tab=ponto] { display:none!important; }
+@media(max-width:700px) { .ponto-card { padding:16px; } .ponto-header { align-items:flex-start; flex-direction:column; } }

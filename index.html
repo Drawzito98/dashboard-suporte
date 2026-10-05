@@ -14,6 +14,7 @@
   <link rel="manifest" href="manifest.json"/>
   <link href="static/css/tokens.css?v=79" rel="stylesheet"/>
   <link href="static/styles.css?v=126" rel="stylesheet"/>
+  <link href="static/ponto.css?v=2" rel="stylesheet"/>
   <link href="static/desafio-diario.css?v=68" rel="stylesheet"/>
   <link href="static/home.css?v=80" rel="stylesheet"/>
   <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
@@ -247,6 +248,7 @@
       <button class="tab-btn" data-tab="regras" role="tab" aria-selected="false">
         <span class="tab-icon">📚</span> Regras
       </button>
+      <button class="tab-btn" data-tab="ponto" role="tab" aria-selected="false"><span class="tab-icon">◷</span> Auditoria de Ponto</button>
       <button class="tab-btn" data-tab="colaboradores" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Equipe
       </button>
@@ -518,6 +520,7 @@
         </div>
 
         <!-- ===== TAB: COLABORADORES ===== -->
+        <div class="tab-content" id="tab-ponto" role="tabpanel"><div id="pontoRoot"></div></div>
         <div class="tab-content" id="tab-colaboradores" role="tabpanel">
           <section class="card">
             <div class="team-management-actions admin-only-panel"><button class="btn-small" id="manageColabsBtn" type="button" title="Ativar/desativar colaboradores"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Gerenciar ativos e inativos</button></div>
@@ -790,7 +793,9 @@
 <script defer src="static/db-reportes.js"></script>
 <script defer src="static/reportes.js"></script>
 <script defer src="static/home.js?v=126"></script>
-<script defer src="static/app.js?v=126"></script>
+<script defer src="static/ponto-engine.js?v=2"></script>
+<script defer src="static/ponto.js?v=2"></script>
+<script defer src="static/app.js?v=127"></script>
 <script defer src="static/manage-colabs-v2.js?v=95"></script>
 <script defer src="static/desafio-diario.js?v=83"></script>
 <script defer src="static/features.js"></script>
