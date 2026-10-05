@@ -5,7 +5,7 @@
   const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const keys = ['entrada_1', 'saida_1', 'entrada_2', 'saida_2', 'horas_normais', 'debito', 'credito', 'saldo'];
   const labels = ['Entrada', 'Saída intervalo', 'Retorno', 'Saída', 'Horas normais', 'Débito', 'Crédito', 'Saldo'];
-  let employees = [], imports = [], preview = null, lines = [], file = null, owner = null, busy = false, generation = 0, activeTask = null, requestedEmployee = null;
+  let employees = [], imports = [], preview = null, lines = [], file = null, owner = null, busy = false, generation = 0, activeTask = null, requestedEmployee = null, configuredRules = { ...E.DEFAULT_RULES };
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const root = () => document.getElementById('pontoRoot');
   const get = id => document.getElementById(id);
@@ -31,7 +31,7 @@
     try { await guard(); if (operationGeneration !== generation) throw new Error('Processamento interrompido.'); await fn(); } catch (error) {
       discardSelectedFile();
       if (operationGeneration !== generation) { notice('Processamento interrompido. O arquivo foi descartado.'); return; }
-      const msg = error.code === '42P01' || error.code === 'PGRST205' || error.code === 'PGRST202' ? 'O banco do módulo ainda não foi preparado. Execute as migrations v46 e v47 antes de usar.' : error.message || 'Não foi possível concluir. Tente novamente.';
+      const msg = error.code === '42P01' || error.code === 'PGRST205' || error.code === 'PGRST202' ? 'O banco do módulo ainda não foi preparado. Execute as migrations v46, v47 e v48 antes de usar.' : error.message || 'Não foi possível concluir. Tente novamente.';
       notice(msg, true);
     } finally { busy = false; root()?.removeAttribute('aria-busy'); root()?.querySelectorAll('button').forEach(b => { b.disabled = false; }); }
   }
@@ -39,17 +39,19 @@
     const currentGeneration = generation;
     const loaded = await Promise.all([
       checked(sbClient.from('ponto_colaboradores').select('*,ponto_jornadas(*)').order('nome')),
-      checked(sbClient.from('ponto_importacoes').select('id,colaborador_id,arquivo,periodo_inicio,periodo_fim,data_importacao,arquivo_sha256,registros_sha256,snapshot').order('data_importacao', { ascending: false }).limit(100))
+      checked(sbClient.from('ponto_importacoes').select('id,colaborador_id,arquivo,periodo_inicio,periodo_fim,data_importacao,arquivo_sha256,registros_sha256,snapshot').order('data_importacao', { ascending: false }).limit(100)),
+      checked(sbClient.from('ponto_configuracoes').select('tolerancia_batida,tolerancia_diaria').maybeSingle())
     ]);
     if (generation !== currentGeneration) throw new Error('Sessão encerrada.');
     [employees, imports] = loaded;
+    configuredRules = { ...E.DEFAULT_RULES, ...(loaded[2] || {}) };
   }
   function discardSelectedFile() { file = null; const input = get('pontoFile'); if (input) input.value = ''; }
   function clearFile() { discardSelectedFile(); lines = []; preview = null; if (activeTask) { activeTask.destroy().catch(() => {}); activeTask = null; } }
   function render() {
     root().innerHTML = `<div class="ponto-module"><header class="ponto-header"><div><h2>Auditoria de Ponto</h2><p>Cadastre a jornada, importe o cartão e confira as exceções.</p></div><span class="ponto-pill">MVP · Etapa 1</span></header>
       <div id="pontoNotice" role="status" aria-live="polite"></div>
-      <nav class="ponto-nav" aria-label="Auditoria de ponto"><button type="button" class="btn-small" data-view="importar">Importar Ponto</button><button type="button" class="btn-small" data-view="colaboradores">Colaboradores e jornadas</button><button type="button" class="btn-small" data-view="resultados">Análises salvas</button></nav>
+      <nav class="ponto-nav" aria-label="Auditoria de ponto"><button type="button" class="btn-small" data-view="importar">Importar Ponto</button><button type="button" class="btn-small" data-view="colaboradores">Colaboradores e jornadas</button><button type="button" class="btn-small" data-view="resultados">Análises salvas</button><button type="button" class="btn-small" data-view="configuracoes">Configurações</button></nav>
       <div id="pontoContent"></div></div>`;
     root().querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => view(b.dataset.view)));
     if (requestedEmployee) {
@@ -64,7 +66,19 @@
     root().querySelectorAll('[data-view]').forEach(b => b.classList.toggle('selected', b.dataset.view === name));
     if (name === 'colaboradores') renderEmployees();
     else if (name === 'resultados') renderImports();
+    else if (name === 'configuracoes') renderSettings();
     else renderImport();
+  }
+  function renderSettings() {
+    get('pontoContent').innerHTML = `<section class="ponto-card"><h3>Configurações → Regras de Ponto</h3><p>Cada marcação deve respeitar o limite individual. A soma absoluta das variações do dia deve respeitar o limite acumulado. Os limites não são somados entre si.</p><form id="pontoRulesForm"><div class="ponto-grid"><label>Tolerância por marcação (min)<input name="tolerancia_batida" type="number" min="0" max="120" required value="${esc(configuredRules.tolerancia_batida)}"></label><label>Limite acumulado no dia (min)<input name="tolerancia_diaria" type="number" min="0" max="240" required value="${esc(configuredRules.tolerancia_diaria)}"></label></div><p>Padrão: 5 minutos por marcação e 10 minutos acumulados por dia. O saldo informado pelo cartão é preservado separadamente. Alterações valem para novas análises.</p><button type="submit" class="btn-primary">Salvar regras</button></form></section>`;
+    get('pontoRulesForm').onsubmit = event => { event.preventDefault(); action(async () => {
+      const form = new FormData(event.target);
+      const rules = { ...configuredRules, tolerancia_batida: Number(form.get('tolerancia_batida')), tolerancia_diaria: Number(form.get('tolerancia_diaria')) };
+      E.tolerance([], [], rules);
+      await checked(sbClient.from('ponto_configuracoes').upsert({ user_id: owner, tolerancia_batida: rules.tolerancia_batida, tolerancia_diaria: rules.tolerancia_diaria, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }));
+      configuredRules = rules;
+      notice('Regras salvas. As análises anteriores mantêm as regras e resultados originais.');
+    }); };
   }
   function systemPeople() {
     let info = {};
@@ -187,7 +201,7 @@
       <label>Colaborador<select id="pontoEmployee"><option value="">Selecione com base no documento</option>${employees.filter(e => e.ativo && (typeof isColabActive !== 'function' || isColabActive(e.nome))).map(e => `<option value="${esc(e.id)}" ${e.id === preview.employeeId ? 'selected' : ''}>${esc(e.nome)} · ${esc(e.setor)}</option>`).join('')}</select></label>
       ${positioned ? '<p>Colunas identificadas pelo cabeçalho e pela posição no PDF. Batidas vazias e terceira entrada/saída são preservadas.</p>' : '<h4>Ordem dos valores no cartão</h4><p>Informe a posição de cada coluna entre os valores de horário da linha (1, 2, 3…). Deixe os totais em branco se não existirem. Linhas incompletas ficam para conferir.</p>'}
       <div class="ponto-grid" ${positioned ? 'hidden' : ''}>${keys.map((k, i) => `<label>${labels[i]}<input type="number" min="1" max="20" id="pontoMap_${k}" ${i < 4 && !positioned ? 'required' : ''} value="${preview.mapping[k] >= 0 ? preview.mapping[k] + 1 : ''}" placeholder="Posição"></label>`).join('')}</div>
-      <div class="ponto-grid"><label>Tolerância por batida (min)<input id="pontoTolerance" type="number" min="0" max="120" value="5"></label><label>Limite diário (min)<input id="pontoDaily" type="number" min="0" max="240" value="10"></label></div>
+      <div class="ponto-grid"><label>Tolerância por batida (min)<input id="pontoTolerance" type="number" min="0" max="120" value="${esc(configuredRules.tolerancia_batida)}"></label><label>Limite diário (min)<input id="pontoDaily" type="number" min="0" max="240" value="${esc(configuredRules.tolerancia_diaria)}"></label></div>
       <details id="pontoExceptions"><summary>Jornadas excepcionais por data (como sábado eventual)</summary><p>Ative somente a data combinada e informe os horários previstos, sem copiá-los das batidas realizadas. Os demais dias continuam usando o cadastro.</p>${preview.rows.filter(r => r.data && !r.ambigua).map(r => `<div class="ponto-card" data-exception="${esc(r.data)}"><label class="ponto-check"><input type="checkbox" name="enabled">Jornada excepcional em ${esc(r.data)} · ${days[new Date(r.data + 'T12:00:00Z').getUTCDay()]}</label><div class="ponto-grid" data-exception-fields hidden><label>Formato<select name="format"><option value="4">Com intervalo (quatro batidas)</option><option value="2">Sem intervalo (entrada e saída)</option></select></label>${keys.slice(0, 4).map((k, i) => `<label>${labels[i]}<input name="${k}" type="time"></label>`).join('')}<label>Jornada esperada (hh:mm)<input name="expected" placeholder="04:00"></label><label>Observação<input name="note" maxlength="2000" placeholder="Sábado previsto na escala"></label></div></div>`).join('')}</details>
       <label class="ponto-check"><input id="pontoConfirm" type="checkbox">Conferi no PDF o colaborador, o período e o significado das colunas.</label>
       <div class="ponto-actions"><button class="btn-primary" id="pontoAnalyze" type="button">Aplicar regras e atualizar prévia</button><button class="btn-small" id="pontoSave" type="button">Salvar análise</button></div><div id="pontoRows"></div></section>`;
@@ -228,7 +242,7 @@
     if ((!preview.rows.every(r => r.campos_documento) && keys.slice(0, 4).some(k => !Number.isInteger(mapping[k]) || mapping[k] < 0)) || Object.values(mapping).some(v => v !== null && (!Number.isInteger(v) || v < 0 || v > 19))) throw new Error('Informe posições válidas para as quatro batidas.');
     const vals = Object.values(mapping).filter(v => v !== null);
     if (new Set(vals).size !== vals.length) throw new Error('Cada coluna deve usar uma posição diferente.');
-    const rules = { ...E.DEFAULT_RULES, tolerancia_batida: Number(get('pontoTolerance').value), tolerancia_diaria: Number(get('pontoDaily').value) };
+    const rules = { ...configuredRules, tolerancia_batida: Number(get('pontoTolerance').value), tolerancia_diaria: Number(get('pontoDaily').value) };
     if (get('pontoTolerance').value === '' || get('pontoDaily').value === '' || !Number.isInteger(rules.tolerancia_batida) || !Number.isInteger(rules.tolerancia_diaria) || rules.tolerancia_batida < 0 || rules.tolerancia_batida > 120 || rules.tolerancia_diaria < 0 || rules.tolerancia_diaria > 240) throw new Error('Informe tolerâncias válidas.');
     const exceptions = {};
     get('pontoExceptions').querySelectorAll('[data-exception]').forEach(card => {
@@ -255,7 +269,7 @@
   }
   function renderRows(records, target, analyzed = true) {
     const counts = ['REGULAR', 'CONFERIR', 'INCONSISTÊNCIA'].map(s => ({ s, count: records.filter(r => r.calculado.classificacao === s).length }));
-    target.innerHTML = `${analyzed ? `<div class="ponto-stats">${counts.map(c => `<div>${badge(c.s)}<strong>${c.count}</strong></div>`).join('')}</div>` : '<p class="ponto-notice">Dados extraídos; análise ainda não realizada. Selecione o colaborador com jornada cadastrada, confirme os dados e clique em “Aplicar regras e atualizar prévia”.</p>'}<div class="ponto-table"><table><thead><tr><th>Data</th><th>Entrada</th><th>Intervalo</th><th>Retorno</th><th>Saída</th><th>Resultado</th><th>Motivo e documento</th><th>Justificativa/Alteração</th></tr></thead><tbody>${records.map(r => `<tr><td>${esc(r.data || r.extraido.data_documento)}<small>${r.data ? days[new Date(r.data + 'T12:00:00Z').getUTCDay()] : 'Data não interpretada'}</small></td>${[0, 1, 2, 3].map(i => `<td>${esc(r.extraido.campos_documento?.[E.TABLE_KEYS[i]] ?? r.interpretado.batidas?.[i] ?? '—')}</td>`).join('')}<td>${badge(r.calculado.classificacao)}</td><td>${r.calculado.ocorrencias.map(o => esc(o.descricao)).join('<br>') || 'Nenhuma ocorrência relevante.'}<details><summary>Valores extraídos e cálculo</summary><p>${esc(r.extraido.tokens.map((t, i) => `${i + 1}: ${t}`).join(' | ')) || 'Sem horários reconhecidos'}</p>${r.calculado.jornada_excepcional ? `<p>Jornada excepcional: ${keys.slice(0, r.calculado.jornada_excepcional.sem_intervalo ? 2 : 4).map(k => esc(r.calculado.jornada_excepcional[k])).join(' | ')} · ${esc(r.calculado.jornada_excepcional.observacao)}</p>` : ''}<p>Tipo: ${esc(r.extraido.tipo_dia)} · Página ${esc(r.extraido.pagina)}</p><p>Terceira batida: ${esc(r.extraido.campos_documento?.entrada_3 ?? '—')} / ${esc(r.extraido.campos_documento?.saida_3 ?? '—')}</p><p>Saldo calculado: ${fmt(r.calculado.saldo_calculado)} · Saldo informado: ${esc(r.interpretado.totais?.saldo ?? r.extraido.campos_documento?.saldo ?? 'Não identificado')}</p></details></td><td>${(r.justificativas || r.extraido.justificativas || []).map(j => `<p>${esc(j.hora)} · ${esc(j.codigo_ocorrencia)} · ${esc(j.descricao)}<small>${j.batidas_relacionadas?.length ? 'Relacionada a: ' + esc(j.batidas_relacionadas.join(', ')) : 'Contexto do dia; sem batida idêntica na tabela principal'}</small></p>`).join('') || '—'}</td></tr>`).join('')}</tbody></table></div>`;
+    target.innerHTML = `${analyzed ? `<div class="ponto-stats">${counts.map(c => `<div>${badge(c.s)}<strong>${c.count}</strong></div>`).join('')}</div>` : '<p class="ponto-notice">Dados extraídos; análise ainda não realizada. Selecione o colaborador com jornada cadastrada, confirme os dados e clique em “Aplicar regras e atualizar prévia”.</p>'}<div class="ponto-table"><table><thead><tr><th>Data</th><th>Entrada</th><th>Intervalo</th><th>Retorno</th><th>Saída</th><th>Resultado</th><th>Motivo e documento</th><th>Justificativa/Alteração</th></tr></thead><tbody>${records.map(r => `<tr><td>${esc(r.data || r.extraido.data_documento)}<small>${r.data ? days[new Date(r.data + 'T12:00:00Z').getUTCDay()] : 'Data não interpretada'}</small></td>${[0, 1, 2, 3].map(i => `<td>${esc(r.extraido.campos_documento?.[E.TABLE_KEYS[i]] ?? r.interpretado.batidas?.[i] ?? '—')}</td>`).join('')}<td>${badge(r.calculado.classificacao)}</td><td>${r.calculado.ocorrencias.map(o => esc(o.descricao)).join('<br>') || 'Nenhuma ocorrência relevante.'}<details><summary>Valores extraídos e cálculo</summary><p>${esc(r.extraido.tokens.map((t, i) => `${i + 1}: ${t}`).join(' | ')) || 'Sem horários reconhecidos'}</p>${r.calculado.jornada_excepcional ? `<p>Jornada excepcional: ${keys.slice(0, r.calculado.jornada_excepcional.sem_intervalo ? 2 : 4).map(k => esc(r.calculado.jornada_excepcional[k])).join(' | ')} · ${esc(r.calculado.jornada_excepcional.observacao)}</p>` : ''}<p>Tipo: ${esc(r.extraido.tipo_dia)} · Página ${esc(r.extraido.pagina)}</p><p>Terceira batida: ${esc(r.extraido.campos_documento?.entrada_3 ?? '—')} / ${esc(r.extraido.campos_documento?.saida_3 ?? '—')}</p>${r.calculado.tolerancia ? `<p>Variações por marcação: ${r.calculado.tolerancia.variacoes_minutos.map(v => `${v} min`).join(' | ')} · Acumulado: ${r.calculado.tolerancia.acumulado_minutos} min · Limites: ${r.calculado.tolerancia.limite_marcacao} min por marcação / ${r.calculado.tolerancia.limite_diario} min por dia</p>` : ''}<p>Saldo calculado: ${fmt(r.calculado.saldo_calculado)} · Saldo informado: ${esc(r.interpretado.totais?.saldo ?? r.extraido.campos_documento?.saldo ?? 'Não identificado')}</p></details></td><td>${(r.justificativas || r.extraido.justificativas || []).map(j => `<p>${esc(j.hora)} · ${esc(j.codigo_ocorrencia)} · ${esc(j.descricao)}<small>${j.batidas_relacionadas?.length ? 'Relacionada a: ' + esc(j.batidas_relacionadas.join(', ')) : 'Contexto do dia; sem batida idêntica na tabela principal'}</small></p>`).join('') || '—'}</td></tr>`).join('')}</tbody></table></div>`;
   }
   async function digest(value) { const b = await crypto.subtle.digest('SHA-256', value); return [...new Uint8Array(b)].map(v => v.toString(16).padStart(2, '0')).join(''); }
   async function savePreview() {
@@ -329,9 +343,9 @@
   document.addEventListener('DOMContentLoaded', () => {
     const button = document.querySelector('[data-tab="ponto"]');
     // UI visibility is secondary; RLS enforces access on every operation.
-    const syncAccess = () => { const allowed = document.body.dataset.role === 'admin'; if (button) button.hidden = !allowed; if (!allowed) { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; clearFile(); if (root()) root().innerHTML = ''; } };
+    const syncAccess = () => { const allowed = document.body.dataset.role === 'admin'; if (button) button.hidden = !allowed; if (!allowed) { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; configuredRules = { ...E.DEFAULT_RULES }; clearFile(); if (root()) root().innerHTML = ''; } };
     new MutationObserver(syncAccess).observe(document.body, { attributes: true, attributeFilter: ['data-role'] }); syncAccess();
     new MutationObserver(() => { if (document.body.dataset.activeTab !== 'ponto' && (file || preview || activeTask)) { generation++; clearFile(); if (root()) root().innerHTML = ''; } }).observe(document.body, { attributes: true, attributeFilter: ['data-active-tab'] });
-    sbClient?.auth.onAuthStateChange(event => { if (event === 'SIGNED_OUT') { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; clearFile(); if (root()) root().innerHTML = ''; } });
+    sbClient?.auth.onAuthStateChange(event => { if (event === 'SIGNED_OUT') { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; configuredRules = { ...E.DEFAULT_RULES }; clearFile(); if (root()) root().innerHTML = ''; } });
   });
 })();

@@ -70,3 +70,12 @@ Sem uma exceção informada, trabalho em folga continua para conferência. Feria
 A lista da auditoria inclui os nomes ativos dos dados de desempenho e dos perfis da equipe, sem depender dos filtros de período ou setor. Nome e setor são preenchidos ao cadastrar a jornada. Os cadastros de ponto existentes são preservados e reutilizados por nome completo normalizado; associação ambígua exige revisão. Pessoas inativas não são incluídas automaticamente nem selecionadas na importação, e cadastros de ponto anteriores continuam acessíveis para edição.
 
 O perfil da equipe apresenta as jornadas salvas e um botão para cadastrar/editar na auditoria. A fonte dos horários continua sendo `ponto_colaboradores` e `ponto_jornadas`, com as mesmas políticas privadas por administrador. Não se duplicam horários em localStorage ou no cadastro de desempenho. A relação usa o nome, seguindo a identificação atual dos perfis; renomeações devem ser revisadas explicitamente. Não exige migration.
+
+
+### Tolerância por marcação e acumulada — motor mvp-3
+
+A análise calcula a diferença assinada de cada marcação em relação à jornada prevista, o módulo de cada diferença e a soma desses módulos. Até 5 minutos por marcação e até 10 minutos na soma diária são os padrões inclusivos; ultrapassar qualquer limite gera uma ocorrência. Antecipações e atrasos não se cancelam na soma. Um atraso de 6 minutos na entrada ultrapassa o limite individual, mesmo estando abaixo de 10 no dia.
+
+A classificação continua considerando compensação, crédito e conflito com totais do cartão. Déficit acompanhado de perda acima da tolerância gera inconsistência objetiva quando não há contexto de compensação; variações compensadas ou favoráveis acima dos limites vão para conferência. Hora extra continua tendo ocorrência informativa, mas uma variação acima da tolerância também gera a ocorrência de horário para conferir. A tolerância e seus detalhes ficam em `calculado.tolerancia`; `saldo_calculado` continua sendo a diferença bruta entre duração trabalhada e esperada, e os totais originais não são alterados.
+
+Configurações → Regras de Ponto salva os dois limites em `ponto_configuracoes`, privada por líder administrador via RLS. A migration v48 foi aplicada em produção em 05/10/2026 e suas políticas foram testadas com rollback. A prévia recebe os valores salvos e permite ajuste somente para a análise atual. Cada importação preserva os limites aplicados e a versão do motor; análises antigas não são recalculadas.

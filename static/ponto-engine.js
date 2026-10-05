@@ -1,6 +1,6 @@
 (function (root) {
   'use strict';
-  const VERSION = 'mvp-2';
+  const VERSION = 'mvp-3';
   const UNCERTAIN = 'Não foi possível interpretar este registro com segurança.';
   const UNCERTAIN_CARD = 'Não foi possível interpretar este cartão de ponto com segurança. Revise os dados antes de continuar.';
   const DEFAULT_RULES = Object.freeze({ tolerancia_batida: 5, tolerancia_diaria: 10, regra_batida_manual: 'conferir', regra_hora_extra: 'informar', regra_folga: 'conferir', regra_batida_ausente: 'inconsistencia', regra_debito: 'inconsistencia', regra_adicional: 'conferir' });
@@ -206,10 +206,22 @@
       segura: !!confirmed && !row.ambigua && (!missing || (row.tokens.length === 0 && ['folga', 'feriado', 'justificativa'].includes(row.tipo_dia))) && !unknownTokens && new Set(used).size === used.length,
       ausente_explicita: punches.includes('--:--'), motivo_incerteza: UNCERTAIN };
   }
+  function tolerance(actual, planned, rules = DEFAULT_RULES) {
+    const perPunch = rules.tolerancia_batida, perDay = rules.tolerancia_diaria;
+    if (!Number.isInteger(perPunch) || perPunch < 0 || perPunch > 120 || !Number.isInteger(perDay) || perDay < 0 || perDay > 240) throw new Error('Informe tolerâncias válidas.');
+    if (actual.length !== planned.length || actual.some(v => !Number.isInteger(v)) || planned.some(v => !Number.isInteger(v))) throw new Error('Horários inválidos para calcular tolerância.');
+    const differences = actual.map((v, i) => v - planned[i]);
+    const deviations = differences.map(Math.abs);
+    const losses = differences.map((v, i) => Math.max(0, i % 2 ? -v : v));
+    const accumulated = deviations.reduce((a, b) => a + b, 0);
+    const exceededPunches = deviations.flatMap((v, i) => v > perPunch ? [i] : []);
+    return { diferencas_minutos: differences, variacoes_minutos: deviations, acumulado_minutos: accumulated, limite_marcacao: perPunch, limite_diario: perDay, marcacoes_excedidas: exceededPunches, excedeu_diario: accumulated > perDay, dentro_tolerancia: !exceededPunches.length && accumulated <= perDay, perda_acima_tolerancia: losses.some(v => v > perPunch) || losses.reduce((a, b) => a + b, 0) > perDay };
+  }
   function analyze(record, schedule, rules = DEFAULT_RULES) {
     const occurrences = [];
     const add = (type, classification, description) => occurrences.push({ tipo: type, classificacao_automatica: classification, descricao: description });
     const action = (type, rule, description) => { if (rule !== 'ignorar') add(type, rule === 'inconsistencia' ? 'INCONSISTÊNCIA' : rule === 'conferir' ? 'CONFERIR' : 'REGULAR', description); };
+    let toleranceResult = null;
     let worked = null, expected = schedule?.minutos_esperados ?? null;
     if (!record.segura || !record.data) add('extracao', 'CONFERIR', UNCERTAIN);
     else if (!schedule) add('jornada', 'CONFERIR', 'Não há jornada cadastrada para este dia.');
@@ -232,24 +244,28 @@
         const planned = ['entrada_1', 'saida_1', 'entrada_2', 'saida_2'].slice(0, short ? 2 : 4).map(k => minutes(schedule[k]));
         if (planned.some(v => v === null) || planned.some((v, i) => i > 0 && v <= planned[i - 1])) add('jornada', 'CONFERIR', 'Horários cadastrados incompletos ou jornada noturna; conferir a jornada.');
         else {
-          const deviations = values.map((v, i) => Math.max(0, i % 2 ? planned[i] - v : v - planned[i]));
-          const sum = deviations.reduce((a, b) => a + b, 0);
-          const exceeds = deviations.some(d => d > rules.tolerancia_batida) || sum > rules.tolerancia_diaria;
+          toleranceResult = tolerance(values, planned, rules);
+          const exceeds = !toleranceResult.dentro_tolerancia;
           const debit = minutes(record.totais?.debito, true), credit = minutes(record.totais?.credito, true);
           const hasCompensation = credit !== null && credit > 0;
           const deficit = expected - worked;
           const documentConflict = (debit === 0 && deficit > rules.tolerancia_diaria) || (debit !== null && debit > rules.tolerancia_diaria && worked >= expected);
           if (hasCompensation || documentConflict) add('compensacao', 'CONFERIR', 'Crédito ou totais do cartão exigem conferência da compensação.');
           else if (deficit > rules.tolerancia_diaria) action('debito', rules.regra_debito, `Jornada ${deficit} minutos inferior à esperada.`);
-          if (exceeds) add('horario', (deficit > rules.tolerancia_diaria && !hasCompensation && !documentConflict) ? 'INCONSISTÊNCIA' : 'CONFERIR', 'Diferença de horário acima da tolerância; verificar compensação ou autorização.');
+          if (exceeds) {
+            const reasons = [];
+            if (toleranceResult.marcacoes_excedidas.length) reasons.push(`Marcação acima da tolerância individual de ${rules.tolerancia_batida} min: ${toleranceResult.marcacoes_excedidas.map(i => `${i + 1}ª (${toleranceResult.variacoes_minutos[i]} min)`).join(', ')}.`);
+            if (toleranceResult.excedeu_diario) reasons.push(`Variações acumuladas: ${toleranceResult.acumulado_minutos} min, acima do limite diário de ${rules.tolerancia_diaria} min.`);
+            add('horario', (deficit > 0 && toleranceResult.perda_acima_tolerancia && !hasCompensation && !documentConflict) ? 'INCONSISTÊNCIA' : 'CONFERIR', reasons.join(' ') + ' Verificar compensação ou autorização.');
+          }
           if (worked - expected > rules.tolerancia_diaria) action('extra', rules.regra_hora_extra, `${worked - expected} minutos além da jornada esperada.`);
         }
       }
     }
     const classification = occurrences.some(o => o.classificacao_automatica === 'INCONSISTÊNCIA') ? 'INCONSISTÊNCIA' : occurrences.some(o => o.classificacao_automatica === 'CONFERIR') ? 'CONFERIR' : 'REGULAR';
-    return { versao: VERSION, classificacao: classification, minutos_trabalhados: worked, minutos_esperados: expected, saldo_calculado: worked !== null && expected !== null ? worked - expected : null, ocorrencias: occurrences };
+    return { versao: VERSION, classificacao: classification, minutos_trabalhados: worked, minutos_esperados: expected, tolerancia: toleranceResult, saldo_calculado: worked !== null && expected !== null ? worked - expected : null, ocorrencias: occurrences };
   }
-  const api = { VERSION, UNCERTAIN, UNCERTAIN_CARD, DEFAULT_RULES, TABLE_KEYS, minutes, dateISO, normalizeName, identify, pageLines, extract, interpret, analyze };
+  const api = { VERSION, UNCERTAIN, UNCERTAIN_CARD, DEFAULT_RULES, TABLE_KEYS, minutes, dateISO, normalizeName, identify, pageLines, extract, interpret, tolerance, analyze };
   root.PontoEngine = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

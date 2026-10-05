@@ -3,6 +3,36 @@ module.exports = ({ describe, it, assert }) => {
   const journey = { trabalha: true, entrada_1: '08:00', saida_1: '12:00', entrada_2: '13:00', saida_2: '17:36', minutos_esperados: 516 };
   const record = (punches, extra = {}) => ({ data: '2026-09-14', segura: true, batidas: punches, totais: {}, tipo_dia: 'trabalho', marcacao_manual: false, ...extra });
   const mapping = { entrada_1: 0, saida_1: 1, entrada_2: 2, saida_2: 3 };
+  describe('Auditoria de ponto — limites individuais e acumulados', () => {
+    it('5 minutos por marcação e exatamente 10 no dia são aceitos', () => {
+      const result = E.analyze(record(['08:05','12:00','13:05','17:36']),journey);
+      assert.equal(result.classificacao,'REGULAR'); assert.equal(result.tolerancia.acumulado_minutos,10);
+    });
+    it('6 minutos na entrada ultrapassam a regra individual mesmo abaixo de 10 no dia', () => {
+      const result=E.analyze(record(['08:06','12:00','13:00','17:36']),journey);
+      assert.equal(result.classificacao,'INCONSISTÊNCIA'); assert.deepEqual(result.tolerancia.marcacoes_excedidas,[0]); assert.equal(result.tolerancia.excedeu_diario,false);
+    });
+    it('11 minutos distribuídos ultrapassam o limite diário sem exceder uma marcação', () => {
+      const result=E.analyze(record(['08:03','11:57','13:03','17:34']),journey);
+      assert.equal(result.classificacao,'INCONSISTÊNCIA'); assert.deepEqual(result.tolerancia.marcacoes_excedidas,[]); assert.equal(result.tolerancia.acumulado_minutos,11);
+    });
+    it('contabiliza antecipações e atrasos sem cancelar variações compensadas', () => {
+      const result=E.analyze(record(['07:57','12:03','13:03','17:33']),journey);
+      assert.equal(result.tolerancia.acumulado_minutos,12); assert.equal(result.saldo_calculado,0); assert.equal(result.classificacao,'CONFERIR');
+    });
+    it('crédito do cartão não aumenta a tolerância nem altera o saldo original', () => {
+      const r=record(['08:06','12:00','13:00','17:36'],{totais:{credito:'00:06',saldo:'-00:09'}}); const original=JSON.stringify(r);
+      const result=E.analyze(r,journey); assert.equal(result.classificacao,'CONFERIR'); assert.equal(result.tolerancia.dentro_tolerancia,false); assert.equal(result.saldo_calculado,-6); assert.equal(JSON.stringify(r),original);
+    });
+    it('configuração personalizada e limite zero são respeitados', () => {
+      assert.equal(E.analyze(record(['08:06','12:00','13:00','17:36']),journey,{...E.DEFAULT_RULES,tolerancia_batida:6}).classificacao,'REGULAR');
+      assert.equal(E.analyze(record(['08:01','12:00','13:00','17:36']),journey,{...E.DEFAULT_RULES,tolerancia_batida:0,tolerancia_diaria:0}).classificacao,'INCONSISTÊNCIA');
+    });
+    it('sem intervalo soma somente as duas marcações e não usa saldo do cartão', () => {
+      const result=E.analyze(record(['09:05','13:05',null,null],{totais:{saldo:'-12:00'}}),{trabalha:true,sem_intervalo:true,entrada_1:'09:00',saida_1:'13:00',minutos_esperados:240});
+      assert.equal(result.classificacao,'REGULAR'); assert.equal(result.tolerancia.acumulado_minutos,10); assert.equal(result.saldo_calculado,0);
+    });
+  });
   describe('Auditoria de ponto — jornada excepcional sem intervalo', () => {
     const saturday = { trabalha: true, sem_intervalo: true, entrada_1: '09:00', saida_1: '13:00', minutos_esperados: 240 };
     it('aceita horário combinado com duas batidas e preserva as folgas', () => {
@@ -73,9 +103,9 @@ module.exports = ({ describe, it, assert }) => {
     it('crédito do cartão evita decisão objetiva de débito', () => assert.equal(E.analyze(record(['08:00', '12:00', '13:00', '17:00'], { totais: { credito: '00:36' } }), journey).classificacao, 'CONFERIR'));
     it('divergência entre totais do cartão e cálculo exige conferência', () => assert.equal(E.analyze(record(['08:00', '12:00', '13:00', '17:00'], { totais: { debito: '00:00' } }), journey).classificacao, 'CONFERIR'));
     it('marcação manual permanece visível e para conferir por padrão', () => assert.equal(E.analyze(record(['08:00', '12:00', '13:00', '17:36'], { marcacao_manual: true }), journey).classificacao, 'CONFERIR'));
-    it('hora extra informa sem classificar como inconsistência', () => {
+    it('hora extra informa e variação acima da tolerância vai para conferência', () => {
       const result = E.analyze(record(['08:00', '12:00', '13:00', '18:00']), journey);
-      assert.equal(result.classificacao, 'REGULAR'); assert.ok(result.ocorrencias.some(o => o.tipo === 'extra'));
+      assert.equal(result.classificacao, 'CONFERIR'); assert.ok(result.ocorrencias.some(o => o.tipo === 'extra' && o.classificacao_automatica === 'REGULAR')); assert.ok(result.ocorrencias.some(o => o.tipo === 'horario'));
     });
     it('trabalho em feriado e folga exige conferência', () => {
       assert.equal(E.analyze(record(['08:00', '12:00', '13:00', '17:36'], { tipo_dia: 'feriado' }), journey).classificacao, 'CONFERIR');

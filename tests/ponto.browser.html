@@ -5,11 +5,11 @@ const employee = { id: 'test-person', nome: 'Pessoa de Teste', setor: 'Teste', a
 const rawRecords = [{Atendente:'Pessoa da Equipe',Setor:'Suporte'}, {Atendente:'Pessoa Inativa',Setor:'Teste'}, {Atendente:'PESSOA DA EQUIPE',Setor:'Suporte'}];
 function isColabActive(name){return name!=='Pessoa Inativa'}
 localStorage.setItem('sistema_colaboradores_info_v1',JSON.stringify({'Pessoa com Perfil':{setor_atual:'Operação'}}));
-let imported = null, stored = [], storedJustifications = [], uploadCount = 0, savedEmployee = null;
+let imported = null, stored = [], storedJustifications = [], uploadCount = 0, savedEmployee = null, savedRules = null;
 function query(table) {
   let filters = {}, single = false;
-  const q = { select(){return q}, order(){return q}, limit(){return q}, eq(k,v){filters[k]=v;return q}, maybeSingle(){single=true;return q}, single(){single=true;return q}, then(resolve,reject){
-    let data = table==='ponto_colaboradores' ? [employee] : table==='ponto_registros' ? stored : table==='ponto_justificativas' ? storedJustifications : imported ? [imported] : [];
+  const q = { upsert(values){savedRules=values;return q}, select(){return q}, order(){return q}, limit(){return q}, eq(k,v){filters[k]=v;return q}, maybeSingle(){single=true;return q}, single(){single=true;return q}, then(resolve,reject){
+    let data = table==='ponto_configuracoes' ? (savedRules ? [savedRules] : []) : table==='ponto_colaboradores' ? [employee] : table==='ponto_registros' ? stored : table==='ponto_justificativas' ? storedJustifications : imported ? [imported] : [];
     data=data.filter(row=>Object.entries(filters).every(([k,v])=>row[k]===v));
     return Promise.resolve({data:single?(data[0]||null):data,error:null}).then(resolve,reject);
   }}; return q;
@@ -37,6 +37,13 @@ window.addEventListener('load',async()=>{try{
     try{const pdf=await task.promise;let lines=[];for(let p=1;p<=pdf.numPages;p++)lines.push(...PontoEngine.pageLines((await(await pdf.getPage(p)).getTextContent()).items,p));employee.nome=PontoEngine.extract(lines).nome;lines=[]}finally{await task.destroy();if(bytes.byteLength)bytes.fill(0);bytes=null}
   }else inputFile=makePDF();
   onPontoTabActivated();await until(()=>document.getElementById('pontoFile'));
+  document.querySelector('[data-view="configuracoes"]').click();
+  assert(document.getElementsByName('tolerancia_batida')[0].value==='5','Padrão individual incorreto');
+  assert(document.getElementsByName('tolerancia_diaria')[0].value==='10','Padrão diário incorreto');
+  document.getElementsByName('tolerancia_batida')[0].value='4';
+  document.getElementById('pontoRulesForm').requestSubmit();
+  await until(()=>savedRules && !document.getElementById('pontoRoot').hasAttribute('aria-busy'));
+  assert(savedRules.user_id==='test-owner' && savedRules.tolerancia_batida===4,'Configuração não salva por líder');
   document.querySelector('[data-view="colaboradores"]').click();
   const roster = document.getElementById('pontoContent');
   assert(roster.textContent.includes('Pessoa com Perfil'),'Perfil sem desempenho ausente da auditoria');
@@ -85,6 +92,8 @@ window.addEventListener('load',async()=>{try{
   assert(!document.querySelector('#pontoRows .ponto-stats'),'Prévia mostra contagens antes da análise');
   assert(document.getElementById('pontoRows').textContent.includes('Não analisado'),'Prévia não distingue extração e análise');
   assert(document.getElementById('pontoEmployee').value===employee.id,'Nome não associado exatamente');
+  assert(document.getElementById('pontoTolerance').value==='4','Prévia não usa configuração salva');
+  document.getElementById('pontoTolerance').value='5';
   ['entrada_1','saida_1','entrada_2','saida_2'].forEach((k,i)=>document.getElementById('pontoMap_'+k).value=i+1);
   document.getElementById('pontoConfirm').checked=true;document.getElementById('pontoAnalyze').click();
   assert(document.getElementById('pontoRows').textContent.includes('REGULAR'),'Resultado não renderizado');
