@@ -2,6 +2,9 @@
 <script>
 // Test data are fictional. This verifies browser extraction and UI, not Supabase RLS.
 const employee = { id: 'test-person', nome: 'Pessoa de Teste', setor: 'Teste', ativo: true, ponto_jornadas: Array.from({length:7},(_,dia_semana)=>({dia_semana,trabalha:dia_semana>0&&dia_semana<6,entrada_1:'08:00:00',saida_1:'12:00:00',entrada_2:'13:00:00',saida_2:'17:36:00',minutos_esperados:516})) };
+const rawRecords = [{Atendente:'Pessoa da Equipe',Setor:'Suporte'}, {Atendente:'Pessoa Inativa',Setor:'Teste'}, {Atendente:'PESSOA DA EQUIPE',Setor:'Suporte'}];
+function isColabActive(name){return name!=='Pessoa Inativa'}
+localStorage.setItem('sistema_colaboradores_info_v1',JSON.stringify({'Pessoa com Perfil':{setor_atual:'Operação'}}));
 let imported = null, stored = [], storedJustifications = [], uploadCount = 0, savedEmployee = null;
 function query(table) {
   let filters = {}, single = false;
@@ -34,7 +37,24 @@ window.addEventListener('load',async()=>{try{
     try{const pdf=await task.promise;let lines=[];for(let p=1;p<=pdf.numPages;p++)lines.push(...PontoEngine.pageLines((await(await pdf.getPage(p)).getTextContent()).items,p));employee.nome=PontoEngine.extract(lines).nome;lines=[]}finally{await task.destroy();if(bytes.byteLength)bytes.fill(0);bytes=null}
   }else inputFile=makePDF();
   onPontoTabActivated();await until(()=>document.getElementById('pontoFile'));
-  document.querySelector('[data-view="colaboradores"]').click();document.getElementById('pontoNew').click();
+  document.querySelector('[data-view="colaboradores"]').click();
+  const roster = document.getElementById('pontoContent');
+  assert(roster.textContent.includes('Pessoa com Perfil'),'Perfil sem desempenho ausente da auditoria');
+  assert(roster.textContent.includes('PESSOA DA EQUIPE'),'Ativo do sistema ausente da auditoria');
+  assert(!roster.textContent.includes('Pessoa Inativa'),'Inativo do sistema incluído automaticamente');
+  assert(roster.querySelectorAll('[data-person]').length===3,'Nomes duplicados na auditoria');
+  const rosterButton = [...roster.querySelectorAll('[data-person]')].find(b=>b.closest('tr').textContent.includes('Pessoa com Perfil'));
+  rosterButton.click();
+  assert(document.getElementsByName('nome')[0].value==='Pessoa com Perfil','Nome do perfil não preenchido');
+  assert(document.getElementsByName('nome')[0].readOnly,'Nome do perfil pode perder vínculo');
+  assert(document.getElementsByName('setor')[0].value==='Operação','Setor do perfil não preenchido');
+  const profile = document.createElement('section');document.body.append(profile);
+  await window.renderPontoProfile(employee.nome,profile);
+  assert(profile.textContent.includes('08:00') && profile.textContent.includes('Folga'),'Perfil não exibe jornada salva');
+  await window.renderPontoProfile('Pessoa com Perfil',profile);
+  assert(profile.textContent.includes('Jornada ainda não cadastrada'),'Perfil sem jornada assume horários');
+  profile.remove();
+  document.getElementById('pontoNew').click();
   assert(document.querySelectorAll('[data-day]').length===7,'Cadastro não apresenta sete dias');
   assert(document.getElementById('pontoFixedSchedule').checked,'Novo cadastro sem horário fixo');
   assert(document.querySelector('[name=entrada_11]').disabled,'Horários diários editáveis no modo fixo');
@@ -52,6 +72,11 @@ window.addEventListener('load',async()=>{try{
   assert(savedEmployee.p_jornadas.filter(j=>j.trabalha).length===5,'Dias trabalhados incorretos');
   assert(savedEmployee.p_jornadas.filter(j=>j.trabalha).every(j=>j.entrada_1==='08:00' && j.saida_2==='17:36' && j.minutos_esperados===516),'Horário fixo não aplicado');
   assert(savedEmployee.p_jornadas.filter(j=>!j.trabalha).every(j=>j.minutos_esperados===0),'Folgas receberam jornada');
+  const existingButton = [...document.querySelectorAll('[data-person]')].find(b=>b.closest('tr').textContent.includes(employee.nome));
+  existingButton.click();savedEmployee=null;
+  document.getElementById('pontoEmployeeForm').requestSubmit();
+  await until(()=>savedEmployee && !document.getElementById('pontoRoot').hasAttribute('aria-busy'));
+  assert(savedEmployee.p_id===employee.id,'Jornada existente duplicada ao editar');
   document.querySelector('[data-view="importar"]').click();
   const dt=new DataTransfer();dt.items.add(inputFile);const file=document.getElementById('pontoFile');file.files=dt.files;file.dispatchEvent(new Event('change'));dt.items.clear();inputFile=null;
   document.getElementById('pontoStart').value='2026-09-01';document.getElementById('pontoEnd').value='2026-10-03';document.getElementById('pontoImportForm').requestSubmit();

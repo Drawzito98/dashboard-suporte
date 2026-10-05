@@ -63,3 +63,10 @@ O cadastro oferece horário fixo por colaborador nos dias trabalhados. Cadastros
 Na prévia da importação, “Jornadas excepcionais por data” permite informar o horário previsto para um sábado eventual ou outra data. A exceção não se repete nos demais dias e não é inferida das batidas realizadas. Aceita quatro batidas com intervalo ou duas sem intervalo. Os dados originais permanecem intactos; a jornada excepcional e sua observação ficam no snapshot da importação e no resultado calculado do dia, disponíveis no histórico. Não exige migration.
 
 Sem uma exceção informada, trabalho em folga continua para conferência. Feriados e folgas explicitamente indicados no documento mantêm suas regras de conferência, mesmo com jornada excepcional. Documentos com estrutura incerta continuam para conferência.
+
+
+### Integração com a equipe e o perfil
+
+A lista da auditoria inclui os nomes ativos dos dados de desempenho e dos perfis da equipe, sem depender dos filtros de período ou setor. Nome e setor são preenchidos ao cadastrar a jornada. Os cadastros de ponto existentes são preservados e reutilizados por nome completo normalizado; associação ambígua exige revisão. Pessoas inativas não são incluídas automaticamente nem selecionadas na importação, e cadastros de ponto anteriores continuam acessíveis para edição.
+
+O perfil da equipe apresenta as jornadas salvas e um botão para cadastrar/editar na auditoria. A fonte dos horários continua sendo `ponto_colaboradores` e `ponto_jornadas`, com as mesmas políticas privadas por administrador. Não se duplicam horários em localStorage ou no cadastro de desempenho. A relação usa o nome, seguindo a identificação atual dos perfis; renomeações devem ser revisadas explicitamente. Não exige migration.

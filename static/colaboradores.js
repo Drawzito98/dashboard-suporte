@@ -381,6 +381,7 @@ function openColabDetailOverlay(nome) {
   </header>`;
 
   html += `<form id="colabInfoForm" class="ci-dialog-form">`;
+  if (document.body.dataset.role === "admin") html += '<section class="ci-form-section" id="ciPontoJornada"></section>';
   html += `<section class="ci-form-section">
     <div class="ci-form-section-title"><div><strong>Dados cadastrais</strong><small>Informações básicas do colaborador</small></div></div>
     <div class="ci-form-grid">
@@ -470,6 +471,8 @@ function openColabDetailOverlay(nome) {
   overlay.scrollTop = 0;
   if (detailPanel) detailPanel.scrollTop = 0;
 
+  const pontoProfile = document.getElementById("ciPontoJornada");
+  if (pontoProfile && typeof window.renderPontoProfile === "function") window.renderPontoProfile(nome, pontoProfile);
   const condutaToggle = document.getElementById("ciCondutaToggle");
   const feitoToggle = document.getElementById("ciFeitoToggle");
   feitoToggle.addEventListener("change", () => {

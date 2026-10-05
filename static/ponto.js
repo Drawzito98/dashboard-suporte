@@ -5,7 +5,7 @@
   const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const keys = ['entrada_1', 'saida_1', 'entrada_2', 'saida_2', 'horas_normais', 'debito', 'credito', 'saldo'];
   const labels = ['Entrada', 'Saída intervalo', 'Retorno', 'Saída', 'Horas normais', 'Débito', 'Crédito', 'Saldo'];
-  let employees = [], imports = [], preview = null, lines = [], file = null, owner = null, busy = false, generation = 0, activeTask = null;
+  let employees = [], imports = [], preview = null, lines = [], file = null, owner = null, busy = false, generation = 0, activeTask = null, requestedEmployee = null;
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const root = () => document.getElementById('pontoRoot');
   const get = id => document.getElementById(id);
@@ -52,7 +52,12 @@
       <nav class="ponto-nav" aria-label="Auditoria de ponto"><button type="button" class="btn-small" data-view="importar">Importar Ponto</button><button type="button" class="btn-small" data-view="colaboradores">Colaboradores e jornadas</button><button type="button" class="btn-small" data-view="resultados">Análises salvas</button></nav>
       <div id="pontoContent"></div></div>`;
     root().querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => view(b.dataset.view)));
-    view('importar');
+    if (requestedEmployee) {
+      const name = requestedEmployee; requestedEmployee = null;
+      view('colaboradores');
+      const person = systemPeople().find(p => p.nome === name) || { nome: name, setor: '', ativo: true, ponto_jornadas: [], system: true };
+      editEmployee(resolvePerson(person));
+    } else view('importar');
   }
   function view(name) {
     notice('');
@@ -61,11 +66,28 @@
     else if (name === 'resultados') renderImports();
     else renderImport();
   }
+  function systemPeople() {
+    let info = {};
+    try { info = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (_) {}
+    const records = typeof rawRecords === 'undefined' ? [] : rawRecords || [];
+    const names = [...new Map([...records.map(r => String(r?.Atendente || '').trim()), ...Object.keys(info)].map(nome => [E.normalizeName(nome), nome])).values()];
+    return names.filter(nome => nome && (typeof isAggregateName !== 'function' || !isAggregateName(nome)) && (typeof isColabActive !== 'function' || isColabActive(nome))).map(nome => ({
+      nome, setor: info[nome]?.setor_atual || records.filter(r => String(r?.Atendente || '').trim() === nome && r.Setor).at(-1)?.Setor || '', ativo: true, ponto_jornadas: [], system: true
+    }));
+  }
+  function resolvePerson(person) {
+    const matches = employees.filter(e => E.normalizeName(e.nome) === E.normalizeName(person.nome));
+    if (matches.length > 1) throw new Error('Há mais de um cadastro de ponto para este nome. Revise a associação antes de editar.');
+    return matches.length === 1 ? { ...matches[0], system: true } : person;
+  }
   function renderEmployees() {
-    get('pontoContent').innerHTML = `<section class="ponto-card"><h3>Colaboradores</h3><p>Cadastro exclusivo para jornadas. Os dados de desempenho da equipe são preservados.</p><button id="pontoNew" class="btn-primary" type="button">Cadastrar colaborador</button>
-      <div class="ponto-table"><table><thead><tr><th>Nome</th><th>Setor</th><th>Status</th><th>Jornada</th></tr></thead><tbody>${employees.map(e => `<tr><td>${esc(e.nome)}</td><td>${esc(e.setor)}</td><td>${e.ativo ? 'Ativo' : 'Inativo'}</td><td><button class="btn-small" type="button" data-edit="${esc(e.id)}">Editar</button></td></tr>`).join('') || '<tr><td colspan="4">Nenhum colaborador cadastrado.</td></tr>'}</tbody></table></div></section><div id="pontoEditor"></div>`;
+    const people = systemPeople();
+    const names = new Set(people.map(p => E.normalizeName(p.nome)));
+    const roster = [...people, ...employees.filter(e => !names.has(E.normalizeName(e.nome)))].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    get('pontoContent').innerHTML = `<section class="ponto-card"><h3>Colaboradores</h3><p>Os colaboradores ativos da equipe aparecem automaticamente. Cadastre a jornada uma vez para usar nas próximas análises e consultar no perfil.</p><button id="pontoNew" class="btn-primary" type="button">Cadastrar outro colaborador</button>
+      <div class="ponto-table"><table><thead><tr><th>Nome</th><th>Setor</th><th>Status</th><th>Jornada</th></tr></thead><tbody>${roster.map((e, i) => `<tr><td>${esc(e.nome)}</td><td>${esc(e.setor)}</td><td>${e.ativo && (typeof isColabActive !== 'function' || isColabActive(e.nome)) ? 'Ativo' : 'Inativo'}</td><td><button class="btn-small" type="button" data-person="${i}">${e.id || employees.some(p => E.normalizeName(p.nome) === E.normalizeName(e.nome)) ? 'Editar jornada' : 'Cadastrar jornada'}</button></td></tr>`).join('') || '<tr><td colspan="4">Nenhum colaborador ativo encontrado. Cadastre na equipe ou importe os dados de desempenho.</td></tr>'}</tbody></table></div></section><div id="pontoEditor"></div>`;
     get('pontoNew').onclick = () => editEmployee();
-    root().querySelectorAll('[data-edit]').forEach(b => b.onclick = () => editEmployee(employees.find(e => e.id === b.dataset.edit)));
+    root().querySelectorAll('[data-person]').forEach(b => b.onclick = () => { try { const person = roster[Number(b.dataset.person)]; editEmployee(person.system ? resolvePerson(person) : person); } catch (e) { notice(e.message, true); } });
   }
   function editEmployee(employee) {
     const schedules = employee?.ponto_jornadas || [];
@@ -73,8 +95,8 @@
     const base = working[0];
     const signature = j => JSON.stringify([j.minutos_esperados, ...keys.slice(0, 4).map(k => j[k]?.slice(0, 5))]);
     const varied = working.some(j => signature(j) !== signature(base));
-    get('pontoEditor').innerHTML = `<form id="pontoEmployeeForm" class="ponto-card"><h3>${employee ? 'Editar' : 'Cadastrar'} colaborador</h3><div class="ponto-grid">
-      <label>Nome completo<input name="nome" required maxlength="200" value="${esc(employee?.nome)}"></label><label>Setor<input name="setor" maxlength="120" value="${esc(employee?.setor)}"></label>
+    get('pontoEditor').innerHTML = `<form id="pontoEmployeeForm" class="ponto-card"><h3>${employee?.id ? 'Editar' : 'Cadastrar'} jornada do colaborador</h3><div class="ponto-grid">
+      <label>Nome completo<input name="nome" ${employee?.system ? 'readonly' : ''} required maxlength="200" value="${esc(employee?.nome)}"></label><label>Setor<input name="setor" maxlength="120" value="${esc(employee?.setor)}"></label>
       <label>Status<select name="ativo"><option value="true">Ativo</option><option value="false" ${employee?.ativo === false ? 'selected' : ''}>Inativo</option></select></label><label>Observações<textarea name="observacoes" maxlength="2000">${esc(employee?.observacoes)}</textarea></label></div>
       <h4>Jornada do colaborador</h4><p>Informe o horário fixo da pessoa e marque os dias trabalhados abaixo.</p>
       <label class="ponto-check"><input type="checkbox" name="fixed" id="pontoFixedSchedule" ${varied ? '' : 'checked'}>Usar o mesmo horário em todos os dias trabalhados</label>
@@ -103,7 +125,7 @@
         return j;
       });
       await checked(sbClient.rpc('ponto_salvar_colaborador', { p_id: employee?.id || null, p_nome: form.get('nome'), p_setor: form.get('setor'), p_ativo: form.get('ativo') === 'true', p_observacoes: form.get('observacoes'), p_jornadas: journeys }));
-      await load(); renderEmployees(); notice('Colaborador e jornada salvos.');
+      await load(); renderEmployees(); window.dispatchEvent(new CustomEvent('ponto-jornada-saved', { detail: { nome: form.get('nome') } })); notice('Colaborador e jornada salvos.');
     }); };
   }
   function renderImport() {
@@ -153,7 +175,7 @@
       get('pontoStart').value = start; get('pontoEnd').value = end;
       if (!extracted.rows.length) throw new Error(extracted.warnings.join(' '));
       if (extracted.rows.length > 400) throw new Error('Mais de 400 registros; confira o período e o layout.');
-      preview = { ...extracted, paginas_processadas: pageCount, arquivo: originalName, start, end, sha, mapping: {}, confirmed: false, employeeId: E.identify(extracted.nome, employees.filter(e => e.ativo)), records: [] };
+      preview = { ...extracted, paginas_processadas: pageCount, arquivo: originalName, start, end, sha, mapping: {}, confirmed: false, employeeId: E.identify(extracted.nome, employees.filter(e => e.ativo && (typeof isColabActive !== 'function' || isColabActive(e.nome)))), records: [] };
       renderPreview(); notice('Extração concluída. Confirme as colunas e revise os registros.');
       } finally { if (bytes?.byteLength) bytes.fill(0); bytes = null; discardSelectedFile(); lines = []; }
     }); };
@@ -162,7 +184,7 @@
   function renderPreview() {
     const positioned = preview.rows.every(r => r.campos_documento);
     get('pontoPreview').innerHTML = `<section class="ponto-card"><h3>Prévia do documento</h3><p>${preview.paginas_processadas} páginas processadas · ${preview.rows.length} registros diários · ${preview.justificativas.length} justificativas/alterações</p><p>Saldo final informado no cartão: <strong>${esc(preview.totais_documento?.saldo ?? 'Não identificado')}</strong></p>${documentSchedule(preview.jornadas_documento)}<p>O PDF foi descartado após a extração. Somente os dados estruturados serão salvos.</p><p>${preview.employeeId ? 'Nome corresponde exatamente a um cadastro. Confirme a associação.' : 'Associação automática não confirmada. Selecione o colaborador correto.'}</p>${preview.warnings.map(w => `<p class="ponto-notice error">${esc(w)}</p>`).join('')}
-      <label>Colaborador<select id="pontoEmployee"><option value="">Selecione com base no documento</option>${employees.filter(e => e.ativo).map(e => `<option value="${esc(e.id)}" ${e.id === preview.employeeId ? 'selected' : ''}>${esc(e.nome)} · ${esc(e.setor)}</option>`).join('')}</select></label>
+      <label>Colaborador<select id="pontoEmployee"><option value="">Selecione com base no documento</option>${employees.filter(e => e.ativo && (typeof isColabActive !== 'function' || isColabActive(e.nome))).map(e => `<option value="${esc(e.id)}" ${e.id === preview.employeeId ? 'selected' : ''}>${esc(e.nome)} · ${esc(e.setor)}</option>`).join('')}</select></label>
       ${positioned ? '<p>Colunas identificadas pelo cabeçalho e pela posição no PDF. Batidas vazias e terceira entrada/saída são preservadas.</p>' : '<h4>Ordem dos valores no cartão</h4><p>Informe a posição de cada coluna entre os valores de horário da linha (1, 2, 3…). Deixe os totais em branco se não existirem. Linhas incompletas ficam para conferir.</p>'}
       <div class="ponto-grid" ${positioned ? 'hidden' : ''}>${keys.map((k, i) => `<label>${labels[i]}<input type="number" min="1" max="20" id="pontoMap_${k}" ${i < 4 && !positioned ? 'required' : ''} value="${preview.mapping[k] >= 0 ? preview.mapping[k] + 1 : ''}" placeholder="Posição"></label>`).join('')}</div>
       <div class="ponto-grid"><label>Tolerância por batida (min)<input id="pontoTolerance" type="number" min="0" max="120" value="5"></label><label>Limite diário (min)<input id="pontoDaily" type="number" min="0" max="240" value="10"></label></div>
@@ -200,7 +222,7 @@
   }
   function calculate() {
     if (!preview) throw new Error('Importe um PDF primeiro.');
-    const employee = employees.find(e => e.id === get('pontoEmployee').value && e.ativo);
+    const employee = employees.find(e => e.id === get('pontoEmployee').value && e.ativo && (typeof isColabActive !== 'function' || isColabActive(e.nome)));
     if (!employee || !get('pontoConfirm').checked) throw new Error('Selecione o colaborador e confirme a conferência do documento.');
     const mapping = Object.fromEntries(keys.map(k => [k, get('pontoMap_' + k).value === '' ? null : Number(get('pontoMap_' + k).value) - 1]));
     if ((!preview.rows.every(r => r.campos_documento) && keys.slice(0, 4).some(k => !Number.isInteger(mapping[k]) || mapping[k] < 0)) || Object.values(mapping).some(v => v !== null && (!Number.isInteger(v) || v < 0 || v > 19))) throw new Error('Informe posições válidas para as quatro batidas.');
@@ -278,6 +300,27 @@
     records.forEach(r => { r.justificativas = justifications.filter(j => j.registro_ponto_id === r.id); });
     renderRows(records, get('pontoResultRows'));
   }
+  window.renderPontoProfile = async (name, element) => {
+    element.textContent = 'Carregando jornada…';
+    try {
+      const { data, error } = await sbClient.auth.getUser();
+      if (error || !data.user || getTrustedUserRole(data.user) !== 'admin') { element.textContent = ''; return; }
+      const rows = await checked(sbClient.from('ponto_colaboradores').select('*,ponto_jornadas(*)').order('nome'));
+      const session = await sbClient.auth.getUser();
+      if (!element.isConnected || session.error || session.data.user?.id !== data.user.id || getTrustedUserRole(session.data.user) !== 'admin') return;
+      const matches = rows.filter(e => E.normalizeName(e.nome) === E.normalizeName(name));
+      if (matches.length > 1) { element.textContent = 'Há cadastros de ponto ambíguos para este nome. Revise na auditoria.'; return; }
+      const employee = matches[0];
+      element.innerHTML = `<strong>Jornada de ponto</strong>${employee ? `<p>Status: ${employee.ativo ? 'Ativo' : 'Inativo'}</p>${employee.ponto_jornadas.map(j => `<p>${days[j.dia_semana]}: ${j.trabalha ? keys.slice(0, 4).map(k => esc(j[k]?.slice(0, 5) || '—')).join(' | ') + ' · ' + fmt(j.minutos_esperados).slice(1) : 'Folga'}</p>`).join('')}` : '<p>Jornada ainda não cadastrada.</p>'}<button class="btn-small" type="button">${employee ? 'Editar jornada' : 'Cadastrar jornada'}</button>`;
+      element.querySelector('button').onclick = () => {
+        if (busy) return;
+        requestedEmployee = name;
+        if (typeof closeColabDetail === 'function') closeColabDetail();
+        if (document.body.dataset.activeTab === 'ponto') window.onPontoTabActivated();
+        else document.querySelector('[data-tab="ponto"]')?.click();
+      };
+    } catch (_) { if (element.isConnected) element.textContent = 'Não foi possível carregar a jornada de ponto. Consulte a auditoria.'; }
+  };
   window.onPontoTabActivated = () => {
     if (!root() || busy) return;
     root().innerHTML = '<div class="ponto-module"><div id="pontoNotice" role="status">Carregando auditoria…</div></div>';
@@ -286,9 +329,9 @@
   document.addEventListener('DOMContentLoaded', () => {
     const button = document.querySelector('[data-tab="ponto"]');
     // UI visibility is secondary; RLS enforces access on every operation.
-    const syncAccess = () => { const allowed = document.body.dataset.role === 'admin'; if (button) button.hidden = !allowed; if (!allowed) { generation++; employees = []; imports = []; owner = null; clearFile(); if (root()) root().innerHTML = ''; } };
+    const syncAccess = () => { const allowed = document.body.dataset.role === 'admin'; if (button) button.hidden = !allowed; if (!allowed) { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; clearFile(); if (root()) root().innerHTML = ''; } };
     new MutationObserver(syncAccess).observe(document.body, { attributes: true, attributeFilter: ['data-role'] }); syncAccess();
     new MutationObserver(() => { if (document.body.dataset.activeTab !== 'ponto' && (file || preview || activeTask)) { generation++; clearFile(); if (root()) root().innerHTML = ''; } }).observe(document.body, { attributes: true, attributeFilter: ['data-active-tab'] });
-    sbClient?.auth.onAuthStateChange(event => { if (event === 'SIGNED_OUT') { generation++; employees = []; imports = []; owner = null; clearFile(); if (root()) root().innerHTML = ''; } });
+    sbClient?.auth.onAuthStateChange(event => { if (event === 'SIGNED_OUT') { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; clearFile(); if (root()) root().innerHTML = ''; } });
   });
 })();
