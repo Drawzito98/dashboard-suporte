@@ -20,7 +20,17 @@ assert.throws(() => report(rows, { ...options, end: '2026-09-01' }));
 assert.throws(() => processCsv(data, fields.filter(f => f !== 'TMA')));
 assert.throws(() => processCsv([data[0], data[0]], fields));
 assert.throws(() => processCsv([{ ...data[0], TMA: '00:99:00' }], fields));
-assert.throws(() => processCsv([{ ...data[0], 'Média avaliação': '' }], fields));
+for (const missing of ['', '-', '—', 'N/A', 'Sem avaliação']) {
+  const incomplete = processCsv([{ ...data[0], 'Média avaliação': missing }, data[1]], fields);
+  const partial = report(incomplete, { ...options, order: 'CSAT' });
+  assert.equal(partial.metrics[3][1], '5,00 / 5,00');
+  assert.equal(partial.ranking[1].csat, null);
+  assert.ok(partial.markdown.includes('Sem classificação'));
+  assert.ok(partial.markdown.includes('1 dos 2 atendentes'));
+}
+assert.equal(report(processCsv([{ ...data[0], 'Média avaliação': '' }], fields), options).metrics[3][1], 'Sem avaliação');
+assert.equal(report(processCsv([{ ...data[0], 'Média avaliação': '0' }], fields), options).metrics[3][1], '0,00 / 5,00');
+assert.throws(() => processCsv([{ ...data[0], 'Média avaliação': 'texto inesperado' }], fields));
 assert.throws(() => report(processCsv(data.slice(0, 2), fields.filter(f => f !== 'SCORE')), { ...options, order: 'SCORE' }));
 assert.equal(time(90061), '25:01:01');
 const malicious = processCsv([{ ...data[0], Atendente: '<img src=x onerror=alert(1)>|Alice' }], fields);

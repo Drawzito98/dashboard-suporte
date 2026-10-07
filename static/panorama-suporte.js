@@ -39,7 +39,9 @@
       if (!name) throw new Error(`${label}: atendente vazio.`);
       if (seen.has(normalize(name))) throw new Error(`${label}: atendente repetido. Use um CSV consolidado com uma linha por pessoa.`);
       seen.add(normalize(name));
-      const csat = number(get('media avaliacao'), `${label}, CSAT`);
+      const rawCsat = String(get('media avaliacao') ?? '').trim();
+      const missingCsat = /^(?:|[-–—]+|n\/?a|n\/?d|sem avalia[cç][aã]o|n[aã]o avaliado)$/i.test(rawCsat);
+      const csat = missingCsat ? null : number(rawCsat, `${label}, CSAT (esperado: nota de 0 a 5 ou vazio quando não avaliado)`);
       if (csat > 5) throw new Error(`${label}: CSAT deve estar entre 0 e 5.`);
       rows.push({ name, alias: `Atendente ${String(rows.length + 1).padStart(2, '0')}`, finalizados: number(get('finalizados'), `${label}, Finalizados`, true), clientes: number(get('clientes atendidos'), `${label}, Clientes atendidos`, true), csat, tma: seconds(get('tma'), `${label}, TMA`), tmr: seconds(get('tmr'), `${label}, TMR`), score: map.score ? number(get('score'), `${label}, SCORE`) : null });
     });
@@ -53,21 +55,24 @@
     if (!key) throw new Error('Critério de ordenação inválido.');
     if (key === 'score' && rows.some(r => r.score === null)) throw new Error('Para ordenar por SCORE, inclua uma coluna SCORE numérica no CSV.');
     const sum = field => rows.reduce((total, row) => total + row[field], 0);
-    const ranking = rows.map(r => ({ ...r, name: options.hide ? r.alias : r.name })).sort((a, b) => b[key] - a[key]);
-    const metrics = [ ['Total de Finalizados no Setor', fmt(sum('finalizados'))], ['Média de Finalizados por Atendente', fmt(sum('finalizados') / rows.length, 2)], ['Clientes Atendidos (soma por atendente)', fmt(sum('clientes'))], ['Média de Satisfação (CSAT)', `${fmt(sum('csat') / rows.length, 2)} / 5,00`], ['TMA Médio do Setor', time(sum('tma') / rows.length)], ['TMR Médio do Setor', time(sum('tmr') / rows.length)] ];
+    const ranking = rows.map(r => ({ ...r, name: options.hide ? r.alias : r.name })).sort((a, b) => a[key] === null ? (b[key] === null ? 0 : 1) : b[key] === null ? -1 : b[key] - a[key]);
+    const evaluated = rows.filter(r => r.csat !== null);
+    const csatText = value => value === null ? 'Sem avaliação' : fmt(value, 2);
+    const csatNote = evaluated.length < rows.length ? `CSAT calculado pela média simples de ${evaluated.length} dos ${rows.length} atendentes com nota disponível. Valores ausentes não são tratados como zero e ficam no fim do ranking por CSAT.` : '';
+    const metrics = [ ['Total de Finalizados no Setor', fmt(sum('finalizados'))], ['Média de Finalizados por Atendente', fmt(sum('finalizados') / rows.length, 2)], ['Clientes Atendidos (soma por atendente)', fmt(sum('clientes'))], ['Média de Satisfação (CSAT)', evaluated.length ? `${fmt(sum('csat') / evaluated.length, 2)} / 5,00` : 'Sem avaliação'], ['TMA Médio do Setor', time(sum('tma') / rows.length)], ['TMR Médio do Setor', time(sum('tmr') / rows.length)] ];
     const best = [...ranking].sort((a, b) => b.finalizados - a.finalizados)[0];
     const slow = [...ranking].sort((a, b) => b.tmr - a.tmr || b.tma - a.tma)[0];
-    const highlight = `${best.name} liderou o volume com ${fmt(best.finalizados)} finalizados e CSAT ${fmt(best.csat, 2)}.`;
+    const highlight = `${best.name} liderou o volume com ${fmt(best.finalizados)} finalizados; CSAT: ${csatText(best.csat)}.`;
     const attention = `${slow.name} apresentou o maior TMR (${time(slow.tmr)}); revisar o contexto dos atendimentos antes de definir ações.`;
     const date = value => value.split('-').reverse().join('/');
     const title = `📊 Panorama Parcial de Suporte - Setor ${options.sector.trim()}`;
     const subtitle = `Período: ${date(options.start)} a ${date(options.end)} | Visualização: ${options.hide ? 'Exibição Pública / Anonimizada' : 'Exibição Interna'}`;
     const headers = ['Posição', 'Atendente', 'Finalizados', 'Clientes Atendidos', 'CSAT (Média)', 'TMA', 'TMR'];
     if (key === 'score') headers.push('SCORE');
-    const cells = ranking.map((r, i) => [position(i), r.name, fmt(r.finalizados), fmt(r.clientes), fmt(r.csat, 2), time(r.tma), time(r.tmr), ...(key === 'score' ? [fmt(r.score, 2)] : [])]);
+    const cells = ranking.map((r, i) => [key === 'csat' && r.csat === null ? 'Sem classificação' : position(i), r.name, fmt(r.finalizados), fmt(r.clientes), csatText(r.csat), time(r.tma), time(r.tmr), ...(key === 'score' ? [fmt(r.score, 2)] : [])]);
     const markdown = `# ${md(title)}\n**${md(subtitle)}**\n\n---\n\n## 📈 CARDS DE DESEMPENHO DO SETOR\n${metrics.map(([k, v]) => `- 🔹 ${k}: ${v}`).join('\n')}\n\nClientes atendidos é a soma por pessoa; um cliente pode aparecer em mais de um atendente.\n\n---\n\n## 🏆 RANKING DE PERFORMANCE\n*Ordenado por: ${options.order}*\n\n| ${headers.join(' | ')} |\n| ${headers.map(() => ':---:').join(' | ')} |\n${cells.map(row => `| ${row.map(md).join(' | ')} |`).join('\n')}\n\n---\n\n## 💡 ANÁLISE RÁPIDA DA GESTÃO\n- **Destaque do Período:** ${md(highlight)}\n- **Ponto de Atenção:** ${md(attention)}\n`;
     const html = `<h2>${escape(title)}</h2><p>${escape(subtitle)}</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">${metrics.map(([label, value]) => `<div class="card"><div>${escape(label)}</div><strong style="font-size:1.5rem">${escape(value)}</strong></div>`).join('')}</div><p class="muted">Clientes atendidos é a soma por pessoa; um cliente pode aparecer em mais de um atendente.</p><h3>🏆 Ranking de performance</h3><p>Ordenado por: ${options.order}</p><div style="overflow-x:auto"><table style="width:100%"><thead><tr>${headers.map(h => `<th>${escape(h)}</th>`).join('')}</tr></thead><tbody>${cells.map(row => `<tr>${row.map(cell => `<td>${escape(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><h3>💡 Análise rápida da gestão</h3><p><strong>Destaque do Período:</strong> ${escape(highlight)}</p><p><strong>Ponto de Atenção:</strong> ${escape(attention)}</p>`;
-    return { markdown, html, ranking, metrics };
+    return { markdown: csatNote ? `${markdown}\n${csatNote}\n` : markdown, html: csatNote ? `${html}<p>${escape(csatNote)}</p>` : html, ranking, metrics };
   }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = { process, report, time };
