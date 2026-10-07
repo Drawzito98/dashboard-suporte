@@ -1,3 +1,13 @@
+function getColabSetoresDisponiveis(colabInfo, setorAtual = '') {
+  const labels = new Map();
+  [setorAtual, ...(rawRecords || []).map(row => row && row.Setor), ...Object.values(colabInfo || {}).map(info => info && info.setor_atual)].forEach(value => {
+    const label = String(value || '').trim().replace(/\s+/g, ' ');
+    const key = label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (label && !labels.has(key)) labels.set(key, label);
+  });
+  return [...labels.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
 // colaboradores.js — Equipe (cadastro com dados pessoais)
 
 function renderColaboradores() {
@@ -128,10 +138,7 @@ function openNovoColaboradorModal() {
   if (!requireAdmin()) return;
   document.getElementById("novoColaboradorModal")?.remove();
   const colabInfo = JSON.parse(localStorage.getItem("sistema_colaboradores_info_v1") || "{}");
-  const setoresDisponiveis = [...new Set([
-    ...(rawRecords || []).map(r => r && r["Setor"]),
-    ...Object.values(colabInfo).map(info => info && info.setor_atual)
-  ].filter(Boolean).map(value => String(value).trim()))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const setoresDisponiveis = getColabSetoresDisponiveis(colabInfo);
   const modal = document.createElement("div");
   modal.id = "novoColaboradorModal";
   modal.className = "modal-overlay";
@@ -140,7 +147,7 @@ function openNovoColaboradorModal() {
     <form id="novoColaboradorForm">
       <div class="novo-colaborador-photo-row"><div class="novo-colaborador-photo-preview" id="novoColaboradorFotoPreview">👤</div><label class="field"><span>Foto de perfil</span><input type="file" id="novoColaboradorFoto" accept="image/*"><small>JPG, PNG ou WebP · máximo 8 MB</small></label></div>
       <label class="field"><span>Nome completo</span><input type="text" id="novoColaboradorNome" autocomplete="off" maxlength="120" placeholder="Digite o nome do colaborador" required></label>
-      <label class="field"><span>Setor atual</span><input type="text" id="novoColaboradorSetor" list="novoColaboradorSetores" autocomplete="off" maxlength="120" placeholder="Selecione ou digite o setor" required><datalist id="novoColaboradorSetores">${setoresDisponiveis.map(setor => `<option value="${escapeHtml(setor)}">`).join("")}</datalist></label>
+      <label class="field"><span>Setor atual</span><select id="novoColaboradorSetor" required><option value="">Selecione o setor...</option>${setoresDisponiveis.map(setor => `<option value="${escapeHtml(setor)}">${escapeHtml(setor)}</option>`).join("")}</select><small>Escolha o setor em que a pessoa trabalha atualmente.</small></label>
       <div class="modal-actions"><button class="btn-small" id="novoColaboradorCancelar" type="button">Cancelar</button><button class="btn-primary" type="submit">Criar e completar perfil</button></div>
     </form>
   </div>`;
@@ -365,7 +372,7 @@ function openColabDetailOverlay(nome) {
     .filter(r => r && r["Atendente"] === nome && r["Setor"])
     .map(r => String(r["Setor"]).trim()))];
   const setorAtual = info.setor_atual || setores[setores.length - 1] || "";
-  const setoresDisponiveis = [...new Set([setorAtual, ...(rawRecords || []).map(r => r && r["Setor"])].filter(Boolean).map(value => String(value).trim()))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const setoresDisponiveis = getColabSetoresDisponiveis(colabInfo, setorAtual);
   const condutaChecked = info.conduta_negativa === "true" || info.conduta_negativa === true;
   const feitoChecked = info.feito_relevante === "true" || info.feito_relevante === true;
   const nivelAtual = info.nivel || "";
@@ -389,7 +396,7 @@ function openColabDetailOverlay(nome) {
       <label class="field"><span>Admissão</span><input type="date" id="ciAdmissao" value="${info.data_admissao || ""}"></label>
       <label class="field ci-span-2"><span>Salário (R$)</span><input type="number" id="ciSalario" min="0" max="99999999.99" step="0.01" inputmode="decimal" placeholder="Ex.: 3066,17" value="${info.salario != null && info.salario !== '' ? escapeHtml(String(Number(info.salario))) : ''}"></label>
       <label class="field ci-span-2"><span>E-mail</span><input type="email" id="ciEmail" placeholder="email@exemplo.com" value="${escapeHtml(info.email || "")}"></label>
-      <label class="field ci-span-2"><span>Setor atual</span><input type="text" id="ciSetorAtual" list="ciSetoresDisponiveis" maxlength="120" placeholder="Selecione ou digite o setor" value="${escapeHtml(setorAtual)}"><datalist id="ciSetoresDisponiveis">${setoresDisponiveis.map(setor => `<option value="${escapeHtml(setor)}">`).join("")}</datalist></label>
+      <label class="field ci-span-2"><span>Setor atual</span><select id="ciSetorAtual"><option value="">Selecione o setor...</option>${setoresDisponiveis.map(setor => `<option value="${escapeHtml(setor)}"${setor === setorAtual.trim().replace(/\s+/g, ' ') ? ' selected' : ''}>${escapeHtml(setor)}</option>`).join("")}</select><small>Define o setor atual usado nos filtros da equipe e de novos registros. Os registros históricos mantêm seus setores.</small></label>
     </div>
   </section>`;
 
