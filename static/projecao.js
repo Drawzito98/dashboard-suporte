@@ -67,11 +67,11 @@ function renderProjecao() {
   }
 
   container.innerHTML = `
-    <div style="padding:var(--s-5)">
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--s-1)">📅 Novo Registro Mensal</h2>
+    <div class="projecao-layout">
+      <h2 class="projecao-title" style="font-size:18px;font-weight:700;margin-bottom:var(--s-1)">📅 Novo Registro Mensal</h2>
       <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">Adicione ou edite os resultados do time para o mês selecionado. Registros já existentes no mês são <strong>atualizados</strong> (não duplicados).</p>
 
-      <div style="display:flex;gap:var(--s-3);margin-bottom:var(--s-4);flex-wrap:wrap;align-items:end">
+      <div class="projecao-filters">
         <label class="field" style="flex:1;min-width:180px">
           <span>Mês de referência</span>
           <input type="month" id="projecaoMes" value="${nextMonth}" style="width:100%"/>
@@ -100,7 +100,7 @@ function renderProjecao() {
         <div class="empty-sub">Importe um CSV ou cadastre colaboradores na aba Colaboradores antes de lançar resultados.</div>
       </div>
 
-      <div style="overflow-x:auto;max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md)">
+      <div class="projecao-table-scroll" tabindex="0" role="region" aria-label="Dados mensais dos colaboradores">
         <table class="ranking-table" style="min-width:1320px">
           <thead>
             <tr>
@@ -123,7 +123,7 @@ function renderProjecao() {
         </table>
       </div>
 
-      <div style="display:flex;gap:var(--s-3);margin-top:var(--s-4);justify-content:flex-end">
+      <div class="projecao-actions">
         <button class="btn-small" id="projecaoCancelBtn" type="button">Cancelar</button>
         <button class="btn-primary" id="projecaoSaveBtn" type="button">💾 Salvar registros</button>
       </div>

@@ -1,0 +1,23 @@
+/* Janela de registro mensal: limites próprios e tabela com rolagem interna. */
+#projecaoOverlay { z-index:1500; padding:24px; overflow:hidden; }
+#projecaoOverlay .colab-detail-panel {
+  width:100%; min-width:0; max-height:calc(100vh - 48px); max-height:calc(100dvh - 48px);
+  padding:0; display:flex; flex-direction:column; overflow:hidden; background:var(--bg-surface);
+}
+#projecaoClose { flex:none; z-index:10; }
+#projecaoContent { min-width:0; min-height:0; width:100%; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; }
+.projecao-layout { min-width:0; padding:24px; }
+.projecao-title { padding-right:44px; }
+.projecao-filters { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:end; }
+.projecao-table-scroll { width:100%; min-width:0; max-height:55vh; max-height:55dvh; overflow:auto; border:1px solid var(--border); border-radius:12px; overscroll-behavior:contain; }
+.projecao-actions { position:sticky; bottom:0; z-index:5; display:flex; gap:12px; justify-content:flex-end; padding:16px 0 0; margin-top:16px; background:var(--bg-surface); border-top:1px solid var(--border); }
+.projecao-actions .btn-primary { width:auto; min-width:180px; }
+@media(max-width:650px) {
+  #projecaoOverlay { padding:8px; align-items:center; }
+  #projecaoOverlay .colab-detail-panel { max-height:calc(100vh - 16px); max-height:calc(100dvh - 16px); border-radius:16px; }
+  .projecao-layout { padding:16px; }
+  .projecao-filters .field { min-width:0!important; flex:1 1 100%!important; }
+  .projecao-filters #projecaoCopyBtn { width:100%; }
+  .projecao-actions { gap:8px; padding-bottom:env(safe-area-inset-bottom,0px); }
+  .projecao-actions .btn-primary { min-width:0; flex:1; }
+}
