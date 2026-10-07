@@ -388,6 +388,8 @@ function openColabDetailOverlay(nome) {
   </header>`;
 
   html += `<form id="colabInfoForm" class="ci-dialog-form">`;
+  html += `<section class="ci-form-section"><div class="ci-form-section-title"><div><strong>Foto de perfil</strong><small>A imagem será atualizada ao salvar as alterações.</small></div></div><div class="novo-colaborador-photo-row"><div class="novo-colaborador-photo-preview" id="ciFotoPreview">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 88) : '👤'}</div><div class="ci-photo-controls"><label class="field"><span>Selecionar nova foto</span><input type="file" id="ciFoto" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG ou WebP · máximo 8 MB</small></label><button class="btn-small" id="ciFotoRemover" type="button">Remover foto</button><p id="ciFotoStatus" role="status" aria-live="polite"></p></div></div></section>`;
+
   if (document.body.dataset.role === "admin") html += '<section class="ci-form-section" id="ciPontoJornada"></section>';
   html += `<section class="ci-form-section">
     <div class="ci-form-section-title"><div><strong>Dados cadastrais</strong><small>Informações básicas do colaborador</small></div></div>
@@ -478,6 +480,44 @@ function openColabDetailOverlay(nome) {
   overlay.scrollTop = 0;
   if (detailPanel) detailPanel.scrollTop = 0;
 
+  let photoDraft;
+  let photoVersion = 0;
+  const photoInput = document.getElementById('ciFoto');
+  const photoPreview = document.getElementById('ciFotoPreview');
+  const photoStatus = document.getElementById('ciFotoStatus');
+  const photoRemove = document.getElementById('ciFotoRemover');
+  const saveButton = document.getElementById('ciSalvarBtn');
+  photoInput.addEventListener('change', async () => {
+    if (!requireAdmin()) return;
+    const file = photoInput.files?.[0];
+    if (!file) return;
+    const request = ++photoVersion;
+    saveButton.disabled = true;
+    photoStatus.textContent = 'Preparando foto…';
+    try {
+      const prepared = await prepareColabProfilePhoto(file);
+      if (request !== photoVersion || !photoPreview.isConnected) return;
+      photoDraft = prepared;
+      const image = document.createElement('img'); image.src = prepared; image.alt = `Prévia da foto de ${nome}`;
+      photoPreview.replaceChildren(image);
+      photoStatus.textContent = 'Nova foto selecionada. Clique em Salvar alterações para aplicar.';
+    } catch (error) {
+      if (request !== photoVersion || !photoPreview.isConnected) return;
+      photoInput.value = '';
+      photoStatus.textContent = error.message;
+      showToast(error.message, 'error', 'Foto de perfil');
+    } finally { if (request === photoVersion) saveButton.disabled = false; }
+  });
+  photoRemove.addEventListener('click', () => {
+    if (!requireAdmin()) return;
+    photoVersion++;
+    photoDraft = '';
+    photoInput.value = '';
+    photoPreview.textContent = nome.split(/\s+/).filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+    photoStatus.textContent = 'Foto preparada para remoção. Clique em Salvar alterações para aplicar.';
+    saveButton.disabled = false;
+  });
+
   const pontoProfile = document.getElementById("ciPontoJornada");
   if (pontoProfile && typeof window.renderPontoProfile === "function") window.renderPontoProfile(nome, pontoProfile);
   const condutaToggle = document.getElementById("ciCondutaToggle");
@@ -514,11 +554,18 @@ function openColabDetailOverlay(nome) {
       nivel: document.getElementById("ciNivel").value,
       salario: salarioInput.value === '' ? null : Number(salarioInput.value)
     };
-    const synced = await dbColabInfoSave(nome, data);
-    showToast(synced ? `Dados de ${nome} salvos!` : `Dados de ${nome} preservados neste dispositivo. A sincronização com o banco está pendente.`, synced ? "success" : "warning", "Colaboradores");
-    closeColabDetail();
-    renderColaboradores();
-    if (typeof globalFilters !== 'undefined') globalFilters.popularOptions();
+    saveButton.disabled = true;
+    photoInput.disabled = true;
+    photoRemove.disabled = true;
+    try {
+      const synced = await dbColabInfoSave(nome, data);
+      if (photoDraft !== undefined) await setColabFoto(nome, photoDraft);
+      showToast(synced ? `Dados de ${nome} salvos!` : `Dados de ${nome} preservados neste dispositivo. A sincronização com o banco está pendente.`, synced ? "success" : "warning", "Colaboradores");
+      closeColabDetail();
+      renderColaboradores();
+      if (typeof globalFilters !== 'undefined') globalFilters.popularOptions();
+    } catch (error) { showToast(error.message || 'Não foi possível salvar as alterações.', 'error', 'Colaboradores'); }
+    finally { saveButton.disabled = false; photoInput.disabled = false; photoRemove.disabled = false; }
   });
 
   document.getElementById("ciLimparBtn").addEventListener("click", async () => {

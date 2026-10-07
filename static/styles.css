@@ -5397,3 +5397,8 @@ body[data-role="admin"] .shell-navigation .tab-bar { flex-direction: column; }
 body[data-role="admin"] .shell-navigation .tool-group h3 { color: #c7e4e3; }
 body[data-role="admin"] .shell-navigation .tool-group p { color: #90b3b2; }
 body[data-role="admin"] .shell-navigation .tool-group + .tool-group { border-color: rgba(198,229,227,.14); }
+
+.ci-photo-controls { flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.ci-photo-controls input[type="file"] { max-width:100%; }
+.ci-photo-controls button { width:fit-content; }
+.ci-photo-controls p { font-size:12px; line-height:1.5; color:var(--text-secondary); }
