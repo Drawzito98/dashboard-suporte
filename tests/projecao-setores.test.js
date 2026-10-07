@@ -3,7 +3,11 @@ const vm = require('vm');
 const assert = require('node:assert/strict');
 const context = { document: { addEventListener() {} }, module: { exports: {} } };
 vm.runInNewContext(fs.readFileSync(require('path').join(__dirname, '../static/projecao.js'), 'utf8'), context);
-const { buildProjecaoSectorIndex } = context.module.exports;
+const { buildProjecaoSectorIndex, shiftProjecaoMonth } = context.module.exports;
+assert.equal(shiftProjecaoMonth('2026-01', -1), '2025-12');
+assert.equal(shiftProjecaoMonth('2026-12', 1), '2027-01');
+assert.equal(shiftProjecaoMonth('2026-09', 1), '2026-10');
+assert.equal(shiftProjecaoMonth('2026-13', 1), '');
 const records = [
   { Atendente: 'Maria Luisa', Setor: 'Estoque', 'Mês': '2026-09' },
   { Atendente: 'Maria Luisa', Setor: 'OS', 'Mês': '2026-09' },

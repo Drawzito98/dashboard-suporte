@@ -64,31 +64,7 @@ function renderProjecao() {
   const sectorIndex = buildProjecaoSectorIndex(data, colabInfo);
   const setores = sectorIndex.options;
   const months = [...new Set((data || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
-  const lastMonth = months.length ? months[months.length - 1] : '';
   const nextMonth = suggestNextMonth(months);
-
-  // Last month data for copy
-  const lastMonthData = {};
-  if (lastMonth) {
-    (data || []).filter(r => r && r['Mês'] === lastMonth).forEach(r => {
-      const n = r['Atendente'];
-      if (!lastMonthData[n]) lastMonthData[n] = {};
-      lastMonthData[n] = {
-        Assumidos: parseInt(r['Assumidos']) || 0,
-        Finalizados: parseInt(r['Finalizados']) || 0,
-        Transferidos: parseInt(r['Transferidos']) || 0,
-        TMA: r['TMA'] || '',
-        TMR: r['TMR'] || '',
-        SCORE: r['SCORE'] !== null && r['SCORE'] !== undefined ? Number(r['SCORE']) : '',
-        Nota1: parseInt(r['Nota1']) || 0,
-        Nota2: parseInt(r['Nota2']) || 0,
-        Nota3: parseInt(r['Nota3']) || 0,
-        Total: parseInt(r['Total']) || 0,
-        Observações: r['Observações'] || r['Observacao'] || '',
-        Setor: r['Setor'] || ''
-      };
-    });
-  }
 
   container.innerHTML = `
     <div class="projecao-layout">
@@ -118,9 +94,7 @@ function renderProjecao() {
           <span>Preenchimento</span>
           <select id="projecaoStatus" style="width:100%"><option value="all">Todos</option><option value="filled">Preenchidos</option><option value="empty">Não preenchidos</option></select>
         </label>
-        <button class="btn-small" id="projecaoCopyBtn" type="button" ${lastMonth ? '' : 'disabled'}>
-          📋 Copiar do mês anterior
-        </button>
+
       </div>
 
       <div id="projecaoEmpty" class="empty-state" style="display:${names.length ? 'none' : 'block'}">
@@ -128,6 +102,12 @@ function renderProjecao() {
         <div class="empty-sub">Importe um CSV ou cadastre colaboradores na aba Colaboradores antes de lançar resultados.</div>
       </div>
 
+      <div class="projecao-data-actions">
+        <button class="btn-small" id="projecaoCopyBtn" type="button">📋 Copiar do mês anterior</button>
+        <button class="btn-small" id="projecaoCopyNextBtn" type="button">📋 Copiar do mês seguinte</button>
+        <button class="btn-small projecao-reset" id="projecaoResetBtn" type="button">Zerar dados do mês</button>
+      </div>
+      <p class="projecao-action-hint">Copiar preenche apenas os colaboradores exibidos. Zerar abrange todo o mês, inclusive registros ocultos pelos filtros. As alterações só são aplicadas ao salvar.</p>
       <p id="projecaoSummary" class="projecao-summary" role="status" aria-live="polite"></p>
       <div class="projecao-table-scroll" tabindex="0" role="region" aria-label="Dados mensais dos colaboradores">
         <table class="ranking-table" style="min-width:1320px">
@@ -165,6 +145,7 @@ function renderProjecao() {
   const tbody = document.getElementById('projecaoTbody');
   const statusInput = document.getElementById('projecaoStatus');
   const drafts = new Map();
+  const resetMonths = new Set();
   const draftKey = (month, name) => JSON.stringify([month, name]);
   const hasData = rec => rec && (['Assumidos', 'Finalizados', 'Transferidos', 'Nota1', 'Nota2', 'Nota3'].some(f => Number(rec[f]) > 0) || (rec.SCORE !== null && rec.SCORE !== undefined && rec.SCORE !== '') || ['TMA', 'TMR', 'Observações'].some(f => String(rec[f] || '').trim() !== ''));
   let renderedMonth = mesInput.value;
@@ -257,6 +238,7 @@ function renderProjecao() {
 
     const saveBtn = document.getElementById('projecaoSaveBtn');
     updateSummary();
+    updateCopyButtons();
   }
 
   renderRows();
@@ -276,25 +258,56 @@ function renderProjecao() {
   tbody.addEventListener('input', event => { const tr = event.target.closest('tr'); if (!tr) return; captureRow(tr); tr.querySelector('.projecao-row-status').textContent = 'Não salvo'; tr.querySelector('.projecao-row-status').className = 'projecao-row-status is-draft'; updateSummary(); });
   tbody.addEventListener('change', event => { const tr = event.target.closest('tr'); if (tr) { captureRow(tr); updateSummary(); } });
 
-  // Copy from last month
-  const copyBtn = document.getElementById('projecaoCopyBtn');
-  if (copyBtn) {
-    copyBtn.addEventListener('click', () => {
-      if (!lastMonth) return;
-      tbody.querySelectorAll('tr').forEach(tr => {
-        const name = tr.dataset.name;
-        if (!name || !lastMonthData[name]) return;
-        tr.querySelectorAll('.proj-input').forEach(inp => {
-          const field = inp.dataset.field;
-          if (lastMonthData[name][field] !== undefined) inp.value = lastMonthData[name][field];
-        });
-        captureRow(tr);
-        const marker = tr.querySelector('.projecao-row-status'); marker.textContent = 'Não salvo'; marker.className = 'projecao-row-status is-draft';
-      });
-      updateSummary();
-      showToast('Dados copiados do mês anterior.', 'ok');
+  function updateCopyButtons() {
+    [-1, 1].forEach(offset => {
+      const sourceMonth = shiftProjecaoMonth(mesInput.value, offset);
+      const button = document.getElementById(offset < 0 ? 'projecaoCopyBtn' : 'projecaoCopyNextBtn');
+      const available = sourceMonth && (data || []).some(row => row && row['Mês'] === sourceMonth && row.Atendente);
+      button.disabled = !available;
+      button.title = available ? `Copiar de ${sourceMonth} para ${mesInput.value}, apenas pessoas exibidas` : `Sem dados em ${sourceMonth || 'um mês válido'} para copiar`;
     });
+    document.getElementById('projecaoResetBtn').disabled = !mesInput.value;
   }
+  function copyMonth(offset) {
+    if (!requireAdmin()) return;
+    const sourceMonth = shiftProjecaoMonth(mesInput.value, offset);
+    if (!sourceMonth) return;
+    const source = existingForMonth(sourceMonth);
+    let copied = 0;
+    tbody.querySelectorAll('tr').forEach(tr => {
+      const row = source.get(tr.dataset.name);
+      if (!row) return;
+      tr.querySelectorAll('.proj-input').forEach(input => {
+        const field = input.dataset.field;
+        const numeric = ['Assumidos','Finalizados','Transferidos','Nota1','Nota2','Nota3','Total'].includes(field);
+        input.value = row[field] ?? (field === 'Observações' ? row.Observacao || '' : numeric ? 0 : '');
+      });
+      captureRow(tr);
+      const marker = tr.querySelector('.projecao-row-status'); marker.textContent = 'Não salvo'; marker.className = 'projecao-row-status is-draft';
+      copied++;
+    });
+    updateSummary();
+    showToast(copied ? `${copied} colaboradores copiados de ${sourceMonth}. Clique em salvar para aplicar.` : 'Nenhuma pessoa exibida tem dados no mês de origem.', copied ? 'ok' : 'warn');
+  }
+  document.getElementById('projecaoCopyBtn').addEventListener('click', () => copyMonth(-1));
+  document.getElementById('projecaoCopyNextBtn').addEventListener('click', () => copyMonth(1));
+  const zeroRecord = (name, month, sector) => ({ Atendente: name, 'Mês': month, Setor: sector || '', Assumidos: 0, Finalizados: 0, Transferidos: 0, Total: 0, Nota1: 0, Nota2: 0, Nota3: 0, SCORE: null, TMA: '', TMR: '', 'Observações': '' });
+  document.getElementById('projecaoResetBtn').addEventListener('click', () => {
+    if (!requireAdmin()) return;
+    const month = mesInput.value;
+    if (!month) return;
+    if (!window.confirm(`Zerar todos os dados de ${month}, inclusive pessoas ocultas pelos filtros? Quantidades e notas serão zeradas; score, tempos e observações serão limpos. Nomes e setores serão mantidos. A limpeza só será aplicada ao clicar em Salvar.`)) return;
+    const existing = existingForMonth(month);
+    const allNames = new Set([...names, ...existing.keys(), ...[...drafts.values()].filter(row => row['Mês'] === month).map(row => row.Atendente)]);
+    allNames.forEach(name => {
+      const previous = drafts.get(draftKey(month, name)) || existing.get(name);
+      const sector = previous?.Setor || sectorIndex.sectorsFor(name, month)[0] || '';
+      drafts.set(draftKey(month, name), zeroRecord(name, month, sector));
+    });
+    resetMonths.add(month);
+    renderRows();
+    showToast(`Dados de ${month} preparados para zerar. Clique em salvar para aplicar.`, 'warn');
+  });
 
   // Save (upsert: atualiza registros existentes do mês, insere novos)
   const saveBtn = document.getElementById('projecaoSaveBtn');
@@ -314,13 +327,23 @@ function renderProjecao() {
       tbody.querySelectorAll('tr').forEach(tr => { const rec = readRow(tr); if (hasData(rec)) recordsToSave.set(rec.Atendente, rec); });
       // Inclui também os rascunhos que ficaram ocultos ao mudar os filtros.
       drafts.forEach(rec => { if (rec['Mês'] === mes) recordsToSave.set(rec.Atendente, { ...rec }); });
+      const updatedRecords = new Set();
       recordsToSave.forEach(rec => {
         const name = rec.Atendente;
         if (!hasData(rec) && !(rawRecords || []).some(r => r && r.Atendente === name && String(r['Mês']) === mes)) return;
         const existingRec = (rawRecords || []).find(r => r && r['Atendente'] === name && String(r['Mês']) === mes);
-        if (existingRec) toUpdate.push({ rec, existingRec });
+        if (existingRec) {
+          const update = resetMonths.has(mes) && !hasData(rec) ? { ...rec, Setor: existingRec.Setor } : rec;
+          toUpdate.push({ rec: update, existingRec }); updatedRecords.add(existingRec);
+        }
         else toInsert.push(rec);
       });
+
+      if (resetMonths.has(mes)) {
+        (rawRecords || []).filter(row => row && String(row['Mês']) === mes && !updatedRecords.has(row)).forEach(existingRec => {
+          toUpdate.push({ existingRec, rec: zeroRecord(existingRec.Atendente, mes, existingRec.Setor) });
+        });
+      }
 
       if (!toInsert.length && !toUpdate.length) {
         showToast('Nenhum registro para salvar.', 'warn');
@@ -378,6 +401,7 @@ function renderProjecao() {
         if (pending) parts.push(`${pending} pendente(s)`);
         showToast(`${parts.join(', ')} para ${mes}.`, pending ? 'warn' : 'success', 'Registro Mensal');
         drafts.forEach((rec, key) => { if (rec['Mês'] === mes) drafts.delete(key); });
+        resetMonths.delete(mes);
         renderRows();
       } catch (e) {
         console.error('Erro ao salvar projeção:', e);
@@ -387,6 +411,15 @@ function renderProjecao() {
       }
     });
   }
+}
+
+function shiftProjecaoMonth(month, offset) {
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(String(month || ''));
+  if (!match) return '';
+  const index = Number(match[1]) * 12 + Number(match[2]) - 1 + offset;
+  const year = Math.floor(index / 12);
+  if (year < 1 || year > 9999) return '';
+  return `${String(year).padStart(4, '0')}-${String(index % 12 + 1).padStart(2, '0')}`;
 }
 
 function suggestNextMonth(months) {
@@ -417,4 +450,4 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeProjecao();
 });
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { buildProjecaoSectorIndex };
+if (typeof module !== 'undefined' && module.exports) module.exports = { buildProjecaoSectorIndex, shiftProjecaoMonth };
