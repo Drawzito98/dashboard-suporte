@@ -1,3 +1,31 @@
+// Mantém todos os setores do mês e associa cadastros mesmo com diferenças de escrita.
+function buildProjecaoSectorIndex(records, info) {
+  const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toLowerCase();
+  const history = new Map();
+  const current = new Map();
+  const labels = new Map();
+  const addLabel = value => { const label = String(value || '').trim().replace(/\s+/g, ' '); if (label && !labels.has(normalize(label))) labels.set(normalize(label), label); return label; };
+  (records || []).forEach(row => {
+    if (!row || !row.Atendente || !row.Setor) return;
+    const name = normalize(row.Atendente); const month = String(row['Mês'] || ''); const sector = addLabel(row.Setor);
+    if (!history.has(name)) history.set(name, new Map());
+    const months = history.get(name);
+    if (!months.has(month)) months.set(month, new Set());
+    months.get(month).add(normalize(sector));
+  });
+  Object.entries(info || {}).forEach(([name, value]) => { if (value?.setor_atual) current.set(normalize(name), normalize(addLabel(value.setor_atual))); });
+  function sectorsFor(name, month) {
+    const key = normalize(name); const months = history.get(key);
+    if (months?.has(month)) return [...months.get(month)].map(sector => labels.get(sector));
+    if (current.has(key)) return [labels.get(current.get(key))];
+    const latest = months ? [...months.keys()].sort().pop() : undefined;
+    return latest === undefined ? [] : [...months.get(latest)].map(sector => labels.get(sector));
+  }
+  return { options: [...labels.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')), sectorsFor,
+    belongs: (name, sector, month) => !sector || sectorsFor(name, month).some(value => normalize(value) === normalize(sector)),
+    equal: (a, b) => normalize(a) === normalize(b) };
+}
+
 // Projeção Mensal — adicionar/editar resultados de um mês para colaboradores
 function openProjecaoOverlay() {
   const overlay = document.getElementById('projecaoOverlay');
@@ -33,18 +61,11 @@ function renderProjecao() {
   const names = [...new Set([...fromRecords, ...extraNames])]
     .filter(n => typeof isColabActive !== 'function' || isColabActive(n))
     .sort();
-  const setores = [...new Set([...(data || []).filter(r => r && r['Setor']).map(r => r['Setor']), ...Object.values(colabInfo).map(info => info && info.setor_atual)].filter(Boolean))].sort();
+  const sectorIndex = buildProjecaoSectorIndex(data, colabInfo);
+  const setores = sectorIndex.options;
   const months = [...new Set((data || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
   const lastMonth = months.length ? months[months.length - 1] : '';
   const nextMonth = suggestNextMonth(months);
-
-  // Build setor map for each collaborator (use most recent setor)
-  const colabSetor = {};
-  (data || []).filter(r => r && r['Atendente'] && r['Setor']).slice().sort((a, b) => String(a['Mês']).localeCompare(String(b['Mês']))).forEach(r => {
-    colabSetor[r['Atendente']] = r['Setor'];
-  });
-
-  Object.entries(colabInfo).forEach(([name, info]) => { if (info && info.setor_atual) colabSetor[name] = info.setor_atual; });
 
   // Last month data for copy
   const lastMonthData = {};
@@ -163,7 +184,7 @@ function renderProjecao() {
   }
   function updateSummary() {
     const existing = existingForMonth(mesInput.value);
-    const sectorNames = names.filter(n => !setorInput.value || colabSetor[n] === setorInput.value);
+    const sectorNames = names.filter(n => sectorIndex.belongs(n, setorInput.value, mesInput.value));
     const filled = sectorNames.filter(n => existing.has(n) || hasData(drafts.get(draftKey(mesInput.value, n)))).length;
     const pending = [...drafts.values()].filter(rec => rec['Mês'] === mesInput.value).length;
     document.getElementById('projecaoSummary').textContent = `${sectorNames.length} colaboradores · ${filled} preenchidos · ${sectorNames.length - filled} não preenchidos · ${tbody.rows.length} exibidos${pending ? ` · ${pending} alterações não salvas no mês` : ''}. Preenchido indica registro salvo ou com algum dado informado. Alterações digitadas são preservadas ao trocar os filtros enquanto esta janela estiver aberta.`;
@@ -185,15 +206,16 @@ function renderProjecao() {
     const selColab = colabInput ? colabInput.value : '';
     const existing = existingForMonth(mes);
     renderedMonth = mes;
-    const available = names.filter(n => !selSetor || colabSetor[n] === selSetor);
+    const available = names.filter(n => sectorIndex.belongs(n, selSetor, mes));
     colabInput.innerHTML = '<option value="">Todos os colaboradores</option>' + available.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
     colabInput.value = available.includes(selColab) ? selColab : '';
     let visible = 0;
     let rowIdx = 0;
 
     tbody.innerHTML = names.map((n, i) => {
-      const setor = colabSetor[n] || '';
-      if (selSetor && setor !== selSetor) return '';
+      const personSectors = sectorIndex.sectorsFor(n, mes);
+      const setor = personSectors.find(value => sectorIndex.equal(value, selSetor)) || personSectors[0] || '';
+      if (!sectorIndex.belongs(n, selSetor, mes)) return '';
       if (colabInput.value && n !== colabInput.value) return '';
       const draft = drafts.get(draftKey(mes, n));
       const filled = existing.has(n) || hasData(draft);
@@ -210,7 +232,7 @@ function renderProjecao() {
       return `<tr data-name="${escapeHtml(n)}">
         <td style="position:sticky;left:0;z-index:2;background:${rowBg};font-weight:500;white-space:nowrap">${escapeHtml(n)}${marker}</td>
         <td><select class="proj-setor" style="width:100%;padding:3px 6px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-size:12px">
-          ${setores.map(s => `<option value="${escapeHtml(s)}" ${s === setorVal ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
+          ${setores.map(s => `<option value="${escapeHtml(s)}" ${sectorIndex.equal(s, setorVal) ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
         </select></td>
         <td><input type="number" class="proj-input" data-field="Assumidos" value="${value('Assumidos', 0)}" min="0" style="width:55px"/></td>
         <td><input type="number" class="proj-input" data-field="Finalizados" value="${value('Finalizados', 0)}" min="0" style="width:55px"/></td>
@@ -394,3 +416,5 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeProjecao();
 });
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { buildProjecaoSectorIndex };
