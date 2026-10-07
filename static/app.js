@@ -2676,12 +2676,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Colaboradores usam somente a experiência diária; não carregam dados gerenciais.
+  // Perfis de colaborador continuam sem acesso aos dados gerenciais.
   if (document.body.dataset.role === "colaborador") {
     const homeScreen = document.getElementById("homeScreen");
     const appScreen = document.getElementById("appScreen");
     if (homeScreen) homeScreen.style.display = "none";
     if (appScreen) appScreen.style.display = "block";
+    const content = document.querySelector('#appScreen .content');
+    if (content) content.innerHTML = '<section class="card"><h2>Área do colaborador</h2><p>Nenhum módulo está disponível para este perfil no momento.</p></section>';
     setLoading(false);
     return;
   }
@@ -3507,13 +3509,7 @@ function initNotificacoesUI() {
       const fallback = identity.querySelector('.sidebar-identity-fallback');
       if (fallback) fallback.textContent = firstName.charAt(0).toUpperCase() || 'A';
 
-      const fallbackImageUrl = 'https://agvkmfusyetkicmuvumz.supabase.co/storage/v1/object/public/reportes-imagens/desafio/leader-supremo.png';
-      const response = await fetch('/api/desafio?view=admin', { headers: { Authorization: 'Bearer ' + session.access_token } });
-      let imageUrl = fallbackImageUrl;
-      if (response.ok) {
-        const payload = await response.json();
-        imageUrl = String(payload.leaderImageUrl || fallbackImageUrl).trim();
-      }
+      const imageUrl = String(user.user_metadata?.avatar_url || user.user_metadata?.photo_url || 'https://agvkmfusyetkicmuvumz.supabase.co/storage/v1/object/public/reportes-imagens/desafio/leader-supremo.png').trim();
       if (!imageUrl) {
         const currentAvatar = identity.querySelector('.sidebar-identity-avatar');
         if (currentAvatar?.tagName === 'IMG') {

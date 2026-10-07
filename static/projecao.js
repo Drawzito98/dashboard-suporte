@@ -61,7 +61,7 @@ function renderProjecao() {
   const names = [...new Set([...fromRecords, ...extraNames])]
     .filter(n => typeof isColabActive !== 'function' || isColabActive(n))
     .sort();
-  const sectorIndex = buildProjecaoSectorIndex(data, colabInfo);
+  let sectorIndex = buildProjecaoSectorIndex(data, colabInfo);
   const setores = sectorIndex.options;
   const months = [...new Set((data || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
   const nextMonth = suggestNextMonth(months);
@@ -106,6 +106,7 @@ function renderProjecao() {
         <button class="btn-small" id="projecaoCopyBtn" type="button">📋 Copiar do mês anterior</button>
         <button class="btn-small" id="projecaoCopyNextBtn" type="button">📋 Copiar do mês seguinte</button>
         <button class="btn-small projecao-reset" id="projecaoResetBtn" type="button">Zerar dados do mês</button>
+        <button class="btn-small projecao-reset" id="projecaoDeleteEmptyBtn" type="button">Excluir mês vazio</button>
       </div>
       <p class="projecao-action-hint">Copiar preenche apenas os colaboradores exibidos. Zerar abrange todo o mês, inclusive registros ocultos pelos filtros. As alterações só são aplicadas ao salvar.</p>
       <p id="projecaoSummary" class="projecao-summary" role="status" aria-live="polite"></p>
@@ -307,6 +308,60 @@ function renderProjecao() {
     resetMonths.add(month);
     renderRows();
     showToast(`Dados de ${month} preparados para zerar. Clique em salvar para aplicar.`, 'warn');
+  });
+
+  document.getElementById('projecaoDeleteEmptyBtn').addEventListener('click', async () => {
+    if (!requireAdmin()) return;
+    const month = mesInput.value;
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) { showToast('Selecione um mês válido.', 'warn'); return; }
+    const local = (rawRecords || []).filter(row => row && String(row['Mês']) === month);
+    const pending = typeof getPendingSync === 'function' ? getPendingSync().filter(row => String(row['Mês']) === month) : [];
+    const edited = [...drafts.values()].filter(row => row['Mês'] === month);
+    if ([...local, ...pending, ...edited].some(row => !isEmptyPerformanceRecord(row))) {
+      showToast('Este mês contém dados ou edições preenchidas. Apenas meses vazios podem ser excluídos.', 'warn'); return;
+    }
+    if (!window.confirm(`Excluir os registros vazios de ${month} e remover esse mês dos filtros? O banco será conferido antes da exclusão. Os outros meses serão mantidos.`)) return;
+    const controls = [...container.querySelectorAll('input,select,button')];
+    const previousDisabled = controls.map(control => control.disabled);
+    controls.forEach(control => control.disabled = true);
+    setLoading(true, 'Conferindo e excluindo mês vazio…');
+    try {
+      const result = await dbDeleteEmptyMonth(month);
+      for (let index = rawRecords.length - 1; index >= 0; index--) if (String(rawRecords[index]['Mês']) === month) rawRecords.splice(index, 1);
+      rawRecords.push(...result.remaining);
+      // Exibe a leitura atual do banco se algum registro mudou durante a exclusão.
+      drafts.forEach((row, key) => { if (row['Mês'] === month) drafts.delete(key); });
+      resetMonths.delete(month);
+      if (!result.remaining.length && !result.failures.length) {
+        if (typeof getPendingSync === 'function' && typeof PENDING_SYNC_KEY !== 'undefined') {
+          localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(getPendingSync().filter(row => String(row['Mês']) !== month)));
+          if (typeof notifyPendingSyncChanged === 'function') notifyPendingSyncChanged();
+        }
+      }
+      if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
+      populateFilters(rawRecords); updateFilterOptions(); updateView(); saveState();
+      if (typeof globalFilters !== 'undefined') {
+        if (!result.remaining.length && !result.failures.length) {
+          if (globalFilters.periodo === month) globalFilters.periodo = 'all';
+          globalFilters.mesesSelecionados = (globalFilters.mesesSelecionados || []).filter(value => value !== month);
+          if (globalFilters.periodo === '__multi__' && !globalFilters.mesesSelecionados.length) globalFilters.periodo = 'all';
+        }
+        globalFilters.popularOptions();
+        const period = document.getElementById('gfPeriodo');
+        if (period) period.value = globalFilters.periodo;
+        globalFilters._notify();
+      }
+      sectorIndex = buildProjecaoSectorIndex(rawRecords, colabInfo);
+      if (typeof logHistorico === 'function') logHistorico('delete', { 'Mês': month }, { detalhes: `Exclusão de mês vazio: ${result.deleted} registros removidos.` });
+      if (result.remaining.length || result.failures.length) {
+        showToast('Alguns registros não foram removidos ou mudaram durante a conferência. O mês foi mantido.', 'warn');
+        renderRows();
+      } else {
+        showToast(`Mês vazio ${month} removido dos registros e filtros.`, 'success');
+        renderRows();
+      }
+    } catch (error) { showToast(error.message || 'Não foi possível excluir o mês.', 'error'); }
+    finally { controls.forEach((control, index) => control.disabled = previousDisabled[index]); setLoading(false); }
   });
 
   // Save (upsert: atualiza registros existentes do mês, insere novos)
