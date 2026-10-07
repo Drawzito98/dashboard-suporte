@@ -21,8 +21,9 @@ function renderProjecao() {
   // marcados como INATIVOS (isColabActive).
   const fromRecords = (data || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente'])).map(r => r['Atendente']);
   let extraNames = [];
+  let colabInfo = {};
   try {
-    const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+    colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
     extraNames.push(...Object.keys(colabInfo || {}));
   } catch (e) {}
   try {
@@ -32,16 +33,18 @@ function renderProjecao() {
   const names = [...new Set([...fromRecords, ...extraNames])]
     .filter(n => typeof isColabActive !== 'function' || isColabActive(n))
     .sort();
-  const setores = [...new Set((data || []).filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
+  const setores = [...new Set([...(data || []).filter(r => r && r['Setor']).map(r => r['Setor']), ...Object.values(colabInfo).map(info => info && info.setor_atual)].filter(Boolean))].sort();
   const months = [...new Set((data || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
   const lastMonth = months.length ? months[months.length - 1] : '';
   const nextMonth = suggestNextMonth(months);
 
   // Build setor map for each collaborator (use most recent setor)
   const colabSetor = {};
-  (data || []).filter(r => r && r['Atendente'] && r['Setor']).forEach(r => {
+  (data || []).filter(r => r && r['Atendente'] && r['Setor']).slice().sort((a, b) => String(a['Mês']).localeCompare(String(b['Mês']))).forEach(r => {
     colabSetor[r['Atendente']] = r['Setor'];
   });
+
+  Object.entries(colabInfo).forEach(([name, info]) => { if (info && info.setor_atual) colabSetor[name] = info.setor_atual; });
 
   // Last month data for copy
   const lastMonthData = {};
@@ -90,6 +93,10 @@ function renderProjecao() {
             ${names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}
           </select>
         </label>
+        <label class="field" style="flex:1;min-width:180px">
+          <span>Preenchimento</span>
+          <select id="projecaoStatus" style="width:100%"><option value="all">Todos</option><option value="filled">Preenchidos</option><option value="empty">Não preenchidos</option></select>
+        </label>
         <button class="btn-small" id="projecaoCopyBtn" type="button" ${lastMonth ? '' : 'disabled'}>
           📋 Copiar do mês anterior
         </button>
@@ -100,6 +107,7 @@ function renderProjecao() {
         <div class="empty-sub">Importe um CSV ou cadastre colaboradores na aba Colaboradores antes de lançar resultados.</div>
       </div>
 
+      <p id="projecaoSummary" class="projecao-summary" role="status" aria-live="polite"></p>
       <div class="projecao-table-scroll" tabindex="0" role="region" aria-label="Dados mensais dos colaboradores">
         <table class="ranking-table" style="min-width:1320px">
           <thead>
@@ -134,6 +142,34 @@ function renderProjecao() {
   const setorInput = document.getElementById('projecaoSetor');
   const colabInput = document.getElementById('projecaoColab');
   const tbody = document.getElementById('projecaoTbody');
+  const statusInput = document.getElementById('projecaoStatus');
+  const drafts = new Map();
+  const draftKey = (month, name) => JSON.stringify([month, name]);
+  const hasData = rec => rec && (['Assumidos', 'Finalizados', 'Transferidos', 'Nota1', 'Nota2', 'Nota3'].some(f => Number(rec[f]) > 0) || (rec.SCORE !== null && rec.SCORE !== undefined && rec.SCORE !== '') || ['TMA', 'TMR', 'Observações'].some(f => String(rec[f] || '').trim() !== ''));
+  let renderedMonth = mesInput.value;
+  function readRow(tr) {
+    const rec = { Atendente: tr.dataset.name, 'Mês': renderedMonth, Setor: tr.querySelector('.proj-setor')?.value || '' };
+    tr.querySelectorAll('.proj-input').forEach(inp => {
+      const f = inp.dataset.field; const val = inp.value.trim();
+      rec[f] = f === 'SCORE' ? (val === '' ? null : Number(val)) : ['Nota1','Nota2','Nota3'].includes(f) ? Number(val) || 0 : ['Assumidos','Finalizados','Transferidos','Total'].includes(f) ? parseInt(val) || 0 : val;
+    });
+    rec.Total = rec.Assumidos + rec.Transferidos + rec.Finalizados;
+    return rec;
+  }
+  function captureRow(tr) {
+    const rec = readRow(tr);
+    drafts.set(draftKey(renderedMonth, rec.Atendente), rec);
+    tr.querySelector('[data-field="Total"]').value = rec.Total;
+  }
+  function updateSummary() {
+    const existing = existingForMonth(mesInput.value);
+    const sectorNames = names.filter(n => !setorInput.value || colabSetor[n] === setorInput.value);
+    const filled = sectorNames.filter(n => existing.has(n) || hasData(drafts.get(draftKey(mesInput.value, n)))).length;
+    const pending = [...drafts.values()].filter(rec => rec['Mês'] === mesInput.value).length;
+    document.getElementById('projecaoSummary').textContent = `${sectorNames.length} colaboradores · ${filled} preenchidos · ${sectorNames.length - filled} não preenchidos · ${tbody.rows.length} exibidos${pending ? ` · ${pending} alterações não salvas no mês` : ''}. Preenchido indica registro salvo ou com algum dado informado. Alterações digitadas são preservadas ao trocar os filtros enquanto esta janela estiver aberta.`;
+    const save = document.getElementById('projecaoSaveBtn');
+    if (save) save.textContent = pending ? `💾 Salvar alterações do mês (${pending})` : '💾 Salvar registros';
+  }
 
   function existingForMonth(mes) {
     const map = new Map();
@@ -148,23 +184,28 @@ function renderProjecao() {
     const selSetor = setorInput ? setorInput.value : '';
     const selColab = colabInput ? colabInput.value : '';
     const existing = existingForMonth(mes);
+    renderedMonth = mes;
+    const available = names.filter(n => !selSetor || colabSetor[n] === selSetor);
+    colabInput.innerHTML = '<option value="">Todos os colaboradores</option>' + available.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+    colabInput.value = available.includes(selColab) ? selColab : '';
     let visible = 0;
     let rowIdx = 0;
 
     tbody.innerHTML = names.map((n, i) => {
       const setor = colabSetor[n] || '';
       if (selSetor && setor !== selSetor) return '';
-      if (selColab && n !== selColab) return '';
+      if (colabInput.value && n !== colabInput.value) return '';
+      const draft = drafts.get(draftKey(mes, n));
+      const filled = existing.has(n) || hasData(draft);
+      if (statusInput.value === 'filled' && !filled || statusInput.value === 'empty' && filled) return '';
       visible++;
       const rowBg = rowIdx % 2 === 1 ? 'var(--bg-inset)' : 'var(--bg-surface)';
       rowIdx++;
-      const prev = existing.get(n);
+      const prev = draft || existing.get(n);
       const value = (field, dflt) => (prev && prev[field] !== undefined && prev[field] !== null ? prev[field] : dflt);
       const obs = (prev && prev['Observações']) ? String(prev['Observações']) : '';
       const setorVal = (prev && prev['Setor']) ? prev['Setor'] : setor;
-      const marker = prev
-        ? ' <span class="proj-exists" title="Já existe registro para este mês — será atualizado">●</span>'
-        : '';
+      const marker = ` <span class="projecao-row-status ${draft ? 'is-draft' : existing.has(n) ? 'is-saved' : 'is-empty'}">${draft ? 'Não salvo' : existing.has(n) ? 'Salvo' : 'Não preenchido'}</span>`;
 
       return `<tr data-name="${escapeHtml(n)}">
         <td style="position:sticky;left:0;z-index:2;background:${rowBg};font-weight:500;white-space:nowrap">${escapeHtml(n)}${marker}</td>
@@ -186,10 +227,14 @@ function renderProjecao() {
     }).join('');
 
     const emptyEl = document.getElementById('projecaoEmpty');
-    if (emptyEl) emptyEl.style.display = names.length ? 'none' : 'block';
+    if (emptyEl) {
+      emptyEl.style.display = visible ? 'none' : 'block';
+      emptyEl.querySelector('.empty-title').textContent = names.length ? 'Nenhum colaborador neste filtro' : 'Nenhum colaborador encontrado';
+      emptyEl.querySelector('.empty-sub').textContent = names.length ? 'Altere o setor, o colaborador ou o filtro de preenchimento para conferir os demais registros.' : 'Importe um CSV ou cadastre colaboradores antes de lançar resultados.';
+    }
 
     const saveBtn = document.getElementById('projecaoSaveBtn');
-    if (saveBtn) saveBtn.textContent = visible ? `💾 Salvar registros (${visible} colaboradores)` : '💾 Salvar registros';
+    updateSummary();
   }
 
   renderRows();
@@ -205,6 +250,9 @@ function renderProjecao() {
   if (mesInput) mesInput.addEventListener('change', renderRows);
   if (setorInput) setorInput.addEventListener('change', renderRows);
   if (colabInput) colabInput.addEventListener('change', renderRows);
+  statusInput.addEventListener('change', renderRows);
+  tbody.addEventListener('input', event => { const tr = event.target.closest('tr'); if (!tr) return; captureRow(tr); tr.querySelector('.projecao-row-status').textContent = 'Não salvo'; tr.querySelector('.projecao-row-status').className = 'projecao-row-status is-draft'; updateSummary(); });
+  tbody.addEventListener('change', event => { const tr = event.target.closest('tr'); if (tr) { captureRow(tr); updateSummary(); } });
 
   // Copy from last month
   const copyBtn = document.getElementById('projecaoCopyBtn');
@@ -218,7 +266,10 @@ function renderProjecao() {
           const field = inp.dataset.field;
           if (lastMonthData[name][field] !== undefined) inp.value = lastMonthData[name][field];
         });
+        captureRow(tr);
+        const marker = tr.querySelector('.projecao-row-status'); marker.textContent = 'Não salvo'; marker.className = 'projecao-row-status is-draft';
       });
+      updateSummary();
       showToast('Dados copiados do mês anterior.', 'ok');
     });
   }
@@ -237,52 +288,13 @@ function renderProjecao() {
       const toInsert = [];
       const toUpdate = [];
 
-      tbody.querySelectorAll('tr').forEach(tr => {
-        if (tr.style.display === 'none') return;
-        const name = tr.dataset.name;
-        if (!name) return;
-        const rec = {
-          Setor: '',
-          Mês: mes,
-          Atendente: name,
-          Assumidos: 0,
-          Transferidos: 0,
-          Finalizados: 0,
-          TMA: '',
-          TMR: '',
-          SCORE: null,
-          Nota1: 0,
-          Nota2: 0,
-          Nota3: 0,
-          Total: 0,
-          Observações: ''
-        };
-        tr.querySelectorAll('.proj-input').forEach(inp => {
-          const f = inp.dataset.field;
-          const val = inp.value.trim();
-          if (f === 'SCORE') {
-            rec.SCORE = val !== '' ? parseFloat(val) : null;
-          } else if (f === 'Nota1' || f === 'Nota2' || f === 'Nota3') {
-            rec[f] = val !== '' ? parseFloat(val) : 0;
-          } else if (f === 'Assumidos' || f === 'Finalizados' || f === 'Transferidos' || f === 'Total') {
-            rec[f] = parseInt(val) || 0;
-          } else if (f === 'TMA' || f === 'TMR') {
-            rec[f] = val;
-          } else if (f === 'Observações') {
-            rec[f] = val;
-          }
-        });
-        const setorSel = tr.querySelector('.proj-setor');
-        rec.Setor = setorSel ? setorSel.value : (colabSetor[name] || '');
-        rec.Total = rec.Assumidos + rec.Transferidos + rec.Finalizados;
-
-        // Only include row if at least one field has meaningful data
-        const hasData = rec.Assumidos > 0 || rec.Transferidos > 0 || rec.Finalizados > 0 ||
-          rec.SCORE !== null || rec.Nota1 > 0 || rec.Nota2 > 0 || rec.Nota3 > 0 ||
-          rec.TMA !== '' || rec.TMR !== '' ||
-          rec.Observações !== '';
-        if (!hasData) return;
-
+      const recordsToSave = new Map();
+      tbody.querySelectorAll('tr').forEach(tr => { const rec = readRow(tr); if (hasData(rec)) recordsToSave.set(rec.Atendente, rec); });
+      // Inclui também os rascunhos que ficaram ocultos ao mudar os filtros.
+      drafts.forEach(rec => { if (rec['Mês'] === mes) recordsToSave.set(rec.Atendente, { ...rec }); });
+      recordsToSave.forEach(rec => {
+        const name = rec.Atendente;
+        if (!hasData(rec) && !(rawRecords || []).some(r => r && r.Atendente === name && String(r['Mês']) === mes)) return;
         const existingRec = (rawRecords || []).find(r => r && r['Atendente'] === name && String(r['Mês']) === mes);
         if (existingRec) toUpdate.push({ rec, existingRec });
         else toInsert.push(rec);
@@ -343,7 +355,8 @@ function renderProjecao() {
         if (inserted) parts.push(`${inserted} adicionado(s)`);
         if (pending) parts.push(`${pending} pendente(s)`);
         showToast(`${parts.join(', ')} para ${mes}.`, pending ? 'warn' : 'success', 'Registro Mensal');
-        closeProjecao();
+        drafts.forEach((rec, key) => { if (rec['Mês'] === mes) drafts.delete(key); });
+        renderRows();
       } catch (e) {
         console.error('Erro ao salvar projeção:', e);
         showToast('Erro ao salvar. Veja o Console (F12).', 'error');
