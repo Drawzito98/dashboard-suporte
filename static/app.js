@@ -1507,6 +1507,7 @@ function renderPreviewDisplay(rows) {
   const __multiMap = (typeof getMultiSetorMap === 'function') ? getMultiSetorMap(rows) : new Map();
   if (!rows || rows.length === 0) {
     previewTable.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado carregado</div><div class="empty-sub">Importe arquivos para iniciar a análise.</div></div>';
+    if (typeof applyPreviewColumns === 'function') applyPreviewColumns(previewTable, []);
     return;
   }
   // no preview numeric filters here; preview shows provided rows
@@ -1604,6 +1605,7 @@ function renderPreviewDisplay(rows) {
   });
   html.push('</tbody></table></div>');
   previewTable.innerHTML = html.join('');
+  if (typeof applyPreviewColumns === 'function') applyPreviewColumns(previewTable, keys);
   previewTable.querySelectorAll('[data-sort-index]').forEach(button => {
     button.addEventListener('click', () => {
       const key = keys[Number(button.dataset.sortIndex)];

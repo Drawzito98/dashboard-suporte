@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Painel de Suporte"/>
   <link rel="manifest" href="manifest.json"/>
   <link href="static/css/tokens.css?v=79" rel="stylesheet"/>
-  <link href="static/styles.css?v=127" rel="stylesheet"/>
+  <link href="static/styles.css?v=128" rel="stylesheet"/>
   <link href="static/panorama-suporte.css?v=4" rel="stylesheet"/>
   <link href="static/projecao.css?v=3" rel="stylesheet"/>
   <link href="static/ponto.css?v=2" rel="stylesheet"/>
@@ -435,6 +435,15 @@
                 <h2>Dados Detalhados</h2>
                 <p>Visualize e edite os registros importados</p>
               </div>
+              <details class="preview-columns-control" id="previewColumnsControl" hidden>
+                <summary class="btn-small">Colunas <span id="previewColumnsCount"></span></summary>
+                <div class="preview-columns-panel">
+                  <p>Escolha as colunas exibidas na tabela.</p>
+                  <div class="preview-columns-list" id="previewColumnsList" role="group" aria-label="Colunas visíveis"></div>
+                  <button class="btn-small" id="previewColumnsReset" type="button">Mostrar todas</button>
+                  <small>A exportação CSV mantém todas as colunas.</small>
+                </div>
+              </details>
             </div>
             <div class="sortbar" id="previewSortControls" style="display:none">
               <span class="sort-label">Ordenar por:</span>
@@ -799,7 +808,8 @@
 <script defer src="static/home.js?v=126"></script>
 <script defer src="static/ponto-engine.js?v=4"></script>
 <script defer src="static/ponto.js?v=7"></script>
-<script defer src="static/app.js?v=127"></script>
+<script defer src="static/preview-columns.js?v=1"></script>
+<script defer src="static/app.js?v=128"></script>
 <script defer src="static/manage-colabs-v2.js?v=95"></script>
 <script defer src="static/desafio-diario.js?v=83"></script>
 <script defer src="static/features.js"></script>
