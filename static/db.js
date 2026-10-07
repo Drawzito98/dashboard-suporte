@@ -212,30 +212,6 @@ async function dbUpdateRecord(id, changes) {
   }
 }
 
-async function dbDeleteEmptyMonth(month) {
-  if (!requireAdmin() || !sbClient) throw new Error('Entre como administrador e conecte-se ao banco para excluir o mês.');
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('Selecione um mês válido.');
-  const { data: rows, error } = await sbClient.from('registros').select('*').eq('Mês', month);
-  if (error) throw error;
-  if ((rows || []).some(row => !isEmptyPerformanceRecord(row))) throw new Error('Este mês contém dados preenchidos no banco. A exclusão foi bloqueada.');
-  let deleted = 0;
-  const failures = [];
-  for (const row of rows || []) {
-    let query = sbClient.from('registros').delete().eq('id', row.id).eq('Mês', month);
-    // Só remove o registro se suas métricas ainda forem iguais à leitura anterior.
-    for (const key of ['Assumidos', 'Finalizados', 'Transferidos', 'Score', 'SCORE', 'Nota1', 'Nota2', 'Nota3', 'Total', 'TMA', 'TMR', 'Observações', 'Objetivo']) {
-      if (!(key in row)) continue;
-      query = row[key] === null ? query.is(key, null) : query.eq(key, row[key]);
-    }
-    const result = await query.select('id');
-    if (result.error) failures.push(result.error.message);
-    else deleted += result.data?.length || 0;
-  }
-  const remaining = await sbClient.from('registros').select('*').eq('Mês', month);
-  if (remaining.error) throw remaining.error;
-  return { deleted, remaining: (remaining.data || []).map(reverseMapRecord), failures };
-}
-
 async function dbDeleteRecord(id) {
   if (!requireAdmin()) return false;
   if (!sbClient || id == null) return false;
