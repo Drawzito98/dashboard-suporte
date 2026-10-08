@@ -74,7 +74,8 @@ function renderProjecao() {
       <div class="projecao-filters">
         <label class="field" style="flex:1;min-width:180px">
           <span>Mês de referência</span>
-          <input type="month" id="projecaoMes" value="${nextMonth}" style="width:100%" aria-describedby="projecaoMesHint"/>
+          <input type="month" id="projecaoMes" value="${nextMonth}" style="width:100%" aria-describedby="projecaoMesHint projecaoMonthLabel"/>
+          <strong id="projecaoMonthLabel" class="projecao-month-label"></strong>
           <small id="projecaoMesHint">Escolha o mês e o ano, inclusive 2027 ou anos seguintes.</small>
         </label>
         <label class="field" style="flex:1;min-width:180px">
@@ -134,6 +135,7 @@ function renderProjecao() {
       </div>
 
       <div class="projecao-actions">
+        <span id="projecaoSaveStatus" class="projecao-save-status" role="status" aria-live="polite"></span>
         <button class="btn-small" id="projecaoCancelBtn" type="button">Cancelar</button>
         <button class="btn-primary" id="projecaoSaveBtn" type="button">💾 Salvar registros</button>
       </div>
@@ -171,7 +173,17 @@ function renderProjecao() {
     const pending = [...drafts.values()].filter(rec => rec['Mês'] === mesInput.value).length;
     document.getElementById('projecaoSummary').textContent = `${sectorNames.length} colaboradores · ${filled} preenchidos · ${sectorNames.length - filled} não preenchidos · ${tbody.rows.length} exibidos${pending ? ` · ${pending} alterações não salvas no mês` : ''}. Preenchido indica registro salvo ou com algum dado informado. Alterações digitadas são preservadas ao trocar os filtros enquanto esta janela estiver aberta.`;
     const save = document.getElementById('projecaoSaveBtn');
-    if (save) save.textContent = pending ? `💾 Salvar alterações do mês (${pending})` : '💾 Salvar registros';
+    const monthLabel = formatProjecaoMonth(mesInput.value);
+    document.getElementById('projecaoMonthLabel').textContent = monthLabel;
+    if (save) save.textContent = pending ? `Salvar ${monthLabel} (${pending})` : `Salvar ${monthLabel}`;
+    const status = document.getElementById('projecaoSaveStatus');
+    if (status && pending) {
+      status.dataset.state = 'pending';
+      status.textContent = `${pending} alteração(ões) não salva(s).`;
+    } else if (status && status.dataset.month !== mesInput.value) {
+      status.dataset.state = 'idle';
+      status.textContent = 'Pronto para editar o mês selecionado.';
+    }
   }
 
   function existingForMonth(mes) {
@@ -187,6 +199,7 @@ function renderProjecao() {
     const selSetor = setorInput ? setorInput.value : '';
     const selColab = colabInput ? colabInput.value : '';
     const existing = existingForMonth(mes);
+    const pendingSync = typeof getPendingSync === 'function' ? getPendingSync().filter(record => record['Mês'] === mes) : [];
     renderedMonth = mes;
     const available = names.filter(n => sectorIndex.belongs(n, selSetor, mes));
     colabInput.innerHTML = '<option value="">Todos os colaboradores</option>' + available.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
@@ -209,7 +222,8 @@ function renderProjecao() {
       const value = (field, dflt) => (prev && prev[field] !== undefined && prev[field] !== null ? prev[field] : dflt);
       const obs = (prev && prev['Observações']) ? String(prev['Observações']) : '';
       const setorVal = (prev && prev['Setor']) ? prev['Setor'] : setor;
-      const marker = ` <span class="projecao-row-status ${draft ? 'is-draft' : existing.has(n) ? 'is-saved' : 'is-empty'}">${draft ? 'Não salvo' : existing.has(n) ? 'Salvo' : 'Não preenchido'}</span>`;
+      const isPending = pendingSync.some(record => record.id != null ? record.id === existing.get(n)?.id : record.Atendente === n);
+      const marker = ` <span class="projecao-row-status ${draft || isPending ? 'is-draft' : existing.has(n) ? 'is-saved' : 'is-empty'}">${draft ? 'Não salvo' : isPending ? 'Pendente' : existing.has(n) ? 'Salvo no banco' : 'Não preenchido'}</span>`;
 
       return `<tr data-name="${escapeHtml(n)}">
         <td style="position:sticky;left:0;z-index:2;background:${rowBg};font-weight:500;white-space:nowrap">${escapeHtml(n)}${marker}</td>
@@ -352,6 +366,11 @@ function renderProjecao() {
       }
 
       setLoading(true, 'Salvando registros…');
+      const status = document.getElementById('projecaoSaveStatus');
+      status.dataset.state = 'saving';
+      status.dataset.month = mes;
+      status.textContent = 'Salvando no banco…';
+      saveBtn.disabled = true;
       try {
         let inserted = 0;
         let updated = 0;
@@ -404,17 +423,29 @@ function renderProjecao() {
         if (inserted) parts.push(`${inserted} adicionado(s)`);
         if (pending) parts.push(`${pending} pendente(s)`);
         showToast(`${parts.join(', ')} para ${mes}.`, pending ? 'warn' : 'success', 'Registro Mensal');
+        status.dataset.state = pending ? 'pending' : 'saved';
+        status.textContent = pending ? `${pending} registro(s) pendente(s). Use o indicador de sincronização para tentar novamente.` : `Salvo no banco · ${formatProjecaoMonth(mes)}`;
         drafts.forEach((rec, key) => { if (rec['Mês'] === mes) drafts.delete(key); });
         resetMonths.delete(mes);
         renderRows();
       } catch (e) {
+        status.dataset.state = 'pending';
+        status.textContent = 'Não foi possível concluir o salvamento. Tente novamente.';
         console.error('Erro ao salvar projeção:', e);
         showToast('Erro ao salvar. Veja o Console (F12).', 'error');
       } finally {
+        saveBtn.disabled = false;
         setLoading(false);
       }
     });
   }
+}
+
+function formatProjecaoMonth(month) {
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(String(month || ''));
+  if (!match) return 'registros';
+  const names = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  return `${names[Number(match[2]) - 1]} de ${match[1]}`;
 }
 
 function shiftProjecaoMonth(month, offset) {

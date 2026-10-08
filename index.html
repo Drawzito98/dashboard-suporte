@@ -12,12 +12,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
   <meta name="apple-mobile-web-app-title" content="Painel de Suporte"/>
   <link rel="manifest" href="manifest.json"/>
-  <link href="static/css/tokens.css?v=79" rel="stylesheet"/>
-  <link href="static/styles.css?v=128" rel="stylesheet"/>
+  <link href="static/css/tokens.css?v=80" rel="stylesheet"/>
+  <link href="static/styles.css?v=129" rel="stylesheet"/>
   <link href="static/panorama-suporte.css?v=4" rel="stylesheet"/>
   <link href="static/projecao.css?v=3" rel="stylesheet"/>
   <link href="static/ponto.css?v=2" rel="stylesheet"/>
   <link href="static/home.css?v=80" rel="stylesheet"/>
+  <link href="static/css/visual-refresh.css?v=1" rel="stylesheet"/>
   <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
   <link rel="icon" type="image/png" sizes="192x192" href="static/icons/icon-192.png"/>
   <link rel="apple-touch-icon" sizes="180x180" href="static/icons/apple-touch-icon.png"/>
@@ -236,7 +237,7 @@
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="8" y="13" width="3" height="4"/><rect x="13" y="11" width="3" height="6"/></svg></span> Relatório Setorial
       </button>
       <button class="tab-btn" data-tab="saude-operacional" role="tab" aria-selected="false">
-        <span class="tab-icon">🩺</span> Saúde Operacional
+        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span> Saúde Operacional
       </button>
       <button class="nav-section-label nav-section-toggle" id="equipeGestaoToggle" type="button" aria-expanded="true" aria-controls="equipeGestaoNav">
         <span>Equipe e gestão</span>
@@ -247,9 +248,9 @@
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Rotina<span class="tab-badge" id="tarefasBadge"></span>
       </button>
       <button class="tab-btn" data-tab="regras" role="tab" aria-selected="false">
-        <span class="tab-icon">📚</span> Regras
+        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span> Regras
       </button>
-      <button class="tab-btn" data-tab="ponto" role="tab" aria-selected="false"><span class="tab-icon">◷</span> Auditoria de Ponto</button>
+      <button class="tab-btn" data-tab="ponto" role="tab" aria-selected="false"><span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span> Auditoria de Ponto</button>
       <button class="tab-btn" data-tab="colaboradores" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Equipe
       </button>
@@ -312,7 +313,7 @@
           <div class="form-stack" id="registrosContent">
             <div class="tool-group"><h3>Atendimentos</h3><p>Registre e avalie os atendimentos do dia.</p><div class="btn-row"><button class="btn-small" id="acompDiarioBtn" type="button" title="Acompanhamento diário de atendimentos"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Acompanhamento diário</button><button class="btn-small" id="avaliarAtendimentoBtn" type="button" title="Avaliar atendimentos realizados"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Avaliação de Atendimentos</button></div></div>
             <div class="tool-group"><h3>Agenda e presença</h3><p>Consulte e registre ausências e férias.</p><div class="btn-row"><button class="btn-small" id="ausenciasBtn" type="button" title="Registrar ausências de colaboradores"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg> Ausências</button><button class="btn-small" id="feriasBtn" type="button" title="Registrar férias de colaboradores"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-4-4-4-7c0-2.2 1.8-4 4-4s4 1.8 4 4c0 3-4 7-4 7z"/><circle cx="12" cy="11" r="1"/><path d="M19 17.67c0-3.87-3.13-7-7-7s-7 3.13-7 7"/><path d="M8 17.67c0-3.87 3.13-7 7-7"/></svg> Férias</button></div></div>
-            <div class="tool-group"><h3>Desenvolvimento</h3><p>Registre atividades, prepare feedbacks e exporte relatórios.</p><div class="btn-row"><button class="btn-small" id="atividadesMesBtn" type="button">🟢🔴 Atividades do mês</button><button class="btn-small" id="feedbacksBtn" type="button" title="Gerar feedbacks por colaborador"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Gerar feedback</button><button class="btn-small" id="relatorioFeedbackBtn" type="button" title="Relatório de feedback por colaborador com PDF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Exportar relatório de feedback</button></div></div>
+            <div class="tool-group"><h3>Desenvolvimento</h3><p>Registre atividades, prepare feedbacks e exporte relatórios.</p><div class="btn-row"><button class="btn-small" id="atividadesMesBtn" type="button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg> Atividades do mês</button><button class="btn-small" id="feedbacksBtn" type="button" title="Gerar feedbacks por colaborador"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Gerar feedback</button><button class="btn-small" id="relatorioFeedbackBtn" type="button" title="Relatório de feedback por colaborador com PDF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Exportar relatório de feedback</button></div></div>
             <div class="tool-group"><h3>Comunicação</h3><p>Acesse mensagens recebidas e links úteis.</p><div class="btn-row"><button class="btn-small" id="reportesBtn" type="button" title="Mensagens de usuários externos"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Reportes<span class="tab-badge" id="reportesBadgeSide"></span></button><button class="btn-small" id="linksBtn" type="button" title="Links importantes"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Links</button></div></div>
           </div>
         </section>
@@ -761,7 +762,7 @@
 <script defer src="static/sync-status.js?v=1"></script>
 <script defer src="static/db-extra.js?v=125"></script>
 <script defer src="static/perfis.js"></script>
-<script defer src="static/globalFilters.js?v=126"></script>
+<script defer src="static/globalFilters.js?v=127"></script>
 <script defer src="static/scoring.js"></script>
 <script defer src="static/gamificacao.js"></script>
 <script defer src="static/metas.js"></script>
@@ -781,7 +782,7 @@
 <script defer src="static/indicator-health-v3.js?v=94"></script>
 <script defer src="static/saude-operacional.js?v=6"></script>
 <script defer src="static/conquistas.js"></script>
-<script defer src="static/projecao.js?v=7"></script>
+<script defer src="static/projecao.js?v=8"></script>
 <script defer src="static/historico.js"></script>
 <script defer src="static/comentarios.js"></script>
 <script defer src="static/notificacoes.js"></script>
@@ -792,7 +793,7 @@
 <script defer src="static/tarefas.js?v=3"></script>
 <script defer src="static/rotina-cards.js?v=1"></script>
 <script defer src="static/regras.js?v=1"></script>
-<script defer src="static/bonus.js"></script>
+<script defer src="static/bonus.js?v=1"></script>
 <script defer src="static/relatorio-setorial.js?v=85"></script>
 <script defer src="static/panorama-suporte.js?v=5"></script>
 <script defer src="static/avaliacao.js"></script>

@@ -6,33 +6,33 @@
 /* ===== Tokens ===== */
 :root {
   /* Surfaces — neutros suaves (warm tint) */
-  --bg-app:        #f5f3ef;
-  --bg-canvas:     #fdfcf9;
-  --bg-surface:    #fdfcf9;
-  --bg-subtle:     #f0ede8;
-  --bg-inset:      #f7f5f1;
+  --bg-app:        #f6f2e8;
+  --bg-canvas:     #fffcf5;
+  --bg-surface:    #fffcf5;
+  --bg-subtle:     #eee9df;
+  --bg-inset:      #f8f5ed;
 
   /* Texto */
-  --text-strong:   #1a1814;
-  --text-primary:  #2c2924;
-  --text-secondary:#4a4540;
-  --text-muted:    #6d6861;
+  --text-strong:   #202c30;
+  --text-primary:  #303d40;
+  --text-secondary:#505e60;
+  --text-muted:    #687472;
 
   /* Bordas */
-  --border:        #e4e0da;
-  --border-strong: #ccc7bf;
+  --border:        #dedbd0;
+  --border-strong: #b9c0b9;
 
   /* Accent único */
-  --accent:        #2563eb;
-  --accent-hover:  #1d4ed8;
-  --accent-soft:   #eff4ff;
-  --accent-ring:   rgba(37, 99, 235, 0.18);
-  --accent-rgb:    37, 99, 235;
-  --warn-fg:       #c98a1e;
+  --accent:        #17626d;
+  --accent-hover:  #104e58;
+  --accent-soft:   #e7f1ee;
+  --accent-ring:   rgba(23, 98, 109, 0.18);
+  --accent-rgb:    23, 98, 109;
+  --warn-fg:       #9a670d;
   --danger-ring:   rgba(220, 38, 38, 0.3);
-  --accent-selected:       #c69216;
-  --accent-selected-ring:  rgba(198, 146, 22, 0.25);
-  --accent-selected-soft:  rgba(198, 146, 22, 0.08);
+  --accent-selected:       #17626d;
+  --accent-selected-ring:  rgba(23, 98, 109, 0.25);
+  --accent-selected-soft:  rgba(23, 98, 109, 0.08);
 
   /* Status (uso parcimonioso) */
   --success:       #047857;
@@ -45,13 +45,13 @@
   --info-soft:     #e0f2fe;
 
   /* Scores — contraste garantido em fundo claro */
-  --score-excelente: #16a34a;
-  --score-atencao:   #d97706;
+  --score-excelente: #047857;
+  --score-atencao:   #a04e08;
   --score-critico:   #dc2626;
   --score-neutro:    #5b6572;
 
   /* Variações */
-  --variation-pos:  #16a34a;
+  --variation-pos:  #047857;
   --variation-neg:  #dc2626;
 
   /* Texto sobre cores de status — fundo claro: texto escuro */
@@ -123,10 +123,10 @@
   --overlay-table:   rgba(0, 0, 0, 0.08);
 
   /* Raios */
-  --r-sm: 8px;
+  --r-sm: 10px;
   --r-md: 12px;
-  --r-lg: 16px;
-  --r-xl: 20px;
+  --r-lg: 18px;
+  --r-xl: 22px;
 
   /* Spacing scale (8px base) */
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
@@ -150,8 +150,8 @@
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "ss01", "cv11";
 
-  --text:              #2c2924;
-  --bg-card:           #fdfcf9;
+  --text:              #303d40;
+  --bg-card:           #fffcf5;
 }
 
 /* ===== Dark — Gotham corporativa ===== */
@@ -170,16 +170,16 @@ html[data-theme="dark"] {
   --border:        #2d3746;
   --border-strong: #465265;
 
-  --accent:        #e2b53c;
-  --accent-hover:  #f0cb62;
-  --accent-soft:   rgba(226, 181, 60, 0.12);
-  --accent-ring:   rgba(226, 181, 60, 0.30);
-  --accent-rgb:    226, 181, 60;
+  --accent:        #8cd8cf;
+  --accent-hover:  #b2e8e1;
+  --accent-soft:   rgba(140, 216, 207, 0.12);
+  --accent-ring:   rgba(140, 216, 207, 0.30);
+  --accent-rgb:    140, 216, 207;
   --warn-fg:       #fbbf24;
   --danger-ring:   rgba(248, 113, 113, 0.3);
-  --accent-selected:       #e2b53c;
-  --accent-selected-ring:  rgba(226, 181, 60, 0.30);
-  --accent-selected-soft:  rgba(226, 181, 60, 0.12);
+  --accent-selected:       #8cd8cf;
+  --accent-selected-ring:  rgba(140, 216, 207, 0.30);
+  --accent-selected-soft:  rgba(140, 216, 207, 0.12);
 
   --success:       #34d399;
   --success-soft:  rgba(52, 211, 153, 0.12);
@@ -244,7 +244,7 @@ html[data-theme="dark"] {
 
   /* Meta progress */
   --progress-good: linear-gradient(90deg, #059669, #047857);
-  --progress-warn: linear-gradient(90deg, #d97706, #b45309);
+  --progress-warn: linear-gradient(90deg, #a04e08, #b45309);
   --progress-bad:  linear-gradient(90deg, #dc2626, #b91c1c);
 
   /* Role badges */

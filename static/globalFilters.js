@@ -4,6 +4,12 @@
 
 const GLOBAL_FILTERS_KEY = 'sistema_global_filters_v1';
 
+function formatFilterMonth(value) {
+  const month = String(value || '');
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return month;
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${month}-01T00:00:00Z`));
+}
+
 // Normaliza nome para deduplicação: usa normalizeNameShared (helpers.js)
 function _normalizeName(n) {
   return typeof normalizeNameShared === 'function' ? normalizeNameShared(n) : String(n || '').trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s*[^\p{L}\p{N}\s]\s*(?:multi[\s\-]?setor)?\s*$/ui, '').replace(/\s*(?:multi[\s\-]?setor)\s*$/i, '').replace(/[^\p{L}\p{N}\s]/gu, '').trim().toLowerCase();
@@ -369,11 +375,11 @@ const globalFilters = {
     if (!this.contextoEquipe() && this.periodo && this.periodo !== 'all') {
       if (this.periodo === '__multi__') {
         const sel = Array.isArray(this.mesesSelecionados) ? this.mesesSelecionados : [];
-        parts.push(`Período: ${sel.length ? sel.slice().sort().join(', ') : 'Nenhum'}`);
+        parts.push(`Período: ${sel.length ? sel.slice().sort().map(formatFilterMonth).join(', ') : 'Nenhum'}`);
       } else if (this.periodo === '__range__') {
-        parts.push(`Período: ${this.mesInicio || '—'} até ${this.mesFim || '—'}`);
+        parts.push(`Período: ${formatFilterMonth(this.mesInicio) || '—'} até ${formatFilterMonth(this.mesFim) || '—'}`);
       } else {
-        parts.push(`Período: ${this.periodo}`);
+        parts.push(`Período: ${formatFilterMonth(this.periodo)}`);
       }
     }
     if (this.setor && this.setor !== 'all') parts.push(`Setor: ${this.setor}`);
@@ -390,18 +396,18 @@ const globalFilters = {
     if (!setorEl) return;
     const setorVal = setorEl.value;
     const nivelVal = document.getElementById('gfNivel')?.value || this.nivel || 'all';
+    const raw = typeof rawRecords !== 'undefined' ? rawRecords : [];
 
     let activeMonths = null;
     if (!this.contextoEquipe() && this.periodo && this.periodo !== 'all' && this.periodo !== '__multi__' && this.periodo !== '__range__') {
       activeMonths = [this.periodo];
     } else if (!this.contextoEquipe() && this.periodo === '__range__' && this.mesInicio && this.mesFim) {
-      activeMonths = [...new Set((rawRecords || []).map(r => String(r['Mês'] || '')).filter(m => m >= this.mesInicio && m <= this.mesFim))];
+      activeMonths = [...new Set(raw.map(r => String(r['Mês'] || '')).filter(m => m >= this.mesInicio && m <= this.mesFim))];
     } else if (!this.contextoEquipe() && this.periodo === '__multi__' && Array.isArray(this.mesesSelecionados) && this.mesesSelecionados.length) {
       activeMonths = this.mesesSelecionados;
     }
 
     let nameMap = new Map();
-    const raw = rawRecords || [];
     for (const r of raw) {
       if (!r || !r['Atendente']) continue;
       if (setorVal !== 'all' && String(r['Setor']) !== setorVal) continue;
@@ -440,7 +446,7 @@ const globalFilters = {
   },
 
   popularOptions() {
-    const records = rawRecords || [];
+    const records = typeof rawRecords !== 'undefined' ? rawRecords : [];
     const meses = [...new Set(records.filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
     let cadastro = {};
     try { cadastro = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (_) {}
@@ -457,13 +463,13 @@ const globalFilters = {
       let html = '<option value="all">Todos</option>';
       if (opts && opts.includeRange) html += '<option value="__range__">Intervalo de meses</option>';
       if (opts && opts.includeMulti) html += '<option value="__multi__">Meses específicos (avançado)</option>';
-      html += vals.map(v => `<option value="${String(v).replace(/"/g, '&quot;')}">${String(v).replace(/"/g, '&quot;')}</option>`).join('');
+      html += vals.map(v => `<option value="${String(v).replace(/"/g, '&quot;')}">${String(opts?.format ? opts.format(v) : v).replace(/"/g, '&quot;')}</option>`).join('');
       sel.innerHTML = html;
       if (current && [...sel.options].some(o => o.value === current)) sel.value = current;
     };
 
-    fill('gfPeriodo', meses, { includeRange: true, includeMulti: true });
-    const monthOptions = meses.map(m => `<option value="${String(m).replace(/"/g, '&quot;')}">${String(m).replace(/"/g, '&quot;')}</option>`).join('');
+    fill('gfPeriodo', meses, { includeRange: true, includeMulti: true, format: formatFilterMonth });
+    const monthOptions = meses.map(m => `<option value="${String(m).replace(/"/g, '&quot;')}">${formatFilterMonth(m).replace(/"/g, '&quot;')}</option>`).join('');
     const rangeStart = document.getElementById('gfMonthStart');
     const rangeEnd = document.getElementById('gfMonthEnd');
     if (rangeStart) rangeStart.innerHTML = monthOptions;
@@ -484,7 +490,7 @@ const globalFilters = {
     const checkList = document.getElementById('gfMonthChecklist');
     if (checkList) {
       checkList.innerHTML = meses.map(m =>
-        `<label class="month-option"><input type="checkbox" value="${String(m).replace(/"/g, '&quot;')}"> ${String(m).replace(/"/g, '&quot;')}</label>`
+        `<label class="month-option"><input type="checkbox" value="${String(m).replace(/"/g, '&quot;')}"> ${formatFilterMonth(m).replace(/"/g, '&quot;')}</label>`
       ).join('');
     }
 

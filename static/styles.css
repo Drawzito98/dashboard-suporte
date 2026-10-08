@@ -3743,47 +3743,6 @@ body[data-active-tab="dashboard"] .dashboard-context-action { display: inline-fl
 /* =====================================================
    Rework v2 — Calm operational interface
    ===================================================== */
-:root {
-  --bg-app: #f4f6f8;
-  --bg-canvas: #ffffff;
-  --bg-surface: #ffffff;
-  --bg-subtle: #f1f4f7;
-  --bg-inset: #f7f9fb;
-  --text-strong: #172033;
-  --text-primary: #29344a;
-  --text-secondary: #647087;
-  --text-muted: #8993a5;
-  --border: #e3e8ef;
-  --border-strong: #cfd7e3;
-  --accent: #315efb;
-  --accent-hover: #2449d8;
-  --accent-soft: #edf1ff;
-  --accent-ring: rgba(49, 94, 251, .18);
-  --r-sm: 7px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 18px;
-  --shadow-xs: 0 1px 2px rgba(23, 32, 51, .03);
-  --shadow-sm: 0 1px 2px rgba(23, 32, 51, .04);
-  --shadow-md: 0 8px 24px rgba(23, 32, 51, .07);
-  --shadow-lg: 0 20px 50px rgba(23, 32, 51, .14);
-}
-html[data-theme="dark"] {
-  --bg-app: #080b11;
-  --bg-canvas: #0f141d;
-  --bg-surface: #151b25;
-  --bg-subtle: #202936;
-  --bg-inset: #1a222e;
-  --text-strong: #ffffff;
-  --text-primary: #eef2f7;
-  --text-secondary: #c3ccd8;
-  --text-muted: #9ca8b8;
-  --border: #2d3746;
-  --border-strong: #465265;
-  --accent: #e2b53c;
-  --accent-hover: #f0cb62;
-  --accent-soft: rgba(226, 181, 60, .12);
-}
 body { background: var(--bg-app); }
 button, input, select, textarea { font: inherit; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
@@ -4270,15 +4229,15 @@ html[data-theme="dark"] body:not([data-role="colaborador"]) .tab-btn.active {
    ===================================================== */
 body[data-role="admin"] {
   --premium-ease: cubic-bezier(.22, 1, .36, 1);
-  --accent: #287f83;
-  --accent-hover: #206b6f;
-  --accent-soft: rgba(40, 127, 131, .11);
-  --accent-ring: rgba(40, 127, 131, .24);
-  --accent-rgb: 40, 127, 131;
-  --accent-selected: #287f83;
-  --accent-selected-ring: rgba(40, 127, 131, .24);
-  --accent-selected-soft: rgba(40, 127, 131, .11);
-  --text-on-accent: #ffffff;
+
+
+
+
+
+
+
+
+
 }
 body[data-role="admin"] main.app {
   max-width: 1660px;
@@ -4428,17 +4387,6 @@ body[data-role="admin"] :is(.modal-box, .modal-sheet, .colab-detail-panel) {
   border-radius: 18px;
   box-shadow: 0 28px 70px rgba(4, 8, 15, .22);
 }
-html[data-theme="dark"] body[data-role="admin"] {
-  --accent: #58b8b5;
-  --accent-hover: #72cbc7;
-  --accent-soft: rgba(88, 184, 181, .13);
-  --accent-ring: rgba(88, 184, 181, .28);
-  --accent-rgb: 88, 184, 181;
-  --accent-selected: #58b8b5;
-  --accent-selected-ring: rgba(88, 184, 181, .28);
-  --accent-selected-soft: rgba(88, 184, 181, .13);
-  --text-on-accent: #071416;
-}
 html[data-theme="dark"] body[data-role="admin"] :is(.card, .panel, .kpi, .global-filter-bar, .sidebar) {
   background-image: linear-gradient(145deg, rgba(255,255,255,.018), transparent 42%);
   box-shadow: 0 1px 0 rgba(255,255,255,.018), 0 16px 38px rgba(0,0,0,.16);
@@ -4469,12 +4417,12 @@ html[data-theme="dark"] body[data-role="admin"] .kpi:hover {
    Login premium v1 — entrada institucional responsiva
    ===================================================== */
 .auth-overlay {
-  --accent: #287f83;
-  --accent-hover: #206b6f;
-  --accent-soft: rgba(40, 127, 131, .11);
-  --accent-ring: rgba(40, 127, 131, .24);
-  --accent-rgb: 40, 127, 131;
-  --text-on-accent: #fff;
+
+
+
+
+
+
   overflow: auto;
   padding: 28px;
   background:
@@ -4621,12 +4569,12 @@ html[data-theme="dark"] body[data-role="admin"] .kpi:hover {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 html[data-theme="dark"] .auth-overlay {
-  --accent: #58b8b5;
-  --accent-hover: #72cbc7;
-  --accent-soft: rgba(88, 184, 181, .13);
-  --accent-ring: rgba(88, 184, 181, .28);
-  --accent-rgb: 88, 184, 181;
-  --text-on-accent: #071416;
+
+
+
+
+
+
   background:
     radial-gradient(circle at 12% 12%, rgba(88,184,181,.10), transparent 32%),
     radial-gradient(circle at 88% 85%, rgba(88,184,181,.055), transparent 28%),
