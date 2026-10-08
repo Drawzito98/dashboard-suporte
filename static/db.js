@@ -121,12 +121,18 @@ function filterRecordsFields(records) {
 async function dbLoadRecords() {
   if (!sbClient) { console.warn('dbLoadRecords: sbClient nulo'); return null; }
   try {
-    const { data, error } = await sbClient.from('registros').select('*');
-    if (error) {
-      console.error('[DB] Erro na query:', error);
-      throw error;
+    // O banco limita cada resposta. Leia todas as páginas para que os
+    // registros mais recentes também sejam restaurados após atualizar.
+    const records = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await sbClient.from('registros')
+        .select('*').order('id', { ascending: true }).range(offset, offset + pageSize - 1);
+      if (error) throw error;
+      records.push(...(data || []));
+      if (!data || data.length < pageSize) break;
     }
-    return (data || []).map(reverseMapRecord);
+    return records.map(reverseMapRecord);
   } catch (e) {
     console.error('[DB] Erro ao carregar do Supabase:', e.message || e);
     return null;
