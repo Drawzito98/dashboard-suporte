@@ -385,9 +385,12 @@ function renderProjecao() {
           if (existingRec.id != null) {
             const ok = await dbUpdateRecord(existingRec.id, rec);
             if (!ok) pending++;
+            else updated++;
+          } else {
+            addToPendingSync(existingRec);
+            pending++;
           }
           if (typeof logHistorico === 'function') logHistorico('edit', existingRec, { campo: 'Registro mensal', before: JSON.stringify(before), after: JSON.stringify(rec) });
-          updated++;
         }
 
         if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();

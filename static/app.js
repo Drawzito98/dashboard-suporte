@@ -2732,7 +2732,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const stillPending = getPendingSync();
       if (stillPending.length > 0) {
         for (const pr of stillPending) {
-          rawRecords.push(pr);
+          const existing = pr.id == null ? null : rawRecords.find(record => record.id === pr.id);
+          if (existing) Object.assign(existing, pr);
+          else rawRecords.push(pr);
         }
         showToast(`${stillPending.length} registro(s) offline restaurados. Tente salvá-los novamente mais tarde.`, 'warn', 'Sincronização');
       }
@@ -2741,6 +2743,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const freshData = await dbLoadRecords();
         if (freshData && freshData.length > 0) {
           rawRecords = normalizeAtendenteOnRecords(freshData);
+          for (const pr of getPendingSync()) {
+            const existing = pr.id == null ? null : rawRecords.find(record => record.id === pr.id);
+            if (existing) Object.assign(existing, pr);
+            else rawRecords.push(pr);
+          }
         }
       }
     }

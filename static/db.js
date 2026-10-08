@@ -33,7 +33,12 @@ function addToPendingSync(record) {
   try {
     const raw = localStorage.getItem(PENDING_SYNC_KEY);
     const arr = raw ? JSON.parse(raw) : [];
-    arr.push({ ...record, _pendingAt: Date.now() });
+    const index = arr.findIndex(row => record.id != null ? row.id === record.id :
+      row.id == null && record.Atendente && record['Mês'] && row.Atendente === record.Atendente &&
+      row['Mês'] === record['Mês'] && row.Setor === record.Setor);
+    const pending = { ...record, _pendingAt: Date.now() };
+    if (index >= 0) arr[index] = pending;
+    else arr.push(pending);
     localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(arr));
     notifyPendingSyncChanged();
   } catch (e) { console.warn('Erro ao salvar pending sync:', e); }
@@ -57,14 +62,21 @@ async function syncPendingRecords() {
   const synced = [];
   const failed = [];
 
-  const clean = pending.map(filterRecordFields);
+  const inserts = pending.filter(record => record.id == null);
+  const updates = pending.filter(record => record.id != null);
+  for (const record of updates) {
+    if (await dbUpdateRecord(record.id, record)) synced.push(record);
+    else failed.push(record);
+  }
   try {
-    const { data, error } = await sbClient.from('registros').insert(clean).select();
-    if (error) throw error;
-    synced.push(...pending);
+    if (inserts.length) {
+      const { data, error } = await sbClient.from('registros').insert(inserts.map(filterRecordFields)).select();
+      if (error) throw error;
+      synced.push(...inserts);
+    }
   } catch (e) {
     console.warn('Falha ao sincronizar pendentes em batch:', e);
-    failed.push(...pending);
+    failed.push(...inserts);
   }
 
   if (failed.length) {
@@ -203,17 +215,31 @@ async function dbInsertRow(row) {
 
 async function dbUpdateRecord(id, changes) {
   if (!requireAdmin()) return false;
-  if (!sbClient || id == null) return false;
+  if (id == null) return false;
+  if (!sbClient) { addToPendingSync({ ...changes, id }); return false; }
   try {
     const clean = filterRecordFields(changes);
     delete clean.id;
     delete clean.created_at;
     delete clean.user_id;
-    const { error } = await sbClient.from('registros').update(clean).eq('id', id);
+    let result = await sbClient.from('registros').update(clean).eq('id', id).select('id');
+    // A política dos registros legados permite editar linhas sem dono,
+    // mas exige que o resultado pertença ao usuário autenticado.
+    if (result.error?.code === '42501') {
+      const { data, error: authError } = await sbClient.auth.getUser();
+      if (authError || !data?.user?.id) throw authError || result.error;
+      result = await sbClient.from('registros').update({ ...clean, user_id: data.user.id }).eq('id', id).select('id');
+    }
+    const { data, error } = result;
     if (error) throw error;
+    if (!data?.length) throw new Error('O banco não confirmou a atualização deste registro.');
+    const pending = getPendingSync().filter(record => record.id !== id);
+    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(pending));
+    notifyPendingSyncChanged();
     return true;
   } catch (e) {
     console.error('Erro ao atualizar registro:', e);
+    addToPendingSync({ ...changes, id });
     return false;
   }
 }
