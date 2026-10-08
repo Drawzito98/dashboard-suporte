@@ -33,6 +33,29 @@ assert.equal(report(processCsv([{ ...data[0], 'Média avaliação': '0' }], fiel
 assert.throws(() => processCsv([{ ...data[0], 'Média avaliação': 'texto inesperado' }], fields));
 assert.throws(() => report(processCsv(data.slice(0, 2), fields.filter(f => f !== 'SCORE')), { ...options, order: 'SCORE' }));
 assert.equal(time(90061), '25:01:01');
+for (const missing of ['', '::', '-', '—', 'N/A', 'N/D', 'Sem informação', null]) {
+  const incomplete = processCsv([{ ...data[0], TMR: missing }, data[1]], fields);
+  const partial = report(incomplete, options);
+  assert.equal(incomplete[0].tmr, null);
+  assert.equal(partial.ranking.length, 2);
+  assert.equal(partial.metrics[5][1], '00:04:00');
+  assert.ok(partial.html.includes('Sem informação'));
+  assert.ok(partial.markdown.includes('TMR: média calculada com 1 de 2'));
+}
+const mixedTimes = report(processCsv([{ ...data[0], TMA: '::' }, { ...data[1], TMR: '::' }], fields), options);
+assert.equal(mixedTimes.metrics[4][1], '03:00:00');
+assert.equal(mixedTimes.metrics[5][1], '00:02:00');
+const noTimes = report(processCsv([{ ...data[0], TMA: '::', TMR: '::' }], fields), options);
+assert.equal(noTimes.metrics[4][1], 'Sem informação');
+assert.equal(noTimes.metrics[5][1], 'Sem informação');
+assert.ok(noTimes.html.includes('Não há TMR informado'));
+assert.ok(!noTimes.html.includes('apresentou o maior TMR'));
+assert.equal(time(null), 'Sem informação');
+const zeroTime = report(processCsv([{ ...data[0], TMR: '00:00:00' }, { ...data[1], TMR: '::' }], fields), options);
+assert.equal(zeroTime.metrics[5][1], '00:00:00');
+for (const invalid of ['00:99:00', '00:00:99', 'texto inesperado', '-00:01:00', '00::20']) {
+  assert.throws(() => processCsv([{ ...data[0], TMR: invalid }], fields));
+}
 const malicious = processCsv([{ ...data[0], Atendente: '<img src=x onerror=alert(1)>|Alice' }], fields);
 const safe = report(malicious, { ...options, hide: false });
 assert.ok(!safe.html.includes('<img'));
