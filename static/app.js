@@ -1056,8 +1056,9 @@ function formatMesLabel(m) {
 function getFeriasList(rows) {
   const out = [];
   (rows || []).forEach(r => {
-    if (isFeriasObs(r && r['Observações'])) {
-      out.push({ atendente: String(r['Atendente']||''), mes: String(r['Mês']||''), obs: String(r['Observações']||'') });
+    const ferias = r ? getFeriasResultado(r.Atendente, [r]) : null;
+    if (ferias?.esteve && !out.some(item => item.atendente === r.Atendente && item.mes === r['Mês'])) {
+      out.push({ atendente: String(r['Atendente']||''), mes: String(r['Mês']||''), obs: ferias.detalhes });
     }
   });
   return out;
@@ -1584,10 +1585,11 @@ function renderPreviewDisplay(rows) {
       const txt = raw === null || raw === undefined ? '' : String(raw);
       const shown = (k === 'Atendente') ? getDisplayName(txt, aliasMap) : txt;
       if (k === 'Atendente') {
-        const isFer = isFeriasObs(r['Observações']);
+        const ferias = getFeriasResultado(r.Atendente, [r]);
+        const isFer = ferias.esteve;
         const atName = String(r['Atendente']||'').trim();
         const isMulti = __multiMap.has(atName);
-        const badges = `${isFer ? '<span class="row-badge badge-ferias" title="Esteve de férias neste mês">🏖️ Férias</span>' : ''}${isMulti ? `<span class="row-badge badge-multi" title="Atuou em mais de um setor: ${escapeHtml(__multiMap.get(atName).join(', '))}">🔁 Multi-setor</span>` : ''}`;
+        const badges = `${isFer ? `<span contenteditable="false" class="row-badge badge-ferias" title="${escapeHtml(ferias.detalhes)}">🏖️ Esteve de férias</span>` : ''}${isMulti ? `<span class="row-badge badge-multi" title="Atuou em mais de um setor: ${escapeHtml(__multiMap.get(atName).join(', '))}">🔁 Multi-setor</span>` : ''}`;
         rowHtml += `<td contenteditable="${presentationMode || !isAdmin() ? 'false' : 'true'}" data-idx="${ridx}" data-key="${escapeHtml(k)}" class="cell-edit cell-atendente">${escapeHtml(shown)}${badges}</td>`;
         return;
       }
@@ -1643,7 +1645,9 @@ function renderPreviewDisplay(rows) {
       const el = e.target;
       const idx = Number(el.getAttribute('data-idx'));
       const key = el.getAttribute('data-key');
-      const val = el.textContent.trim();
+      const cellValue = el.cloneNode(true);
+      cellValue.querySelectorAll('.row-badge').forEach(badge => badge.remove());
+      const val = cellValue.textContent.trim();
       if (idx < 0 || idx >= rawRecords.length) return;
       const rec = rawRecords[idx];
       if (!rec) return;
@@ -3872,3 +3876,7 @@ function initNotificacoesUI() {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initInterfaceAccessibility);
   else initInterfaceAccessibility();
 })();
+
+window.addEventListener('ferias-updated', () => {
+  if (rawRecords.length && document.querySelector('.tab-btn.active')?.dataset.tab === 'dashboard') updateView();
+});

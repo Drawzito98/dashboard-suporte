@@ -921,13 +921,17 @@ async function dbAvaliacaoAtendDelete(id) {
 
 const FERIAS_LOCAL_KEY = 'sistema_ferias_v1';
 
+function notifyFeriasUpdated() {
+  window.dispatchEvent(new Event('ferias-updated'));
+}
+
 async function dbFeriasLoad() {
   if (!sbClient) return _fallbackLoad(FERIAS_LOCAL_KEY, []);
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(FERIAS_LOCAL_KEY, []);
-    const { data } = await sbClient.from('ferias').select('*').eq('user_id', uid).order('data_inicio', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('ferias').select('*').eq('user_id', uid).order('data_inicio', { ascending: false });
+    if (!error && Array.isArray(data)) {
       const list = data.map(r => ({
         id: r.id,
         colaborador: r.colaborador,
@@ -937,6 +941,7 @@ async function dbFeriasLoad() {
         updatedAt: r.updated_at
       }));
       localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(list));
+      notifyFeriasUpdated();
       return list;
     }
     return _fallbackLoad(FERIAS_LOCAL_KEY, []);
@@ -951,6 +956,7 @@ async function dbFeriasSave(item) {
   if (idx >= 0) list[idx] = item;
   else list.unshift(item);
   localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(list));
+  notifyFeriasUpdated();
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -978,6 +984,7 @@ async function dbFeriasDelete(id) {
   const list = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
   const filtered = list.filter(f => String(f.id) !== String(id));
   localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(filtered));
+  notifyFeriasUpdated();
   if (!sbClient) return;
   try {
     await sbClient.from('ferias').delete().eq('id', id);
