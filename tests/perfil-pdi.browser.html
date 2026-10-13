@@ -47,7 +47,9 @@ window.addEventListener('load',()=>{try{
   saved=JSON.parse(localStorage.getItem('sistema_perfil_pdi_v1_pdi-test-owner'))['Pessoa de Teste'].planos;
   assert(saved.length===2&&saved[0].status==='aprovado'&&saved[1].status==='rascunho','Versão aprovada foi alterada');
   assert(saved[0].objetivos[0].objetivo!==saved[1].objetivos[0].objetivo,'Versões não preservam objetivos');
-  user={id:'pdi-test-other',app_metadata:{role:'admin'}};authChanged();onPerfilPdiTabActivated();
+  const other={id:'pdi-test-other',app_metadata:{role:'admin'}};authChanged('SIGNED_IN',{user:other});
+  assert(!document.getElementById('perfilPdiContent').textContent,'Dados não limpos antes da atualização do usuário');
+  user=other;onPerfilPdiTabActivated();
   assert(document.getElementById('pdiHistory').textContent.includes('Nenhum plano'),'Plano vazou para outro usuário');
   user={id:'pdi-test-viewer',app_metadata:{role:'viewer'}};document.body.dataset.role='viewer';authChanged();onPerfilPdiTabActivated();
   assert(!document.getElementById('pdiGenerate'),'Viewer acessa análise');
@@ -58,6 +60,7 @@ window.addEventListener('load',()=>{try{
   document.getElementById('pdiObjetivo').value='<img src=x onerror="window.injected=true">';document.getElementById('pdiComplementForm').requestSubmit();
   assert(!window.injected&&!document.querySelector('#perfilPdiContent img'),'Texto interpretado como HTML');
   assert(document.documentElement.scrollWidth<=innerWidth+1,'Layout ultrapassa viewport');
+  authChanged('SIGNED_OUT',null);assert(!document.getElementById('perfilPdiContent').textContent,'Logout preservou dados na tela');
   document.getElementById('testResult').textContent='PASS: vínculo confirmado, fontes, geração, aprovação, versões, isolamento, pendências e escape.';
 }catch(error){document.getElementById('testResult').textContent='FAIL: '+error.message}});
 </script></body></html>

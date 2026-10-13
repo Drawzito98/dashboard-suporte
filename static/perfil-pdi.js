@@ -139,8 +139,9 @@
     document.querySelector('.tab-btn[data-tab="perfil-pdi"]')?.click();
   };
   document.addEventListener('DOMContentLoaded', () => {
-    if (typeof sbClient !== 'undefined' && sbClient) sbClient.auth.onAuthStateChange(() => {
-      if (owner && owner !== userId()) { nome = ''; owner = ''; state = {}; draft = null; dirty = false; draftDirty = false; const host = get('perfilPdiContent'); if (host) host.replaceChildren(); }
+    if (typeof sbClient !== 'undefined' && sbClient) sbClient.auth.onAuthStateChange((event, session) => {
+      const nextOwner = session?.user && getTrustedUserRole(session.user) === 'admin' ? session.user.id : '';
+      if (owner && owner !== nextOwner) { nome = ''; owner = ''; state = {}; draft = null; dirty = false; draftDirty = false; const host = get('perfilPdiContent'); if (host) host.replaceChildren(); }
     });
     document.getElementById('tabBar')?.addEventListener('click', event => {
       const button = event.target.closest('.tab-btn');
