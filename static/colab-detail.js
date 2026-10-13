@@ -45,6 +45,7 @@ function renderColabDetail(name) {
   // Get setor
   const setores = [...new Set(records.map(r => r['Setor']))].filter(Boolean);
   const perfilLink = getPerfilDocsLink(name);
+  const cadastro = JSON.parse(localStorage.getItem("sistema_colaboradores_info_v1") || "{}")[name] || {};
 
   // Month-over-month evolution
   const monthlyData = meses.map(m => {
@@ -73,6 +74,7 @@ function renderColabDetail(name) {
       ${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(name, 56) : `<div class="colab-detail-avatar">${escapeHtml(initials)}</div>`}
       <div class="colab-detail-name">
         <h2>${escapeHtml(displayName)}</h2>
+        <p>Tempo de empresa: ${escapeHtml(getTempoEmpresa(cadastro.data_admissao))}</p>
         <p>${escapeHtml(setores.join(", "))} · ${meses.length} ${meses.length === 1 ? "período" : "períodos"}</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center">${perfilLink ? `<button class="btn-small" id="colabPerfilBtn" type="button">📄 Perfil</button>` : ''}

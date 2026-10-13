@@ -77,6 +77,7 @@ function renderColaboradores() {
       const [a,m,d] = info.data_admissao.split('-');
       html += `<div style="font-size:12px;color:var(--text-secondary)">📅 Admissão: ${d}/${m}/${a}</div>`;
     }
+    html += `<div style="font-size:12px;color:var(--text-secondary)">Tempo de empresa: ${escapeHtml(getTempoEmpresa(info.data_admissao))}</div>`;
     if (info.email) {
       html += `<div style="font-size:12px;color:var(--text-secondary)">✉️ ${escapeHtml(info.email)}</div>`;
     }
@@ -395,7 +396,7 @@ function openColabDetailOverlay(nome) {
     <div class="ci-form-section-title"><div><strong>Dados cadastrais</strong><small>Informações básicas do colaborador</small></div></div>
     <div class="ci-form-grid">
       <label class="field"><span>Aniversário</span><input type="date" id="ciAniversario" value="${info.data_aniversario || ""}"></label>
-      <label class="field"><span>Admissão</span><input type="date" id="ciAdmissao" value="${info.data_admissao || ""}"></label>
+      <label class="field"><span>Admissão</span><input type="date" id="ciAdmissao" value="${escapeHtml(info.data_admissao || "")}"><small id="ciTempoEmpresa">Tempo de empresa: ${escapeHtml(getTempoEmpresa(info.data_admissao))}</small></label>
       <label class="field ci-span-2"><span>Salário (R$)</span><input type="number" id="ciSalario" min="0" max="99999999.99" step="0.01" inputmode="decimal" placeholder="Ex.: 3066,17" value="${info.salario != null && info.salario !== '' ? escapeHtml(String(Number(info.salario))) : ''}"></label>
       <label class="field ci-span-2"><span>E-mail</span><input type="email" id="ciEmail" placeholder="email@exemplo.com" value="${escapeHtml(info.email || "")}"></label>
       <label class="field ci-span-2"><span>Setor atual</span><select id="ciSetorAtual"><option value="">Selecione o setor...</option>${setoresDisponiveis.map(setor => `<option value="${escapeHtml(setor)}"${setor === setorAtual.trim().replace(/\s+/g, ' ') ? ' selected' : ''}>${escapeHtml(setor)}</option>`).join("")}</select><small>Define o setor atual usado nos filtros da equipe e de novos registros. Os registros históricos mantêm seus setores.</small></label>
@@ -479,6 +480,10 @@ function openColabDetailOverlay(nome) {
   const detailPanel = overlay.querySelector(".colab-detail-panel");
   overlay.scrollTop = 0;
   if (detailPanel) detailPanel.scrollTop = 0;
+
+  document.getElementById("ciAdmissao").addEventListener("input", event => {
+    document.getElementById("ciTempoEmpresa").textContent = `Tempo de empresa: ${getTempoEmpresa(event.target.value)}`;
+  });
 
   let photoDraft;
   let photoVersion = 0;

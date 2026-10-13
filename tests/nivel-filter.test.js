@@ -24,7 +24,7 @@ function createApp(info = {}, records = []) {
     escapeHtml: value => String(value),
   };
   vm.createContext(context);
-  for (const file of ['globalFilters.js', 'colaboradores.js']) {
+  for (const file of ['globalFilters.js', 'tempo-empresa.js', 'colaboradores.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../static', file), 'utf8'), context);
   }
   context.filters = vm.runInContext('globalFilters', context);
