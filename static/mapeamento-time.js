@@ -37,6 +37,11 @@
   let filtroAtivo = 'todos';
   let editandoId = null;
 
+  window.getMapeamentoTimeData = function () {
+    carregarEstado();
+    return colaboradores.map(c => ({ ...c }));
+  };
+
   function getContainer() {
     return document.getElementById('mapeamentoTimeContent');
   }

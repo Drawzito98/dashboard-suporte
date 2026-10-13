@@ -90,7 +90,7 @@ function renderColaboradores() {
     html += '</div>';
     html += `<div style="font-size:18px;color:var(--text-muted)">${hasData ? '✅' : '➕'}</div>`;
     html += '</div>';
-    html += `<div class="colab-card-actions"><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button></div>`;
+    html += `<div class="colab-card-actions"><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button><button type="button" class="btn-small pdi-profile-btn">Análise e PDI</button></div>`;
     html += '</div>';
   }
   html += '</div>';
@@ -98,6 +98,13 @@ function renderColaboradores() {
   container.innerHTML = html;
 
   document.getElementById("novoColaboradorBtn")?.addEventListener("click", openNovoColaboradorModal);
+
+  container.querySelectorAll(".pdi-profile-btn").forEach(button => {
+    button.addEventListener("click", event => {
+      event.stopPropagation();
+      if (typeof openPerfilPdi === "function") openPerfilPdi(button.closest(".colab-card").dataset.nome);
+    });
+  });
 
   // Click to open overlay
   container.querySelectorAll('.colab-card').forEach(card => {

@@ -2949,6 +2949,7 @@ if (!rawRecords || !rawRecords.length) {
       lider: ['Acompanhamento da equipe', 'Acompanhamento gerencial e alertas da operação'],
       insights: ['Análises avançadas', 'Diagnósticos automáticos e oportunidades de melhoria'],
       avaliacao: ['Avaliação de desempenho', 'Avaliações de desempenho e feedback estruturado'],
+      'perfil-pdi': ['Análise de perfil e PDI', 'Evidências, objetivos e planos de desenvolvimento'],
       'mapeamento-time': ['Mapeamento de Time', 'Perfis, talentos e ações de desenvolvimento']
     };
     const updatePageContext = (tab) => {
@@ -2980,6 +2981,7 @@ if (!rawRecords || !rawRecords.length) {
       if (target) target.classList.add('active');
 
       // Call per-tab initialization
+      if (tab === 'perfil-pdi' && typeof onPerfilPdiTabActivated === 'function') onPerfilPdiTabActivated();
       if (tab === 'ponto' && typeof onPontoTabActivated === 'function') onPontoTabActivated();
       if (tab === 'home' && typeof onHomeTabActivated === 'function') {
         onHomeTabActivated();
@@ -3471,7 +3473,7 @@ function initNotificacoesUI() {
     const groups = [
       ["Principal", ["home"]],
       ["Desempenho", ["dashboard", "relatorio-setorial", "saude-operacional", "insights"]],
-      ["Pessoas", ["colaboradores", "ponto", "mapeamento-time", "lider", "avaliacao"]],
+      ["Pessoas", ["colaboradores", "ponto", "perfil-pdi", "mapeamento-time", "lider", "avaliacao"]],
       ["Organização", ["tarefas", "regras"]]
     ];
     const fragment = document.createDocumentFragment();

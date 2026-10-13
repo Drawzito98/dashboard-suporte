@@ -1,0 +1,62 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Teste — Perfil e PDI</title><link rel="stylesheet" href="../static/css/tokens.css"><link rel="stylesheet" href="../static/styles.css"><link rel="stylesheet" href="../static/css/visual-refresh.css"><link rel="stylesheet" href="../static/perfil-pdi.css"><body data-role="admin" data-active-tab="perfil-pdi"><div id="tabBar"><button class="tab-btn" data-tab="perfil-pdi">PDI</button><button class="tab-btn" data-tab="home">Início</button></div><div id="perfilPdiContent"></div><pre id="testResult">RUNNING</pre>
+<script>
+let user={id:'pdi-test-owner',app_metadata:{role:'admin'}};
+function getCurrentUser(){return user}
+function getTrustedUserRole(u){return u.app_metadata.role}
+let authChanged;
+const sbClient={auth:{onAuthStateChange(fn){authChanged=fn}}};
+const COMPETENCIAS=[{id:8,type:'competency',nome:'Gestão da Informação'}];
+const rawRecords=[{Atendente:'Pessoa de Teste',Setor:'Suporte','Mês':'2026-10',SCORE:4.5,Finalizados:10}];
+function isColabActive(n){return n!=='Pessoa Inativa'}
+function isAggregateName(n){return n==='TOTAL'}
+function getAvaliacoesLocal(){return [{id:'test-av',colaborador:'Pessoa de Teste',ciclo:'Set-Dez 2026',status:'revisado',createdAt:new Date().toISOString(),scores:{8:2},observacoes_competencias:{8:'Dois registros sem próximos passos.'}}]}
+function getMapeamentoTimeData(){return [{id:5,nome:'Pessoa',setor:'Suporte',perfil:'Precisa melhorar os registros.',acao:'Praticar a documentação.'}]}
+function openColabDetailOverlay(){}
+window.confirm=()=>true;
+localStorage.removeItem('sistema_perfil_pdi_v1_pdi-test-owner');
+localStorage.removeItem('sistema_perfil_pdi_v1_pdi-test-other');
+localStorage.setItem('sistema_colaboradores_info_v1',JSON.stringify({'Pessoa de Teste':{data_admissao:'2023-10-13',nivel:'N1',setor_atual:'Suporte'},'Pessoa sem dados':{},'Pessoa Inativa':{},'TOTAL':{}}));
+</script><script src="../static/tempo-empresa.js"></script><script src="../static/perfil-pdi-engine.js"></script><script src="../static/perfil-pdi.js"></script><script>
+function assert(value,msg){if(!value)throw new Error(msg)}
+window.addEventListener('load',()=>{try{
+  onPerfilPdiTabActivated();
+  if(new URLSearchParams(location.search).has('preview')) return;
+  assert(document.getElementById('pdiPerson').options.length===3,'Ativos/cadastros sem registros incorretos');
+  assert(!document.getElementById('pdiMappingConfirm').checked,'Mapeamento associado sem confirmação');
+  document.getElementById('pdiMapping').value='5';document.getElementById('pdiMapping').dispatchEvent(new Event('change'));
+  document.getElementById('pdiComplementForm').requestSubmit();
+  assert(document.getElementById('pdiNotice').textContent.includes('Confirme'),'Vínculo não confirmado foi aceito');
+  document.getElementById('pdiMappingConfirm').checked=true;
+  document.getElementById('pdiAuto').value='Quero melhorar a documentação.';
+  document.getElementById('pdiApoio').value='Mentoria semanal';
+  document.getElementById('pdiComplementForm').requestSubmit();
+  assert(JSON.parse(localStorage.getItem('sistema_perfil_pdi_v1_pdi-test-owner'))['Pessoa de Teste'].complemento.mapeamento.cadastro==='Pessoa de Teste','Vínculo não persistido');
+  document.getElementById('pdiGenerate').click();
+  assert(document.getElementById('pdi-0-objetivo').value.includes('Gestão'),'Rascunho não usa avaliação');
+  assert(document.getElementById('pdi-1-objetivo').value==='Praticar a documentação.','Mapeamento confirmado ignorado');
+  document.getElementById('pdiApprove').click();
+  assert(document.getElementById('pdiNotice').classList.contains('error'),'Aprovação incompleta foi aceita');
+  document.getElementById('pdi-1-indicador').value='Cinco registros completos validados pelo mentor';
+  document.getElementById('pdiAlinhado').checked=true;
+  document.getElementById('pdiApprove').click();
+  let saved=JSON.parse(localStorage.getItem('sistema_perfil_pdi_v1_pdi-test-owner'))['Pessoa de Teste'].planos;
+  assert(saved.length===1&&saved[0].status==='aprovado','Aprovação completa não salva');
+  document.getElementById('pdi-0-objetivo').value='Objetivo revisado';document.getElementById('pdi-0-objetivo').dispatchEvent(new Event('input',{bubbles:true}));
+  document.getElementById('pdiPlanForm').requestSubmit();
+  saved=JSON.parse(localStorage.getItem('sistema_perfil_pdi_v1_pdi-test-owner'))['Pessoa de Teste'].planos;
+  assert(saved.length===2&&saved[0].status==='aprovado'&&saved[1].status==='rascunho','Versão aprovada foi alterada');
+  assert(saved[0].objetivos[0].objetivo!==saved[1].objetivos[0].objetivo,'Versões não preservam objetivos');
+  user={id:'pdi-test-other',app_metadata:{role:'admin'}};authChanged();onPerfilPdiTabActivated();
+  assert(document.getElementById('pdiHistory').textContent.includes('Nenhum plano'),'Plano vazou para outro usuário');
+  user={id:'pdi-test-viewer',app_metadata:{role:'viewer'}};document.body.dataset.role='viewer';authChanged();onPerfilPdiTabActivated();
+  assert(!document.getElementById('pdiGenerate'),'Viewer acessa análise');
+  user={id:'pdi-test-owner',app_metadata:{role:'admin'}};document.body.dataset.role='admin';authChanged();onPerfilPdiTabActivated();
+  assert(document.getElementById('pdiHistory').querySelectorAll('.pdi-load').length===2,'Planos não restaurados após troca de usuário');
+  document.getElementById('pdiPerson').value='Pessoa sem dados';document.getElementById('pdiPerson').dispatchEvent(new Event('change'));
+  assert(document.getElementById('pdiGenerate').disabled,'Pessoa sem evidências pode gerar');
+  document.getElementById('pdiObjetivo').value='<img src=x onerror="window.injected=true">';document.getElementById('pdiComplementForm').requestSubmit();
+  assert(!window.injected&&!document.querySelector('#perfilPdiContent img'),'Texto interpretado como HTML');
+  assert(document.documentElement.scrollWidth<=innerWidth+1,'Layout ultrapassa viewport');
+  document.getElementById('testResult').textContent='PASS: vínculo confirmado, fontes, geração, aprovação, versões, isolamento, pendências e escape.';
+}catch(error){document.getElementById('testResult').textContent='FAIL: '+error.message}});
+</script></body></html>

@@ -43,6 +43,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="static/icons.js"></script>
   <script src="static/chart-theme.js"></script>
+<link rel="stylesheet" href="static/perfil-pdi.css?v=1">
 </head>
 <body>
 
@@ -264,6 +265,7 @@
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg></span> Avaliação de desempenho
       </button>
 
+      <button class="tab-btn" data-tab="perfil-pdi" role="tab" aria-selected="false"><span class="tab-icon" aria-hidden="true">◎</span> Análise de perfil e PDI</button>
       <button class="tab-btn tab-btn-featured" data-tab="mapeamento-time" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Mapeamento de Time
       </button>
@@ -560,6 +562,8 @@
 
         </div>
 
+        <div class="tab-content" id="tab-perfil-pdi" role="tabpanel"><div id="perfilPdiContent"></div></div>
+
         <!-- ===== TAB: MAPEAMENTO DE TIME ===== -->
         <div class="tab-content" id="tab-mapeamento-time" role="tabpanel">
           <div id="mapeamentoTimeContent"></div>
@@ -790,7 +794,7 @@
 <script defer src="static/atividades-mes.js?v=123"></script>
 <script defer src="static/feedbacks.js?v=123"></script>
 <script defer src="static/anotacoes.js?v=82"></script>
-<script defer src="static/people-profile-notes-v2.js?v=91"></script>
+<script defer src="static/people-profile-notes-v2.js?v=92"></script>
 <script defer src="static/tarefas.js?v=3"></script>
 <script defer src="static/rotina-cards.js?v=1"></script>
 <script defer src="static/regras.js?v=1"></script>
@@ -799,8 +803,10 @@
 <script defer src="static/panorama-suporte.js?v=6"></script>
 <script defer src="static/avaliacao.js"></script>
 <script defer src="static/relatorio-feedback.js?v=123"></script>
-<script defer src="static/colaboradores.js?v=130"></script>
-<script defer src="static/mapeamento-time.js"></script>
+<script defer src="static/colaboradores.js?v=131"></script>
+<script defer src="static/mapeamento-time.js?v=2"></script>
+<script defer src="static/perfil-pdi-engine.js?v=1"></script>
+<script defer src="static/perfil-pdi.js?v=1"></script>
 <script defer src="static/usuarios.js?v=82"></script>
 <script defer src="static/csv-validator.js?v=80"></script>
 <script defer src="static/csv-import.js?v=80"></script>
@@ -811,7 +817,7 @@
 <script defer src="static/ponto-engine.js?v=4"></script>
 <script defer src="static/ponto.js?v=7"></script>
 <script defer src="static/preview-columns.js?v=1"></script>
-<script defer src="static/app.js?v=131"></script>
+<script defer src="static/app.js?v=132"></script>
 <script defer src="static/manage-colabs-v2.js?v=95"></script>
 <script defer src="static/features.js"></script>
 <script defer src="static/privacy-screen.js?v=84"></script>

@@ -29,4 +29,19 @@ Exemplo: para um objetivo declarado de melhorar comunicação, revisar cinco ate
 
 ## Persistência e acesso
 
-Guardar perfil de desenvolvimento e PDIs no Supabase, seguindo as regras de acesso existentes; distinguir rascunho e plano aprovado. O armazenamento somente local do Mapeamento precisa ser resolvido antes de se tornar fonte compartilhada de planos. O módulo de geração de PDI ainda não está implementado.
+Guardar perfil de desenvolvimento e PDIs no Supabase, seguindo as regras de acesso existentes; distinguir rascunho e plano aprovado. O armazenamento somente local do Mapeamento precisa ser resolvido antes de se tornar fonte compartilhada de planos. A primeira versão já está implementada na aba Análise de perfil e PDI. Ela usa regras explícitas para sugerir ações a partir das lacunas da avaliação mais recente, objetivos declarados e Mapeamento confirmado manualmente. Não utiliza um modelo de IA nem busca o conteúdo de documentos externos.
+
+
+## Primeira versão entregue
+
+- Acesso exclusivo ao administrador, pela aba Análise de perfil e PDI e pelos cartões da equipe.
+- Tempo de empresa, cadastro, competências avaliadas e indicadores do último mês disponível.
+- Complementos: objetivo, autoavaliação, apoio/disponibilidade e vínculo confirmado com o Mapeamento.
+- Rascunho com até três objetivos; ações e prazo inicial de 90 dias são sugestões editáveis.
+- Aprovação com campos completos e confirmação de alinhamento com a pessoa.
+- Cada salvamento cria uma versão e preserva as fontes da geração.
+- Exportação em texto com fontes e progresso.
+
+Nesta etapa, complementos e versões são armazenados somente neste navegador, em uma chave distinta por usuário autenticado. Não são sincronizados no Supabase; limpar os dados do navegador remove essa cópia. A interface informa esse limite e oferece exportação. A sincronização em nuvem e a integração com tarefas ficam para uma próxima etapa.
+
+Validação: testes de regras em Node e teste no Chrome com pessoas fictícias, cobrindo vínculo, geração, aprovação, versões, usuários distintos, bloqueio de viewer e escape de texto. Isso não atesta as datas de admissão reais nem substitui a revisão das evidências pelo líder.
