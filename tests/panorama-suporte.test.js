@@ -79,3 +79,33 @@ assert.ok(!separated.html.includes('Alice'));
 assert.equal(report(withAI, options).ranking[0].name, 'CADU (IA)');
 assert.equal(report(withAI, options).metrics[0][1], '11.500');
 assert.throws(() => report([withAI[2]], { ...options, separateAI: true }));
+
+const { automaticReport } = require('../static/panorama-suporte.js');
+const autoRows = processCsv([
+  { ...data[0], Atendente: '  JOÃO   Silva ' },
+  { ...data[1], Atendente: 'Maria' },
+  { ...data[1], Atendente: 'Sem cadastro' },
+  { ...data[1], Atendente: 'Ambígua' },
+  { ...data[1], Atendente: 'CADU' }
+], fields);
+const registry = { 'João Silva': { setor_atual: 'Financeiro' }, 'AMBÍGUA': { setor_atual: 'ERP' }, 'Ambigua': { setor_atual: 'Fiscal' } };
+const history = [
+  { Atendente: 'João Silva', Setor: 'Antigo', 'Mês': '2026-09' },
+  { Atendente: 'Maria', Setor: 'Antigo', 'Mês': '2026-08' },
+  { Atendente: 'Maria', Setor: 'ERP', 'Mês': '2026-09' },
+  { Atendente: 'Maria', Setor: 'Futuro', 'Mês': '2026-11' },
+  { Atendente: 'Sem cadastro parecido', Setor: 'ERP', 'Mês': '2026-09' }
+];
+const auto = automaticReport(autoRows, options, registry, history);
+assert.deepEqual(auto.sectors, ['Financeiro', 'ERP', 'Setor não identificado', 'Inteligência artificial']);
+assert.equal(auto.unidentified, 2);
+assert.equal(auto.ranking.length, autoRows.length);
+assert.ok(!auto.html.includes('JOÃO') && !auto.markdown.includes('Maria'));
+assert.ok(!auto.sectors.includes('Antigo') && !auto.sectors.includes('Futuro'));
+assert.equal(automaticReport([autoRows[1]], options, {}, [
+  { Atendente: 'Maria', Setor: 'ERP', 'Mês': '2026-09' },
+  { Atendente: 'Maria', Setor: 'Fiscal', 'Mês': '2026-09' }
+]).unidentified, 1);
+assert.equal(automaticReport([autoRows[0]], options, { 'joao silva': { setor_atual: 'ERP' }, 'João Silva': { setor_atual: ' erp ' } }).unidentified, 0);
+assert.throws(() => automaticReport(autoRows, { ...options, end: '2026-09-01' }, registry, history));
+console.log('Panorama automático: cadastro, histórico, múltiplos setores, nomes, ambiguidades e IA verificados.');

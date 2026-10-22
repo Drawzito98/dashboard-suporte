@@ -106,13 +106,57 @@
     return { markdown: notes ? `${markdown}\n${notes}\n${aiNote}` : markdown + aiNote, html: notes ? `${html}<p class="panorama-footnote">${escape(notes)}</p>` : html, ranking, metrics };
   }
 
-  if (typeof module !== 'undefined' && module.exports) module.exports = { process, report, time };
+  function automaticReport(rows, options, registry = {}, records = []) {
+    if (!options.start || !options.end || options.start > options.end) throw new Error('Informe um intervalo de datas válido.');
+    const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
+    const nameKey = value => normalize(value).replace(/\s*[-(]?\s*multi[\s-]?setor\)?\s*$/i, '').trim();
+    const registered = new Map();
+    Object.entries(registry).forEach(([name, info]) => {
+      const sector = clean(info?.setor_atual);
+      if (!sector) return;
+      const key = nameKey(name);
+      if (!registered.has(key)) registered.set(key, new Map());
+      registered.get(key).set(normalize(sector), sector);
+    });
+    const history = new Map();
+    records.forEach(row => {
+      const key = nameKey(row?.Atendente);
+      const sector = clean(row?.Setor);
+      const month = String(row?.['Mês'] || '');
+      if (!key || !sector || !/^\d{4}-\d{2}$/.test(month) || month > options.end.slice(0, 7)) return;
+      const previous = history.get(key);
+      if (!previous || month > previous.month) history.set(key, { month, sectors: new Map([[normalize(sector), sector]]) });
+      else if (month === previous.month) previous.sectors.set(normalize(sector), sector);
+    });
+    const groups = new Map();
+    let unidentified = 0;
+    rows.forEach(row => {
+      const ai = /^cadu(?:\s*[-–(]?\s*(?:ia|inteligencia artificial)\)?)?$/.test(normalize(row.name));
+      const candidates = registered.get(nameKey(row.name)) || history.get(nameKey(row.name))?.sectors;
+      const sector = ai ? 'Inteligência artificial' : candidates?.size === 1 ? [...candidates.values()][0] : 'Setor não identificado';
+      if (!ai && (!candidates || candidates.size !== 1)) unidentified++;
+      const key = normalize(sector);
+      if (!groups.has(key)) groups.set(key, { sector, rows: [] });
+      groups.get(key).rows.push(row);
+    });
+    const reports = [...groups.values()].map(group => report(group.rows, { ...options, sector: group.sector, separateAI: false }));
+    const note = unidentified ? `${unidentified} colaborador(es) sem setor único identificado. Confira o campo Setor atual na aba Colaboradores; esses dados estão separados dos setores identificados.` : '';
+    return {
+      html: reports.map(result => result.html).join('') + (note ? `<p class="panorama-footnote">${escape(note)}</p>` : ''),
+      markdown: reports.map(result => result.markdown).join('\n\n---\n\n') + (note ? `\n${note}\n` : ''),
+      ranking: reports.flatMap(result => result.ranking),
+      sectors: [...groups.values()].map(group => group.sector),
+      unidentified
+    };
+  }
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = { process, report, time, automaticReport };
   if (typeof document === 'undefined') return;
   document.addEventListener('DOMContentLoaded', () => {
     const root = document.getElementById('panoramaSuporteRoot');
     if (!root) return;
     root.classList.add('panorama');
-    root.innerHTML = `<div class="panorama-intro"><div><span class="panorama-eyebrow">RELATÓRIO DE PERFORMANCE</span><h2>Panorama parcial de suporte</h2><p>Transforme o CSV do seu setor em uma visão clara do desempenho do time.</p></div><div class="panorama-source-actions"><a class="panorama-source-link" href="https://ixcsoft.cloud.looker.com/embed/dashboards/67?Per%C3%ADodo=this+month&amp;Atendimento+Humano=Yes&amp;Motivo+de+atendimento=&amp;Etiqueta=&amp;Status=&amp;Departamento=&amp;Atendente=&amp;Avalia%C3%A7%C3%A3o=&amp;Canal+de+atendimento=&amp;Atendimentos+com+Cart%C3%A3o+Vinculado=&amp;Protocolo=&amp;Ultimo+Atendente=&amp;Unidade+de+Neg%C3%B3cio=&amp;Filial=" target="_blank" rel="noopener noreferrer">Abrir Looker de origem <span aria-hidden="true">↗</span></a><span class="panorama-pill">🔒 Privacidade configurável</span></div></div><form id="panoramaForm"><div class="panorama-fields"><label>Setor<input name="sector" placeholder="Ex.: Suporte ERP" required maxlength="150"></label><label>Data início<input name="start" type="date" required></label><label>Data fim<input name="end" type="date" required></label><label>Visualização<select name="privacy"><option value="hide">Ocultar nomes</option><option value="show">Exibir nomes</option></select></label><label>Ordenar ranking por<select name="order"><option value="FINALIZADOS">Finalizados</option><option value="CSAT">Satisfação (CSAT)</option><option value="SCORE">Score do CSV</option></select></label><label>CADU · Inteligência artificial<select name="aiMode"><option value="separate">Separar da equipe humana</option><option value="include">Incluir nos indicadores (IA)</option></select></label></div><div class="panorama-upload-row"><label class="panorama-upload"><span class="panorama-upload-icon" aria-hidden="true">↑</span><span><strong>CSV de Performance por colaborador</strong><small>Um setor, uma linha por pessoa, período consolidado.</small><input name="file" type="file" accept=".csv,text/csv" required></span></label><button class="btn-primary panorama-generate" type="submit">Gerar panorama <span aria-hidden="true">→</span></button></div><details class="panorama-help"><summary>Como preparar o arquivo</summary><p>Inclua Atendente, Finalizados, Clientes (ou Clientes atendidos), Média aval. (ou Média avaliação), TMA e TMR. Os tempos devem estar em HH:MM:SS; segundos arredondados para 60 são normalizados automaticamente. Valores vazios, :: ou traços são exibidos como Sem informação e não entram nas médias de tempo. Para ordenar por Score, inclua a coluna SCORE. Assumidos, Transferidos, TMI e TMF 80% são ignorados. As datas identificam o período consolidado no CSV. O link de origem abre o mês atual com Atendimento Humano = Yes; confira o período, o setor e esse filtro antes de exportar, principalmente para incluir o CADU.</p></details></form><div class="panorama-toolbar"><p id="panoramaStatus" role="status" aria-live="polite"></p><div class="panorama-export-actions" id="panoramaExports" hidden><button id="panoramaPng" class="btn-small" type="button">↓ PNG</button><button id="panoramaPdf" class="btn-small" type="button">↓ PDF</button><button id="panoramaDownload" class="btn-small" type="button" >↓ Markdown</button></div></div><div id="panoramaOutput"></div><div id="panoramaEmpty" class="panorama-empty"><span aria-hidden="true">▥</span><h3>Seu time em uma só visão</h3><p>Selecione o arquivo e gere o panorama para visualizar os indicadores e o ranking.</p></div>`;
+    root.innerHTML = `<div class="panorama-intro"><div><span class="panorama-eyebrow">RELATÓRIO DE PERFORMANCE</span><h2>Panorama parcial de suporte</h2><p>Transforme o CSV do seu setor em uma visão clara do desempenho do time.</p></div><div class="panorama-source-actions"><a class="panorama-source-link" href="https://ixcsoft.cloud.looker.com/embed/dashboards/67?Per%C3%ADodo=this+month&amp;Atendimento+Humano=Yes&amp;Motivo+de+atendimento=&amp;Etiqueta=&amp;Status=&amp;Departamento=&amp;Atendente=&amp;Avalia%C3%A7%C3%A3o=&amp;Canal+de+atendimento=&amp;Atendimentos+com+Cart%C3%A3o+Vinculado=&amp;Protocolo=&amp;Ultimo+Atendente=&amp;Unidade+de+Neg%C3%B3cio=&amp;Filial=" target="_blank" rel="noopener noreferrer">Abrir Looker de origem <span aria-hidden="true">↗</span></a><span class="panorama-pill">🔒 Privacidade configurável</span></div></div><form id="panoramaForm"><div class="panorama-fields"><label>Data início<input name="start" type="date" required></label><label>Data fim<input name="end" type="date" required></label><label>Visualização<select name="privacy"><option value="hide">Ocultar nomes</option><option value="show">Exibir nomes</option></select></label><label>Ordenar ranking por<select name="order"><option value="FINALIZADOS">Finalizados</option><option value="CSAT">Satisfação (CSAT)</option><option value="SCORE">Score do CSV</option></select></label></div><div class="panorama-upload-row"><label class="panorama-upload"><span class="panorama-upload-icon" aria-hidden="true">↑</span><span><strong>CSV de Performance por colaborador</strong><small>Uma linha por pessoa, período consolidado. Setores identificados automaticamente.</small><input name="file" type="file" accept=".csv,text/csv" required></span></label><button class="btn-primary panorama-generate" type="submit">Gerar panorama <span aria-hidden="true">→</span></button></div><details class="panorama-help"><summary>Como preparar o arquivo</summary><p>Inclua Atendente, Finalizados, Clientes (ou Clientes atendidos), Média aval. (ou Média avaliação), TMA e TMR. Os tempos devem estar em HH:MM:SS; segundos arredondados para 60 são normalizados automaticamente. Valores vazios, :: ou traços são exibidos como Sem informação e não entram nas médias de tempo. Para ordenar por Score, inclua a coluna SCORE. Assumidos, Transferidos, TMI e TMF 80% são ignorados. O setor é identificado pelo nome completo no cadastro de Colaboradores ou, na ausência de setor cadastrado, pelo histórico mais recente até o período selecionado. Cada setor tem seu próprio panorama. Pessoas sem identificação única ficam separadas para conferência. CADU fica separado como inteligência artificial. As datas identificam o período consolidado no CSV. O link de origem abre o mês atual com Atendimento Humano = Yes; confira o período, o setor e esse filtro antes de exportar, principalmente para incluir o CADU.</p></details></form><div class="panorama-toolbar"><p id="panoramaStatus" role="status" aria-live="polite"></p><div class="panorama-export-actions" id="panoramaExports" hidden><button id="panoramaPng" class="btn-small" type="button">↓ PNG</button><button id="panoramaPdf" class="btn-small" type="button">↓ PDF</button><button id="panoramaDownload" class="btn-small" type="button" >↓ Markdown</button></div></div><div id="panoramaOutput"></div><div id="panoramaEmpty" class="panorama-empty"><span aria-hidden="true">▥</span><h3>Seu time em uma só visão</h3><p>Selecione o arquivo e gere o panorama para visualizar os indicadores e o ranking.</p></div>`;
     const form = root.querySelector('form');
     const output = root.querySelector('#panoramaOutput');
     const status = root.querySelector('#panoramaStatus');
@@ -135,13 +179,15 @@
         const parsed = await parseCsvFile(values.get('file'));
         if (requestVersion !== version) return;
         if (parsed.errors?.length) throw new Error('CSV inválido. Verifique delimitadores e quantidade de colunas.');
-        current = report(process(parsed.data, parsed.meta.fields), { sector: values.get('sector'), start: values.get('start'), end: values.get('end'), hide: values.get('privacy') === 'hide', order: values.get('order'), separateAI: values.get('aiMode') === 'separate' });
+        const registry = typeof dbColabInfoLoad === 'function' ? await dbColabInfoLoad() : JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+        if (requestVersion !== version) return;
+        current = automaticReport(process(parsed.data, parsed.meta.fields), { start: values.get('start'), end: values.get('end'), hide: values.get('privacy') === 'hide', order: values.get('order') }, registry, typeof rawRecords === 'undefined' ? [] : rawRecords);
         output.innerHTML = current.html;
         download.hidden = false;
         exports.hidden = false;
         empty.hidden = true;
         status.dataset.state = 'success';
-        status.textContent = `Relatório gerado com ${current.ranking.length} atendentes${current.aiCount ? ' e CADU separado como IA' : ''}.`;
+        status.textContent = `Relatório gerado com ${current.ranking.length} atendentes. Setores identificados automaticamente.${current.unidentified ? ` ${current.unidentified} sem setor identificado; confira o cadastro na aba Colaboradores.` : ''}`;
       } catch (error) { if (requestVersion !== version) return; status.dataset.state = 'error'; status.textContent = error.message; }
     });
     async function exportVisual(format) {
