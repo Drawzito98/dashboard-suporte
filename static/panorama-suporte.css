@@ -103,3 +103,8 @@
   .panorama .panorama-table :is(th,td) { padding:12px; }
 }
 @container (max-width:300px) { .panorama-fields,.panorama-metrics { grid-template-columns:1fr; } }
+
+/* Meta de qualidade: abaixo de 4,70 vermelho; na meta ou acima verde. */
+.panorama .panorama-score-low { color:var(--score-critico); font-weight:700; }
+.panorama .panorama-score-high { color:var(--score-excelente); font-weight:700; }
+.panorama .panorama-score-missing { color:var(--text-muted); }
