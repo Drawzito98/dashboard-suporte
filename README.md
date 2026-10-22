@@ -6,7 +6,7 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 
 ## Diagnóstico gerencial
 
-A auditoria, metodologia, limitações e validação da nova seção estão em [docs/diagnostico-gerencial.md](docs/diagnostico-gerencial.md). A migração aditiva `migration_v49.sql` está preparada e não foi aplicada ao banco ativo.
+A auditoria, metodologia, limitações e validação da nova seção estão em [docs/diagnostico-gerencial.md](docs/diagnostico-gerencial.md). A migração aditiva `migration_v49.sql` foi aplicada ao banco de produção em 22/10/2026, habilitando revisões privadas sincronizadas.
 
 ## Changelog
 

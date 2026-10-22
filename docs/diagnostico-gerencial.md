@@ -1,6 +1,6 @@
 # Diagnóstico gerencial — auditoria e primeira implementação
 
-Data: 22/10/2026. Auditoria e implementação inicialmente locais. Commit e deploy do aplicativo autorizados posteriormente pelo usuário; a migração v49 permanece preparada, sem aplicação ao banco ativo.
+Data: 22/10/2026. Auditoria e implementação inicialmente locais. Commit e deploy do aplicativo autorizados posteriormente pelo usuário; a migração v49 foi aplicada posteriormente, em 22/10/2026, mediante autorização do usuário.
 
 ## Auditoria anterior à implementação
 
@@ -63,7 +63,7 @@ README.md e AGENTS.md foram lidos. Estão parcialmente desatualizados: o reposit
 - A migração v49 cria somente diagnostico_revisoes, com RLS privada por user_id e papel admin para SELECT/INSERT. Não há UPDATE/DELETE: decisões posteriores são novas entradas; nenhuma política/tabela existente é modificada.
 - Hash SHA-256 vincula a revisão ao indicador, recorte, setor, nível, evidências e métricas usadas. Mudança nos dados gera outra sugestão a revisar.
 - Fallback local separado por usuário. Falha remota é exibida como sincronização pendente, nunca como gravação confirmada no banco. Ao carregar revisões com a migração disponível, pendências são reenviadas com UUID estável, sem duplicação.
-- **A migração v49 está preparada, não executada.** Até sua aplicação em um ambiente de validação, a gravação remota dessa entidade não está disponível. As análises funcionam sem a tabela.
+- **Migração v49 aplicada em produção em 22/10/2026.** Tabela, índice, RLS e políticas de SELECT/INSERT conferidos no banco ativo. A sincronização remota está habilitada; falhas de conexão continuam usando o fallback local.
 
 ## Validação
 
@@ -77,3 +77,11 @@ node tests/db-updates.check.js
 Teste de interface local: servir a pasta em 127.0.0.1 e abrir `tests/diagnostico.browser.html`. Usa dados e autenticação simulados, sem chamada ao Supabase real. Verifica preservação de componentes, filtros, períodos, N1/N2, configuração do gráfico, escape, revisão e recusa de viewer. Testado em Chrome headless desktop e largura móvel. O teste de gráfico usa stub de Chart; a biblioteca Chart.js já usada no aplicativo não foi substituída.
 
 Os testes de contrato da migração verificam restrições no SQL; não equivalem a um teste de RLS executado no PostgreSQL. Para habilitar a sincronização remota das revisões, aplicar v49 em ambiente de validação e confirmar com sessões reais admin/viewer que as revisões permanecem privadas antes de aplicar a migração em produção. A publicação do aplicativo foi autorizada separadamente, mantendo o fallback local e a indicação de sincronização pendente enquanto a tabela não estiver disponível.
+
+## Habilitação da sincronização no banco ativo — 22/10/2026
+
+Aplicada exclusivamente a migração v49 ao projeto dashboard-suporte (agvkmfusyetkicmuvumz), usando o acesso administrativo já disponível na CLI. Nenhuma alteração nas tabelas históricas.
+
+Validação SQL transacional com papéis efetivos e claims de autenticação: admin gravou e leu a própria revisão; viewer e anônimo foram bloqueados; outro admin não leu nem gravou revisões do proprietário; ajuste sem texto foi rejeitado; UPDATE e DELETE não foram permitidos. Toda a transação de teste foi desfeita por ROLLBACK. O teste não criou sessões de login nem alterou usuários reais.
+
+Conferência final: RLS ativa, duas políticas, SELECT/INSERT para authenticated sujeitos às políticas, sem SELECT para anon e zero registros de teste remanescentes. Não foi necessário novo deploy. Pendências locais são reenviadas ao carregar novamente a seção de diagnósticos.
