@@ -111,7 +111,16 @@
     const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
     const nameKey = value => normalize(value).replace(/\s*[-(]?\s*multi[\s-]?setor\)?\s*$/i, '').trim();
     const registered = new Map();
+    const firstNames = new Map();
+    const rememberName = name => {
+      const key = nameKey(name);
+      if (!key) return;
+      const first = key.split(' ')[0];
+      if (!firstNames.has(first)) firstNames.set(first, new Set());
+      firstNames.get(first).add(key);
+    };
     Object.entries(registry).forEach(([name, info]) => {
+      rememberName(name);
       const sector = clean(info?.setor_atual);
       if (!sector) return;
       const key = nameKey(name);
@@ -128,11 +137,24 @@
       if (!previous || month > previous.month) history.set(key, { month, sectors: new Map([[normalize(sector), sector]]) });
       else if (month === previous.month) previous.sectors.set(normalize(sector), sector);
     });
+    // Nomes do histórico só complementam os primeiros nomes ausentes no cadastro.
+    const registeredFirstNames = new Set(firstNames.keys());
+    history.forEach((value, key) => {
+      if (!registeredFirstNames.has(key.split(' ')[0])) rememberName(key);
+    });
     const groups = new Map();
     let unidentified = 0;
     rows.forEach(row => {
       const ai = /^cadu(?:\s*[-–(]?\s*(?:ia|inteligencia artificial)\)?)?$/.test(normalize(row.name));
-      const candidates = registered.get(nameKey(row.name)) || history.get(nameKey(row.name))?.sectors;
+      const exactKey = nameKey(row.name);
+      let candidates = registered.get(exactKey) || history.get(exactKey)?.sectors;
+      if (!candidates) {
+        const matches = firstNames.get(exactKey.split(' ')[0]);
+        if (matches?.size === 1) {
+          const matchedName = [...matches][0];
+          candidates = registered.get(matchedName) || history.get(matchedName)?.sectors;
+        }
+      }
       const sector = ai ? 'Inteligência artificial' : candidates?.size === 1 ? [...candidates.values()][0] : 'Setor não identificado';
       if (!ai && (!candidates || candidates.size !== 1)) unidentified++;
       const key = normalize(sector);
@@ -156,7 +178,7 @@
     const root = document.getElementById('panoramaSuporteRoot');
     if (!root) return;
     root.classList.add('panorama');
-    root.innerHTML = `<div class="panorama-intro"><div><span class="panorama-eyebrow">RELATÓRIO DE PERFORMANCE</span><h2>Panorama parcial de suporte</h2><p>Transforme o CSV do seu setor em uma visão clara do desempenho do time.</p></div><div class="panorama-source-actions"><a class="panorama-source-link" href="https://ixcsoft.cloud.looker.com/embed/dashboards/67?Per%C3%ADodo=this+month&amp;Atendimento+Humano=Yes&amp;Motivo+de+atendimento=&amp;Etiqueta=&amp;Status=&amp;Departamento=&amp;Atendente=&amp;Avalia%C3%A7%C3%A3o=&amp;Canal+de+atendimento=&amp;Atendimentos+com+Cart%C3%A3o+Vinculado=&amp;Protocolo=&amp;Ultimo+Atendente=&amp;Unidade+de+Neg%C3%B3cio=&amp;Filial=" target="_blank" rel="noopener noreferrer">Abrir Looker de origem <span aria-hidden="true">↗</span></a><span class="panorama-pill">🔒 Privacidade configurável</span></div></div><form id="panoramaForm"><div class="panorama-fields"><label>Data início<input name="start" type="date" required></label><label>Data fim<input name="end" type="date" required></label><label>Visualização<select name="privacy"><option value="hide">Ocultar nomes</option><option value="show">Exibir nomes</option></select></label><label>Ordenar ranking por<select name="order"><option value="FINALIZADOS">Finalizados</option><option value="CSAT">Satisfação (CSAT)</option><option value="SCORE">Score do CSV</option></select></label></div><div class="panorama-upload-row"><label class="panorama-upload"><span class="panorama-upload-icon" aria-hidden="true">↑</span><span><strong>CSV de Performance por colaborador</strong><small>Uma linha por pessoa, período consolidado. Setores identificados automaticamente.</small><input name="file" type="file" accept=".csv,text/csv" required></span></label><button class="btn-primary panorama-generate" type="submit">Gerar panorama <span aria-hidden="true">→</span></button></div><details class="panorama-help"><summary>Como preparar o arquivo</summary><p>Inclua Atendente, Finalizados, Clientes (ou Clientes atendidos), Média aval. (ou Média avaliação), TMA e TMR. Os tempos devem estar em HH:MM:SS; segundos arredondados para 60 são normalizados automaticamente. Valores vazios, :: ou traços são exibidos como Sem informação e não entram nas médias de tempo. Para ordenar por Score, inclua a coluna SCORE. Assumidos, Transferidos, TMI e TMF 80% são ignorados. O setor é identificado pelo nome completo no cadastro de Colaboradores ou, na ausência de setor cadastrado, pelo histórico mais recente até o período selecionado. Cada setor tem seu próprio panorama. Pessoas sem identificação única ficam separadas para conferência. CADU fica separado como inteligência artificial. As datas identificam o período consolidado no CSV. O link de origem abre o mês atual com Atendimento Humano = Yes; confira o período, o setor e esse filtro antes de exportar, principalmente para incluir o CADU.</p></details></form><div class="panorama-toolbar"><p id="panoramaStatus" role="status" aria-live="polite"></p><div class="panorama-export-actions" id="panoramaExports" hidden><button id="panoramaPng" class="btn-small" type="button">↓ PNG</button><button id="panoramaPdf" class="btn-small" type="button">↓ PDF</button><button id="panoramaDownload" class="btn-small" type="button" >↓ Markdown</button></div></div><div id="panoramaOutput"></div><div id="panoramaEmpty" class="panorama-empty"><span aria-hidden="true">▥</span><h3>Seu time em uma só visão</h3><p>Selecione o arquivo e gere o panorama para visualizar os indicadores e o ranking.</p></div>`;
+    root.innerHTML = `<div class="panorama-intro"><div><span class="panorama-eyebrow">RELATÓRIO DE PERFORMANCE</span><h2>Panorama parcial de suporte</h2><p>Transforme o CSV do seu setor em uma visão clara do desempenho do time.</p></div><div class="panorama-source-actions"><a class="panorama-source-link" href="https://ixcsoft.cloud.looker.com/embed/dashboards/67?Per%C3%ADodo=this+month&amp;Atendimento+Humano=Yes&amp;Motivo+de+atendimento=&amp;Etiqueta=&amp;Status=&amp;Departamento=&amp;Atendente=&amp;Avalia%C3%A7%C3%A3o=&amp;Canal+de+atendimento=&amp;Atendimentos+com+Cart%C3%A3o+Vinculado=&amp;Protocolo=&amp;Ultimo+Atendente=&amp;Unidade+de+Neg%C3%B3cio=&amp;Filial=" target="_blank" rel="noopener noreferrer">Abrir Looker de origem <span aria-hidden="true">↗</span></a><span class="panorama-pill">🔒 Privacidade configurável</span></div></div><form id="panoramaForm"><div class="panorama-fields"><label>Data início<input name="start" type="date" required></label><label>Data fim<input name="end" type="date" required></label><label>Visualização<select name="privacy"><option value="hide">Ocultar nomes</option><option value="show">Exibir nomes</option></select></label><label>Ordenar ranking por<select name="order"><option value="FINALIZADOS">Finalizados</option><option value="CSAT">Satisfação (CSAT)</option><option value="SCORE">Score do CSV</option></select></label></div><div class="panorama-upload-row"><label class="panorama-upload"><span class="panorama-upload-icon" aria-hidden="true">↑</span><span><strong>CSV de Performance por colaborador</strong><small>Uma linha por pessoa, período consolidado. Setores identificados automaticamente.</small><input name="file" type="file" accept=".csv,text/csv" required></span></label><button class="btn-primary panorama-generate" type="submit">Gerar panorama <span aria-hidden="true">→</span></button></div><details class="panorama-help"><summary>Como preparar o arquivo</summary><p>Inclua Atendente, Finalizados, Clientes (ou Clientes atendidos), Média aval. (ou Média avaliação), TMA e TMR. Os tempos devem estar em HH:MM:SS; segundos arredondados para 60 são normalizados automaticamente. Valores vazios, :: ou traços são exibidos como Sem informação e não entram nas médias de tempo. Para ordenar por Score, inclua a coluna SCORE. Assumidos, Transferidos, TMI e TMF 80% são ignorados. O setor é identificado pelo nome completo no cadastro de Colaboradores ou, na ausência de setor cadastrado, pelo histórico mais recente até o período selecionado. Se o nome completo não corresponder, o primeiro nome é usado quando identifica uma única pessoa no cadastro ou histórico. Cada setor tem seu próprio panorama. Pessoas sem identificação única ficam separadas para conferência. CADU fica separado como inteligência artificial. As datas identificam o período consolidado no CSV. O link de origem abre o mês atual com Atendimento Humano = Yes; confira o período, o setor e esse filtro antes de exportar, principalmente para incluir o CADU.</p></details></form><div class="panorama-toolbar"><p id="panoramaStatus" role="status" aria-live="polite"></p><div class="panorama-export-actions" id="panoramaExports" hidden><button id="panoramaPng" class="btn-small" type="button">↓ PNG</button><button id="panoramaPdf" class="btn-small" type="button">↓ PDF</button><button id="panoramaDownload" class="btn-small" type="button" >↓ Markdown</button></div></div><div id="panoramaOutput"></div><div id="panoramaEmpty" class="panorama-empty"><span aria-hidden="true">▥</span><h3>Seu time em uma só visão</h3><p>Selecione o arquivo e gere o panorama para visualizar os indicadores e o ranking.</p></div>`;
     const form = root.querySelector('form');
     const output = root.querySelector('#panoramaOutput');
     const status = root.querySelector('#panoramaStatus');

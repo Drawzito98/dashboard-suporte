@@ -94,7 +94,7 @@ const history = [
   { Atendente: 'Maria', Setor: 'Antigo', 'Mês': '2026-08' },
   { Atendente: 'Maria', Setor: 'ERP', 'Mês': '2026-09' },
   { Atendente: 'Maria', Setor: 'Futuro', 'Mês': '2026-11' },
-  { Atendente: 'Sem cadastro parecido', Setor: 'ERP', 'Mês': '2026-09' }
+  { Atendente: 'Outra pessoa', Setor: 'ERP', 'Mês': '2026-09' }
 ];
 const auto = automaticReport(autoRows, options, registry, history);
 assert.deepEqual(auto.sectors, ['Financeiro', 'ERP', 'Setor não identificado', 'Inteligência artificial']);
@@ -109,3 +109,13 @@ assert.equal(automaticReport([autoRows[1]], options, {}, [
 assert.equal(automaticReport([autoRows[0]], options, { 'joao silva': { setor_atual: 'ERP' }, 'João Silva': { setor_atual: ' erp ' } }).unidentified, 0);
 assert.throws(() => automaticReport(autoRows, { ...options, end: '2026-09-01' }, registry, history));
 console.log('Panorama automático: cadastro, histórico, múltiplos setores, nomes, ambiguidades e IA verificados.');
+const byFirst = (name, registry, history = []) => automaticReport(processCsv([{ ...data[0], Atendente: name }], fields), options, registry, history);
+assert.deepEqual(byFirst('Renata Alves Henriques', { RENATA: { setor_atual: 'Financeiro' } }).sectors, ['Financeiro']);
+assert.deepEqual(byFirst('  JOÃO   Santos ', { 'João Silva': { setor_atual: 'ERP' } }).sectors, ['ERP']);
+assert.equal(byFirst('Ana Lívia', { 'Ana Maria': { setor_atual: 'ERP' }, 'Ana Paula': { setor_atual: 'Fiscal' } }).unidentified, 1);
+assert.equal(byFirst('Ana Lívia', { 'Ana Maria': { setor_atual: 'ERP' }, 'Ana Paula': {} }).unidentified, 1);
+assert.deepEqual(byFirst('Ana Maria', { 'Ana Maria': { setor_atual: 'ERP' }, 'Ana Paula': { setor_atual: 'Fiscal' } }).sectors, ['ERP']);
+assert.deepEqual(byFirst('Renata Alves', {}, [{ Atendente: 'Renata', Setor: 'Fiscal', 'Mês': '2026-09' }]).sectors, ['Fiscal']);
+assert.deepEqual(byFirst('Renata Alves', { Renata: { setor_atual: 'ERP' } }, [{ Atendente: 'Renata Silva', Setor: 'Fiscal', 'Mês': '2026-09' }]).sectors, ['ERP']);
+assert.equal(byFirst('Renato Alves', { Renata: { setor_atual: 'ERP' } }).unidentified, 1);
+console.log('Primeiro nome: correspondência única, acentos, prioridade do nome completo e ambiguidades verificados.');
