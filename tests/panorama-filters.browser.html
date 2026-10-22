@@ -1,0 +1,34 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panorama — filtros</title><link rel="stylesheet" href="../static/css/tokens.css"><link rel="stylesheet" href="../static/styles.css"><link rel="stylesheet" href="../static/panorama-suporte.css"></head><body data-role="admin" data-active-tab="relatorio-setorial"><div id="globalFilterBar"></div><section id="panoramaSuporteRoot"></section><pre id="testResult">RUNNING</pre>
+<script>
+if(!['127.0.0.1','localhost'].includes(location.hostname))throw Error('Somente teste local');
+const registry={Renata:{setor_atual:'Financeiro',nivel:'N1'},'João Silva':{setor_atual:'Financeiro',nivel:'N2'},'Ana Maria':{setor_atual:'ERP',nivel:'N1'}};
+localStorage.setItem('sistema_colaboradores_info_v1',JSON.stringify(registry));
+const rawRecords=[{Atendente:'Renata',Setor:'Financeiro','Mês':'2026-10'},{Atendente:'João Silva',Setor:'Financeiro','Mês':'2026-10'},{Atendente:'Ana Maria',Setor:'ERP','Mês':'2026-10'}];
+async function dbColabInfoLoad(){return registry}function isColabActive(){return true}function isSetorActive(){return true}
+</script><script src="../static/globalFilters.js"></script><script src="../static/csv-import.js"></script><script src="../static/panorama-suporte.js"></script><script>
+const assert=(v,msg)=>{if(!v)throw Error(msg)};
+const wait=async fn=>{const deadline=Date.now()+5000;while(Date.now()<deadline){if(fn())return;await new Promise(r=>setTimeout(r,20))}throw Error('Tempo esgotado')};
+window.addEventListener('load',async()=>{try{
+ const form=document.getElementById('panoramaForm');
+ form.elements.start.value='2026-10-01';form.elements.end.value='2026-10-22';form.elements.privacy.value='show';
+ const csv='Atendente,Finalizados,Clientes,Média aval.,TMA,TMR\nRenata Alves Henriques,100,80,"4,00",01:00:00,00:02:00\nJoão Silva,60,50,"5,00",02:00:00,00:04:00\nAna Maria,30,20,"4,50",03:00:00,00:06:00';
+ const transfer=new DataTransfer();transfer.items.add(new File([csv],'panorama.csv',{type:'text/csv'}));form.elements.file.files=transfer.files;
+ form.requestSubmit();await wait(()=>document.getElementById('panoramaStatus').dataset.state==='success');
+ const names=()=>[...document.querySelectorAll('#panoramaOutput .panorama-name')].map(x=>x.textContent);
+ assert(names().length===3,'Arquivo completo não gerado');
+ globalFilters.setor='Financeiro';globalFilters._notify();assert(names().length===2,'Setor não atualizou');
+ globalFilters.nivel='N1';globalFilters._notify();assert(names().length===1&&names()[0].startsWith('Renata'),'Nível e primeiro nome não combinados');
+ assert(document.getElementById('panoramaOutput').textContent.includes('4,00 / 5,00'),'CSAT não recalculado');
+ globalFilters.colaborador='João Silva';globalFilters._notify();assert(names().length===0,'Resultado anterior ficou visível');assert(!document.getElementById('panoramaEmpty').hidden,'Estado vazio ausente');assert(document.getElementById('panoramaExports').hidden,'Exportações antigas disponíveis');
+ globalFilters.nivel='all';globalFilters._notify();assert(names().length===1&&names()[0]==='João Silva','Recuperação sem reenviar CSV falhou');
+ globalFilters.colaborador='all';globalFilters.setor='all';globalFilters._notify();assert(names().length===3,'Restaurar todos falhou');
+ let exported='';const oldCreate=URL.createObjectURL;URL.createObjectURL=blob=>{blob.text().then(text=>exported=text);return oldCreate(blob)};
+ HTMLAnchorElement.prototype.click=function(){};
+ globalFilters.nivel='N2';globalFilters._notify();document.getElementById('panoramaDownload').click();await wait(()=>exported);
+ assert(exported.includes('João Silva')&&!exported.includes('Renata')&&!exported.includes('Ana Maria'),'Exportação ignorou filtros');
+ assert(exported.includes('Nível: N2'),'Exportação sem recorte identificado');
+ globalFilters.periodo='2025-01';globalFilters._notify();assert(names().length===1,'Período global recortou o CSV sem dados diários');
+ form.elements.end.dispatchEvent(new Event('input',{bubbles:true}));globalFilters._notify();assert(names().length===0&&document.getElementById('panoramaExports').hidden,'Edição do formulário reutilizou dados obsoletos');
+ document.getElementById('testResult').textContent='PASS: filtros globais reais, recálculo, primeiro nome, vazio, restauração, exportação e invalidação do formulário';
+}catch(e){document.getElementById('testResult').textContent='FAIL: '+e.message;console.error(e)}});
+</script></body></html>
