@@ -33,6 +33,14 @@ assert.equal(report(processCsv([{ ...data[0], 'Média avaliação': '0' }], fiel
 assert.throws(() => processCsv([{ ...data[0], 'Média avaliação': 'texto inesperado' }], fields));
 assert.throws(() => report(processCsv(data.slice(0, 2), fields.filter(f => f !== 'SCORE')), { ...options, order: 'SCORE' }));
 assert.equal(time(90061), '25:01:01');
+const newFields = ['Atendente', 'Assumidos', 'Finalizados', 'Transferidos', 'Clientes', 'Média aval.', 'TMA', 'TMI', 'TMR'];
+const newRows = processCsv([{ Atendente: 'Renata', Assumidos: '177', Finalizados: '177', Transferidos: '19', Clientes: '164', 'Média aval.': '4,38', TMA: '15:00:60', TMI: '5m60s', TMR: '14:45:09' }], newFields);
+assert.equal(newRows[0].clientes, 164);
+assert.equal(newRows[0].csat, 4.38);
+assert.equal(time(newRows[0].tma), '15:01:00');
+assert.equal(time(newRows[0].tmr), '14:45:09');
+assert.equal(report(newRows, options).metrics[0][1], '177');
+assert.equal(time(processCsv([{ ...data[0], TMA: '161:20:44' }], fields)[0].tma), '161:20:44');
 for (const missing of ['', '::', '-', '—', 'N/A', 'N/D', 'Sem informação', null]) {
   const incomplete = processCsv([{ ...data[0], TMR: missing }, data[1]], fields);
   const partial = report(incomplete, options);
