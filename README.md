@@ -4,6 +4,10 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 
 **Versão atual:** `1.7.2` (constante `APP_VERSION` em `static/app.js`)
 
+## Diagnóstico gerencial
+
+A auditoria, metodologia, limitações e validação da nova seção estão em [docs/diagnostico-gerencial.md](docs/diagnostico-gerencial.md). A migração aditiva `migration_v49.sql` está preparada e não foi aplicada ao banco ativo.
+
 ## Changelog
 
 | Versão | Data | Alterações |

@@ -1,0 +1,51 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Diagnóstico — testes locais</title><link rel="stylesheet" href="../static/css/tokens.css"><link rel="stylesheet" href="../static/styles.css"><link rel="stylesheet" href="../static/diagnostico.css"></head><body data-role="admin"><main style="max-width:1100px;margin:auto"><div id="insightsContent"></div><div id="painelLiderContent"></div><div id="colabDetailContent"></div><pre id="testResult">RUNNING</pre></main>
+<script>
+if(!['127.0.0.1','localhost'].includes(location.hostname))throw Error('Somente ambiente local');
+const rawRecords=[];
+for(const month of ['2026-07','2026-08','2026-09'])for(const [name,score] of [['Alice',4.9],['Bruno',4.5]])rawRecords.push({Atendente:name,Setor:'ERP','Mês':month,SCORE:score-(Number(month.slice(-2))-7)*.1,Finalizados:100,Assumidos:120,Transferidos:10,TMR:month==='2026-09'?'00:20:00':'00:10:00'});
+const globalFilters={periodo:'2026-09',setor:'all',nivel:'all',colaborador:'all',pesquisa:''};
+const cache={sistema_colaboradores_info_v1:JSON.stringify({Alice:{nivel:'N1',observacoes:'Contexto cadastrado <script> nunca executar'},Bruno:{nivel:'N2'}})};
+const fakeStorage={getItem:k=>cache[k]||null,setItem:(k,v)=>cache[k]=v};
+// Os módulos usam armazenamento real, limitado à origem de teste local.
+for(const [k,v] of Object.entries(cache))localStorage.setItem(k,v);
+let role='admin',writes=0;
+const sbClient={auth:{async getUser(){return {data:{user:{id:'diagnostico-browser-test',app_metadata:{role}}}}}},from(){return{select(){return this},eq(){return this},order(){return this},async limit(){return{data:[]}},async insert(){writes++;return{}}}}};
+function renderInsights(){document.getElementById('insightsContent').innerHTML='<p class="legacy">Insights existentes preservados</p>'}
+function onInsightsTabActivated(){renderInsights()}
+function renderPainelLider(){document.getElementById('painelLiderContent').innerHTML='<p class="legacy">Liderança existente</p>'}
+function renderColabDetail(){document.getElementById('colabDetailContent').innerHTML='<p class="legacy">Perfil existente</p>'}
+function openColabDetailOverlay(){document.getElementById('colabDetailContent').innerHTML='<form id="existingProfile">Cadastro existente</form>'}
+let charts=[];class Chart{constructor(canvas,config){this.config=config;charts.push(this)}destroy(){this.destroyed=true}}
+function getDisplayName(n){return n}function buildAliasMap(){return new Map()}
+</script><script src="../static/diagnostico-engine.js"></script><script src="../static/diagnostico-store.js"></script><script src="../static/diagnostico-ui.js"></script><script>
+const assert=(v,m)=>{if(!v)throw Error(m)};
+async function ready(host){const deadline=Date.now()+10000;while(Date.now()<deadline){if(host.querySelector('.diag-review button')?.onclick||host.querySelector('.diag-review')?.dataset.bound)return;await new Promise(r=>setTimeout(r,20))}throw Error('Revisões não inicializadas')}
+window.addEventListener('load',async()=>{try{
+ onInsightsTabActivated();const insights=document.getElementById('insightsContent');
+ assert(insights.querySelector('.legacy'),'Insights antigos removidos');assert(insights.textContent.includes('Diagnóstico Operacional'),'Seção ausente');
+ assert(insights.querySelectorAll('.diag-section').length===1,'Seção duplicada');
+ assert([...insights.querySelectorAll('.diag-controls label[hidden]')].every(x=>getComputedStyle(x).display==='none'),'Campos personalizados visíveis no modo automático');
+ assert(insights.textContent.includes('N1')&&insights.textContent.includes('N2'),'Níveis não separados');
+ const mode=insights.querySelector('[data-field=mode]');mode.value='custom';mode.dispatchEvent(new Event('change'));
+ assert([...insights.querySelectorAll('input[type=month]')].every(x=>getComputedStyle(x.closest('label')).display!=='none'),'Campos personalizados ocultos');
+ const ps=insights.querySelector('[data-field=ps]');ps.value='2026-09';ps.dispatchEvent(new Event('change'));
+ const pe=insights.querySelector('[data-field=pe]');pe.value='2026-09';pe.dispatchEvent(new Event('change'));
+ assert(insights.textContent.includes('não podem se sobrepor'),'Sobreposição não rejeitada');
+ insights.querySelector('[data-field=mode]').value='global';insights.querySelector('[data-field=mode]').dispatchEvent(new Event('change'));
+ globalFilters.nivel='N1';renderPainelLider();const leader=document.getElementById('painelLiderContent');
+ assert(leader.querySelector('.legacy'),'Liderança existente removida');assert(!leader.querySelector('.diag-section').textContent.includes('Bruno'),'Filtro N1 ignorado');
+ renderColabDetail('Alice');const profile=document.getElementById('colabDetailContent');
+ assert(profile.textContent.includes('Diagnóstico e Evolução'),'Perfil sem diagnóstico');assert(profile.textContent.includes('Contexto cadastrado'),'Observações não reutilizadas');assert(!profile.querySelector('.diag-notes script'),'Observações sem escape');assert(charts.at(-1).config.data.datasets.some(d=>d.label==='Meta oficial 4,70'),'Gráfico sem meta');
+ await ready(profile);
+ let review=profile.querySelector('.diag-review');review.querySelector('select').value='ajustado';review.querySelector('textarea').value='Contexto confirmado pela liderança';review.querySelector('button').click();await new Promise(r=>setTimeout(r,80));
+ assert(writes===1,'Revisão não gravada');assert(review.textContent.includes('salva no banco'),'Sem confirmação de gravação');
+ const previousChart=charts.at(-1);openColabDetailOverlay('Alice');assert(previousChart.destroyed,'Gráfico anterior não destruído');assert(profile.querySelector('#existingProfile'),'Cadastro substituído');assert(profile.querySelectorAll('.diag-section').length===1,'Diagnóstico duplicado no cadastro');
+ document.body.dataset.role='viewer';renderPainelLider();await new Promise(r=>setTimeout(r,200));
+ assert([...leader.querySelectorAll('.diag-review button')].every(b=>b.disabled),'Viewer pode revisar');
+ role='viewer';let denied=false;try{await DiagnosticoStore.create({client:sbClient,storage:fakeStorage,engine:DiagnosticoEngine}).save({status:'validado',fingerprint:'a'.repeat(64),snapshot:{}})}catch(e){denied=true}assert(denied,'Permissão burlada por chamada direta');
+ document.body.dataset.role='admin';globalFilters.nivel='all';onInsightsTabActivated();
+ document.documentElement.setAttribute('data-theme','dark');assert(getComputedStyle(insights.querySelector('.diag-section')).color!=='','Tema sem cor');
+ if(innerWidth<600)assert(document.documentElement.scrollWidth<=innerWidth+1,'Overflow no celular');
+ document.getElementById('testResult').textContent='PASS: integração preservada, períodos, filtros, níveis, gráfico, escape, revisão, permissões e layout';
+}catch(e){document.getElementById('testResult').textContent='FAIL: '+e.message;console.error(e)}});
+</script></body></html>
