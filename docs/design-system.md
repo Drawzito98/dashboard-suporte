@@ -55,3 +55,7 @@ workspace-ux.browser.html carrega o HTML completo e as bibliotecas CDN reais, co
 A verificação de contraste é amostral, sem auditoria WCAG completa ou teste com leitor de tela. Os testes desta retomada usaram o navegador Chromium integrado; Firefox e Safari não foram executados. O HTML de impressão foi validado, sem imprimir fisicamente ou certificar paginação de PDF em todos os navegadores. Integrações/RLS de produção não são validadas pelas fixtures.
 
 O próximo ciclo é a Fase 7 — Cockpit gerencial. Começar pelo roadmap e pelos contratos de dados existentes. Não mudar scoring, metas de negócio ou interpretação de volume como parte de um refinamento visual. Merge continua exigindo autorização explícita; esta rodada registra commit/push, sem novo deploy.
+
+## Publicação posterior
+
+A conclusão 1.19.1 (c4c782a) foi publicada em 28/10/2026, após autorização explícita, antes de iniciar a Fase 7. HTML, app, shell, Home e service worker foram conferidos por hash na URL de produção. Registro do cockpit em [cockpit.md](cockpit.md).

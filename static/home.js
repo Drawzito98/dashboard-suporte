@@ -5,80 +5,28 @@ function renderHome() {
   if (!container) return;
   ['homeColabsModal', 'homeScoreModal', 'homeTasksModal'].forEach(id => document.getElementById(id)?.remove());
 
-  const records = (typeof getDataFiltered === 'function' ? getDataFiltered() : rawRecords) || [];
-  const activeColabs = records.filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']));
-  const uniqueColabs = [...new Set(activeColabs.map(r => r['Atendente']))].sort();
-
-  // Map: collaborator → setores
-  const colabSetores = {};
-  activeColabs.forEach(r => {
-    const name = r['Atendente'];
-    const setor = String(r['Setor'] || '').trim();
-    if (name && setor) {
-      if (!colabSetores[name]) colabSetores[name] = new Set();
-      colabSetores[name].add(setor);
-    }
-  });
-  const colabList = uniqueColabs.map(name => ({
-    name,
-    setores: colabSetores[name] ? [...colabSetores[name]].sort().join(', ') : '—'
-  }));
-  const meses = [...new Set(records.filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
-  const lastMonth = meses[meses.length - 1] || '';
-  const prevMonth = meses.length > 1 ? meses[meses.length - 2] : '';
-
-  // KPI calculations
-  const totalRecords = records.length;
-  const activeCount = uniqueColabs.length;
-  const lastMonthRecords = records.filter(r => r && r['Mês'] === lastMonth && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']));
-  const avgScore = lastMonthRecords.length
-    ? (lastMonthRecords.reduce((s, r) => s + Number(r['SCORE'] || 0), 0) / lastMonthRecords.length).toFixed(2)
-    : '—';
-  const totalFinalizados = records.reduce((s, r) => s + Number(r['Finalizados'] || 0), 0);
-
-  // Pending tasks
-  let pendingTasks = 0;
-  let pendingTaskList = [];
-  try {
-    const tarefas = JSON.parse(appStorage.getItem('sistema_tarefas_v1') || '[]');
-    pendingTaskList = tarefas.filter(t => t.status !== 'concluida' && t.status !== 'cancelada');
-    pendingTasks = pendingTaskList.length;
-  } catch (e) { console.error('[Home] Erro:', e); }
-
-  // Score by collaborator (last month)
-  const scoreByColab = {};
-  lastMonthRecords.forEach(r => {
-    const name = r['Atendente'];
-    if (!name) return;
-    if (!scoreByColab[name]) scoreByColab[name] = [];
-    scoreByColab[name].push(Number(r['SCORE'] || 0));
-  });
-  const scoreList = Object.entries(scoreByColab)
-    .map(([name, scores]) => ({
-      name,
-      avg: (scores.reduce((a, b) => a + b, 0) / scores.length),
-      count: scores.length
-    }))
-    .sort((a, b) => b.avg - a.avg);
-  const criticalScores = scoreList.filter(item => item.avg < 4.5).sort((a, b) => a.avg - b.avg);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayKey = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0')
-  ].join('-');
-  const taskDateValue = task => task.data ? new Date(task.data + 'T00:00:00').getTime() : Number.MAX_SAFE_INTEGER;
-  const overdueTasks = pendingTaskList.filter(t => t.data && t.data < todayKey);
-  const todayTasks = pendingTaskList.filter(t => t.data === todayKey);
-  pendingTaskList.sort((a, b) => taskDateValue(a) - taskDateValue(b));
+  const cockpit = HomeCockpit.model();
+  const records = cockpit.rows;
+  const activeColabs = records;
+  const uniqueColabs = [...new Set(records.map(r => r.Atendente))].sort();
+  const colabList = uniqueColabs.map(name => ({name, setores: [...new Set(records.filter(r => r.Atendente === name).map(r => r.Setor))].sort().join(', ')}));
+  const meses = cockpit.months;
+  const lastMonth = meses.at(-1) || '';
+  const totalRecords = records.length, activeCount = uniqueColabs.length;
+  const avgScore = cockpit.metrics.score === null ? '—' : cockpit.metrics.score.toFixed(2);
+  const totalFinalizados = cockpit.metrics.finished;
+  const scoreList = cockpit.scoreList;
+  const pendingTaskList = cockpit.tasks.pending;
+  const pendingTasks = cockpit.taskAvailable ? pendingTaskList.length : '—';
+  const today = new Date(); today.setHours(0, 0, 0, 0);
 
   let colabInfo = {};
   let vacations = [];
   try { colabInfo = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (e) {}
   try { vacations = JSON.parse(appStorage.getItem('sistema_ferias_v1') || '[]'); } catch (e) {}
 
+  if (!colabInfo || typeof colabInfo !== 'object' || Array.isArray(colabInfo)) colabInfo = {};
+  if (!Array.isArray(vacations)) vacations = [];
   const upcomingBirthdays = Object.entries(colabInfo).map(([name, info]) => {
     if (!info?.data_aniversario || (typeof isColabActive === 'function' && !isColabActive(name))) return null;
     const parts = info.data_aniversario.split('-');
@@ -101,14 +49,11 @@ function renderHome() {
     .sort((a, b) => a.days - b.days)
     .slice(0, 6);
 
-  // Monthly trend data (last 6 months)
-  const trendMonths = meses.slice(-6);
-  const trendData = trendMonths.map(m => {
-    const monthRecs = records.filter(r => r && r['Mês'] === m && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']));
-    const avg = monthRecs.length
-      ? monthRecs.reduce((s, r) => s + Number(r['SCORE'] || 0), 0) / monthRecs.length
-      : 0;
-    return { month: m, avg: Number(avg.toFixed(2)), total: monthRecs.reduce((s, r) => s + Number(r['Finalizados'] || 0), 0) };
+  // Six calendar months, including explicit gaps instead of invented zeroes.
+  const trendMonths = lastMonth ? Array.from({length:6},(_,i)=>DiagnosticoEngine.shift(lastMonth,i-5)) : [];
+  const trendData = trendMonths.map(month => {
+    const metrics = DiagnosticoEngine.metrics(cockpit.historyRows.filter(r=>r['Mês']===month));
+    return {month,avg:metrics.score,total:metrics.finished};
   });
 
   // Recent activity from historico
@@ -134,9 +79,10 @@ function renderHome() {
 
   html += `<div class="home-welcome">
     <h2>${greeting}, ${escapeHtml(userName)}</h2>
-    <p>Aqui está o resumo da sua equipe</p>
+    <p>Indicadores com contexto e caminhos para acompanhar a equipe</p>
   </div>`;
 
+  html += HomeCockpit.html(cockpit,'intro');
   html += `<div class="home-kpi-grid">
     <div class="home-kpi home-kpi-clickable" id="homeColabsKpi" role="button" tabindex="0" title="Clique para ver os colaboradores">
       <div class="home-kpi-icon" style="background:var(--accent-soft);color:var(--accent)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
@@ -147,12 +93,12 @@ function renderHome() {
     <div class="home-kpi">
       <div class="home-kpi-icon" style="background:var(--success-soft);color:var(--success)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
       <div class="home-kpi-value">${totalRecords.toLocaleString('pt-BR')}</div>
-      <div class="home-kpi-label">Registros totais</div>
+      <div class="home-kpi-label">Registros no recorte</div>
     </div>
     <div class="home-kpi home-kpi-clickable" id="homeScoreKpi" role="button" tabindex="0" title="Clique para ver o score por colaborador">
       <div class="home-kpi-icon" style="background:var(--warning-soft);color:var(--warning)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
       <div class="home-kpi-value ${getClasseScore(avgScore)}">${avgScore}</div>
-      <div class="home-kpi-label">Score médio · ${lastMonth || '—'}</div>
+      <div class="home-kpi-label">Score médio · ${cockpit.months.join(' · ') || '—'}</div>
       <div class="home-kpi-hint">clique para ver</div>
     </div>
     <div class="home-kpi home-kpi-clickable" id="homeTasksKpi" role="button" tabindex="0" title="Clique para ver as tarefas pendentes">
@@ -164,57 +110,8 @@ function renderHome() {
   </div>`;
   html += '<p class="score-legend">Score: excelente a partir de 4,70 · atenção de 4,50 a 4,69 · crítico abaixo de 4,50.</p>';
 
-  // ── Section 2: Operational priorities ──
-  const priorityItems = [
-    ...overdueTasks.slice(0, 3).map(t => ({
-      tone: 'danger',
-      icon: '!',
-      title: t.titulo || t.descricao || 'Tarefa sem título',
-      meta: 'Atrasada · ' + (t.data ? new Date(t.data + 'T12:00:00').toLocaleDateString('pt-BR') : 'sem data'),
-      tab: 'tarefas'
-    })),
-    ...todayTasks.slice(0, 2).map(t => ({
-      tone: 'warning',
-      icon: '•',
-      title: t.titulo || t.descricao || 'Tarefa sem título',
-      meta: 'Vence hoje',
-      tab: 'tarefas'
-    })),
-    ...criticalScores.slice(0, 3).map(item => ({
-      tone: 'danger',
-      icon: '↓',
-      title: item.name,
-      meta: 'Score ' + item.avg.toFixed(2) + ' · requer acompanhamento',
-      tab: 'lider'
-    }))
-  ].slice(0, 6);
-
-  const attentionCount = overdueTasks.length + todayTasks.length + criticalScores.length;
-  const briefingTitle = attentionCount
-    ? attentionCount + (attentionCount === 1 ? ' ponto merece' : ' pontos merecem') + ' sua atenção hoje'
-    : 'Operação em dia — nenhum ponto crítico agora';
-  const briefingText = attentionCount
-    ? overdueTasks.length + ' tarefa(s) atrasada(s), ' + todayTasks.length + ' para hoje e ' + criticalScores.length + ' score(s) em atenção.'
-    : 'Continue acompanhando os indicadores e a agenda da equipe.';
-  html += '<section class="home-daily-briefing ' + (attentionCount ? 'has-attention' : 'is-clear') + '">' +
-    '<div class="home-briefing-symbol" aria-hidden="true">' + (attentionCount ? '!' : '✓') + '</div>' +
-    '<div class="home-briefing-copy"><span>Briefing diário</span><h3>' + escapeHtml(briefingTitle) + '</h3><p>' + escapeHtml(briefingText) + '</p></div>' +
-    '<div class="home-briefing-actions">' +
-      (overdueTasks.length || todayTasks.length ? '<button type="button" data-home-tab="tarefas">Ver tarefas</button>' : '') +
-      (criticalScores.length ? '<button type="button" data-home-tab="lider">Ver gestão</button>' : '') +
-      (!attentionCount ? '<button type="button" data-home-tab="dashboard">Ver indicadores</button>' : '') +
-    '</div></section>';
-
-  const priorityHtml = priorityItems.length
-    ? priorityItems.map(item =>
-      '<button class="home-operations-item" type="button" data-home-tab="' + item.tab + '">' +
-        '<span class="home-status-dot home-status-dot--' + item.tone + '">' + item.icon + '</span>' +
-        '<span class="home-operations-copy"><strong>' + escapeHtml(item.title) + '</strong><small>' + escapeHtml(item.meta) + '</small></span>' +
-        '<span class="home-item-arrow">›</span>' +
-      '</button>'
-    ).join('')
-    : '<div class="home-operations-empty"><span>✓</span><strong>Nenhuma prioridade crítica</strong><small>As pendências e alertas aparecerão aqui.</small></div>';
-
+  // ── Section 2: Read-only decision cockpit and account agenda ──
+  html += HomeCockpit.html(cockpit,'details');
   const eventsHtml = teamEvents.length
     ? teamEvents.map(item => {
       const label = item.type === 'birthday'
@@ -228,20 +125,9 @@ function renderHome() {
         '<span class="home-item-arrow">›</span>' +
       '</button>';
     }).join('')
-    : '<div class="home-operations-empty"><span>○</span><strong>Nenhum evento próximo</strong><small>Aniversários e férias aparecerão aqui.</small></div>';
+    : '<div class="home-operations-empty"><span>○</span><strong>Nenhum evento disponível</strong><small>Aniversários e férias cadastrados aparecem aqui. Confira as fontes se faltar algum evento.</small></div>';
 
-  html += '<div class="home-operations-grid">' +
-    '<section class="home-operations-card">' +
-      '<div class="home-operations-header"><div><span class="home-operations-kicker">Prioridades</span><h3>O que precisa de atenção</h3></div><span class="home-count-badge">' + priorityItems.length + '</span></div>' +
-      '<div class="home-operations-list">' + priorityHtml + '</div>' +
-      '<div class="home-operations-summary"><span><strong>' + overdueTasks.length + '</strong> atrasada(s)</span><span><strong>' + todayTasks.length + '</strong> para hoje</span><span><strong>' + criticalScores.length + '</strong> score(s) em atenção</span></div>' +
-    '</section>' +
-    '<section class="home-operations-card">' +
-      '<div class="home-operations-header"><div><span class="home-operations-kicker">Próximos 30 dias</span><h3>Agenda da equipe</h3></div><span class="home-count-badge home-count-badge--neutral">' + teamEvents.length + '</span></div>' +
-      '<div class="home-operations-list">' + eventsHtml + '</div>' +
-      '<button class="home-card-link" type="button" data-home-tab="colaboradores">Ver equipe completa <span>→</span></button>' +
-    '</section>' +
-  '</div>';
+  html += '<section class="home-operations-card"><div class="home-operations-header"><div><span class="home-operations-kicker">Próximos 30 dias · sua conta</span><h3>Agenda da equipe</h3></div><span class="home-count-badge home-count-badge--neutral">'+teamEvents.length+'</span></div><div class="home-operations-list">'+eventsHtml+'</div><button class="home-card-link" type="button" data-home-tab="colaboradores">Ver equipe completa →</button></section>';
 
   // ── Section 3: Quick Actions ──
   html += `<div class="home-section">
@@ -306,6 +192,7 @@ function renderHome() {
   const previousCanvas = container.querySelector('#homeTrendCanvas');
   if (previousCanvas && typeof Chart !== 'undefined') Chart.getChart?.(previousCanvas)?.destroy();
   container.innerHTML = html;
+  HomeCockpit.bind(container, cockpit);
 
   container.querySelectorAll('[data-home-tab]').forEach(button => {
     button.addEventListener('click', () => {
@@ -521,7 +408,7 @@ function renderHomeTrendChart(data) {
           padding: { top: 2, bottom: 2, left: 4, right: 4 },
           anchor: 'end',
           clamp: true,
-          formatter: v => Number.isInteger(v) ? v.toLocaleString('pt-BR') : v.toFixed(1)
+          formatter: v => v == null ? '' : Number.isInteger(v) ? v.toLocaleString('pt-BR') : v.toFixed(1)
         }
       },
       scales: {

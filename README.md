@@ -2,11 +2,15 @@
 
 App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer), gamificação, relatórios inteligentes, e deploy no Vercel.
 
-**Versão atual:** `1.19.1` (constante `APP_VERSION` em `static/app.js`)
+**Versão atual:** `1.20.0` (constante `APP_VERSION` em `static/app.js`)
 
 ## Diagnóstico gerencial
 
 A auditoria, metodologia, limitações e validação da nova seção estão em [docs/diagnostico-gerencial.md](docs/diagnostico-gerencial.md). A migração aditiva `migration_v49.sql` foi aplicada ao banco de produção em 22/10/2026, habilitando revisões privadas sincronizadas.
+
+## Cockpit gerencial — Fase 7
+
+A Home reúne referência mensal explícita, tarefas acionáveis, diagnóstico com evidências, equipes por nível e avisos de cobertura/fontes. Veja [comportamento, regras e validação](docs/cockpit.md).
 
 ## Design System / UX — Fase 6
 
@@ -36,6 +40,7 @@ Baseline e continuidade: [arquitetura](docs/architecture.md), [inventário atual
 
 | Versão | Data | Alterações |
 |--------|------|------------|
+| 1.20.0 | 28/10/2026 | Cockpit gerencial: período encerrado por padrão, evidências e ações vinculadas, notas ausentes explícitas e atualização somente leitura por conta. |
 | 1.19.1 | 28/10/2026 | Conclusão da Fase 6: submenu móvel com rolagem, filtros/cabeçalho responsivos, limpeza da sidebar, ciclo de gráficos e leitura de metas sem regravação. |
 | 1.19.0 | 28/10/2026 | Base de componentes e tokens, tabelas acessíveis por teclado, foco de modais e consistência de temas; refinamentos da Fase 6 documentados. |
 | 1.18.0 | 28/10/2026 | Extração dos módulos centrais, persistência por domínio e carregamento sob demanda com retentativa e proteção de sessão. |

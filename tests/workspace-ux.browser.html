@@ -9,13 +9,25 @@
  const seed=()=>{
   const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,String(v)),removeItem:k=>memory.delete(k)}});
   const theme=new URLSearchParams(parent.location.search).get('theme')||'light';localStorage.setItem('theme',theme);
+  const cockpitMode=new URLSearchParams(parent.location.search).has('cockpit');
+  if(cockpitMode){const NativeDate=Date;class TestDate extends NativeDate{constructor(...args){super(...(args.length?args:[new NativeDate(2026,9,28,12).getTime()]))}};window.Date=TestDate;}
+  window.__uxWrites=[];window.__uxReads=[];
   const user={id:'ux-local-test',email:'teste@local.invalid',app_metadata:{role:'admin'},user_metadata:{name:'Gestão de teste'}};
   const people=Array.from({length:12},(_,i)=>({nome:`Pessoa de teste ${i+1} com nome extenso para revisão de interface`,setor_atual:i<6?'Financeiro':'Estoque e OS',nivel:i%2?'N1':'N2',user_id:user.id,id:'person-'+i,observacoes:'Contexto de acompanhamento. '.repeat(25)}));
   const records=people.flatMap((p,i)=>Array.from({length:6},(_,m)=>({id:i*6+m+1,user_id:user.id,Atendente:p.nome,Setor:p.setor_atual,'Mês':`2026-0${m+4}`,Assumidos:150+i,Finalizados:120+i,Transferidos:15,Score:4.8,Total:12,TMA:'00:20:00',TMR:'00:02:00'})));
   const tables={registros:records,colaboradores_info:people,anotacoes_diarias:[],feedbacks:[],avaliacoes:[],tarefas:[],ferias:[],ausencias:[]};
+  if(cockpitMode){
+    records.find(r=>r.Atendente===people[0].nome&&r['Mês']==='2026-07').Score=4.9;
+    records.find(r=>r.Atendente===people[0].nome&&r['Mês']==='2026-08').Score=4.6;
+    records.find(r=>r.Atendente===people[0].nome&&r['Mês']==='2026-09').Score=4.3;
+    records.find(r=>r.Atendente===people[1].nome&&r['Mês']==='2026-09').Score=null;
+    records.push({...records[0],id:999,'Mês':'2026-10',Score:0});
+    tables.tarefas=[{id:'late',user_id:user.id,titulo:'Conferir amostra <script> não executar',data:'2026-10-27',status:'pendente'},{id:'today',user_id:user.id,titulo:'Feedback de hoje',data:'2026-10-28',status:'andamento'},{id:'done',user_id:user.id,titulo:'Concluída',data:'2026-10-01',status:'concluida'}];
+  }
+  window.__uxResetRecords=()=>{tables.registros=records};window.__uxEmptyRecords=()=>{tables.registros=[]};
   function query(table){let single=false,range=null,filters=[];const q=new Proxy({}, {get(_,key){
-   if(['insert','upsert','update','delete'].includes(key))return()=>{throw Error('Teste permite somente leitura: '+table)};
-   if(key==='then')return(resolve,reject)=>Promise.resolve().then(()=>{let data=[...(tables[table]||[])];for(const[k,v]of filters)data=data.filter(r=>r[k]===v);if(range)data=data.slice(range[0],range[1]+1);return{data:single?data[0]||null:data,error:null,count:data.length}}).then(resolve,reject);
+   if(['insert','upsert','update','delete'].includes(key))return()=>{window.__uxWrites.push(table+':'+key);throw Error('Teste permite somente leitura: '+table)};
+   if(key==='then')return(resolve,reject)=>Promise.resolve().then(async()=>{window.__uxReads.push(table);if(table==='registros'&&window.__uxHoldRecords){window.__uxBlocked=true;await new Promise(r=>window.__uxReleaseRecords=r)}if(table==='registros'&&window.__uxOffline)return{error:{message:'Offline simulado'}};let data=[...(tables[table]||[])];for(const[k,v]of filters)data=data.filter(r=>r[k]===v);if(range)data=data.slice(range[0],range[1]+1);return{data:single?data[0]||null:data,error:null,count:data.length}}).then(resolve,reject);
    if(key==='eq')return(k,v)=>{filters.push([k,v]);return q};
    if(key==='range')return(a,b)=>{range=[a,b];return q};
    if(key==='single'||key==='maybeSingle')return()=>{single=true;return q};
@@ -38,6 +50,32 @@
  const click=id=>{const el=d().getElementById(id);assert(el,'Controle ausente: '+id);el.click()};
  const tab=async name=>{d().querySelector(`[data-tab="${name}"]`).click();await wait(()=>d().body.dataset.activeTab===name,'Aba '+name);await new Promise(r=>setTimeout(r,120))};
  const bounds=el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=frame.clientWidth+1};
+ if(new URLSearchParams(location.search).has('cockpit')){
+  await wait(()=>d().querySelector('.cockpit-context')?.textContent.includes('2026-09')&&d().querySelector('[data-cockpit-task="0"]'),'Cockpit com fontes carregadas');
+  assert(!d().querySelector('.cockpit-context h3').textContent.includes('2026-10'),'Referência padrão evita mês em andamento');
+  assert(d().querySelector('.cockpit-briefing').textContent.includes('1 sem Score'),'Nota ausente explícita');
+  assert(d().querySelectorAll('[data-cockpit-person]').length===1,'Um vínculo com evidências');
+  assert(!d().querySelector('.cockpit-item script'),'Título de tarefa escapado');
+  d().querySelector('[data-cockpit-person]').click();await wait(()=>d().getElementById('e360Tab-desempenho')?.getAttribute('aria-selected')==='true','Perfil de desempenho');
+  assert(d().getElementById('e360Title').textContent.startsWith('Pessoa de teste 1 '),'Vínculo exato');d().getElementById('equipe360Dialog').close();
+  d().querySelector('[data-cockpit-task="0"]').click();await wait(()=>d().activeElement?.dataset.tarefaId==='late','Tarefa certa focada');
+  await tab('home');d().querySelector('[data-cockpit-diagnostic]').click();await wait(()=>d().body.dataset.activeTab==='lider','Diagnóstico no período');assert(d().getElementById('gfPeriodo').value==='2026-09','Diagnóstico preserva referência');await tab('home');click('gfClearBtn');
+  const sector=d().getElementById('gfSetor');sector.value='Estoque e OS';sector.dispatchEvent(new (win().Event)('change',{bubbles:true}));
+  await wait(()=>d().querySelectorAll('[data-cockpit-person]').length===0,'Filtro de equipe no cockpit');assert(d().querySelectorAll('[data-cockpit-task]').length===2,'Tarefas da conta mantidas');
+  click('gfClearBtn');const period=d().getElementById('gfPeriodo');period.value='2026-10';period.dispatchEvent(new (win().Event)('change',{bubbles:true}));await wait(()=>d().querySelector('.cockpit-coverage')?.textContent.includes('Período em andamento'),'Período parcial explícito');
+  click('gfClearBtn');
+  const refresh=async()=>{const before=win().__uxReads.filter(t=>t==='registros').length;click('cockpitRefresh');await wait(()=>win().__uxReads.filter(t=>t==='registros').length>before&&!d().getElementById('cockpitRefresh')?.disabled,'Atualização somente leitura')};
+  win().__uxOffline=true;await refresh();await wait(()=>d().querySelector('.cockpit-source').textContent.includes('Cache'),'Cache identificado');
+  win().__uxOffline=false;win().__uxEmptyRecords();await refresh();await wait(()=>d().querySelector('.cockpit-context h3').textContent.includes('Sem período'),'Vazio do servidor respeitado');
+  win().__uxResetRecords();await refresh();await wait(()=>d().querySelector('.cockpit-context h3').textContent.includes('2026-09'),'Referência restaurada da fonte');
+  assert(win().__uxWrites.length===0,'Cockpit não grava: '+win().__uxWrites);assert(win().__uxErrors.length===0,'Erros: '+win().__uxErrors);
+  assert(d().documentElement.scrollWidth<=frame.clientWidth,'Cockpit sem overflow');
+  if(new URLSearchParams(location.search).has('race')){
+    win().__uxHoldRecords=true;click('cockpitRefresh');await wait(()=>win().__uxBlocked,'Consulta bloqueada');win().AppDataSession.invalidate();win().dispatchEvent(new (win().Event)('app-session-invalidated'));win().__uxReleaseRecords();
+    await new Promise(r=>setTimeout(r,150));assert(d().getElementById('appScreen').style.display==='none'&&win().AppState.get('records')===null&&win().HomeCockpit.model().rows.length===0,'Sessão invalidada não reabre cockpit');
+  }
+  document.getElementById('testResult').textContent='PASS: cockpit, mês fechado/parcial, ausência de nota, evidências, perfil exato, tarefa focada, filtros, cache, vazio e atualização sem escrita';return;
+ }
  for(const name of ['home','dashboard','relatorio-setorial','saude-operacional','tarefas','regras','ponto','colaboradores','lider','insights','avaliacao','perfil-pdi','mapeamento-time']){
   await tab(name);assert(d().documentElement.scrollWidth<=frame.clientWidth,'Overflow global: '+name);assert(bounds(d().getElementById('appPageTitle')),'Título dentro do cabeçalho: '+name);
  }

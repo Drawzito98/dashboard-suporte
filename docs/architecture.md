@@ -47,3 +47,7 @@ Versão 1.19.0. css/components.css substitui visual-refresh, consolidando contra
 ## Conclusão — Fase 6
 
 Versão 1.19.1. Navegação móvel com faixa horizontal e foco revelado; limpeza das camadas da sidebar antiga; grades e editores contidos; instâncias de gráficos com ciclo de vida corrigido e plugin setorial local. Consultar metas não regrava a coleção. Teste integrado usa bibliotecas reais e backend simulado: [design-system.md](design-system.md). Próxima fase: Cockpit gerencial.
+
+## Evolução — Fase 7
+
+1.20.0: cockpit-engine deriva decisões de leitura com a metodologia de DiagnosticoEngine; cockpit.js liga AppState/cache privado aos destinos existentes; home.js mantém agenda/modais/ações. Referência encerrada por padrão, notas ausentes explícitas, volumes sem ranking e atualização sem gravação. Contratos de sessão, cobertura e limites em [cockpit.md](cockpit.md).

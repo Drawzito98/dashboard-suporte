@@ -43,3 +43,7 @@ Versão 1.19.0. npm test aprovado, fixtures de áreas em desktop/celular e runne
 ## Conclusão da Fase 6
 
 1.19.1: npm test e cache aprovados; interface-assets e metas-read entram no agregador. Fixtures de áreas passaram em 320px/1440px. workspace-ux testa gráficos/CDNs reais, PNG, CSV, HTML de impressão e editores com dados simulados em 320/390/1440px. Detalhes e limites em [design-system.md](design-system.md). Esta rodada faz commit/push na branch da fase, sem merge ou novo deploy.
+
+## Fase 7 — Cockpit gerencial
+
+A conclusão da Fase 6 (c4c782a) foi publicada e conferida por hash antes de iniciar a Fase 7. A versão 1.20.0 agrega cockpit-engine.check.js a npm test. O cenário workspace-ux.browser.html?cockpit=1 valida as ações com backend simulado; &race=1 cobre resposta após encerrar sessão. Ver [cockpit.md](cockpit.md). Cache cobre 114 arquivos locais. Deploy autorizado neste ciclo; não houve merge ou migrations.

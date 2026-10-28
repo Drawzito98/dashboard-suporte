@@ -10,7 +10,7 @@ Cada fase deve ter branch própria, diffs revisáveis e validação proporcional
 | 4 — Dados | AppState/eventos/repositories graduais, Supabase oficial e cache/offline explícitos; validar falhas e troca de conta | Base integrada em feat/fase4-arquitetura-dados; adoção gradual documentada em data-architecture.md |
 | 5 — Modularização | extrair responsabilidades de app.js/db-extra.js e carregar módulos sob demanda; preservar ordem/dependências | Implementada em refactor/fase5-modularizacao; contratos e limites em modularization.md |
 | 6 — Design System / UX | tokens, controles, modais, tabelas, vazios, mobile e acessibilidade consistentes | Concluída em feat/fase6-design-system (1.19.1); validação e limites em design-system.md |
-| 7 — Cockpit gerencial | pendências e alertas acionáveis com evidências e caminhos de resolução | Pendente |
+| 7 — Cockpit gerencial | pendências e alertas acionáveis com evidências e caminhos de resolução | Implementada em feat/fase7-cockpit-gerencial (1.20.0); contratos, validação e limites em cockpit.md |
 
 ## Continuidade
 

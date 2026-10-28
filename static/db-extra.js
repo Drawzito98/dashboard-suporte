@@ -257,6 +257,7 @@ async function migrateLocalToSupabase(...args) {
 // Chamado pelo app.js no DOMContentLoaded para carregar dados do Supabase
 async function initDbExtra() {
   if (!sbClient) return;
+  const token = typeof AppDataSession !== 'undefined' ? AppDataSession.token() : null;
   try {
     // Unowned historical browser data is preserved, never uploaded automatically.
     await Promise.allSettled([
@@ -281,5 +282,6 @@ async function initDbExtra() {
       dbFeriasLoad(),
       dbAcompDiarioLoad()
     ]);
+    if (!token || AppDataSession.current(token)) window.dispatchEvent?.(new Event('app-extra-data-loaded'));
   } catch (e) { console.error('[db-extra]', e); }
 }
