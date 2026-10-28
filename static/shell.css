@@ -1,4 +1,4 @@
-/* Phase 2 shell. Scope overrides the historical sidebar layouts without changing modules. */
+/* Shared navigation layout; component appearance lives in css/components.css. */
 body.shell-v2 main.app,
 body.shell-v2[data-role="admin"].admin-sidebar-collapsed main.app {
   display: flex; flex-direction: column; gap: 0; width: 100%; max-width: none;
@@ -72,4 +72,21 @@ body.shell-v2[data-role="colaborador"] #toolsDialog .sidebar { display: none !im
 }
 @media print {
   body.shell-v2 :is(.domain-nav, .shell-navigation, #toolsDialog, .menu-btn) { display: none !important; }
+}
+
+@media screen {
+  body.shell-v2 .topbar { margin-bottom: 0; min-height: 68px; }
+  body.shell-v2 .topbar-right { opacity: 1; }
+  body.shell-v2 .titleblock h1 { font-size: 22px; letter-spacing: -.025em; }
+  body.shell-v2 .shell-navigation .tab-icon svg { width: 18px; height: 18px; }
+  body.shell-v2 #toolsDialog .sidebar :is(.btn-small, .btn-primary) { min-height: var(--control-height); font-size: 13px; }
+  body.shell-v2 #toolsDialog .panel-header h2 { font-size: 13px; text-transform: none; letter-spacing: 0; }
+  body.shell-v2 .domain-nav { flex-wrap: wrap; }
+  body.shell-v2 .domain-nav button { min-height: var(--control-height); }
+  @media (max-width: 900px) {
+    body.shell-v2 .topbar { min-height: 60px; }
+    body.shell-v2 .titleblock h1 { font-size: 18px; }
+    body.shell-v2 .shell-navigation #tabBar .tab-btn { min-height: var(--control-height); }
+    body.shell-v2 .domain-nav button { padding-inline: 10px; }
+  }
 }

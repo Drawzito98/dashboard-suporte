@@ -208,7 +208,9 @@ function initNotificacoesUI() {
       });
     }
 
+    let paletteOpener;
     function openPalette() {
+      paletteOpener = document.activeElement;
       overlay.hidden = false;
       document.body.classList.add('command-palette-open');
       activeIndex = 0;
@@ -219,8 +221,10 @@ function initNotificacoesUI() {
     function closePalette() {
       overlay.hidden = true;
       document.body.classList.remove('command-palette-open');
+      if (paletteOpener?.isConnected) paletteOpener.focus();
     }
     window.openAdminCommandPalette = openPalette;
+    window.closeAdminCommandPalette = closePalette;
     overlay.addEventListener('click', event => { if (event.target === overlay) closePalette(); });
     input.addEventListener('input', () => { activeIndex = 0; renderResults(input.value); });
     input.addEventListener('keydown', event => {
@@ -230,8 +234,13 @@ function initNotificacoesUI() {
       if (event.key === 'Escape') closePalette();
     });
     document.addEventListener('keydown', event => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); overlay.hidden ? openPalette() : closePalette(); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && !document.querySelector('dialog:modal')) { event.preventDefault(); overlay.hidden ? openPalette() : closePalette(); }
       else if (event.key === 'Escape' && !overlay.hidden) closePalette();
+      if (event.key === 'Tab' && !overlay.hidden) {
+        const controls = [input, ...results.querySelectorAll('button')];
+        if (event.shiftKey && document.activeElement === controls[0]) { event.preventDefault(); controls.at(-1).focus(); }
+        else if (!event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); input.focus(); }
+      }
     });
   }
 
@@ -331,60 +340,7 @@ function initNotificacoesUI() {
       });
     });
 
-    const dialogSelector = ".colab-detail-overlay, .modal-overlay, .kpi-drill-overlay, .rs-modal-overlay";
-    const initialized = new WeakSet();
-    const openers = new WeakMap();
-    let lastInteraction = null;
-    document.addEventListener("pointerdown", () => { lastInteraction = document.activeElement; }, true);
 
-    function isVisible(element) {
-      if (!element || !element.isConnected) return false;
-      const style = getComputedStyle(element);
-      return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
-    }
-    function focusables(dialog) {
-      return Array.from(dialog.querySelectorAll("button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])"))
-        .filter(isVisible);
-    }
-    function syncDialogs() {
-      const visible = Array.from(document.querySelectorAll(dialogSelector)).filter(isVisible);
-      document.body.classList.toggle("has-accessible-dialog", visible.length > 0);
-      visible.forEach((dialog) => {
-        if (initialized.has(dialog)) return;
-        initialized.add(dialog);
-        openers.set(dialog, lastInteraction);
-        dialog.setAttribute("role", "dialog");
-        dialog.setAttribute("aria-modal", "true");
-        requestAnimationFrame(() => focusables(dialog)[0]?.focus());
-      });
-      document.querySelectorAll(dialogSelector).forEach((dialog) => {
-        if (isVisible(dialog) || !initialized.has(dialog)) return;
-        initialized.delete(dialog);
-        const opener = openers.get(dialog);
-        if (opener && opener.isConnected) opener.focus();
-      });
-    }
-    new MutationObserver(syncDialogs).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "style", "hidden"] });
-    document.addEventListener("keydown", (event) => {
-      const dialogs = Array.from(document.querySelectorAll(dialogSelector)).filter(isVisible);
-      const dialog = dialogs[dialogs.length - 1];
-      if (!dialog) return;
-      if (event.key === "Escape") {
-        const close = dialog.querySelector(".colab-detail-close, .modal-close, .rs-modal-close, .kpi-drill-close, [data-close], [aria-label*=\"Fechar\"]");
-        if (close) close.click();
-        else if (dialog.classList.contains("open")) dialog.classList.remove("open");
-        else dialog.style.display = "none";
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const items = focusables(dialog);
-      if (!items.length) { event.preventDefault(); return; }
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    });
-    syncDialogs();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initInterfaceAccessibility);
   else initInterfaceAccessibility();

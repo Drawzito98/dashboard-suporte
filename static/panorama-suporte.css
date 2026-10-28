@@ -7,13 +7,13 @@
 .panorama-source-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:10px; }
 .panorama-source-link { display:inline-flex; align-items:center; gap:10px; padding:10px 14px; border:1px solid var(--border-strong); border-radius:9px; background:var(--bg-surface); color:var(--accent); font-size:12px; font-weight:600; text-decoration:none; }
 .panorama-source-link:hover { background:var(--accent-soft); border-color:var(--accent); }
-.panorama-source-link:focus-visible { outline:3px solid var(--accent-ring); outline-offset:3px; }
+.panorama-source-link:focus-visible { outline:3px solid var(--focus-color); outline-offset:3px; }
 .panorama-pill { display:inline-flex; align-items:center; border:1px solid var(--border); background:var(--bg-inset); padding:7px 12px; border-radius:24px; font-size:11px; font-weight:600; white-space:nowrap; }
 .panorama form { margin-top:20px; padding:20px; background:var(--bg-inset); border:1px solid var(--border); border-radius:var(--r-lg); }
 .panorama-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
 .panorama-fields label { display:flex; flex-direction:column; gap:8px; font-size:12px; font-weight:600; min-width:0; }
 .panorama-fields input,.panorama-fields select { width:100%; min-width:0; box-sizing:border-box; border:1px solid var(--border-strong); background:var(--bg-surface); color:var(--text-primary); border-radius:8px; padding:11px 10px; font:inherit; height:44px; }
-.panorama :is(input,select,button,summary,.panorama-table-wrap):focus-visible { outline:3px solid var(--accent-ring); outline-offset:3px; }
+.panorama :is(input,select,button,summary,.panorama-table-wrap):focus-visible { outline:3px solid var(--focus-color); outline-offset:3px; }
 .panorama-upload-row { display:flex; align-items:center; gap:16px; margin-top:20px; }
 .panorama-upload { display:flex; align-items:center; gap:14px; flex:1; min-width:0; border:1px dashed var(--border-strong); border-radius:12px; padding:16px; background:var(--bg-surface); }
 .panorama-upload>span:last-child { min-width:0; flex:1; }
@@ -56,7 +56,7 @@
 .panorama-section-head h3 { font-size:17px; }
 .panorama-table-wrap { overflow:auto; border:1px solid var(--border); border-radius:12px; }
 .panorama .panorama-table { width:100%; min-width:720px; border-collapse:collapse; font-size:12px; margin:0; }
-.panorama-table th { background:var(--bg-inset); color:var(--text-muted); font-size:10px; text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
+.panorama-table th { background:var(--bg-inset); color:var(--text-muted); font-size:var(--font-caption); text-transform:none; letter-spacing:0; font-weight:600; }
 .panorama .panorama-table :is(th,td) { padding:14px 16px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
 .panorama .panorama-table :is(th,td):nth-child(-n+2) { text-align:left; }
 .panorama-table :is(th,td):nth-child(-n+2) { text-align:left; }

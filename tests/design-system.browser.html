@@ -1,0 +1,43 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Design System — validação local</title>
+<style>body{padding:24px} .catalog{max-width:960px;margin:auto;display:grid;gap:24px} .demo-actions{display:flex;gap:8px;flex-wrap:wrap} .catalog-heading{margin:0} .modal-overlay.demo-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:5000;padding:16px} .demo-overlay[hidden]{display:none!important}.demo-overlay .modal-box{width:460px;padding:24px} .demo-dialog{padding:24px;background:var(--bg-surface);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--dialog-radius)} @media(max-width:600px){body{padding:12px}}</style>
+<pre id="testResult">RUNNING</pre>
+<main class="catalog">
+<h1 class="catalog-heading">Componentes compartilhados</h1><p class="hint">Controles, estados e leitura em temas claro e escuro.</p>
+<section class="card"><div class="card-header"><h2>Controles e formulários</h2></div><div class="demo-actions"><button class="btn-primary" id="opener">Abrir janela</button><button class="btn-secondary">Ação secundária</button><button class="btn-small" disabled>Indisponível</button></div><label class="field"><span>Nome</span><input type="text" value="Pessoa de exemplo"></label><label class="field"><span>Setor</span><select><option>Suporte</option></select></label><div class="ui-message" data-tone="error" role="alert">Não foi possível salvar. Tente novamente.</div></section>
+<section class="card"><h2>Leitura de indicadores</h2><div class="table-wrap" id="scrollTable"><table style="min-width:1100px"><caption>Indicadores por pessoa</caption><thead><tr><th>Pessoa</th><th>Setor</th><th>Assumidos</th><th>Finalizados</th><th>Score</th></tr></thead><tbody><tr><td>Pessoa de exemplo</td><td>Suporte</td><td>150</td><td>130</td><td>4,80</td></tr><tr><td>Outra pessoa</td><td>Financeiro</td><td>100</td><td>90</td><td>4,90</td></tr></tbody></table></div></section>
+<section class="empty-state"><div class="empty-title">Nenhuma tarefa neste período</div><div class="empty-sub">Escolha outro período ou crie uma tarefa para organizar o acompanhamento.</div></section>
+</main>
+<div id="parent" class="modal-overlay demo-overlay" hidden aria-label="Janela principal"><div class="modal-box"><h2>Janela principal</h2><button id="parentClose" class="modal-close" aria-label="Fechar principal">Fechar</button><button id="childOpen" class="btn-small">Abrir detalhes</button></div></div>
+<div id="child" class="modal-overlay demo-overlay" hidden aria-label="Detalhes"><div class="modal-box"><h2>Detalhes</h2><button id="childClose" class="modal-close" aria-label="Fechar detalhes">Fechar</button><input id="childField" aria-label="Observação"><button id="childLast" class="btn-primary">Salvar</button><div hidden><button id="hiddenButton">Oculto</button></div></div></div>
+<dialog id="native" class="demo-dialog"><h2>Área carregada sob demanda</h2><button id="nativeClose">Fechar</button></dialog>
+<script>
+(async()=>{
+ if(!['127.0.0.1','localhost'].includes(location.hostname))throw Error('Somente servidor local');
+ const assert=(v,m)=>{if(!v)throw Error(m)},frame=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+ const html=await(await fetch('../index.html')).text(),doc=new DOMParser().parseFromString(html,'text/html');
+ await Promise.all([...doc.querySelectorAll('link[rel="stylesheet"]')].filter(n=>n.getAttribute('href').startsWith('static/')).map(n=>new Promise((resolve,reject)=>{n.href='../'+n.getAttribute('href');n.onload=resolve;n.onerror=reject;document.head.appendChild(n)})));
+ const script=document.createElement('script');script.src='../static/ui-accessibility.js';await new Promise((r,j)=>{script.onload=r;script.onerror=j;document.body.appendChild(script)});
+ const parent=document.getElementById('parent'),child=document.getElementById('child'),native=document.getElementById('native');
+ let guard=false,parentCloses=0;
+ const launch=document.getElementById('opener');launch.onclick=()=>parent.hidden=false;
+ document.getElementById('parentClose').onclick=()=>{parentCloses++;parent.hidden=true};
+ document.getElementById('childOpen').onclick=()=>child.hidden=false;
+ document.getElementById('childClose').onclick=()=>{if(!guard)child.hidden=true};
+ document.getElementById('nativeClose').onclick=()=>native.close();
+ const key=(name,shift=false)=>document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:name,shiftKey:shift,bubbles:true,cancelable:true}));
+ launch.focus();launch.click();await frame();assert(document.activeElement.id==='parentClose','Foco inicial');
+ document.getElementById('childOpen').focus();document.getElementById('childOpen').click();await frame();assert(document.activeElement.id==='childClose','Foco em janela superior');const box=child.querySelector('.modal-box').getBoundingClientRect();assert(box.left>=0&&box.right<=innerWidth,'Modal cabe na tela');
+ document.getElementById('childLast').focus();key('Tab');assert(document.activeElement.id==='childClose','Tab ignora controles em ancestral oculto');key('Tab',true);assert(document.activeElement.id==='childLast','Shift Tab circular');
+ guard=true;key('Escape');await frame();assert(!child.hidden&&!parent.hidden,'Fechamento respeita guard do editor');guard=false;
+ native.showModal();await frame();key('Escape');assert(!child.hidden&&parentCloses===0,'Escape nativo não fecha janela inferior');native.close();await frame();
+ key('Escape');await frame();assert(child.hidden&&!parent.hidden&&document.activeElement.id==='childOpen','Fecha somente superior e devolve foco');
+ key('Escape');await frame();assert(parent.hidden&&document.activeElement===launch,'Devolve foco ao acionador');
+ await frame();const region=document.getElementById('scrollTable');assert(region.tabIndex===0&&region.getAttribute('role')==='region','Tabela larga acessível por teclado');assert(region.getAttribute('aria-label')==='Indicadores por pessoa','Nome por caption');
+ region.querySelector('table').style.display='none';await frame();window.dispatchEvent(new Event('resize'));await frame();assert(!region.hasAttribute('tabindex'),'Tabela sem overflow não cria parada extra');region.querySelector('table').style.display='';
+ function rgb(s){return s.match(/[\d.]+/g).slice(0,3).map(Number)}function luminance(a){return a.map(n=>{n/=255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4}).reduce((v,n,i)=>v+n*[.2126,.7152,.0722][i],0)}function contrast(a,b){const x=luminance(rgb(a)),y=luminance(rgb(b));return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
+ for(const theme of ['light','dark']){document.documentElement.dataset.theme=theme;await frame();const primary=getComputedStyle(launch);assert(contrast(primary.color,primary.backgroundColor)>=4.5,'Contraste botão '+theme);const empty=getComputedStyle(document.querySelector('.empty-sub'));const bg=getComputedStyle(document.querySelector('.empty-state'));assert(contrast(empty.color,bg.backgroundColor)>=4.5,'Contraste texto '+theme)}
+ assert(launch.getBoundingClientRect().height>=44,'Alvo do botão');assert(document.documentElement.scrollWidth<=innerWidth,'Sem overflow global');
+ document.documentElement.dataset.theme=new URLSearchParams(location.search).get('theme')||'light';
+ document.getElementById('testResult').textContent='PASS: modais empilhados, foco, teclado, guard, dialog nativo, tabelas, contraste claro/escuro e mobile';
+})().catch(e=>{document.getElementById('testResult').textContent='FAIL: '+e.message;console.error(e)});
+</script></html>

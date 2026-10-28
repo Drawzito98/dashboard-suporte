@@ -103,7 +103,7 @@ window.APP_MODULES = {
       "/static/ponto.js?v=10"
     ],
     "styles": [
-      "/static/ponto.css?v=2"
+      "/static/ponto.css?v=3"
     ],
     "exports": [
       "onPontoTabActivated",
@@ -131,7 +131,7 @@ window.APP_MODULES = {
       "/static/equipe360.js?v=3"
     ],
     "styles": [
-      "/static/equipe360.css?v=1"
+      "/static/equipe360.css?v=2"
     ],
     "exports": [
       "openEquipe360"
@@ -143,7 +143,7 @@ window.APP_MODULES = {
       "/static/panorama-suporte.js?v=14"
     ],
     "styles": [
-      "/static/panorama-suporte.css?v=5"
+      "/static/panorama-suporte.css?v=6"
     ],
     "exports": [
       "onRelatorioSetorialTabActivated"

@@ -246,21 +246,11 @@ document.addEventListener('keydown', (e) => {
   const tag = e.target.tagName;
   const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable;
 
+  // Modal Escape/focus is owned by ui-accessibility; never close underlying editors.
+  if (e.defaultPrevented || document.querySelector('dialog[open], .command-palette-overlay:not([hidden])') || document.body.classList.contains('has-accessible-dialog')) return;
   if (e.key === 'Escape') {
-    closeManageColabs(); closeManageSetores();
-    if (typeof closeHistorico === 'function') closeHistorico();
-    if (typeof closeComentarios === 'function') closeComentarios();
-    if (typeof closeProjecao === 'function') closeProjecao();
-    const bonusOverlay = document.getElementById('bonusOverlay');
-    if (bonusOverlay) bonusOverlay.style.display = 'none';
     const panel = document.getElementById('notifPanel');
     if (panel) panel.style.display = 'none';
-    const colabOverlay = document.getElementById('colabDetailOverlay');
-    if (colabOverlay) { colabOverlay.classList.remove('open'); colabOverlay.style.removeProperty('display'); colabOverlay.setAttribute('aria-hidden', 'true'); }
-    const reportOverlay = document.getElementById('colabReportOverlay');
-    if (reportOverlay) reportOverlay.style.display = 'none';
-    // Close any open modal
-    document.querySelectorAll('.modal-overlay').forEach(m => { m.style.display = 'none'; });
   }
 
   // Keyboard shortcuts (only when not in input)

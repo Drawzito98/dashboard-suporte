@@ -35,3 +35,7 @@ Novos checks de runtime, repository, auth e cache privado entram automaticamente
 ## Registro da Fase 5
 
 Versão 1.18.0. Checks de loader, domínios e gráficos/relatório agregados a npm test. Cache inclui o manifest e seus assets dinâmicos. Validação no navegador e limites em [modularization.md](modularization.md). Sem SQL, merge ou deploy.
+
+## Registro da Fase 6 — ciclo inicial
+
+Versão 1.19.0. npm test aprovado, fixtures de áreas em desktop/celular e runner de teclado/temas em 1440/390/320px. Ver [design-system.md](design-system.md). Commit/push e deploy foram autorizados pelo usuário ao encerrar este ciclo; merge continua sem autorização.

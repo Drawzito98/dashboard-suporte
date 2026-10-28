@@ -39,3 +39,7 @@ Versão 1.17.0. `data-runtime.js` fornece sessão invalidável, cache por conta 
 ## Evolução — Fase 5
 
 Versão 1.18.0. O núcleo delega gráficos/relatório e separa administração/interface. A fachada db-extra carrega implementações em repositories por domínio. O manifest/loader e pontes públicas abrem quatro áreas sob demanda. Contratos globais e estado compartilhado seguem como compatibilidade; consulte [modularização](modularization.md).
+
+## Evolução — Fase 6 (base compartilhada)
+
+Versão 1.19.0. css/components.css substitui visual-refresh, consolidando contratos sobre tokens e estilos históricos. ui-accessibility.js assume teclado/foco dos overlays e regiões de tabela. A consolidação do CSS é gradual; escopo, validação e continuidade em [design-system.md](design-system.md).

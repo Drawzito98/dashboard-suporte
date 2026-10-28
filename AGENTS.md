@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.18.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.19.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -134,3 +134,7 @@ Leia `docs/data-architecture.md`. Use `appStorage` nos módulos; localStorage na
 ## Fase 5 — Modularização
 
 Leia `docs/modularization.md`. O manifest declara dependências, estilos e exports das áreas sob demanda; preserve as pontes públicas e a inicialização após DOMContentLoaded. Funções de persistência permanecem na fachada db-extra, com implementações em repositories por domínio. Não adicionar migração automática. Execute npm test, a fixture lazy-modules.browser.html e as fixtures das áreas afetadas; regenere o cache incluindo assets dinâmicos.
+
+## Fase 6 — Base visual e continuidade
+
+Leia docs/design-system.md antes de retomar. O ciclo inicial foi encerrado a pedido do usuário com autorização de commit/deploy, sem merge; há refinamentos pendentes no roadmap. Tokens/componentes compartilhados ficam em css/tokens.css e css/components.css; navegação em shell.css. ui-accessibility.js é o proprietário de teclado/foco dos overlays. Preserve guards, close handlers e semântica de tabelas. Rode npm test, design-system-browser-runner.js e fixtures das áreas afetadas em desktop/celular. A validação de contraste é amostral.

@@ -5,6 +5,7 @@
 
 /* ===== Tokens ===== */
 :root {
+  color-scheme: light;
   /* Surfaces — neutros suaves (warm tint) */
   --bg-app:        #f6f2e8;
   --bg-canvas:     #fffcf5;
@@ -139,6 +140,20 @@
   --border-color:   var(--border-strong);
   --muted:          var(--text-muted);
 
+  /* Contratos de componentes compartilhados */
+  --control-height: 44px;
+  --control-radius: var(--r-sm);
+  --dialog-radius: var(--r-xl);
+  --dialog-gutter: 24px;
+  --font-body: 14px;
+  --font-caption: 12px;
+  --focus-color: var(--accent);
+  --surface: var(--bg-surface);
+  --card: var(--bg-surface);
+  --bg-hover: var(--bg-subtle);
+  --border-subtle: var(--border);
+  --radius: var(--r-md);
+
   /* Motion */
   --t-fast: 140ms cubic-bezier(.4,0,.2,1);
   --t-base: 220ms cubic-bezier(.4,0,.2,1);
@@ -156,6 +171,7 @@
 
 /* ===== Dark — Gotham corporativa ===== */
 html[data-theme="dark"] {
+  color-scheme: dark;
   --bg-app:        #080b11;
   --bg-canvas:     #0f141d;
   --bg-surface:    #151b25;
