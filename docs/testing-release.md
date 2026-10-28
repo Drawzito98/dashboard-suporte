@@ -31,3 +31,7 @@ Novo check `equipe360-data.check.js` incluído automaticamente em npm test. Vali
 ## Registro da Fase 4
 
 Novos checks de runtime, repository, auth e cache privado entram automaticamente em npm test. A fixture `tests/data-lifecycle.browser.html` testa a camada real de sessão/armazenamento no navegador com servidor simulado. Escopo e limites em [data-architecture.md](data-architecture.md). Sem aplicação de SQL ou modificação de dados de produção.
+
+## Registro da Fase 5
+
+Versão 1.18.0. Checks de loader, domínios e gráficos/relatório agregados a npm test. Cache inclui o manifest e seus assets dinâmicos. Validação no navegador e limites em [modularization.md](modularization.md). Sem SQL, merge ou deploy.

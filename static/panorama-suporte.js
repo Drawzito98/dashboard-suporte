@@ -195,7 +195,7 @@
 
   if (typeof module !== 'undefined' && module.exports) module.exports = { process, report, time, automaticReport };
   if (typeof document === 'undefined') return;
-  document.addEventListener('DOMContentLoaded', () => {
+  const initFeature = () => {
     const root = document.getElementById('panoramaSuporteRoot');
     if (!root) return;
     root.classList.add('panorama');
@@ -325,5 +325,7 @@
       link.href = url; link.download = 'panorama-suporte.md'; link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
-  });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFeature);
+  else initFeature();
 })();

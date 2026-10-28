@@ -138,7 +138,7 @@
     nome = personName; draft = null; dirty = false; draftDirty = false;
     document.querySelector('.tab-btn[data-tab="perfil-pdi"]')?.click();
   };
-  document.addEventListener('DOMContentLoaded', () => {
+  const initFeature = () => {
     if (typeof sbClient !== 'undefined' && sbClient) sbClient.auth.onAuthStateChange((event, session) => {
       const nextOwner = session?.user && getTrustedUserRole(session.user) === 'admin' ? session.user.id : '';
       if (owner && owner !== nextOwner) { nome = ''; owner = ''; state = {}; draft = null; dirty = false; draftDirty = false; const host = get('perfilPdiContent'); if (host) host.replaceChildren(); }
@@ -151,5 +151,7 @@
       draft = null; dirty = false; draftDirty = false;
     }, true);
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
-  });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFeature);
+  else initFeature();
 })();

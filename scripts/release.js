@@ -9,7 +9,22 @@ if (!/const CACHE = '[^']+';/.test(worker)) throw new Error('Missing CACHE decla
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const refs = [...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)]
   .map(m => m[1]).filter(ref => ref.startsWith('static/'));
-const paths = [...new Set(['index.html', 'reporte.html', 'manifest.json', ...refs.map(ref => ref.split('?')[0])])].sort();
+const manifestSource = fs.readFileSync(path.join(root, 'static/module-manifest.js'), 'utf8');
+const manifest = JSON.parse(manifestSource.match(/window\.APP_MODULES = ([\s\S]*);\s*$/)[1]);
+const dynamic = [];
+function visit(name, stack = []) {
+  if (!Object.prototype.hasOwnProperty.call(manifest, name)) throw new Error('Unknown module: ' + name);
+  if (stack.includes(name)) throw new Error('Module cycle: ' + [...stack, name].join(' -> '));
+  const item = manifest[name];
+  for (const dep of item.depends || []) visit(dep, [...stack, name]);
+  for (const ref of [...(item.scripts || []), ...(item.styles || [])]) {
+    if (!/^\/static\/[a-zA-Z0-9_./-]+\?v=\d+$/.test(ref) || ref.includes('..')) throw new Error('Invalid module asset: ' + ref);
+    if (refs.includes(ref.slice(1))) throw new Error('Module loaded both eagerly and lazily: ' + ref);
+    dynamic.push(ref.slice(1).split('?')[0]);
+  }
+}
+for (const name of Object.keys(manifest)) visit(name);
+const paths = [...new Set(['index.html', 'reporte.html', 'manifest.json', ...refs.map(ref => ref.split('?')[0]), ...dynamic])].sort();
 const hash = crypto.createHash('sha256');
 // Include worker strategy, excluding the generated identity itself.
 hash.update(worker.replace(/const CACHE = '[^']+';/, "const CACHE = '<generated>';"));

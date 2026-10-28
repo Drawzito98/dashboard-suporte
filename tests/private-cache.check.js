@@ -7,7 +7,8 @@ const {create}=require('../static/data-runtime.js');
  const client={auth:{getUser:async()=>({data:{user:{id:'owner',app_metadata:{role:'admin'}}}})},from(){const q={select(){return q},eq(){return q},order(){return q},limit(){return q},maybeSingle(){return q},not(){return q},insert(){writes++;throw Error('Read must not insert')},then(resolve){return Promise.resolve(offline?{error:Error('offline')}:{data:[]}).then(resolve)}};return q}};
  const context={console,sbClient:client,AppDataSession:session,appStorage:session.cache,window:{addEventListener(){}},document:{addEventListener(){},getElementById:()=>null,body:{dataset:{role:'admin'}}},requireAdmin:()=>true};
  vm.createContext(context);
- for(const file of ['db-extra.js','avaliacao.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../static',file),'utf8'),context);
+ context.AppRepositories={};context.window.AppRepositories=context.AppRepositories;context.FeatureLoader={ensure:async()=>true};
+ for(const file of ['db-extra.js',...['performance','people','development','routine','attendance','audit'].map(name=>'repositories/'+name+'.js'),'avaliacao.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../static',file),'utf8'),context);
  const cases=[['dbFeedbacksLoad','sistema_feedbacks_v1',[]],['dbFeriasLoad','sistema_ferias_v1',[]],['dbAusenciasLoad','sistema_ausencias_v1',[]],['dbAvaliacoesLoad','sistema_avaliacoes_v1',[]],['dbColabInfoLoad','sistema_colaboradores_info_v1',{}]];
  for(const [load,key,empty] of cases){session.cache.setItem(key,JSON.stringify(Array.isArray(empty)?[{id:'stale'}]:{old:{id:'stale'}}));raw.setItem(key,'unowned-legacy');const result=await context[load]();assert.equal(JSON.stringify(result),JSON.stringify(empty),load);assert.equal(raw.getItem(key),'unowned-legacy');}
  offline=true;session.cache.setItem('sistema_feedbacks_v1',JSON.stringify([{id:'owned-offline'}]));assert.equal((await context.dbFeedbacksLoad())[0].id,'owned-offline');

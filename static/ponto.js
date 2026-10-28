@@ -345,12 +345,14 @@
     root().innerHTML = '<div class="ponto-module"><div id="pontoNotice" role="status">Carregando auditoria…</div></div>';
     action(async () => { await load(); render(); if (requestedAnalysis) { const id = requestedAnalysis; requestedAnalysis = null; await showResult(id); } });
   };
-  document.addEventListener('DOMContentLoaded', () => {
+  const initFeature = () => {
     const button = document.querySelector('[data-tab="ponto"]');
     // UI visibility is secondary; RLS enforces access on every operation.
     const syncAccess = () => { const allowed = document.body.dataset.role === 'admin'; if (button) button.hidden = !allowed; if (!allowed) { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; requestedEmployeeExact = false; requestedAnalysis = null; configuredRules = { ...E.DEFAULT_RULES }; clearFile(); if (root()) root().innerHTML = ''; } };
     new MutationObserver(syncAccess).observe(document.body, { attributes: true, attributeFilter: ['data-role'] }); syncAccess();
     new MutationObserver(() => { if (document.body.dataset.activeTab !== 'ponto' && (file || preview || activeTask)) { generation++; clearFile(); if (root()) root().innerHTML = ''; } }).observe(document.body, { attributes: true, attributeFilter: ['data-active-tab'] });
     sbClient?.auth.onAuthStateChange(event => { if (event === 'SIGNED_OUT') { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; requestedEmployeeExact = false; requestedAnalysis = null; configuredRules = { ...E.DEFAULT_RULES }; clearFile(); if (root()) root().innerHTML = ''; } });
-  });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFeature);
+  else initFeature();
 })();

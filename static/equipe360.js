@@ -147,9 +147,11 @@
     if(!editing||editing.name!==event.detail.name||allowed()?.id!==editing.owner)return;
     const name=editing.name;editing=null;pendingPerson=name;pendingNotice=event.detail.synced?'':'Há alterações de cadastro preservadas neste navegador com sincronização pendente. Este perfil mostra os dados confirmados no servidor.';open(name);
   });
-  document.addEventListener('DOMContentLoaded',()=>{
+  const initFeature =()=>{
     if(typeof sbClient!=='undefined'&&sbClient)sbClient.auth.onAuthStateChange((event,session)=>{
       if(event==='SIGNED_OUT'||session?.user?.id!==sessionOwner||session?.user?.app_metadata?.role!=='admin'){editing=null;pendingNotice='';clear();}
     });
-  });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFeature);
+  else initFeature();
 })();

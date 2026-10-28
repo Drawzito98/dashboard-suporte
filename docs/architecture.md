@@ -35,3 +35,7 @@ Versão 1.16.0. A Equipe 360º acrescenta uma projeção de leitura por pessoa (
 ## Evolução — Fase 4
 
 Versão 1.17.0. `data-runtime.js` fornece sessão invalidável, cache por conta e AppState/eventos. `records-repository.js` assume indicadores, confirmação e fila por revisão; db.js mantém compatibilidade. Os módulos passaram a appStorage. O perfil 360º também publica sua projeção no estado. Os loaders/mutações complementares ainda serão extraídos gradualmente. Consulte [arquitetura de dados](data-architecture.md), especialmente a preservação de chaves antigas sem dono e os limites de recuperação/transações.
+
+## Evolução — Fase 5
+
+Versão 1.18.0. O núcleo delega gráficos/relatório e separa administração/interface. A fachada db-extra carrega implementações em repositories por domínio. O manifest/loader e pontes públicas abrem quatro áreas sob demanda. Contratos globais e estado compartilhado seguem como compatibilidade; consulte [modularização](modularization.md).

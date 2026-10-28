@@ -1,0 +1,37 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Módulos sob demanda — teste local</title>
+<link rel="stylesheet" href="../static/css/tokens.css"><link rel="stylesheet" href="../static/styles.css"><link rel="stylesheet" href="../static/module-loader.css"><pre id="testResult">RUNNING</pre>
+<script>
+let user={id:'lazy-owner',app_metadata:{role:'admin'}},rawRecords=[{id:1,Atendente:'Pessoa Teste',Setor:'Suporte','Mês':'2026-10',Assumidos:100,Finalizados:90,SCORE:4.8}];
+const callbacks=[],getCurrentUser=()=>user,getTrustedUserRole=u=>u?.app_metadata?.role,getAvaliacoesLocal=()=>[],COMPETENCIAS=[],getMapeamentoTimeData=()=>[];
+const isAdmin=()=>true,isColabActive=()=>true,isAggregateName=()=>false,escapeHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),getTempoEmpresa=()=> '2 anos';
+window.openColabDetail=()=>{};window.confirm=()=>true;
+const tables={colaboradores_info:[{id:'cad',user_id:'lazy-owner',nome:'Pessoa Teste',setor_atual:'Suporte'}],registros:rawRecords};
+const sbClient={auth:{getUser:async()=>({data:{user}}),onAuthStateChange:cb=>callbacks.push(cb)},from(table){let filters=[],single=false,range=null;const q={select(){return q},eq(k,v){filters.push([k,v]);return q},like(){return q},order(){return q},limit(){return q},single(){single=true;return q},maybeSingle(){single=true;return q},range(a,b){range=[a,b];return q},then(resolve,reject){let data=(tables[table]||[]).filter(row=>filters.every(([k,v])=>row[k]===v));if(range)data=data.slice(range[0],range[1]+1);return Promise.resolve({data:single?(data[0]||null):data}).then(resolve,reject)}};return q;}};
+(async()=>{
+ if(!['localhost','127.0.0.1'].includes(location.hostname))throw Error('Somente local');
+ const assert=(v,m)=>{if(!v)throw Error(m)},tick=()=>new Promise(r=>setTimeout(r,20));
+ async function waitFor(check,message){for(let i=0;i<150;i++){if(check())return;await tick()}throw Error(message)}
+ const doc=new DOMParser().parseFromString(await(await fetch('../index.html')).text(),'text/html');for(const id of ['appScreen','colabDetailOverlay']){const node=doc.getElementById(id);node.querySelectorAll('script').forEach(s=>s.remove());document.body.appendChild(node)}document.getElementById('appScreen').style.display='';document.body.dataset.role='admin';
+ const load=src=>new Promise((r,j)=>{const s=document.createElement('script');s.src=src;s.onload=r;s.onerror=j;document.body.appendChild(s)});
+ await load('../static/data-runtime.js');AppDataSession.bind(user);appStorage.setItem('sistema_colaboradores_info_v1',JSON.stringify({'Pessoa Teste':{setor_atual:'Suporte'}}));
+ await load('../static/module-manifest.js');await load('../static/module-loader.js');await load('../static/feature-bridges.js');
+ let activation;document.getElementById('tabBar').addEventListener('click',event=>{const b=event.target.closest('[data-tab]');if(!b)return;document.body.dataset.activeTab=b.dataset.tab;const fn={ponto:'onPontoTabActivated','perfil-pdi':'onPerfilPdiTabActivated','relatorio-setorial':'onRelatorioSetorialTabActivated'}[b.dataset.tab];if(fn)activation=window[fn]();});
+ const click=tab=>document.querySelector('[data-tab="'+tab+'"]').click();
+ assert(typeof PontoEngine==='undefined'&&typeof PerfilPDIEngine==='undefined'&&typeof Equipe360Data==='undefined','Áreas não são carregadas antecipadamente');
+ const original=APP_MODULES.pdi.scripts;APP_MODULES.pdi.scripts=['/static/__missing-module-test.js?v=1'];click('perfil-pdi');await activation;
+ assert(document.querySelector('#feature-notice-pdi button'),'Falha oferece retentativa');APP_MODULES.pdi.scripts=original;document.querySelector('#feature-notice-pdi button').click();await waitFor(()=>document.getElementById('pdiObjetivo'),'Retentativa não inicializou o PDI após DOM pronto');
+ assert(!document.getElementById('feature-notice-pdi'),'Aviso removido após carregar');
+ const field=document.getElementById('pdiObjetivo');field.value='Rascunho preservado';field.dispatchEvent(new Event('input',{bubbles:true}));window.confirm=()=>false;click('home');assert(document.body.dataset.activeTab==='perfil-pdi','Proteção de rascunho instalada no carregamento tardio');window.confirm=()=>true;click('home');
+ click('ponto');const first=activation;const second=onPontoTabActivated();click('home');await Promise.all([first,second]);assert(!document.getElementById('pontoContent'),'Área abandonada não renderiza após carregar');
+ click('ponto');await waitFor(()=>document.getElementById('pontoContent'),'Ponto não inicializou');
+ const pointScripts=[...document.querySelectorAll('script[data-module-asset]')].filter(s=>s.dataset.moduleAsset.startsWith('/static/ponto.js'));
+ assert(pointScripts.length===1,'Requisições concorrentes compartilham o mesmo script');
+ assert(callbacks.length>=2,'Observadores de sessão inicializados tardiamente');
+ assert(await openEquipe360('Pessoa Teste'),'Perfil 360º abre por entrada pública');assert(document.getElementById('equipe360Dialog').open,'Perfil com fontes carregadas');document.getElementById('e360Close').click();await tick();
+ let release;const gate=new Promise(r=>release=r),ensure=FeatureLoader.ensure;FeatureLoader.ensure=feature=>feature==='panorama'?gate.then(()=>ensure(feature)):ensure(feature);
+ click('relatorio-setorial');const old=activation;AppDataSession.invalidate();user={id:'another-owner',app_metadata:{role:'admin'}};callbacks.forEach(cb=>cb('SIGNED_IN',{user}));release();await old;
+ assert(!document.getElementById('relatorioSetorialContent').textContent.trim(),'Callback de sessão anterior descartado');
+ assert(!document.querySelector('script[data-module-asset*="repositories/legacy"]'),'Migração antiga não é carregada');
+ document.getElementById('testResult').textContent='PASS: primeiro acesso, falha/retentativa, DOM tardio, rascunho, concorrência, navegação abandonada, perfil e sessão trocada';
+})().catch(e=>{document.getElementById('testResult').textContent='FAIL: '+e.message;console.error(e)});
+</script></html>
