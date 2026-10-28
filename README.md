@@ -2,11 +2,15 @@
 
 App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer), gamificação, relatórios inteligentes, e deploy no Vercel.
 
-**Versão atual:** `1.14.0` (constante `APP_VERSION` em `static/app.js`)
+**Versão atual:** `1.15.0` (constante `APP_VERSION` em `static/app.js`)
 
 ## Diagnóstico gerencial
 
 A auditoria, metodologia, limitações e validação da nova seção estão em [docs/diagnostico-gerencial.md](docs/diagnostico-gerencial.md). A migração aditiva `migration_v49.sql` foi aplicada ao banco de produção em 22/10/2026, habilitando revisões privadas sincronizadas.
+
+## Navegação por áreas — Fase 2
+
+Início, Operação, Pessoas e Rotina organizam as 13 telas existentes. Ferramentas ficam em um painel sob demanda; filtros podem ser recolhidos. Veja [comportamento e validação](docs/navigation.md).
 
 ## Foundation / Estabilização
 
@@ -16,6 +20,7 @@ Baseline e continuidade: [arquitetura](docs/architecture.md), [inventário atual
 
 | Versão | Data | Alterações |
 |--------|------|------------|
+| 1.15.0 | 28/10/2026 | Shell por áreas, submenu contextual, ferramentas sob demanda e filtros recolhíveis; mantém destinos, handlers e regras existentes. |
 | 1.7.2 | 24/07/2026 | Performance: `defer` em 45 scripts do body. Visual: font-sizes `9px/10px` → `11px` mínimo, `transition: all` substituída por transições específicas (8 ocorrências), cores hardcoded no dark theme → tokens `--overlay`/`--overlay-soft`/`--overlay-table`, seletores frágeis `[style*]` substituídos por classes CSS (`.grid-2col`, `.global-filter-field--flex`). |
 | 1.7.1 | 24/07/2026 | CSS: contraste `--text-muted` corrigido (WCAG AA), `@keyframes spin` duplicado removido, `var(--radius)`/`var(--surface)` indefinidos corrigidos, `transition: all` substituída por específicas, auth padronizado de `rem` para `px`. HTML: `aria-label="Fechar"` em 17 overlays, `<meta robots>`, typos corrigidos (acentos). |
 | 1.7.0 | 24/07/2026 | CSS: fontes aumentadas ~1-2px em todo o app para legibilidade em Full HD (root 14→15px, KPIs 24→26px, labels 10→11px, badges 11→12px, tabs 12→13px, forms/btns 13→14px) |

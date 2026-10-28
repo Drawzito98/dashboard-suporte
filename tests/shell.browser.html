@@ -1,0 +1,85 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shell — validação local</title>
+<pre id="testResult">RUNNING</pre><script>
+(async () => {
+  if (!['localhost','127.0.0.1'].includes(location.hostname)) throw Error('Somente servidor local');
+  const assert = (value, message) => { if (!value) throw Error(message); };
+  const html = await (await fetch('../index.html')).text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('script').forEach(node => node.remove());
+  doc.querySelectorAll('link[rel="stylesheet"]').forEach(node => {
+    if (!node.getAttribute('href').startsWith('static/')) return;
+    node.href = '../' + node.getAttribute('href'); document.head.appendChild(node);
+  });
+  document.body.appendChild(doc.getElementById('appScreen'));
+  document.getElementById('appScreen').style.display = '';
+  document.body.dataset.role = 'admin';
+  window.rawRecords = [];
+  const load = src => new Promise((resolve, reject) => { const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=reject;document.body.appendChild(s); });
+  await load('../static/globalFilters.js');
+  await load('../static/shell.js');
+  await Promise.all([...document.querySelectorAll('link[rel="stylesheet"]')].map(link => link.sheet ? Promise.resolve() : new Promise(resolve => { link.onload=resolve;link.onerror=resolve; })));
+  // Exercise the real tab routing block; module renderers are mocked to avoid backend access.
+  const app = await (await fetch('../static/app.js')).text();
+  window.updateView = () => {}; window.chart = null;
+  window.presentationModeToggle = null; window.saveState = () => {};
+  const routes = [];
+  for (const name of ['PerfilPdi','Ponto','Home','Lider','Insights','Tarefas','Regras','Colaboradores','MapeamentoTime','SaudeOperacional','RelatorioSetorial','Avaliacao']) {
+    window['on'+name+'TabActivated'] = () => routes.push(name);
+  }
+  eval(app.slice(app.indexOf('  // ── Ferramentas: painéis'), app.indexOf('  // ── KPI drill-down')));
+  eval(app.slice(app.indexOf('  // ===== Tab System ====='), app.indexOf('  // Restore last active tab')));
+  const tabs = [...document.querySelectorAll('#tabBar .tab-btn')];
+  assert(tabs.length === 13, 'Destino perdido/duplicado');
+  assert(document.querySelectorAll('#domainNav button').length === 4, 'Quatro áreas');
+  for (const button of tabs) {
+    button.click();
+    assert(document.body.dataset.activeTab === button.dataset.tab, 'Rota: '+button.dataset.tab);
+    assert(document.getElementById('tab-'+button.dataset.tab)?.classList.contains('active'), 'Painel: '+button.dataset.tab);
+    assert(!button.hidden && (button.dataset.tab === 'home' || button.getClientRects().length), 'Acesso direto não revela destino: '+button.dataset.tab);
+    assert(document.querySelectorAll('#tabBar .active').length === 1, 'Seleção única');
+  }
+  assert(routes.length === 12, 'Callbacks das telas preservados');
+  document.querySelector('[data-tab="ponto"]').click();
+  document.querySelector('[data-domain="operacao"]').click();
+  assert(document.body.dataset.activeTab === 'insights', 'Lembra última tela da área');
+  document.querySelector('[data-domain="pessoas"]').click();
+  assert(document.body.dataset.activeTab === 'ponto', 'Restaura tela de Pessoas');
+  const toggle = document.getElementById('gfToggleBtn');
+  if (toggle.getAttribute('aria-expanded') === 'false') toggle.click();
+  document.getElementById('gfPesquisa').value = 'Pessoa teste';
+  document.getElementById('gfPesquisa').dispatchEvent(new KeyboardEvent('keydown', {key:'Enter'}));
+  const chips = document.getElementById('globalFilterChips').textContent;
+  toggle.click();
+  assert(toggle.getAttribute('aria-expanded') === 'false', 'Recolher filtros');
+  assert(document.getElementById('globalFilterChips').textContent === chips, 'Filtros/chips preservados');
+  assert(document.getElementById('gfFields').getClientRects().length === 0, 'Campos recolhidos');
+  toggle.click();
+  document.getElementById('menuBtn').focus();document.getElementById('menuBtn').click();
+  const dialog = document.getElementById('toolsDialog');
+  assert(dialog.open && dialog.contains(document.querySelector('.sidebar')), 'Ferramentas no modal');
+  const heading = dialog.querySelector('.panel-header');
+  heading.focus();heading.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', bubbles:true }));
+  assert(heading.getAttribute('aria-expanded') === 'true', 'Painel abre pelo teclado');
+  heading.dispatchEvent(new KeyboardEvent('keydown', { key:' ', bubbles:true }));
+  assert(heading.getAttribute('aria-expanded') === 'false', 'Painel recolhe pelo teclado');
+  document.getElementById('closeToolsBtn').click();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert(!dialog.open && document.activeElement.id === 'menuBtn', 'Fechamento e retorno de foco');
+  appShell.openTools(); document.getElementById('historicoBtn').click();
+  assert(!dialog.open, 'Ferramenta fecha antes de abrir overlay');
+  document.body.dataset.role = 'viewer';appShell.refresh();
+  document.querySelector('[data-domain="pessoas"]').click();
+  assert(getComputedStyle(document.querySelector('[data-tab="mapeamento-time"]')).display === 'none', 'Mapeamento restrito');
+  assert(getComputedStyle(document.getElementById('addRowTopBtn')).display === 'none', 'Edição restrita');
+  document.body.dataset.role = 'colaborador';appShell.refresh();appShell.openTools();
+  assert(!dialog.open && !document.getElementById('domainNav').getClientRects().length, 'Colaborador preservado');
+  document.body.dataset.role = 'admin';appShell.refresh();
+  document.querySelector('[data-domain="operacao"]').click();
+  document.body.classList.add('presentation-mode');
+  assert(!document.getElementById('domainNav').getClientRects().length, 'Apresentação sem navegação');
+  document.body.classList.remove('presentation-mode');
+  assert(document.documentElement.scrollWidth <= innerWidth, 'Sem overflow horizontal no shell');
+  if (innerWidth <= 900) toggle.click();
+  document.getElementById('testResult').textContent = 'PASS: 13 destinos, 4 áreas, callbacks, restauração, filtros, ferramentas, foco, papéis e apresentação';
+})().catch(error => {document.getElementById('testResult').textContent='FAIL: '+error.message;console.error(error);});
+</script></html>

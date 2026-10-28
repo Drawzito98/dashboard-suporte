@@ -23,3 +23,7 @@ Supabase fornece Auth e PostgreSQL/RLS. Ocultar controles na interface não subs
 Acoplamento a globais/DOM, carga inicial ampla, CSS acumulado e semântica desigual entre cache e persistência continuam como dívida. Testes Node usam funções puras, simulações e algumas extrações de código; não provam navegação real, RLS publicada, envio de email ou concorrência entre dispositivos. Não foi consultado nem modificado o banco em produção.
 
 Consulte [inventário](feature-inventory.md), [validação e releases](testing-release.md), [migrations](migrations.md) e [roadmap](roadmap.md).
+
+## Evolução — Fase 2
+
+O baseline acima foi registrado na Fase 1. A versão funcional agora é 1.15.0; `static/shell.js` adiciona apresentação por áreas e dialog de ferramentas sem centralizar estado/dados. `static/shell.css` isola o novo layout. O app.js perdeu os organizadores antigos e a identidade da sidebar; conta permanece no cabeçalho. Consulte [navegação](navigation.md) para contratos e validação.

@@ -168,8 +168,8 @@ const globalFilters = {
 
     container.innerHTML = `
       <div class="global-filter-inner">
-        <p id="gfFilterHint" class="filter-hint">Os filtros são aplicados automaticamente.</p>
-        <div class="global-filter-row">
+        <div class="filter-disclosure"><p id="gfFilterHint" class="filter-hint">Os filtros são aplicados automaticamente.</p><button id="gfToggleBtn" class="btn-small" type="button" aria-expanded="true" aria-controls="gfFields">Recolher filtros</button></div>
+        <div class="global-filter-row" id="gfFields">
           <label class="global-filter-field gf-performance-filter">
             <span>Período mensal</span>
             <select id="gfPeriodo"><option value="all">Todos</option></select>
@@ -212,6 +212,13 @@ const globalFilters = {
   },
 
   _bindEvents() {
+    document.getElementById('gfToggleBtn')?.addEventListener('click', event => {
+      const button = event.currentTarget;
+      const compact = document.querySelector('#globalFilterBar .global-filter-inner')?.classList.toggle('is-compact');
+      button.setAttribute('aria-expanded', compact ? 'false' : 'true');
+      button.textContent = compact ? 'Mostrar filtros' : 'Recolher filtros';
+    });
+    if (typeof matchMedia === 'function' && matchMedia('(max-width: 900px)').matches) document.getElementById('gfToggleBtn')?.click();
     const applyBtn = document.getElementById('gfApplyBtn');
     const clearBtn = document.getElementById('gfClearBtn');
 

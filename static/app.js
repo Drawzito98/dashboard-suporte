@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.14.0';
+const APP_VERSION = '1.15.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -2898,11 +2898,17 @@ if (!rawRecords || !rawRecords.length) {
     });
   }
 
-  // ── Collapsible sidebar panels ──
+  // ── Ferramentas: painéis acessíveis sem recriar ações existentes ──
   document.querySelectorAll('.panel-collapsible .panel-header').forEach(header => {
-    header.addEventListener('click', () => {
-      const panel = header.closest('.panel-collapsible');
-      if (panel) panel.classList.toggle('collapsed');
+    const panel = header.closest('.panel-collapsible');
+    const sync = () => header.setAttribute('aria-expanded', String(!panel?.classList.contains('collapsed')));
+    header.setAttribute('role', 'button');
+    header.setAttribute('tabindex', '0');
+    if (header.dataset.toggle) header.setAttribute('aria-controls', header.dataset.toggle);
+    sync();
+    header.addEventListener('click', () => { panel?.classList.toggle('collapsed'); sync(); });
+    header.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); header.click(); }
     });
   });
 
@@ -2920,23 +2926,6 @@ if (!rawRecords || !rawRecords.length) {
   // ===== Tab System =====
   const tabBar = document.getElementById('tabBar');
   if (tabBar) {
-    const teamGroupToggle = document.getElementById('equipeGestaoToggle');
-    const teamGroupItems = document.getElementById('equipeGestaoNav');
-    const setTeamGroupCollapsed = (collapsed) => {
-      if (!teamGroupToggle || !teamGroupItems) return;
-      teamGroupItems.classList.toggle('is-collapsed', collapsed);
-      teamGroupToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-      try { localStorage.setItem('sistema_nav_equipe_collapsed', collapsed ? '1' : '0'); } catch(e) {}
-    };
-    if (teamGroupToggle && teamGroupItems) {
-      let startsCollapsed = false;
-      try { startsCollapsed = localStorage.getItem('sistema_nav_equipe_collapsed') === '1'; } catch(e) {}
-      setTeamGroupCollapsed(startsCollapsed);
-      teamGroupToggle.addEventListener('click', () => {
-        setTeamGroupCollapsed(teamGroupToggle.getAttribute('aria-expanded') === 'true');
-      });
-    }
-
     const pageContext = {
       home: ['Início', 'Visão geral da operação e acessos rápidos'],
       dashboard: ['Indicadores', 'Desempenho, qualidade e produtividade do suporte'],
@@ -2955,6 +2944,7 @@ if (!rawRecords || !rawRecords.length) {
     const updatePageContext = (tab) => {
       const context = pageContext[tab] || pageContext.home;
       document.body.dataset.activeTab = tab;
+      window.appShell?.sync(tab);
       if (typeof globalFilters !== 'undefined') globalFilters.atualizarContexto();
       const title = document.getElementById('appPageTitle');
       const description = document.getElementById('appPageDescription');
@@ -2967,7 +2957,6 @@ if (!rawRecords || !rawRecords.length) {
       if (!tabBtn) return;
       const tab = tabBtn.getAttribute('data-tab');
       if (!tab) return;
-      if (teamGroupItems?.contains(tabBtn)) setTeamGroupCollapsed(false);
 
       // Update active state
       tabBar.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
@@ -3464,113 +3453,8 @@ function initNotificacoesUI() {
 // ── Removed: buildReportHTML moved to static/reports.js ──
 
 
-// ── Shell: organiza a navegação por jornada sem alterar os destinos ──
-(function () {
-  const tabBar = document.getElementById("tabBar");
-  if (tabBar && !tabBar.dataset.organized) {
-    const buttons = {};
-    tabBar.querySelectorAll(".tab-btn[data-tab]").forEach(btn => { buttons[btn.dataset.tab] = btn; });
-    const groups = [
-      ["Principal", ["home"]],
-      ["Desempenho", ["dashboard", "relatorio-setorial", "saude-operacional", "insights"]],
-      ["Pessoas", ["colaboradores", "ponto", "perfil-pdi", "mapeamento-time", "lider", "avaliacao"]],
-      ["Organização", ["tarefas", "regras"]]
-    ];
-    const fragment = document.createDocumentFragment();
-    groups.forEach(([label, tabs]) => {
-      const heading = document.createElement("span");
-      heading.className = "nav-section-label";
-      heading.setAttribute("role", "presentation");
-      heading.textContent = label;
-      fragment.appendChild(heading);
-      tabs.forEach(tab => { if (buttons[tab]) fragment.appendChild(buttons[tab]); });
-    });
-    tabBar.replaceChildren(fragment);
-    tabBar.dataset.organized = "true";
-  }
-  const shellNavigation = document.querySelector('.shell-navigation');
-  const sidebar = document.querySelector('.sidebar');
-  if (shellNavigation && sidebar && sidebar.parentNode !== shellNavigation) {
-    shellNavigation.appendChild(sidebar);
-  }
-})();
-
-// Identidade do administrador no topo da navegação lateral.
-(function () {
-  async function refreshAdminSidebarIdentity() {
-    if (document.body.dataset.role !== 'admin') return;
-    const shell = document.querySelector('.shell-navigation');
-    const tabBar = document.getElementById('tabBar');
-    if (!shell || !tabBar || typeof sbClient === 'undefined') return;
-
-    let identity = shell.querySelector('.sidebar-identity');
-    if (!identity) {
-      identity = document.createElement('div');
-      identity.className = 'sidebar-identity';
-      identity.innerHTML = '<span class="sidebar-identity-avatar sidebar-identity-fallback">A</span><span class="sidebar-identity-copy"><strong>Administrador</strong><small>Painel de suporte</small></span>';
-      shell.insertBefore(identity, tabBar);
-    }
-
-    try {
-      const { data } = await sbClient.auth.getSession();
-      const session = data?.session;
-      if (!session) return;
-      const user = session.user || {};
-      const name = String(user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Administrador').trim();
-      const firstName = name.split(/\s+/)[0] || 'Administrador';
-      identity.querySelector('strong').textContent = firstName;
-      const fallback = identity.querySelector('.sidebar-identity-fallback');
-      if (fallback) fallback.textContent = firstName.charAt(0).toUpperCase() || 'A';
-
-      const imageUrl = String(user.user_metadata?.avatar_url || user.user_metadata?.photo_url || 'https://agvkmfusyetkicmuvumz.supabase.co/storage/v1/object/public/reportes-imagens/desafio/leader-supremo.png').trim();
-      if (!imageUrl) {
-        const currentAvatar = identity.querySelector('.sidebar-identity-avatar');
-        if (currentAvatar?.tagName === 'IMG') {
-          const initial = document.createElement('span');
-          initial.className = 'sidebar-identity-avatar sidebar-identity-fallback';
-          initial.textContent = firstName.charAt(0).toUpperCase() || 'A';
-          currentAvatar.replaceWith(initial);
-        }
-        return;
-      }
-      const image = document.createElement('img');
-      image.className = 'sidebar-identity-avatar';
-      image.src = imageUrl;
-      image.alt = 'Foto de ' + firstName;
-      image.decoding = 'async';
-      image.addEventListener('error', () => {
-        const initial = document.createElement('span');
-        initial.className = 'sidebar-identity-avatar sidebar-identity-fallback';
-        initial.textContent = firstName.charAt(0).toUpperCase() || 'A';
-        image.replaceWith(initial);
-      }, { once: true });
-      identity.querySelector('.sidebar-identity-avatar')?.replaceWith(image);
-    } catch (error) {
-      console.warn('[Sidebar] Não foi possível carregar a foto do administrador:', error);
-    }
-  }
-
-  window.refreshAdminSidebarIdentity = refreshAdminSidebarIdentity;
-  document.addEventListener('app-role-ready', refreshAdminSidebarIdentity);
-  window.addEventListener('admin-sidebar-photo-updated', refreshAdminSidebarIdentity);
-  if (document.body.dataset.role === 'admin') refreshAdminSidebarIdentity();
-})();
-
 // Preferências do workspace e busca rápida do painel administrativo.
 (function () {
-  const SIDEBAR_PREF_KEY = 'sistema_admin_sidebar_collapsed_v1';
-
-  function setSidebarCollapsed(collapsed) {
-    document.body.classList.toggle('admin-sidebar-collapsed', collapsed);
-    try { localStorage.setItem(SIDEBAR_PREF_KEY, collapsed ? '1' : '0'); } catch (_) {}
-    const button = document.querySelector('.sidebar-collapse-btn');
-    if (button) {
-      button.setAttribute('aria-label', collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral');
-      button.setAttribute('title', collapsed ? 'Expandir menu' : 'Recolher menu');
-      button.innerHTML = collapsed ? '&rsaquo;' : '&lsaquo;';
-    }
-  }
-
   function buildCommandPalette() {
     if (document.getElementById('adminCommandPalette')) return;
     const overlay = document.createElement('div');
@@ -3678,23 +3562,9 @@ function initNotificacoesUI() {
   function initAdminWorkspace() {
     if (document.body.dataset.role !== 'admin' || document.body.dataset.workspaceReady === 'true') return;
     document.body.dataset.workspaceReady = 'true';
-    let collapsed = false;
-    try { collapsed = localStorage.getItem(SIDEBAR_PREF_KEY) === '1'; } catch (_) {}
-    setSidebarCollapsed(collapsed);
-
     document.querySelectorAll('#tabBar .tab-btn[data-tab]').forEach(button => {
       if (!button.title) button.title = button.textContent.replace(/\s+/g, ' ').trim();
     });
-
-    const identity = document.querySelector('.sidebar-identity');
-    if (identity && !identity.querySelector('.sidebar-collapse-btn')) {
-      const collapseButton = document.createElement('button');
-      collapseButton.type = 'button';
-      collapseButton.className = 'sidebar-collapse-btn';
-      collapseButton.addEventListener('click', () => setSidebarCollapsed(!document.body.classList.contains('admin-sidebar-collapsed')));
-      identity.appendChild(collapseButton);
-      setSidebarCollapsed(collapsed);
-    }
 
     const topbarRight = document.querySelector('.topbar-right');
     if (topbarRight && !document.getElementById('quickCommandBtn')) {
@@ -3712,11 +3582,11 @@ function initNotificacoesUI() {
       const preferences = document.createElement('div');
       preferences.dataset.workspacePreferences = 'true';
       preferences.className = 'user-dropdown-preferences';
-      preferences.innerHTML = '<button class="user-dropdown-item" type="button" data-pref="theme">Alternar tema</button><button class="user-dropdown-item" type="button" data-pref="sidebar">Recolher ou expandir menu</button><button class="user-dropdown-item" type="button" data-pref="density">Alternar densidade das tabelas</button>';
+      preferences.innerHTML = '<button class="user-dropdown-item" type="button" data-pref="theme">Alternar tema</button><button class="user-dropdown-item" type="button" data-pref="tools">Ferramentas</button><button class="user-dropdown-item" type="button" data-pref="density">Alternar densidade das tabelas</button>';
       preferences.addEventListener('click', event => {
         const action = event.target.closest('[data-pref]')?.dataset.pref;
         if (action === 'theme') document.getElementById('themeToggle')?.click();
-        if (action === 'sidebar') setSidebarCollapsed(!document.body.classList.contains('admin-sidebar-collapsed'));
+        if (action === 'tools') window.appShell?.openTools();
         if (action === 'density') document.getElementById('compactTableBtn')?.click();
       });
       dropdown.appendChild(preferences);
@@ -3727,41 +3597,6 @@ function initNotificacoesUI() {
   document.addEventListener('app-role-ready', initAdminWorkspace);
   if (document.body.dataset.role === 'admin') initAdminWorkspace();
 })();
-
-// ── Menu lateral mobile (gaveta) ──
-(function () {
-  function initMobileMenu() {
-    const menuBtn = document.getElementById('menuBtn');
-    const backdrop = document.getElementById('sidebarBackdrop');
-    if (!menuBtn) return;
-
-    function setOpen(open) {
-      document.body.classList.toggle('sidebar-open', open);
-      menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    }
-
-    menuBtn.addEventListener('click', () => {
-      setOpen(!document.body.classList.contains('sidebar-open'));
-    });
-    if (backdrop) backdrop.addEventListener('click', () => setOpen(false));
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
-
-    const tabBar = document.getElementById('tabBar');
-    if (tabBar) tabBar.addEventListener('click', () => setOpen(false));
-
-    const sidebar = document.querySelector('.sidebar');
-    if (sidebar) {
-      sidebar.addEventListener('click', (e) => {
-        if (e.target.closest('.btn-primary, .btn-small, .btn')) setOpen(false);
-      });
-    }
-
-    window.addEventListener('resize', () => { if (window.innerWidth > 900) setOpen(false); });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initMobileMenu);
-  else initMobileMenu();
-})();
-
 
 // Interface review v3: semantics, mobile account actions and dialog accessibility.
 (function () {
@@ -3783,7 +3618,7 @@ function initNotificacoesUI() {
       });
       tabBar.addEventListener("keydown", (event) => {
         if (event.key !== "ArrowDown" && event.key !== "ArrowUp" && event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
-        const buttons = Array.from(tabBar.querySelectorAll(".tab-btn[data-tab]"));
+        const buttons = Array.from(tabBar.querySelectorAll(".tab-btn[data-tab]")).filter(button => button.getClientRects().length && !button.disabled);
         const current = buttons.indexOf(document.activeElement);
         if (current < 0) return;
         event.preventDefault();

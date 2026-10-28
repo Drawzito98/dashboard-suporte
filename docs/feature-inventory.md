@@ -19,3 +19,7 @@ Baseline local de 28/10/2026. As 13 entradas de navegação em `index.html` são
 | Mapeamento do time | associação de pessoas/fontes — mapeamento-time.js |
 
 Gamificação, metas, bônus, histórico, comentários, notificações, usuários, reportes e ferramentas de gestão também existem como módulos, ações contextuais ou overlays. Filtros globais, autenticação, permissões, modo reunião, privacidade, sincronização e PWA atravessam várias áreas. Este inventário descreve o código, não garante disponibilidade igual para todos os papéis.
+
+## Organização na Fase 2
+
+As 13 telas acima permanecem, agora agrupadas em Início, Operação, Pessoas e Rotina. Ferramentas transversais ficam no painel sob demanda. Consulte [navegação](navigation.md) para o mapa e os contratos preservados.

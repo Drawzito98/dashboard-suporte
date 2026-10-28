@@ -15,7 +15,7 @@ O agregador continua após falhas e retorna código diferente de zero se qualque
 ## Preparação de release
 
 1. Conferir origin, branch e status, preservar alterações preexistentes.
-2. Ajustar APP_VERSION quando houver uma release funcional; manter changelog coerente. Nesta fase permanece 1.14.0.
+2. Ajustar APP_VERSION quando houver uma release funcional; manter changelog coerente. Na Fase 1 permaneceu 1.14.0; a Fase 2 usa 1.15.0 (ver navigation.md).
 3. Após alterar assets, alinhar URLs do SHELL se necessário e executar `npm run release:cache`. A geração é determinística e inclui a estratégia do worker e os arquivos locais do shell; dependências remotas e imports indiretos precisam de revisão específica.
 4. Executar npm test e git diff --check; revisar diff, arquivos incluídos e ausência de segredos.
 5. Commit e push somente da branch dedicada ao origin conferido. Não fazer merge/deploy sem autorização. Integrações remotas podem gerar previews automaticamente; não foram alteradas nesta fase.

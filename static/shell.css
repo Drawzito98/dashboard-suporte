@@ -1,0 +1,75 @@
+/* Phase 2 shell. Scope overrides the historical sidebar layouts without changing modules. */
+body.shell-v2 main.app,
+body.shell-v2[data-role="admin"].admin-sidebar-collapsed main.app {
+  display: flex; flex-direction: column; gap: 0; width: 100%; max-width: none;
+  min-height: 100dvh; margin: 0; padding: 0;
+}
+body.shell-v2 .topbar { order: 0; width: 100%; padding: 16px 28px; }
+body.shell-v2 .topbar .titleblock { flex: 1; min-width: 0; }
+body.shell-v2 .domain-nav { order: 1; display: flex; gap: 6px; padding: 10px 28px; border-bottom: 1px solid var(--border); background: var(--bg-surface); }
+.domain-nav button { padding: 10px 20px; min-height: 44px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-secondary); font: inherit; cursor: pointer; }
+.domain-nav button[aria-current="page"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 700; }
+body.shell-v2 .shell-navigation {
+  order: 2; position: static; display: block; width: 100%; height: auto; max-height: none;
+  padding: 8px 28px; margin: 0; border: 0; background: var(--bg-surface); color: var(--text-primary);
+  box-shadow: none; transform: none; overflow: visible;
+}
+body.shell-v2 .shell-navigation::before,
+body.shell-v2 .shell-navigation .sidebar-identity { display: none; }
+body.shell-v2 .shell-navigation #tabBar {
+  position: static; display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px;
+  padding: 0; margin: 0; border: 0; background: transparent; box-shadow: none; overflow: visible;
+}
+body.shell-v2 .shell-navigation #tabBar .tab-btn {
+  width: auto; min-height: 42px; padding: 9px 12px; margin: 0; font-size: 13px;
+  color: var(--text-secondary); border-radius: 8px; transform: none; justify-content: flex-start;
+}
+body.shell-v2 .shell-navigation #tabBar .tab-btn.active { color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 -2px var(--accent); }
+body.shell-v2 .shell-navigation #tabBar .tab-icon { color: inherit; }
+body.shell-v2 .shell-navigation #tabBar .tab-btn:hover { background: var(--bg-subtle); transform: none; }
+body.shell-v2 .shell-navigation #tabBar[hidden],
+body.shell-v2 .shell-navigation #tabBar .tab-btn[hidden] { display: none !important; }
+body.shell-v2 .page-controls { order: 3; width: 100%; padding: 16px 28px 0; }
+body.shell-v2 .layout { order: 4; display: block; width: 100%; padding: 0 28px 36px; }
+body.shell-v2 .menu-btn { display: inline-flex; width: auto; min-height: 42px; gap: 8px; padding: 8px 12px; }
+body.shell-v2 .menu-btn::after { content: 'Ferramentas'; font-size: 13px; }
+body.shell-v2 #toolsDialog {
+  position: fixed; inset: 0 0 0 auto; width: min(440px, 100%); height: 100dvh; max-height: 100dvh;
+  max-width: 100%; margin: 0; padding: 22px; border: 0; border-left: 1px solid var(--border);
+  background: var(--bg-surface); color: var(--text-primary); overflow-y: auto;
+  box-shadow: -12px 0 40px #0003;
+}
+#toolsDialog::backdrop { background: #0007; }
+.tools-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.tools-heading h2 { margin: 0 0 6px; font-size: 20px; }
+.tools-heading p { margin: 0; color: var(--text-muted); font-size: 13px; }
+body.shell-v2 #toolsDialog .sidebar {
+  position: static; display: flex; flex-direction: column; width: 100%; height: auto;
+  max-height: none; margin: 0; padding: 0; transform: none; overflow: visible;
+  background: transparent; color: var(--text-primary); border: 0; box-shadow: none;
+}
+body.shell-v2 #toolsDialog .sidebar .panel { background: var(--bg-surface); }
+body.shell-v2 #toolsDialog .panel-header { cursor: pointer; }
+body.shell-v2 .filter-disclosure { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+body.shell-v2 .filter-disclosure .filter-hint { margin: 0; }
+body.shell-v2 .global-filter-inner.is-compact > :is(.global-filter-row, .global-filter-multi) { display: none !important; }
+body.shell-v2[data-role="colaborador"] :is(.domain-nav, .shell-navigation, .menu-btn),
+body.shell-v2.presentation-mode :is(.domain-nav, .shell-navigation, .menu-btn) { display: none !important; }
+body.shell-v2[data-role="colaborador"] #toolsDialog .sidebar { display: none !important; }
+@media (max-width: 900px) {
+  body.shell-v2 .topbar { padding: 12px; gap: 10px; }
+  body.shell-v2 .topbar .titleblock { width: 0; }
+  body.shell-v2 .topbar .titleblock h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 18px; }
+  body.shell-v2 .sync-status { min-width: 30px; padding: 8px; }
+  body.shell-v2 .sync-status > span:last-child { display: none; }
+  body.shell-v2 .domain-nav { padding: 8px 12px; gap: 4px; }
+  .domain-nav button { flex: 1; padding: 8px; font-size: 13px; }
+  body.shell-v2 .shell-navigation { padding: 6px 12px; }
+  body.shell-v2 .page-controls { padding: 12px 12px 0; }
+  body.shell-v2 .layout { padding: 0 12px 24px; }
+  body.shell-v2 .menu-btn::after { display: none; }
+  body.shell-v2 .filter-disclosure { align-items: flex-start; }
+}
+@media print {
+  body.shell-v2 :is(.domain-nav, .shell-navigation, #toolsDialog, .menu-btn) { display: none !important; }
+}
