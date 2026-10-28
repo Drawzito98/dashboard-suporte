@@ -6,10 +6,10 @@ const LINKS_STORAGE_KEY = 'sistema_links_importantes';
 let _linksCache = null;
 
 function _linksFromStorage() {
-  try { return JSON.parse(localStorage.getItem(LINKS_STORAGE_KEY)) || []; } catch { return []; }
+  try { return JSON.parse(appStorage.getItem(LINKS_STORAGE_KEY)) || []; } catch { return []; }
 }
 function _linksToStorage(links) {
-  try { localStorage.setItem(LINKS_STORAGE_KEY, JSON.stringify(links)); } catch {}
+  try { appStorage.setItem(LINKS_STORAGE_KEY, JSON.stringify(links)); } catch {}
 }
 
 // Atualiza o cache local a partir do banco (mantém os dados antigos se falhar)

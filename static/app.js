@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.16.0';
+const APP_VERSION = '1.17.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -33,7 +33,7 @@ async function cleanDuplicates() {
     let removed = 0;
     for (const item of toRemove) {
       if (item.id != null && sbClient) {
-        await dbDeleteRecord(item.id);
+        if (!await dbDeleteRecord(item.id)) continue;
       }
       rawRecords.splice(item.idx, 1);
       removed++;
@@ -55,7 +55,7 @@ const HISTORICO_KEY = 'sistema_historico_v1';
 
 function logHistorico(action, rec, extra = {}) {
   try {
-    const raw = localStorage.getItem(HISTORICO_KEY);
+    const raw = appStorage.getItem(HISTORICO_KEY);
     const log = raw ? JSON.parse(raw) : [];
     const user = (window.__sbUser && window.__sbUser.email) ? window.__sbUser.email : 'desconhecido';
     const entry = {
@@ -69,7 +69,7 @@ function logHistorico(action, rec, extra = {}) {
     log.push(entry);
     // Keep last 500 entries
     if (log.length > 500) log.splice(0, log.length - 500);
-    localStorage.setItem(HISTORICO_KEY, JSON.stringify(log));
+    appStorage.setItem(HISTORICO_KEY, JSON.stringify(log));
     if (typeof dbHistoricoAdd === 'function') {
       dbHistoricoAdd(entry);
     }
@@ -79,7 +79,7 @@ function logHistorico(action, rec, extra = {}) {
 // Migrate old Google Drive URLs to direct format
 function migrateColabFotos() {
   try {
-    const raw = localStorage.getItem(COLAB_FOTOS_KEY);
+    const raw = appStorage.getItem(COLAB_FOTOS_KEY);
     if (!raw) return;
     const map = JSON.parse(raw);
     let changed = false;
@@ -91,7 +91,7 @@ function migrateColabFotos() {
       }
     }
     if (changed) {
-      localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
+      appStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
     }
   } catch (e) {
     console.warn('[Fotos] Erro na migração:', e);
@@ -381,14 +381,7 @@ function deduplicateRecords(records) {
     }
   }
   if (toRemove.length > 0) {
-    const idsToRemove = toRemove.filter(r => r.id).map(r => r.id);
     records = records.filter(r => !toRemove.includes(r));
-    // Try to delete zeroed duplicates from Supabase in background
-    if (sbClient && idsToRemove.length > 0 && requireAdmin()) {
-      sbClient.from('registros').delete().in('id', idsToRemove).then(({ error }) => {
-        if (error) console.warn('Erro ao limpar duplicatas no Supabase:', error);
-      });
-    }
   }
 
   // Atualiza a interface com os dados limpos
@@ -413,6 +406,7 @@ function showHomeScreen() {
 }
 
 function showAppScreen() {
+  if (typeof AppDataSession !== 'undefined' && !AppDataSession.owner()) return;
   const home = document.getElementById('homeScreen');
   const app = document.getElementById('appScreen');
   if (home) home.style.display = 'none';
@@ -530,9 +524,11 @@ function saveState() {
   const hasData = Array.isArray(rawRecords) && rawRecords.length > 0;
   if (!hasData) return;
   clearTimeout(__saveTimeout);
+  const sessionToken = typeof AppDataSession !== 'undefined' ? AppDataSession.token() : null;
   __saveTimeout = setTimeout(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(getStateSnapshot()));
+      if (sessionToken && !AppDataSession.current(sessionToken)) return;
+      appStorage.setItem(STORAGE_KEY, JSON.stringify(getStateSnapshot()));
       updateStorageUI('ok');
     } catch (e) {
       updateStorageUI('warn');
@@ -541,13 +537,13 @@ function saveState() {
 }
 
 function clearSavedState() {
-  try { localStorage.removeItem(STORAGE_KEY); } catch (e) { console.warn('[App] Erro ao limpar storage:', e); }
+  try { appStorage.removeItem(STORAGE_KEY); } catch (e) { console.warn('[App] Erro ao limpar storage:', e); }
   updateStorageUI(null);
 }
 
 function loadSavedState() {
   let raw = null;
-  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
+  try { raw = appStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
   if (!raw) return null;
   const state = safeJsonParse(raw);
   if (!state || (state.version !== 1 && state.version !== 2) || !Array.isArray(state.rawRecords)) return null;
@@ -1665,7 +1661,10 @@ function renderPreviewDisplay(rows) {
       if (rec.id != null && rec[key] !== oldVal) {
         const payload = { [key]: rec[key] };
         dbUpdateRecord(rec.id, payload).then(ok => {
-          if (!ok) showToast('Erro ao salvar alteração no banco.', 'error');
+          if (!ok) {
+            const preserved = getPendingSync().some(record => String(record.id) === String(rec.id));
+            showToast(preserved ? 'Alteração preservada nesta conta; envio ao servidor pendente.' : 'Não foi possível preservar a alteração. Tente novamente.', preserved ? 'warning' : 'error');
+          }
         }).catch(() => {});
       }
       if (rec[key] !== oldVal) {
@@ -2696,6 +2695,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof initDbExtra === 'function') {
     setLoading(true, 'Carregando dados...');
     initDbExtra().then(() => {
+      if (typeof AppDataSession !== 'undefined' && !AppDataSession.owner()) return;
+      window.__inactiveColabs = null; window.__inactiveSetores = null;
+      if (typeof loadScoringRules === 'function') loadScoringRules();
+      if (typeof loadAlertasConfig === 'function') loadAlertasConfig();
       if (typeof globalFilters !== 'undefined') {
         globalFilters.popularOptions();
         globalFilters._notify();
@@ -2721,74 +2724,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const restoreSavedBtn = document.getElementById('restoreSavedBtn');
   const clearSavedBtn = document.getElementById('clearSavedBtn');
 
-  // Tenta carregar do Supabase primeiro
-
-  // Merge pending records (from failed Supabase inserts) into the main data
-  const pendingPreviously = getPendingSync();
-
+  // Empty server results remain empty; repository fallback is scoped to this session.
   const supabaseRecords = await dbLoadRecords();
-  if (supabaseRecords && supabaseRecords.length > 0) {
-    rawRecords = normalizeAtendenteOnRecords(supabaseRecords);
-
-    // Merge pending records that weren't yet synced to Supabase
-    if (pendingPreviously.length > 0) {
-      const synced = await syncPendingRecords();
-      const stillPending = getPendingSync();
-      if (stillPending.length > 0) {
-        for (const pr of stillPending) {
-          const existing = pr.id == null ? null : rawRecords.find(record => record.id === pr.id);
-          if (existing) Object.assign(existing, pr);
-          else rawRecords.push(pr);
-        }
-        showToast(`${stillPending.length} registro(s) offline restaurados. Tente salvá-los novamente mais tarde.`, 'warn', 'Sincronização');
-      }
-      if (synced.length > 0) {
-        showToast(`${synced.length} registro(s) pendentes sincronizados com sucesso.`, 'success', 'Sincronização');
-        const freshData = await dbLoadRecords();
-        if (freshData && freshData.length > 0) {
-          rawRecords = normalizeAtendenteOnRecords(freshData);
-          for (const pr of getPendingSync()) {
-            const existing = pr.id == null ? null : rawRecords.find(record => record.id === pr.id);
-            if (existing) Object.assign(existing, pr);
-            else rawRecords.push(pr);
-          }
-        }
-      }
-    }
-
-    // Remove zero-valued duplicates keeping only the filled ones
-    rawRecords = deduplicateRecords(rawRecords);
-
+  if (Array.isArray(supabaseRecords)) {
+    rawRecords = deduplicateRecords(normalizeAtendenteOnRecords(supabaseRecords));
     if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
     populateFilters(rawRecords);
-    if (typeof globalFilters !== 'undefined' && globalFilters && typeof globalFilters.popularOptions === 'function') {
-      globalFilters.popularOptions();
-    }
-    updateFilterOptions();
-    handleError('updateView', () => updateView());
-    clearSavedState();
-    showAppScreen();
-  } else {
-    // Fallback: localStorage (ou dados de sessão anterior)
-    syncMonthPickerVisibility();
-    const saved = loadSavedState();
-    if (saved) {
-      applySavedState(saved);
-      if (sbClient) showAppScreen();
-    } else if (pendingPreviously.length > 0) {
-      rawRecords = normalizeAtendenteOnRecords(pendingPreviously);
-      rawRecords = deduplicateRecords(rawRecords);
-      populateFilters(rawRecords);
-      updateFilterOptions();
-      try { updateView(); } catch (e) { console.error('[App] Erro ao atualizar view:', e); }
-      if (sbClient) showAppScreen();
-      showToast(`${rawRecords.length} registro(s) offline carregados. Tente salvá-los novamente mais tarde.`, 'warn', 'Offline');
-    } else {
-      updateStorageUI(null);
-      if (sbClient) showAppScreen();
-    }
+    globalFilters?.popularOptions(); updateFilterOptions();
+    handleError('updateView', () => updateView()); showAppScreen();
+  } else if (typeof AppDataSession !== 'undefined' && AppDataSession.owner()) {
+    rawRecords = []; populateFilters(rawRecords); updateFilterOptions(); showAppScreen();
   }
-
 
 // Inicia no Menu inicial (mantém restauração automática em memória, mas só mostra painel quando você entrar)
 const startBtn = document.getElementById('startBtn');
@@ -2823,7 +2769,7 @@ if (startBtn) startBtn.addEventListener('click', () => {
 
 if (openSavedBtn) openSavedBtn.addEventListener('click', async () => {
   const supabaseRecords = await dbLoadRecords();
-  if (supabaseRecords && supabaseRecords.length > 0) {
+  if (Array.isArray(supabaseRecords)) {
     rawRecords = normalizeAtendenteOnRecords(supabaseRecords);
     if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
     setGlobalEmpty(false);
@@ -2833,11 +2779,10 @@ if (openSavedBtn) openSavedBtn.addEventListener('click', async () => {
     clearSavedState();
     updateStorageUI('ok', null);
     showAppScreen();
-    showToast(`${rawRecords.length} registros carregados do banco.`, 'success', 'Supabase');
+    const official = AppState.get('records')?.source === 'server';
+    showToast(official ? 'Indicadores atualizados com os dados do servidor e as pendências desta conta.' : 'Dados locais desta conta restaurados; o servidor ainda não foi confirmado.', official ? 'success' : 'warning', 'Indicadores');
   } else {
-    const st = loadSavedState();
-    if (st) applySavedState(st);
-    showAppScreen();
+    showToast('Não foi possível validar a sessão para restaurar os indicadores.', 'warning');
   }
 });
 
@@ -2886,11 +2831,11 @@ if (!rawRecords || !rawRecords.length) {
   const COMPACT_KEY = 'sistema_table_compact';
   function applyCompact(enabled) {
     document.body.classList.toggle('table-compact', enabled);
-    localStorage.setItem(COMPACT_KEY, enabled ? '1' : '');
+    appStorage.setItem(COMPACT_KEY, enabled ? '1' : '');
     const btn = document.getElementById('compactTableBtn');
     if (btn) btn.innerHTML = enabled ? '📏 Visão normal' : '📏 Visão compacta';
   }
-  applyCompact(localStorage.getItem(COMPACT_KEY) === '1');
+  applyCompact(appStorage.getItem(COMPACT_KEY) === '1');
   const compactBtn = document.getElementById('compactTableBtn');
   if (compactBtn) {
     compactBtn.addEventListener('click', () => {
@@ -3012,7 +2957,7 @@ if (!rawRecords || !rawRecords.length) {
       }
 
       // Persist active tab
-      try { localStorage.setItem('sistema_active_tab', tab); } catch(e) { console.warn('[App] Erro ao salvar aba:', e); }
+      try { appStorage.setItem('sistema_active_tab', tab); } catch(e) { console.warn('[App] Erro ao salvar aba:', e); }
     });
 
     const initialTab = tabBar.querySelector('.tab-btn.active');
@@ -3139,7 +3084,7 @@ if (!rawRecords || !rawRecords.length) {
         document.getElementById('appScreen')?.appendChild(msg);
       }
     } else {
-      const savedTab = localStorage.getItem('sistema_active_tab');
+      const savedTab = appStorage.getItem('sistema_active_tab');
       if (savedTab && savedTab !== 'dashboard') {
         const btn = tabBar && tabBar.querySelector(`.tab-btn[data-tab="${savedTab}"]`);
         if (btn) btn.click();
@@ -3330,7 +3275,7 @@ function setCaretToEnd(el) {
   }
   function setTheme(t){
     document.documentElement.setAttribute('data-theme', t);
-    try { localStorage.setItem('theme', t); } catch(e) { console.warn('[App] Erro ao salvar tema:', e); }
+    try { appStorage.setItem('theme', t); } catch(e) { console.warn('[App] Erro ao salvar tema:', e); }
     if (typeof Chart !== 'undefined' && Chart.defaults) {
       if (typeof ChartTheme !== 'undefined') {
         ChartTheme.applyDefaults();
@@ -3361,7 +3306,7 @@ function setCaretToEnd(el) {
     } catch(e) { console.error('[App] Erro ao alternar tema:', e); }
   }
   function init(){
-    const saved = localStorage.getItem('theme');
+    const saved = appStorage.getItem('theme');
     if(saved === 'dark' || saved === 'light') setTheme(saved);
     else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
     else setTheme('light');
@@ -3375,7 +3320,7 @@ function setCaretToEnd(el) {
     if (window.matchMedia) {
       const mq = window.matchMedia('(prefers-color-scheme: dark)');
       mq.addEventListener('change', function(ev) {
-        const savedNow = localStorage.getItem('theme');
+        const savedNow = appStorage.getItem('theme');
         if (!savedNow) setTheme(ev.matches ? 'dark' : 'light');
       });
     }
@@ -3716,4 +3661,20 @@ function initNotificacoesUI() {
 
 window.addEventListener('ferias-updated', () => {
   if (rawRecords.length && document.querySelector('.tab-btn.active')?.dataset.tab === 'dashboard') updateView();
+});
+
+// Legacy rendering bridge. Data ownership/status live in AppState.
+window.addEventListener('records-sync-complete', () => {
+  const state = AppState.get('records');
+  if (!state || !AppDataSession.owner()) return;
+  rawRecords = deduplicateRecords(normalizeAtendenteOnRecords(state.view));
+  if (typeof invalidateGamificationCache === 'function') invalidateGamificationCache();
+  populateFilters(rawRecords); updateFilterOptions(); updateView();
+});
+window.addEventListener('app-session-invalidated', () => {
+  clearTimeout(__saveTimeout); rawRecords = []; previewRows = []; window.__lastReportText = '';
+  document.body.dataset.role = '';
+  document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
+  document.querySelectorAll('.colab-detail-overlay.open').forEach(overlay => overlay.classList.remove('open'));
+  const screen = document.getElementById('appScreen'); if (screen) screen.style.display = 'none';
 });

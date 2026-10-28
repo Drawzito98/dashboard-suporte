@@ -15,7 +15,7 @@ O agregador continua após falhas e retorna código diferente de zero se qualque
 ## Preparação de release
 
 1. Conferir origin, branch e status, preservar alterações preexistentes.
-2. Ajustar APP_VERSION quando houver uma release funcional; manter changelog coerente. Na Fase 1 permaneceu 1.14.0; a Fase 2 usou 1.15.0; a Fase 3 usa 1.16.0 (ver equipe-360.md).
+2. Ajustar APP_VERSION quando houver uma release funcional; manter changelog coerente. Na Fase 1 permaneceu 1.14.0; a Fase 2 usou 1.15.0; a Fase 3 usou 1.16.0; a Fase 4 usa 1.17.0 (ver data-architecture.md).
 3. Após alterar assets, alinhar URLs do SHELL se necessário e executar `npm run release:cache`. A geração é determinística e inclui a estratégia do worker e os arquivos locais do shell; dependências remotas e imports indiretos precisam de revisão específica.
 4. Executar npm test e git diff --check; revisar diff, arquivos incluídos e ausência de segredos.
 5. Commit e push somente da branch dedicada ao origin conferido. Não fazer merge/deploy sem autorização. Integrações remotas podem gerar previews automaticamente; não foram alteradas nesta fase.
@@ -27,3 +27,7 @@ Baseline anterior: runner com 171 testes aprovados. Validação final: `npm test
 ## Registro da Fase 3
 
 Novo check `equipe360-data.check.js` incluído automaticamente em npm test. Validação de navegador em `tests/equipe360.browser.html`, repetida em desktop e celular. Escopo, testes e limites detalhados em [equipe-360.md](equipe-360.md). Nenhuma migration ou dado de produção foi alterado.
+
+## Registro da Fase 4
+
+Novos checks de runtime, repository, auth e cache privado entram automaticamente em npm test. A fixture `tests/data-lifecycle.browser.html` testa a camada real de sessão/armazenamento no navegador com servidor simulado. Escopo e limites em [data-architecture.md](data-architecture.md). Sem aplicação de SQL ou modificação de dados de produção.

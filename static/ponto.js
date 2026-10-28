@@ -86,7 +86,7 @@
   }
   function systemPeople() {
     let info = {};
-    try { info = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (_) {}
+    try { info = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (_) {}
     const records = typeof rawRecords === 'undefined' ? [] : rawRecords || [];
     const names = [...new Map([...records.map(r => String(r?.Atendente || '').trim()), ...Object.keys(info)].map(nome => [E.normalizeName(nome), nome])).values()];
     return names.filter(nome => nome && (typeof isAggregateName !== 'function' || !isAggregateName(nome)) && (typeof isColabActive !== 'function' || isColabActive(nome))).map(nome => ({

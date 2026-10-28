@@ -1,7 +1,7 @@
 // acompanhamento-diario.js — Acompanhamento Diário de Atendimentos (sidebar overlay)
 
 function getNivelColaborador(nome) {
-  const colabInfo = JSON.parse(localStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
+  const colabInfo = JSON.parse(appStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
   return colabInfo[nome]?.nivel || '';
 }
 
@@ -9,8 +9,8 @@ function renderAcompDiario(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const saved = JSON.parse(localStorage.getItem(ACOMP_DIARIO_LOCAL_KEY) || '[]');
-  const colabInfo = JSON.parse(localStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
+  const saved = JSON.parse(appStorage.getItem(ACOMP_DIARIO_LOCAL_KEY) || '[]');
+  const colabInfo = JSON.parse(appStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
 
   const colabs = [...new Set((rawRecords || [])
     .filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']))

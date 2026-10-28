@@ -43,7 +43,7 @@
     }).filter(item=>item.current!==null);
   }
   function configuredTarget(fallback) {
-    const saved = Number(localStorage.getItem(TARGET_KEY));
+    const saved = Number(appStorage.getItem(TARGET_KEY));
     return saved > 0 ? saved : Math.max(fallback, 1);
   }
   function health(current, previous, target) {
@@ -77,7 +77,7 @@
       const rows=currentRows.filter(row=>String(row.Atendente)===name), beforeRows=previousRows.filter(row=>String(row.Atendente)===name), current=calculate(rows), before=beforeRows.length?calculate(beforeRows):null;
       return {name,ferias:getFeriasResultado(name,rows),sector:[...new Set(rows.map(row=>row.Setor).filter(Boolean))].join(', '),level:levelOf(name),current,before,health:health(current,before,target)};
     }).sort((a,b)=>b.health.value-a.health.value);
-    const tmaTargets=tmaBySector(context,currentRows); return {periodLabel,previousLabel,overall,overallHealth,sectors,people,tmaTargets,target,targetIsManual:Number(localStorage.getItem(TARGET_KEY))>0};
+    const tmaTargets=tmaBySector(context,currentRows); return {periodLabel,previousLabel,overall,overallHealth,sectors,people,tmaTargets,target,targetIsManual:Number(appStorage.getItem(TARGET_KEY))>0};
   }
 
   function renderOperationalHealth() {
@@ -95,8 +95,8 @@
       <section class="card so-section"><div class="so-section-heading"><div><span>RESULTADOS INDIVIDUAIS</span><h3>Desempenho das pessoas</h3><p>Totais do período selecionado; nota calculada pela média mensal por pessoa. Férias são sinalizadas para contextualizar o volume e a evolução; os valores não são ajustados por dias trabalhados.</p></div></div><div class="table-wrap"><table class="so-table"><thead><tr><th>#</th><th>Colaborador</th><th>Férias no período</th><th>Nível</th><th>Setor</th><th>Saúde</th><th>Finalizados no período</th><th>Média mensal</th><th>Produtividade</th><th>Qualidade</th><th>Transferências</th><th>Evolução</th></tr></thead><tbody>${people.map((item,index)=>`<tr><td>${index+1}</td><td><strong>${esc(item.name)}</strong></td><td>${item.ferias.esteve?`<span class="row-badge badge-ferias">🏖️ Esteve de férias</span><small style="display:block;margin-top:6px;max-width:260px;white-space:normal">${esc(item.ferias.detalhes)}</small>`:'—'}</td><td>${esc(item.level||'—')}</td><td>${esc(item.sector||'—')}</td><td><b class="so-score so-${item.health.key}">${item.health.value}</b></td><td>${fmt(item.current.finished)}</td><td>${item.current.perPerson.toFixed(1).replace('.',',')}</td><td>${pct(item.current.productivity*100)}</td><td class="${item.current.score?scoreClass(item.current.score):''}">${item.current.score?item.current.score.toFixed(2):'—'}</td><td class="${transferClass(item.current.transferRate)}">${pct(item.current.transferRate*100)}</td><td>${delta(item.health.evolution)}</td></tr>`).join('')}</tbody></table></div></section>
       <details class="card so-method"><summary>Como a nota de saúde é calculada?</summary><p>Qualidade 45% · média mensal de finalizados por pessoa 35% · transferências 15% · evolução contra o período anterior equivalente 5%. Nota 80–100: saudável; 60–79: em atenção; abaixo de 60: crítico.</p><div class="so-target so-no-print"><label for="soTargetInput">Meta mensal de finalizados por pessoa</label><input id="soTargetInput" type="number" min="1" step="1" value="${Math.round(target)}"><button class="btn-primary" id="soSaveTarget">Salvar meta</button><button class="btn-secondary" id="soAutoTarget">Usar média automática</button><small>${targetIsManual?'Meta personalizada ativa.':'Referência automática: média mensal atual da operação.'}</small></div></details></div>`;
     document.getElementById('soPrintBtn')?.addEventListener('click',()=>window.print());
-    document.getElementById('soSaveTarget')?.addEventListener('click',()=>{const value=Number(document.getElementById('soTargetInput')?.value);if(value>0){localStorage.setItem(TARGET_KEY,String(value));renderOperationalHealth();}});
-    document.getElementById('soAutoTarget')?.addEventListener('click',()=>{localStorage.removeItem(TARGET_KEY);renderOperationalHealth();});
+    document.getElementById('soSaveTarget')?.addEventListener('click',()=>{const value=Number(document.getElementById('soTargetInput')?.value);if(value>0){appStorage.setItem(TARGET_KEY,String(value));renderOperationalHealth();}});
+    document.getElementById('soAutoTarget')?.addEventListener('click',()=>{appStorage.removeItem(TARGET_KEY);renderOperationalHealth();});
   }
   window.addEventListener('ferias-updated', () => {
     if (document.querySelector('.tab-btn.active')?.dataset.tab === 'saude-operacional') renderOperationalHealth();

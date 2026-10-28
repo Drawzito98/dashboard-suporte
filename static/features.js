@@ -433,7 +433,7 @@
 
     // Tarefas pending
     try {
-      const raw = localStorage.getItem('sistema_tarefas_v1');
+      const raw = appStorage.getItem('sistema_tarefas_v1');
       if (raw) {
         const tasks = JSON.parse(raw);
         const pending = tasks.filter(t => t.status !== 'concluida');

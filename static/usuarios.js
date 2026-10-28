@@ -124,7 +124,7 @@ async function carregarUsuarios() {
     if (bulkCsvButton) bulkCsvButton.onclick = async () => {
       const records = typeof rawRecords !== 'undefined' ? rawRecords : [];
       const csvNames = [...new Set(records.map(record => String(record?.Atendente || '').trim()).filter(name => name && (typeof isAggregateName !== 'function' || !isAggregateName(name)) && (typeof isColabActive !== 'function' || isColabActive(name))))];
-      const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+      const colabInfo = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}');
       const exactName = value => csvNames.find(name => name.localeCompare(String(value || '').trim(), 'pt-BR', { sensitivity: 'base' }) === 0) || '';
       const registeredEmails = new Set(Object.values(colabInfo).map(info => String(info?.email || '').trim().toLowerCase()).filter(Boolean));
       const teamUsers = users.filter(user => {
@@ -506,7 +506,7 @@ function renderUsuariosAba() {
     if (!nome) return;
     // Busca email do cadastro de Colaboradores
     try {
-      const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+      const colabInfo = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}');
       const info = colabInfo[nome];
       const emailInput = document.getElementById('novoUserEmail');
       if (info?.email && emailInput && !emailInput.value) {
@@ -524,7 +524,7 @@ function renderUsuariosAba() {
 
   document.getElementById('syncActiveTeamBtn')?.addEventListener('click', async event => {
     if (!requireAdmin()) return;
-    const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+    const colabInfo = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}');
     const records = typeof rawRecords !== 'undefined' ? rawRecords : [];
     const recordNames = records.filter(row => row?.Atendente && (typeof isAggregateName !== 'function' || !isAggregateName(row.Atendente))).map(row => String(row.Atendente).trim());
     const names = [...new Set([...recordNames, ...Object.keys(colabInfo)])].filter(name => name && (typeof isColabActive !== 'function' || isColabActive(name))).sort((a, b) => a.localeCompare(b, 'pt-BR'));

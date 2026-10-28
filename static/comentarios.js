@@ -3,13 +3,13 @@ const COMENTARIOS_KEY = 'sistema_comentarios_v1';
 
 function getComentarios() {
   try {
-    const raw = localStorage.getItem(COMENTARIOS_KEY);
+    const raw = appStorage.getItem(COMENTARIOS_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch (e) { return {}; }
 }
 
 function saveComentarios(map) {
-  try { localStorage.setItem(COMENTARIOS_KEY, JSON.stringify(map)); } catch (e) { console.warn('[Comentarios] Erro ao salvar:', e); }
+  try { appStorage.setItem(COMENTARIOS_KEY, JSON.stringify(map)); } catch (e) { console.warn('[Comentarios] Erro ao salvar:', e); }
 }
 
 function addComentario(mes, texto) {

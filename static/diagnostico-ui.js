@@ -4,7 +4,7 @@
   const E = window.DiagnosticoEngine;
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = (v, digits = 2) => v == null ? 'Sem informação' : v.toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
-  const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (_) { return fallback; } };
+  const read = (key, fallback) => { try { return JSON.parse(appStorage.getItem(key)) || fallback; } catch (_) { return fallback; } };
   const states = new Map();
   const source = () => (typeof rawRecords !== 'undefined' ? rawRecords : []).filter(r =>
     (typeof isColabActive !== 'function' || isColabActive(r?.Atendente)) &&
@@ -17,7 +17,7 @@
     const months = [...new Set(rows.map(r => r['Mês']).filter(m => E.shift(m, 0)))].sort();
     return [months.at(-1) || new Date().toISOString().slice(0, 7)];
   }
-  const store = () => typeof sbClient !== 'undefined' && sbClient ? DiagnosticoStore.create({ client: sbClient, storage: localStorage, engine: E }) : null;
+  const store = () => typeof sbClient !== 'undefined' && sbClient ? DiagnosticoStore.create({ client: sbClient, storage: appStorage, engine: E }) : null;
   async function fingerprint(snapshot) {
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(snapshot)));
     return [...new Uint8Array(digest)].map(v => v.toString(16).padStart(2, '0')).join('');

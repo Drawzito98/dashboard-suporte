@@ -7,7 +7,7 @@ function setup(responses) {
   const storage = new Map();
   const writes = [];
   const client = {
-    auth: { async getUser() { return { data: { user: { id: 'admin-user' } } }; } },
+    auth: { async getUser() { return { data: { user: { id: 'admin-user', app_metadata: { role: 'admin' } } } }; } },
     from() { return {
       update(payload) { writes.push(payload); return this; },
       insert() { throw new Error('Uma edição pendente não deve ser inserida novamente'); },
@@ -20,6 +20,9 @@ function setup(responses) {
     localStorage: { getItem: key => storage.get(key) || null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) },
     console: { warn() {}, error() {} }
   };
+  context.AppDataSession = require('../static/data-runtime.js').create({ storage: context.localStorage });
+  context.RecordsRepository = require('../static/records-repository.js');
+  context.AppDataSession.bind({ id: 'admin-user' });
   vm.createContext(context);
   vm.runInContext(source, context);
   return { context, writes };

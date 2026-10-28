@@ -54,7 +54,7 @@ const AtividadesMes = (() => {
   }
   function people() {
     let registered = {};
-    try { registered = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch {}
+    try { registered = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch {}
     return [...new Set([...(typeof rawRecords !== 'undefined' ? rawRecords : []).map(row => row?.Atendente), ...Object.entries(registered || {}).map(([key, value]) => value?.nome || key), ...items.map(item => item.colaborador)])].filter(name => name && !isAggregateName(name) && isColabActive(name)).sort((a,b) => a.localeCompare(b, 'pt-BR'));
   }
   function close() {

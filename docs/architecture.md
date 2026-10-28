@@ -31,3 +31,7 @@ O baseline acima foi registrado na Fase 1. A versão funcional agora é 1.15.0; 
 ## Evolução — Fase 3
 
 Versão 1.16.0. A Equipe 360º acrescenta uma projeção de leitura por pessoa (`equipe360-data.js`) e um dialog (`equipe360.js`/`.css`). A aplicação geral mantém seus loaders e persistência anteriores; esta fase não implementa o estado/repository global planejado para a Fase 4. Consulte [contratos de fontes e identidade](equipe-360.md).
+
+## Evolução — Fase 4
+
+Versão 1.17.0. `data-runtime.js` fornece sessão invalidável, cache por conta e AppState/eventos. `records-repository.js` assume indicadores, confirmação e fila por revisão; db.js mantém compatibilidade. Os módulos passaram a appStorage. O perfil 360º também publica sua projeção no estado. Os loaders/mutações complementares ainda serão extraídos gradualmente. Consulte [arquitetura de dados](data-architecture.md), especialmente a preservação de chaves antigas sem dono e os limites de recuperação/transações.

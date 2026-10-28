@@ -35,7 +35,7 @@ function findColabFotoUrl(map, name) {
 function getColabFoto(name) {
   if (!name) return '';
   try {
-    const raw = localStorage.getItem(COLAB_FOTOS_KEY);
+    const raw = appStorage.getItem(COLAB_FOTOS_KEY);
     const map = raw ? JSON.parse(raw) : {};
     const url = findColabFotoUrl(map, name);
     return normalizeFotoUrl(url);
@@ -53,11 +53,11 @@ function normalizeFotoUrl(url) {
 
 function setColabFoto(name, url) {
   try {
-    const raw = localStorage.getItem(COLAB_FOTOS_KEY);
+    const raw = appStorage.getItem(COLAB_FOTOS_KEY);
     const map = raw ? JSON.parse(raw) : {};
     if (url) map[name] = normalizeFotoUrl(url);
     else delete map[name];
-    localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
+    appStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
   } catch (e) { console.warn('[ColabFotos] Erro ao obter URL foto:', e); }
   if (typeof dbFotoSave === 'function') {
     const finalUrl = url ? normalizeFotoUrl(url) : '';

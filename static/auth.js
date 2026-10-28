@@ -1,6 +1,7 @@
 // Sistema de autenticação Supabase
 let currentUser = null;
 let authPromiseResolve = null;
+let dataSessionObserverReady = false;
 
 function getCurrentUser() {
   return currentUser;
@@ -44,6 +45,29 @@ function requireProvisionalPasswordChange(user) {
 async function initAuth() {
   if (!sbClient) return null;
 
+  if (!dataSessionObserverReady) {
+    dataSessionObserverReady = true;
+    sbClient.auth.onAuthStateChange((event, session) => {
+      // Never await SDK auth methods inside its auth-state callback.
+      setTimeout(() => {
+        if (typeof AppDataSession !== 'undefined' && AppDataSession.invalidated()) return;
+        const user = session?.user || null;
+        const owner = typeof AppDataSession !== 'undefined' ? AppDataSession.owner() : null;
+        if (owner && (owner !== user?.id || currentUser?.app_metadata?.role !== user?.app_metadata?.role)) {
+          AppDataSession.invalidate(); currentUser = user;
+          window.dispatchEvent(new CustomEvent('app-session-invalidated'));
+          window.location.reload(); return;
+        }
+        currentUser = user;
+        if (user) {
+          if (typeof AppDataSession !== 'undefined') AppDataSession.bind(user);
+          requireProvisionalPasswordChange(user); hideAuthOverlay();
+          if (authPromiseResolve) { authPromiseResolve(user); authPromiseResolve = null; }
+        }
+      }, 0);
+    });
+  }
+
   // Verifica sessão existente
   try {
     const { data: { session: cachedSession } } = await sbClient.auth.getSession();
@@ -58,6 +82,7 @@ async function initAuth() {
     }
     if (session?.user) {
       currentUser = session.user;
+      if (typeof AppDataSession !== 'undefined') AppDataSession.bind(currentUser);
       hideAuthOverlay();
       setTimeout(() => requireProvisionalPasswordChange(currentUser), 0);
       return currentUser;
@@ -71,20 +96,6 @@ async function initAuth() {
     authPromiseResolve = resolve;
   });
 
-  // Escuta mudanças de auth
-  sbClient.auth.onAuthStateChange((event, session) => {
-    if (session?.user) {
-      currentUser = session.user;
-      setTimeout(() => requireProvisionalPasswordChange(currentUser), 0);
-      hideAuthOverlay();
-      if (authPromiseResolve) {
-        authPromiseResolve(currentUser);
-        authPromiseResolve = null;
-      }
-    } else {
-      currentUser = null;
-    }
-  });
 
   showAuthOverlay();
   return authPromise;

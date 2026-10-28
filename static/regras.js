@@ -9,7 +9,7 @@ const REGRAS_COLUNAS = [
 let regraEditandoId = null;
 
 function _regrasLista() {
-  try { return JSON.parse(localStorage.getItem(REGRAS_STORAGE_KEY) || '[]'); }
+  try { return JSON.parse(appStorage.getItem(REGRAS_STORAGE_KEY) || '[]'); }
   catch (_) { return []; }
 }
 

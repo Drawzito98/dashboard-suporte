@@ -28,10 +28,10 @@ function rfResolveMetricas(keys) {
 // ─── Persistência da configuração ────────────────────────────────
 
 function rfGetConfig() {
-  try { return JSON.parse(localStorage.getItem(RF_CONFIG_KEY)) || {}; } catch { return {}; }
+  try { return JSON.parse(appStorage.getItem(RF_CONFIG_KEY)) || {}; } catch { return {}; }
 }
 function rfSaveConfig(cfg) {
-  try { localStorage.setItem(RF_CONFIG_KEY, JSON.stringify(cfg)); } catch {}
+  try { appStorage.setItem(RF_CONFIG_KEY, JSON.stringify(cfg)); } catch {}
 }
 
 // ─── Dados brutos (ignora filtros globais; relatório tem seleção própria) ──

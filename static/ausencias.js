@@ -20,7 +20,7 @@ function renderAusencias(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const saved = JSON.parse(localStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
+  const saved = JSON.parse(appStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
   const colabs = [...new Set((rawRecords || [])
     .filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']))
     .map(r => r['Atendente']))].sort();

@@ -3,7 +3,7 @@
   'use strict';
   const esc=v=>typeof escapeHtmlShared==='function'?escapeHtmlShared(String(v??'')):escapeHtml(String(v??''));
   function recordNames(){try{return typeof rawRecords!=='undefined'&&Array.isArray(rawRecords)?rawRecords.map(r=>r&&r.Atendente).filter(Boolean):[];}catch(_){return[];}}
-  function registeredNames(){try{const info=JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1')||'{}');return info&&typeof info==='object'?Object.keys(info):[];}catch(_){return[];}}
+  function registeredNames(){try{const info=JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1')||'{}');return info&&typeof info==='object'?Object.keys(info):[];}catch(_){return[];}}
   window.renderManageColabs=function(){
     const container=document.getElementById('manageColabsContent');if(!container)return;
     const allNames=[...new Set([...recordNames(),...registeredNames()].map(v=>String(v).trim()).filter(v=>v&&!(typeof isAggregateName==='function'&&isAggregateName(v))))].sort((a,b)=>a.localeCompare(b,'pt-BR'));

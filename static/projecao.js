@@ -51,11 +51,11 @@ function renderProjecao() {
   let extraNames = [];
   let colabInfo = {};
   try {
-    colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+    colabInfo = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}');
     extraNames.push(...Object.keys(colabInfo || {}));
   } catch (e) {}
   try {
-    const metas = JSON.parse(localStorage.getItem('sistema_metas_v1') || '[]');
+    const metas = JSON.parse(appStorage.getItem('sistema_metas_v1') || '[]');
     if (Array.isArray(metas)) extraNames.push(...metas.map(m => m && m.collaborator).filter(Boolean));
   } catch (e) {}
   const names = [...new Set([...fromRecords, ...extraNames])]

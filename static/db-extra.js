@@ -14,7 +14,9 @@ async function _email() {
 
 async function _getUserId() {
   try {
+    const token = typeof AppDataSession !== 'undefined' ? AppDataSession.token() : null;
     const { data } = await sbClient.auth.getUser();
+    if (token && (!AppDataSession.current(token) || token.owner !== data?.user?.id)) return null;
     return data?.user?.id || null;
   } catch { return null; }
 }
@@ -35,8 +37,8 @@ async function dbMetasLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(METAS_LOCAL_KEY, []);
-    const { data } = await sbClient.from('metas').select('*').eq('user_id', uid);
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('metas').select('*').eq('user_id', uid);
+    if (!error && Array.isArray(data)) {
       const goals = data.map(r => ({
         id: r.id,
         title: r.title,
@@ -48,7 +50,7 @@ async function dbMetasLoad() {
         period: r.period,
         createdAt: r.created_at
       }));
-      localStorage.setItem(METAS_LOCAL_KEY, JSON.stringify(goals));
+      appStorage.setItem(METAS_LOCAL_KEY, JSON.stringify(goals));
       return goals;
     }
     return _fallbackLoad(METAS_LOCAL_KEY, []);
@@ -59,7 +61,7 @@ async function dbMetasLoad() {
 
 async function dbMetasSave(goals) {
   if (!requireAdmin()) return;
-  localStorage.setItem(METAS_LOCAL_KEY, JSON.stringify(goals));
+  appStorage.setItem(METAS_LOCAL_KEY, JSON.stringify(goals));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -88,8 +90,8 @@ const COMENTARIOS_LOCAL_KEY = 'sistema_comentarios_v1';
 async function dbComentariosLoad() {
   if (!sbClient) return _fallbackLoad(COMENTARIOS_LOCAL_KEY, {});
   try {
-    const { data } = await sbClient.from('comentarios').select('*').order('created_at', { ascending: true });
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('comentarios').select('*').order('created_at', { ascending: true });
+    if (!error && Array.isArray(data)) {
       const map = {};
       data.forEach(c => {
         if (!map[c.mes]) map[c.mes] = [];
@@ -100,7 +102,7 @@ async function dbComentariosLoad() {
           ts: c.created_at
         });
       });
-      localStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
+      appStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
       return map;
     }
     return _fallbackLoad(COMENTARIOS_LOCAL_KEY, {});
@@ -110,7 +112,7 @@ async function dbComentariosLoad() {
 }
 
 async function dbComentarioAdd(mes, texto) {
-  const map = JSON.parse(localStorage.getItem(COMENTARIOS_LOCAL_KEY) || '{}');
+  const map = JSON.parse(appStorage.getItem(COMENTARIOS_LOCAL_KEY) || '{}');
   const email = await _getUserEmail();
   const entry = {
     id: Date.now() + '_' + Math.random().toString(36).slice(2, 6),
@@ -120,7 +122,7 @@ async function dbComentarioAdd(mes, texto) {
   };
   if (!map[mes]) map[mes] = [];
   map[mes].push(entry);
-  localStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
+  appStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
   if (sbClient) {
     try {
       await sbClient.from('comentarios').insert({
@@ -134,11 +136,11 @@ async function dbComentarioAdd(mes, texto) {
 }
 
 async function dbComentarioDel(mes, id) {
-  const map = JSON.parse(localStorage.getItem(COMENTARIOS_LOCAL_KEY) || '{}');
+  const map = JSON.parse(appStorage.getItem(COMENTARIOS_LOCAL_KEY) || '{}');
   if (map[mes]) {
     map[mes] = map[mes].filter(c => c.id !== id);
     if (!map[mes].length) delete map[mes];
-    localStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
+    appStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
   }
   if (sbClient) {
     try {
@@ -158,8 +160,8 @@ const HISTORICO_LOCAL_KEY = 'sistema_historico_v1';
 async function dbHistoricoLoad() {
   if (!sbClient) return _fallbackLoad(HISTORICO_LOCAL_KEY, []);
   try {
-    const { data } = await sbClient.from('historico').select('*').order('created_at', { ascending: false }).limit(500);
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('historico').select('*').order('created_at', { ascending: false }).limit(500);
+    if (!error && Array.isArray(data)) {
       const log = data.map(r => ({
         ts: r.created_at,
         user: r.user_email || '',
@@ -171,7 +173,7 @@ async function dbHistoricoLoad() {
         after: r.after_value,
         detalhes: r.detalhes
       }));
-      localStorage.setItem(HISTORICO_LOCAL_KEY, JSON.stringify(log));
+      appStorage.setItem(HISTORICO_LOCAL_KEY, JSON.stringify(log));
       return log;
     }
     return _fallbackLoad(HISTORICO_LOCAL_KEY, []);
@@ -181,7 +183,7 @@ async function dbHistoricoLoad() {
 }
 
 async function dbHistoricoAdd(entry) {
-  const log = JSON.parse(localStorage.getItem(HISTORICO_LOCAL_KEY) || '[]');
+  const log = JSON.parse(appStorage.getItem(HISTORICO_LOCAL_KEY) || '[]');
   const email = await _getUserEmail();
   const enriched = {
     ts: entry.ts || new Date().toISOString(),
@@ -196,7 +198,7 @@ async function dbHistoricoAdd(entry) {
   };
   log.push(enriched);
   if (log.length > 500) log.splice(0, log.length - 500);
-  localStorage.setItem(HISTORICO_LOCAL_KEY, JSON.stringify(log));
+  appStorage.setItem(HISTORICO_LOCAL_KEY, JSON.stringify(log));
   if (sbClient) {
     try {
       await sbClient.from('historico').insert({
@@ -222,9 +224,10 @@ async function dbScoringLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return null;
-    const { data } = await sbClient.from('scoring_config').select('rules').eq('user_id', uid).maybeSingle();
-    if (data?.rules && Array.isArray(data.rules)) {
-      localStorage.setItem(SCORING_LOCAL_KEY, JSON.stringify(data.rules));
+    const { data, error } = await sbClient.from('scoring_config').select('rules').eq('user_id', uid).maybeSingle();
+    if (!error && data === null) appStorage.removeItem(SCORING_LOCAL_KEY);
+    if (!error && data?.rules && Array.isArray(data.rules)) {
+      appStorage.setItem(SCORING_LOCAL_KEY, JSON.stringify(data.rules));
       return data.rules;
     }
     return null;
@@ -233,7 +236,7 @@ async function dbScoringLoad() {
 
 async function dbScoringSave(rules) {
   if (!requireAdmin()) return;
-  localStorage.setItem(SCORING_LOCAL_KEY, JSON.stringify(rules));
+  appStorage.setItem(SCORING_LOCAL_KEY, JSON.stringify(rules));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -256,9 +259,10 @@ async function dbAlertasLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return null;
-    const { data } = await sbClient.from('alertas_config').select('config').eq('user_id', uid).maybeSingle();
-    if (data?.config && Array.isArray(data.config)) {
-      localStorage.setItem(ALERTAS_LOCAL_KEY, JSON.stringify(data.config));
+    const { data, error } = await sbClient.from('alertas_config').select('config').eq('user_id', uid).maybeSingle();
+    if (!error && data === null) appStorage.removeItem(ALERTAS_LOCAL_KEY);
+    if (!error && data?.config && Array.isArray(data.config)) {
+      appStorage.setItem(ALERTAS_LOCAL_KEY, JSON.stringify(data.config));
       return data.config;
     }
     return null;
@@ -267,7 +271,7 @@ async function dbAlertasLoad() {
 
 async function dbAlertasSave(config) {
   if (!requireAdmin()) return;
-  localStorage.setItem(ALERTAS_LOCAL_KEY, JSON.stringify(config));
+  appStorage.setItem(ALERTAS_LOCAL_KEY, JSON.stringify(config));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -288,10 +292,10 @@ const FOTOS_LOCAL_KEY = 'sistema_colab_fotos_v1';
 async function dbFotosLoad() {
   if (!sbClient) return _fallbackLoad(FOTOS_LOCAL_KEY, {});
   try {
-    const { data } = await sbClient.from('colaborador_fotos').select('*');
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('colaborador_fotos').select('*');
+    if (!error && Array.isArray(data)) {
       const localMap = _fallbackLoad(FOTOS_LOCAL_KEY, {});
-      const map = localMap && typeof localMap === 'object' ? { ...localMap } : {};
+      const map = {};
       data.forEach(f => {
         if (!f?.nome) return;
         const normalizedRemoteName = typeof normalizeColabFotoName === 'function'
@@ -305,7 +309,7 @@ async function dbFotosLoad() {
         });
         map[f.nome] = f.foto_url || '';
       });
-      localStorage.setItem(FOTOS_LOCAL_KEY, JSON.stringify(map));
+      appStorage.setItem(FOTOS_LOCAL_KEY, JSON.stringify(map));
       window.dispatchEvent(new CustomEvent('colab-fotos-updated'));
       return map;
     }
@@ -317,10 +321,10 @@ async function dbFotosLoad() {
 
 async function dbFotoSave(nome, url) {
   if (!requireAdmin()) return;
-  const map = JSON.parse(localStorage.getItem(FOTOS_LOCAL_KEY) || '{}');
+  const map = JSON.parse(appStorage.getItem(FOTOS_LOCAL_KEY) || '{}');
   if (url) map[nome] = url;
   else delete map[nome];
-  localStorage.setItem(FOTOS_LOCAL_KEY, JSON.stringify(map));
+  appStorage.setItem(FOTOS_LOCAL_KEY, JSON.stringify(map));
   if (!sbClient) return;
   try {
     const existing = await sbClient.from('colaborador_fotos').select('id').eq('nome', nome).maybeSingle();
@@ -345,10 +349,10 @@ async function dbInativosLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return null;
-    const { data } = await sbClient.from('colab_inativos').select('nome').eq('user_id', uid);
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('colab_inativos').select('nome').eq('user_id', uid);
+    if (!error && Array.isArray(data)) {
       const names = data.map(r => r.nome);
-      localStorage.setItem(INATIVOS_LOCAL_KEY, JSON.stringify(names));
+      appStorage.setItem(INATIVOS_LOCAL_KEY, JSON.stringify(names));
       if (typeof window.__inactiveColabs !== 'undefined') {
         window.__inactiveColabs = new Set(names);
       }
@@ -362,7 +366,7 @@ async function dbInativosLoad() {
 async function dbInativosSave(names) {
   if (!requireAdmin()) return;
   const arr = [...names];
-  localStorage.setItem(INATIVOS_LOCAL_KEY, JSON.stringify(arr));
+  appStorage.setItem(INATIVOS_LOCAL_KEY, JSON.stringify(arr));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -383,10 +387,10 @@ async function dbSetorInativosLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return null;
-    const { data } = await sbClient.from('setor_inativos').select('nome').eq('user_id', uid);
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('setor_inativos').select('nome').eq('user_id', uid);
+    if (!error && Array.isArray(data)) {
       const names = data.map(r => r.nome);
-      localStorage.setItem(INATIVOS_SETORES_LOCAL_KEY, JSON.stringify(names));
+      appStorage.setItem(INATIVOS_SETORES_LOCAL_KEY, JSON.stringify(names));
       if (typeof window.__inactiveSetores !== 'undefined') {
         names.forEach(n => window.__inactiveSetores.add(n));
       }
@@ -399,7 +403,7 @@ async function dbSetorInativosLoad() {
 async function dbSetorInativosSave(names) {
   if (!requireAdmin()) return;
   const arr = [...names];
-  localStorage.setItem(INATIVOS_SETORES_LOCAL_KEY, JSON.stringify(arr));
+  appStorage.setItem(INATIVOS_SETORES_LOCAL_KEY, JSON.stringify(arr));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -420,8 +424,8 @@ async function dbFeedbacksLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(FEEDBACKS_LOCAL_KEY, []);
-    const { data } = await sbClient.from('feedbacks').select('*').eq('user_id', uid).order('created_at', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('feedbacks').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+    if (!error && Array.isArray(data)) {
       const list = data.map(r => ({
         id: r.id,
         colaborador: r.colaborador,
@@ -432,7 +436,7 @@ async function dbFeedbacksLoad() {
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
-      localStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(list));
+      appStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(list));
       return list;
     }
     return _fallbackLoad(FEEDBACKS_LOCAL_KEY, []);
@@ -442,11 +446,11 @@ async function dbFeedbacksLoad() {
 }
 
 async function dbFeedbacksSave(feedback) {
-  const list = JSON.parse(localStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
   const idx = list.findIndex(f => f.id === feedback.id);
   if (idx >= 0) list[idx] = feedback;
   else list.unshift(feedback);
-  localStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(list));
+  appStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(list));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -478,9 +482,9 @@ async function dbFeedbacksSave(feedback) {
 }
 
 async function dbFeedbacksDelete(id) {
-  const list = JSON.parse(localStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
   const filtered = list.filter(f => f.id !== id);
-  localStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(filtered));
+  appStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(filtered));
   if (!sbClient) return;
   try {
     await sbClient.from('feedbacks').delete().eq('id', id);
@@ -496,8 +500,8 @@ async function dbAnotacoesLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(ANOTACOES_LOCAL_KEY, []);
-    const { data } = await sbClient.from('anotacoes_diarias').select('*').eq('user_id', uid).not('conteudo', 'like', 'atividade-colaborador:v1:%').order('data', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('anotacoes_diarias').select('*').eq('user_id', uid).not('conteudo', 'like', 'atividade-colaborador:v1:%').order('data', { ascending: false });
+    if (!error && Array.isArray(data)) {
       const list = data.map(r => ({
         id: r.id,
         data: r.data,
@@ -507,7 +511,7 @@ async function dbAnotacoesLoad() {
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
-      localStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(list));
+      appStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(list));
       return list;
     }
     return _fallbackLoad(ANOTACOES_LOCAL_KEY, []);
@@ -517,11 +521,11 @@ async function dbAnotacoesLoad() {
 }
 
 async function dbAnotacoesSave(anotacao) {
-  const list = JSON.parse(localStorage.getItem(ANOTACOES_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(ANOTACOES_LOCAL_KEY) || '[]');
   const idx = list.findIndex(a => a.id === anotacao.id);
   if (idx >= 0) list[idx] = anotacao;
   else list.unshift(anotacao);
-  localStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(list));
+  appStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(list));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -549,9 +553,9 @@ async function dbAnotacoesSave(anotacao) {
 }
 
 async function dbAnotacoesDelete(id) {
-  const list = JSON.parse(localStorage.getItem(ANOTACOES_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(ANOTACOES_LOCAL_KEY) || '[]');
   const filtered = list.filter(a => a.id !== id);
-  localStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(filtered));
+  appStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(filtered));
   if (!sbClient) return;
   try {
     await sbClient.from('anotacoes_diarias').delete().eq('id', id);
@@ -567,8 +571,8 @@ async function dbTarefasLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(TAREFAS_LOCAL_KEY, []);
-    const { data } = await sbClient.from('tarefas').select('*').eq('user_id', uid).order('data', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('tarefas').select('*').eq('user_id', uid).order('data', { ascending: false });
+    if (!error && Array.isArray(data)) {
       const list = data.map(r => ({
         id: r.id,
         titulo: r.titulo,
@@ -585,7 +589,7 @@ async function dbTarefasLoad() {
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
-      localStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(list));
+      appStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(list));
       return list;
     }
     return _fallbackLoad(TAREFAS_LOCAL_KEY, []);
@@ -595,14 +599,14 @@ async function dbTarefasLoad() {
 }
 
 async function dbTarefasSave(tarefa) {
-  const list = JSON.parse(localStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
   const originalId = tarefa.id;
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(tarefa.id || ''));
   if (!isUuid) tarefa = { ...tarefa, id: crypto.randomUUID() };
   const idx = list.findIndex(t => t.id === originalId || t.id === tarefa.id);
   if (idx >= 0) list[idx] = tarefa;
   else list.unshift(tarefa);
-  localStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(list));
+  appStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(list));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -644,9 +648,9 @@ async function dbTarefasSave(tarefa) {
 }
 
 async function dbTarefasDelete(id) {
-  const list = JSON.parse(localStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
   const filtered = list.filter(t => t.id !== id);
-  localStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(filtered));
+  appStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(filtered));
   if (!sbClient) return;
   try {
     await sbClient.from('tarefas').delete().eq('id', id);
@@ -665,7 +669,7 @@ async function dbRegrasLoad() {
     if (error) throw error;
     if (Array.isArray(data)) {
       const list = data.map(r => ({ id: r.id, titulo: r.titulo, descricao: r.descricao || '', categoria: r.categoria || 'Geral', status: r.status || 'vigente', posicao: Number(r.posicao || 0), createdAt: r.created_at, updatedAt: r.updated_at }));
-      localStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(list));
+      appStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(list));
       return list;
     }
   } catch (e) { console.warn('[db-extra] Regras usando armazenamento local:', e.message || e); }
@@ -676,7 +680,7 @@ async function dbRegrasSave(regra) {
   const list = _fallbackLoad(REGRAS_LOCAL_KEY, []);
   const index = list.findIndex(r => r.id === regra.id);
   if (index >= 0) list[index] = regra; else list.push(regra);
-  localStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(list));
+  appStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(list));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -686,7 +690,7 @@ async function dbRegrasSave(regra) {
 }
 
 async function dbRegrasDelete(id) {
-  localStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(_fallbackLoad(REGRAS_LOCAL_KEY, []).filter(r => r.id !== id)));
+  appStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(_fallbackLoad(REGRAS_LOCAL_KEY, []).filter(r => r.id !== id)));
   if (!sbClient) return;
   try {
     const { error } = await sbClient.from('regras').delete().eq('id', id);
@@ -702,8 +706,8 @@ async function dbPontosExtrasLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
-    const { data } = await sbClient.from('pontos_extras').select('*').eq('user_id', uid).order('created_at', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('pontos_extras').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+    if (!error && Array.isArray(data)) {
       const list = data.map(r => ({
         id: r.id,
         colaborador: r.colaborador,
@@ -712,7 +716,7 @@ async function dbPontosExtrasLoad() {
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
-      localStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(list));
+      appStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(list));
       return list;
     }
     return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
@@ -722,11 +726,11 @@ async function dbPontosExtrasLoad() {
 }
 
 async function dbPontosExtrasSave(bonus) {
-  const list = JSON.parse(localStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
   const idx = list.findIndex(b => b.id === bonus.id);
   if (idx >= 0) list[idx] = bonus;
   else list.unshift(bonus);
-  localStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(list));
+  appStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(list));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -753,9 +757,9 @@ async function dbPontosExtrasSave(bonus) {
 }
 
 async function dbPontosExtrasDelete(id) {
-  const list = JSON.parse(localStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
   const filtered = list.filter(b => b.id !== id);
-  localStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(filtered));
+  appStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(filtered));
   if (!sbClient) return;
   try {
     await sbClient.from('pontos_extras').delete().eq('id', id);
@@ -771,8 +775,8 @@ async function dbAusenciasLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
-    const { data } = await sbClient.from('ausencias').select('*').eq('user_id', uid).order('data', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('ausencias').select('*').eq('user_id', uid).order('data', { ascending: false });
+    if (!error && Array.isArray(data)) {
       const list = data.map(r => ({
         id: r.id,
         colaborador: r.colaborador,
@@ -782,7 +786,7 @@ async function dbAusenciasLoad() {
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
-      localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(list));
+      appStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(list));
       return list;
     }
     return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
@@ -792,11 +796,11 @@ async function dbAusenciasLoad() {
 }
 
 async function dbAusenciasSave(ausencia) {
-  const list = JSON.parse(localStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
   const idx = list.findIndex(a => a.id === ausencia.id);
   if (idx >= 0) list[idx] = ausencia;
   else list.unshift(ausencia);
-  localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(list));
+  appStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(list));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -823,9 +827,9 @@ async function dbAusenciasSave(ausencia) {
 }
 
 async function dbAusenciasDelete(id) {
-  const list = JSON.parse(localStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
   const filtered = list.filter(a => a.id !== id);
-  localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(filtered));
+  appStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(filtered));
   if (!sbClient) return;
   try {
     await sbClient.from('ausencias').delete().eq('id', id);
@@ -841,8 +845,8 @@ async function dbAvaliacaoAtendLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(AVALIACAO_ATEND_LOCAL_KEY, []);
-    const { data } = await sbClient.from('avaliacao_atendimentos').select('*').eq('user_id', uid).order('created_at', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('avaliacao_atendimentos').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+    if (!error && Array.isArray(data)) {
       const list = data.map(r => ({
         id: r.id,
         protocolo: r.protocolo,
@@ -857,7 +861,7 @@ async function dbAvaliacaoAtendLoad() {
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
-      localStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(list));
+      appStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(list));
       return list;
     }
     return _fallbackLoad(AVALIACAO_ATEND_LOCAL_KEY, []);
@@ -867,11 +871,11 @@ async function dbAvaliacaoAtendLoad() {
 }
 
 async function dbAvaliacaoAtendSave(item) {
-  const list = JSON.parse(localStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY) || '[]');
   const idx = list.findIndex(a => a.id === item.id);
   if (idx >= 0) list[idx] = item;
   else list.unshift(item);
-  localStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(list));
+  appStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(list));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -908,9 +912,9 @@ async function dbAvaliacaoAtendSave(item) {
 }
 
 async function dbAvaliacaoAtendDelete(id) {
-  const list = JSON.parse(localStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY) || '[]');
   const filtered = list.filter(a => a.id !== id);
-  localStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(filtered));
+  appStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(filtered));
   if (!sbClient) return;
   try {
     await sbClient.from('avaliacao_atendimentos').delete().eq('id', id);
@@ -940,7 +944,7 @@ async function dbFeriasLoad() {
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
-      localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(list));
+      appStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(list));
       notifyFeriasUpdated();
       return list;
     }
@@ -951,11 +955,11 @@ async function dbFeriasLoad() {
 }
 
 async function dbFeriasSave(item) {
-  const list = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
   const idx = list.findIndex(f => f.id === item.id);
   if (idx >= 0) list[idx] = item;
   else list.unshift(item);
-  localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(list));
+  appStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(list));
   notifyFeriasUpdated();
   if (!sbClient) return;
   try {
@@ -981,9 +985,9 @@ async function dbFeriasSave(item) {
 }
 
 async function dbFeriasDelete(id) {
-  const list = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
   const filtered = list.filter(f => String(f.id) !== String(id));
-  localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(filtered));
+  appStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(filtered));
   notifyFeriasUpdated();
   if (!sbClient) return;
   try {
@@ -1000,8 +1004,8 @@ async function dbAcompDiarioLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(ACOMP_DIARIO_LOCAL_KEY, []);
-    const { data } = await sbClient.from('acompanhamento_diario').select('*').eq('user_id', uid).order('data', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('acompanhamento_diario').select('*').eq('user_id', uid).order('data', { ascending: false });
+    if (!error && Array.isArray(data)) {
       const list = data.map(r => ({
         id: r.id,
         colaborador: r.colaborador,
@@ -1014,7 +1018,7 @@ async function dbAcompDiarioLoad() {
         createdAt: r.created_at,
         updatedAt: r.updated_at
       }));
-      localStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(list));
+      appStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(list));
       return list;
     }
     return _fallbackLoad(ACOMP_DIARIO_LOCAL_KEY, []);
@@ -1024,11 +1028,11 @@ async function dbAcompDiarioLoad() {
 }
 
 async function dbAcompDiarioSave(item) {
-  const list = JSON.parse(localStorage.getItem(ACOMP_DIARIO_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(ACOMP_DIARIO_LOCAL_KEY) || '[]');
   const idx = list.findIndex(a => a.id === item.id);
   if (idx >= 0) list[idx] = item;
   else list.unshift(item);
-  localStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(list));
+  appStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(list));
   if (!sbClient) return;
   try {
     const uid = await _getUserId();
@@ -1061,9 +1065,9 @@ async function dbAcompDiarioSave(item) {
 }
 
 async function dbAcompDiarioDelete(id) {
-  const list = JSON.parse(localStorage.getItem(ACOMP_DIARIO_LOCAL_KEY) || '[]');
+  const list = JSON.parse(appStorage.getItem(ACOMP_DIARIO_LOCAL_KEY) || '[]');
   const filtered = list.filter(a => a.id !== id);
-  localStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(filtered));
+  appStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(filtered));
   if (!sbClient) return;
   try {
     await sbClient.from('acompanhamento_diario').delete().eq('id', id);
@@ -1079,10 +1083,10 @@ async function dbColabInfoLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
-    const { data } = await sbClient.from('colaboradores_info').select('*').eq('user_id', uid);
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('colaboradores_info').select('*').eq('user_id', uid);
+    if (!error && Array.isArray(data)) {
       const localMap = _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
-      const map = { ...localMap };
+      const map = {};
       data.forEach(r => {
         const remoteInfo = {
           id: r.id,
@@ -1115,7 +1119,7 @@ async function dbColabInfoLoad() {
                 feito_descricao: localInfo.feito_descricao || ''
               } : {}) };
       });
-      localStorage.setItem(COLAB_INFO_LOCAL_KEY, JSON.stringify(map));
+      appStorage.setItem(COLAB_INFO_LOCAL_KEY, JSON.stringify(map));
       return map;
     }
     return _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
@@ -1126,9 +1130,9 @@ async function dbColabInfoLoad() {
 
 async function dbColabInfoSave(nome, data) {
   if (!requireAdmin()) return false;
-  const map = JSON.parse(localStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
+  const map = JSON.parse(appStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
   map[nome] = { ...(map[nome] || {}), ...data, updatedAt: new Date().toISOString() };
-  localStorage.setItem(COLAB_INFO_LOCAL_KEY, JSON.stringify(map));
+  appStorage.setItem(COLAB_INFO_LOCAL_KEY, JSON.stringify(map));
   if (!sbClient) return false;
   try {
     const uid = await _getUserId();
@@ -1175,7 +1179,7 @@ async function dbColabInfoSave(nome, data) {
 
 function _fallbackLoad(key, defaultVal) {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = appStorage.getItem(key);
     return raw ? JSON.parse(raw) : defaultVal;
   } catch { return defaultVal; }
 }
@@ -1187,12 +1191,12 @@ const MIGRATION_FLAG_KEY = 'sistema_migrated_to_supabase_v1';
 async function migrateLocalToSupabase() {
   if (!sbClient) return;
   try {
-    if (localStorage.getItem(MIGRATION_FLAG_KEY)) return;
+    if (appStorage.getItem(MIGRATION_FLAG_KEY)) return;
     const uid = await _getUserId();
     if (!uid) return;
 
     // Metas
-    const metasRaw = localStorage.getItem(METAS_LOCAL_KEY);
+    const metasRaw = appStorage.getItem(METAS_LOCAL_KEY);
     if (metasRaw) {
       const metas = JSON.parse(metasRaw);
       if (Array.isArray(metas) && metas.length > 0) {
@@ -1204,7 +1208,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Comentários
-    const comRaw = localStorage.getItem(COMENTARIOS_LOCAL_KEY);
+    const comRaw = appStorage.getItem(COMENTARIOS_LOCAL_KEY);
     if (comRaw) {
       const com = JSON.parse(comRaw);
       if (typeof com === 'object' && Object.keys(com).length > 0) {
@@ -1222,7 +1226,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Histórico
-    const histRaw = localStorage.getItem(HISTORICO_LOCAL_KEY);
+    const histRaw = appStorage.getItem(HISTORICO_LOCAL_KEY);
     if (histRaw) {
       const hist = JSON.parse(histRaw);
       if (Array.isArray(hist) && hist.length > 0) {
@@ -1244,7 +1248,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Scoring rules
-    const scoreRaw = localStorage.getItem(SCORING_LOCAL_KEY);
+    const scoreRaw = appStorage.getItem(SCORING_LOCAL_KEY);
     if (scoreRaw) {
       const rules = JSON.parse(scoreRaw);
       if (Array.isArray(rules) && rules.length > 0) {
@@ -1256,7 +1260,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Alertas config
-    const alertRaw = localStorage.getItem(ALERTAS_LOCAL_KEY);
+    const alertRaw = appStorage.getItem(ALERTAS_LOCAL_KEY);
     if (alertRaw) {
       const config = JSON.parse(alertRaw);
       if (Array.isArray(config) && config.length > 0) {
@@ -1268,7 +1272,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Fotos
-    const fotosRaw = localStorage.getItem(FOTOS_LOCAL_KEY);
+    const fotosRaw = appStorage.getItem(FOTOS_LOCAL_KEY);
     if (fotosRaw) {
       const fotos = JSON.parse(fotosRaw);
       if (typeof fotos === 'object' && Object.keys(fotos).length > 0) {
@@ -1284,7 +1288,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Inativos
-    const inatRaw = localStorage.getItem(INATIVOS_LOCAL_KEY);
+    const inatRaw = appStorage.getItem(INATIVOS_LOCAL_KEY);
     if (inatRaw) {
       const names = JSON.parse(inatRaw);
       if (Array.isArray(names) && names.length > 0) {
@@ -1296,7 +1300,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Setores inativos
-    const setorInatRaw = localStorage.getItem(INATIVOS_SETORES_LOCAL_KEY);
+    const setorInatRaw = appStorage.getItem(INATIVOS_SETORES_LOCAL_KEY);
     if (setorInatRaw) {
       const names = JSON.parse(setorInatRaw);
       if (Array.isArray(names) && names.length > 0) {
@@ -1308,7 +1312,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Feedbacks
-    const fbRaw = localStorage.getItem(FEEDBACKS_LOCAL_KEY);
+    const fbRaw = appStorage.getItem(FEEDBACKS_LOCAL_KEY);
     if (fbRaw) {
       const fb = JSON.parse(fbRaw);
       if (Array.isArray(fb) && fb.length > 0) {
@@ -1329,7 +1333,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Anotações diárias
-    const anotRaw = localStorage.getItem(ANOTACOES_LOCAL_KEY);
+    const anotRaw = appStorage.getItem(ANOTACOES_LOCAL_KEY);
     if (anotRaw) {
       const anot = JSON.parse(anotRaw);
       if (Array.isArray(anot) && anot.length > 0) {
@@ -1347,7 +1351,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Tarefas
-    const tarefasRaw = localStorage.getItem(TAREFAS_LOCAL_KEY);
+    const tarefasRaw = appStorage.getItem(TAREFAS_LOCAL_KEY);
     if (tarefasRaw) {
       const tarefas = JSON.parse(tarefasRaw);
       if (Array.isArray(tarefas) && tarefas.length > 0) {
@@ -1368,7 +1372,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Pontos Extras
-    const peRaw = localStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY);
+    const peRaw = appStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY);
     if (peRaw) {
       const pe = JSON.parse(peRaw);
       if (Array.isArray(pe) && pe.length > 0) {
@@ -1387,7 +1391,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Colaboradores Info
-    const ciRaw = localStorage.getItem(COLAB_INFO_LOCAL_KEY);
+    const ciRaw = appStorage.getItem(COLAB_INFO_LOCAL_KEY);
     if (ciRaw) {
       const ci = JSON.parse(ciRaw);
       if (typeof ci === 'object' && Object.keys(ci).length > 0) {
@@ -1417,7 +1421,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Ausências
-    const ausRaw = localStorage.getItem(AUSENCIAS_LOCAL_KEY);
+    const ausRaw = appStorage.getItem(AUSENCIAS_LOCAL_KEY);
     if (ausRaw) {
       const aus = JSON.parse(ausRaw);
       if (Array.isArray(aus) && aus.length > 0) {
@@ -1437,7 +1441,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Avaliação de Atendimentos
-    const avRaw = localStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY);
+    const avRaw = appStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY);
     if (avRaw) {
       const av = JSON.parse(avRaw);
       if (Array.isArray(av) && av.length > 0) {
@@ -1459,7 +1463,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Férias
-    const ferRaw = localStorage.getItem(FERIAS_LOCAL_KEY);
+    const ferRaw = appStorage.getItem(FERIAS_LOCAL_KEY);
     if (ferRaw) {
       const fer = JSON.parse(ferRaw);
       if (Array.isArray(fer) && fer.length > 0) {
@@ -1478,7 +1482,7 @@ async function migrateLocalToSupabase() {
     }
 
     // Acompanhamento Diário
-    const adRaw = localStorage.getItem(ACOMP_DIARIO_LOCAL_KEY);
+    const adRaw = appStorage.getItem(ACOMP_DIARIO_LOCAL_KEY);
     if (adRaw) {
       const ad = JSON.parse(adRaw);
       if (Array.isArray(ad) && ad.length > 0) {
@@ -1500,7 +1504,7 @@ async function migrateLocalToSupabase() {
       }
     }
 
-    localStorage.setItem(MIGRATION_FLAG_KEY, '1');
+    appStorage.setItem(MIGRATION_FLAG_KEY, '1');
   } catch (e) { console.warn('[db-extra] migrateLocalToSupabase error:', e); }
 }
 
@@ -1509,7 +1513,7 @@ async function migrateLocalToSupabase() {
 async function initDbExtra() {
   if (!sbClient) return;
   try {
-    await migrateLocalToSupabase();
+    // Unowned historical browser data is preserved, never uploaded automatically.
     await Promise.allSettled([
       dbMetasLoad(),
       dbComentariosLoad(),

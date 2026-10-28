@@ -216,9 +216,9 @@ function renderFeedbacks() {
 
   const colabs = AtividadesMes.people();
   const meses = [...new Set([..._uniqueMonths(typeof rawRecords !== 'undefined' ? rawRecords : data).map(AtividadesMes.monthKey).filter(Boolean), ...AtividadesMes.months()])].sort();
-  const saved = JSON.parse(localStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
+  const saved = JSON.parse(appStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
 
-  const editingRaw = localStorage.getItem(FB_EDITING_KEY);
+  const editingRaw = appStorage.getItem(FB_EDITING_KEY);
   const editing = editingRaw ? JSON.parse(editingRaw) : null;
 
   let html = '';
@@ -337,7 +337,7 @@ function bindFbEvents(colabs, meses, saved) {
   const anotacoesTexto = document.getElementById('fbAnotacoesTexto');
   const finalTexto = document.getElementById('fbFinalTexto');
 
-  const editingRaw = localStorage.getItem(FB_EDITING_KEY);
+  const editingRaw = appStorage.getItem(FB_EDITING_KEY);
   const editing = editingRaw ? JSON.parse(editingRaw) : null;
 
   if (colabSel && mesSel && gerarBtn) {
@@ -362,7 +362,7 @@ function bindFbEvents(colabs, meses, saved) {
         fbArea.innerHTML = '<div class="field"><span>Sugestão Automática</span>';
         fbArea.innerHTML += `<textarea id="fbSugestaoTexto" style="width:100%;min-height:180px;font-size:13px;line-height:1.6;white-space:pre-wrap">${escapeHtml(sugestao)}</textarea></div>`;
       }
-      localStorage.setItem(FB_EDITING_KEY, JSON.stringify({
+      appStorage.setItem(FB_EDITING_KEY, JSON.stringify({
         id: null,
         colaborador: colab,
         mes: mes,
@@ -377,31 +377,31 @@ function bindFbEvents(colabs, meses, saved) {
 
   if (anotacoesTexto) {
     anotacoesTexto.addEventListener('input', () => {
-      const cur = JSON.parse(localStorage.getItem(FB_EDITING_KEY) || '{}');
+      const cur = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}');
       cur.anotacoes = anotacoesTexto.value;
-      localStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
+      appStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
     });
   }
 
   if (finalTexto) {
     finalTexto.addEventListener('input', () => {
-      const cur = JSON.parse(localStorage.getItem(FB_EDITING_KEY) || '{}');
+      const cur = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}');
       cur.feedback_final = finalTexto.value;
-      localStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
+      appStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
     });
   }
 
   if (sugerirTexto) {
     sugerirTexto.addEventListener('input', () => {
-      const cur = JSON.parse(localStorage.getItem(FB_EDITING_KEY) || '{}');
+      const cur = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}');
       cur.sugestao_automatica = sugerirTexto.value;
-      localStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
+      appStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
     });
   }
 
   if (salvarBtn) {
     salvarBtn.addEventListener('click', async () => {
-      const cur = JSON.parse(localStorage.getItem(FB_EDITING_KEY) || '{}');
+      const cur = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}');
       if (!cur.colaborador) return;
       if (typeof setLoading === 'function') setLoading(true, 'Salvando feedback…');
       try {
@@ -418,7 +418,7 @@ function bindFbEvents(colabs, meses, saved) {
           createdAt: cur.createdAt || new Date().toISOString()
         };
         await dbFeedbacksSave(fb);
-        localStorage.removeItem(FB_EDITING_KEY);
+        appStorage.removeItem(FB_EDITING_KEY);
         showToast('Feedback salvo com sucesso!', 'success', 'Feedbacks');
         renderFeedbacks();
       } finally {
@@ -430,7 +430,7 @@ function bindFbEvents(colabs, meses, saved) {
   const cancelarBtn = document.getElementById('fbCancelarBtn');
   if (cancelarBtn) {
     cancelarBtn.addEventListener('click', () => {
-      localStorage.removeItem(FB_EDITING_KEY);
+      appStorage.removeItem(FB_EDITING_KEY);
       renderFeedbacks();
     });
   }
@@ -459,7 +459,7 @@ function bindFbEvents(colabs, meses, saved) {
       const id = btn.dataset.id;
       const fb = saved.find(f => f.id === id);
       if (!fb) return;
-      localStorage.setItem(FB_EDITING_KEY, JSON.stringify({ ...fb, id: fb.id }));
+      appStorage.setItem(FB_EDITING_KEY, JSON.stringify({ ...fb, id: fb.id }));
       renderFeedbacks();
     });
   });

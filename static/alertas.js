@@ -16,7 +16,7 @@ let alertasConfig = [];
 
 function loadAlertasConfig() {
   try {
-    const raw = localStorage.getItem(ALERTAS_STORAGE_KEY);
+    const raw = appStorage.getItem(ALERTAS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length) {
@@ -37,7 +37,7 @@ function loadAlertasConfig() {
 }
 
 function saveAlertasConfig() {
-  try { localStorage.setItem(ALERTAS_STORAGE_KEY, JSON.stringify(alertasConfig)); } catch (e) { console.warn('[Alertas] Erro ao salvar config:', e); }
+  try { appStorage.setItem(ALERTAS_STORAGE_KEY, JSON.stringify(alertasConfig)); } catch (e) { console.warn('[Alertas] Erro ao salvar config:', e); }
   if (typeof dbAlertasSave === 'function') {
     dbAlertasSave(alertasConfig);
   }

@@ -36,7 +36,7 @@ function sugerirCiclo() {
 
 function getAvaliacoesLocal() {
   try {
-    return JSON.parse(localStorage.getItem(AVALIACAO_KEY) || '[]');
+    return JSON.parse(appStorage.getItem(AVALIACAO_KEY) || '[]');
   } catch { return []; }
 }
 
@@ -48,7 +48,7 @@ function getAvaliacoesAtivas() {
 }
 
 function saveAvaliacoesLocal(list) {
-  localStorage.setItem(AVALIACAO_KEY, JSON.stringify(list));
+  appStorage.setItem(AVALIACAO_KEY, JSON.stringify(list));
 }
 
 async function dbAvaliacoesLoad() {
@@ -56,8 +56,8 @@ async function dbAvaliacoesLoad() {
   try {
     const uid = await _getUserId();
     if (!uid) return getAvaliacoesLocal();
-    const { data } = await sbClient.from('avaliacoes').select('*').eq('user_id', uid).order('created_at', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
+    const { data, error } = await sbClient.from('avaliacoes').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+    if (!error && Array.isArray(data)) {
       const localData = getAvaliacoesLocal();
       const list = data.map(r => {
         const local = localData.find(l => l.id === r.id);

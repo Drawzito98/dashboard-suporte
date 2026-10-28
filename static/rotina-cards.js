@@ -9,7 +9,7 @@ const ROTINA_STATUS = [
 let rotinaEditId = null;
 
 function _rotinaSaved() {
-  try { return JSON.parse(localStorage.getItem('sistema_tarefas_v1') || '[]'); } catch (_) { return []; }
+  try { return JSON.parse(appStorage.getItem('sistema_tarefas_v1') || '[]'); } catch (_) { return []; }
 }
 function _rotinaPriority(t) {
   const labels = { alta: 'Alta', media: 'Média', baixa: 'Baixa' };
@@ -35,7 +35,7 @@ function renderTarefas() {
   if (!host) return;
   const saved = _rotinaSaved();
   verificarLembretesRotina(saved);
-  const view = localStorage.getItem('sistema_tarefas_view_v1') || 'kanban';
+  const view = appStorage.getItem('sistema_tarefas_view_v1') || 'kanban';
   const editing = saved.find(t => t.id === rotinaEditId);
   const formOpen = rotinaEditId !== null;
   host.innerHTML = `
@@ -65,7 +65,7 @@ function _bindRotinaCards(saved) {
   document.getElementById('rotinaAnotacoesBtn')?.addEventListener('click', openAnotacoesOverlay);
   document.getElementById('tarefaNovaBtn')?.addEventListener('click', () => { rotinaEditId = ''; renderTarefas(); document.getElementById('tarefaTituloInput')?.focus(); });
   document.getElementById('tarefaCancelarBtn')?.addEventListener('click', () => { rotinaEditId = null; renderTarefas(); });
-  document.querySelectorAll('[data-task-view]').forEach(b => b.addEventListener('click', () => { localStorage.setItem('sistema_tarefas_view_v1', b.dataset.taskView); renderTarefas(); }));
+  document.querySelectorAll('[data-task-view]').forEach(b => b.addEventListener('click', () => { appStorage.setItem('sistema_tarefas_view_v1', b.dataset.taskView); renderTarefas(); }));
   document.getElementById('tarefaSalvarBtn')?.addEventListener('click', async () => {
     if (!requireAdmin()) return;
     const titulo = document.getElementById('tarefaTituloInput').value.trim(), data = document.getElementById('tarefaDataInput').value;
@@ -85,11 +85,11 @@ function _bindRotinaCards(saved) {
 function onTarefasTabActivated() { rotinaEditId = null; renderTarefas(); dbTarefasLoad().then(renderTarefas).catch(() => {}); }
 
 // ── Anotações em cards pesquisáveis ──
-function _notasSaved() { try { return JSON.parse(localStorage.getItem('sistema_anotacoes_diarias_v1') || '[]'); } catch (_) { return []; } }
+function _notasSaved() { try { return JSON.parse(appStorage.getItem('sistema_anotacoes_diarias_v1') || '[]'); } catch (_) { return []; } }
 function _notaTags(value) { return String(value || '').split(',').map(v => v.trim()).filter(Boolean).slice(0, 6); }
 function renderAnotacoes() {
   const host = document.getElementById('anotacoesOverlayContent'); if (!host) return;
-  const saved = _notasSaved(), draftRaw = localStorage.getItem(ANOTACOES_EDITING_KEY), editing = draftRaw ? JSON.parse(draftRaw) : null;
+  const saved = _notasSaved(), draftRaw = appStorage.getItem(ANOTACOES_EDITING_KEY), editing = draftRaw ? JSON.parse(draftRaw) : null;
   const query = sessionStorage.getItem('anotacoes_busca') || '', onlyFav = sessionStorage.getItem('anotacoes_favoritas') === '1';
   const visible = saved.filter(n => (!onlyFav || n.favorito) && (!query || `${n.conteudo} ${n.etiquetas || ''} ${n.data}`.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR')))).sort((a,b) => Number(Boolean(b.favorito)) - Number(Boolean(a.favorito)) || String(b.data).localeCompare(String(a.data)));
   host.innerHTML = `<section class="card nota-form-card"><div class="card-header"><div><h3>${editing?.id ? 'Editar anotação' : 'Nova anotação'}</h3><p>Registre uma observação e use etiquetas para encontrá-la depois.</p></div></div><div class="grid-2col"><label class="field"><span>Data</span><input type="date" id="anotacaoDataInput" value="${editing?.data || hoje()}"></label><label class="field"><span>Etiquetas</span><input id="anotacaoTagsInput" value="${escapeHtml(editing?.etiquetas || '')}" placeholder="Ex: reunião, processo, ideia"></label></div><label class="field"><span>Anotação</span><textarea id="anotacaoTextoInput" rows="6" placeholder="Escreva sua anotação...">${escapeHtml(editing?.conteudo || '')}</textarea></label><div class="regra-form-actions"><button class="btn-primary" id="anotacaoSalvarBtn">${editing?.id ? 'Atualizar' : 'Salvar'} anotação</button>${editing?.id ? '<button class="btn-small" id="anotacaoCancelarBtn">Cancelar</button>' : ''}</div></section>
@@ -101,10 +101,10 @@ function _bindNotasCards(saved) {
   const host = document.getElementById('anotacoesOverlayContent');
   document.getElementById('anotacaoBusca')?.addEventListener('input', e => { sessionStorage.setItem('anotacoes_busca', e.target.value); renderAnotacoes(); document.getElementById('anotacaoBusca')?.focus(); });
   document.getElementById('anotacaoFavFilter')?.addEventListener('click', () => { sessionStorage.setItem('anotacoes_favoritas', sessionStorage.getItem('anotacoes_favoritas') === '1' ? '0' : '1'); renderAnotacoes(); });
-  document.getElementById('anotacaoSalvarBtn')?.addEventListener('click', async () => { const data = document.getElementById('anotacaoDataInput').value, conteudo = document.getElementById('anotacaoTextoInput').value.trim(); if (!data || !conteudo) { showToast('Preencha a data e o conteúdo.', 'error', 'Anotação'); return; } const old = saved.find(n => n.id === JSON.parse(localStorage.getItem(ANOTACOES_EDITING_KEY) || '{}').id); await dbAnotacoesSave({ ...(old || {}), id: old?.id || crypto.randomUUID(), data, conteudo, etiquetas: document.getElementById('anotacaoTagsInput').value.trim(), favorito: Boolean(old?.favorito), createdAt: old?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() }); localStorage.removeItem(ANOTACOES_EDITING_KEY); renderAnotacoes(); showToast('Anotação salva!', 'success', 'Anotações'); });
-  document.getElementById('anotacaoCancelarBtn')?.addEventListener('click', () => { localStorage.removeItem(ANOTACOES_EDITING_KEY); renderAnotacoes(); });
+  document.getElementById('anotacaoSalvarBtn')?.addEventListener('click', async () => { const data = document.getElementById('anotacaoDataInput').value, conteudo = document.getElementById('anotacaoTextoInput').value.trim(); if (!data || !conteudo) { showToast('Preencha a data e o conteúdo.', 'error', 'Anotação'); return; } const old = saved.find(n => n.id === JSON.parse(appStorage.getItem(ANOTACOES_EDITING_KEY) || '{}').id); await dbAnotacoesSave({ ...(old || {}), id: old?.id || crypto.randomUUID(), data, conteudo, etiquetas: document.getElementById('anotacaoTagsInput').value.trim(), favorito: Boolean(old?.favorito), createdAt: old?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() }); appStorage.removeItem(ANOTACOES_EDITING_KEY); renderAnotacoes(); showToast('Anotação salva!', 'success', 'Anotações'); });
+  document.getElementById('anotacaoCancelarBtn')?.addEventListener('click', () => { appStorage.removeItem(ANOTACOES_EDITING_KEY); renderAnotacoes(); });
   host.querySelectorAll('.nota-fav-btn').forEach(b => b.addEventListener('click', async () => { const n = saved.find(x => x.id === b.dataset.id); if (!n) return; n.favorito = !n.favorito; n.updatedAt = new Date().toISOString(); await dbAnotacoesSave(n); renderAnotacoes(); }));
-  host.querySelectorAll('.anotacao-editar-btn').forEach(b => b.addEventListener('click', () => { const n = saved.find(x => x.id === b.dataset.id); if (!n) return; localStorage.setItem(ANOTACOES_EDITING_KEY, JSON.stringify(n)); renderAnotacoes(); document.getElementById('anotacaoTextoInput')?.focus(); }));
+  host.querySelectorAll('.anotacao-editar-btn').forEach(b => b.addEventListener('click', () => { const n = saved.find(x => x.id === b.dataset.id); if (!n) return; appStorage.setItem(ANOTACOES_EDITING_KEY, JSON.stringify(n)); renderAnotacoes(); document.getElementById('anotacaoTextoInput')?.focus(); }));
   host.querySelectorAll('.anotacao-excluir-btn').forEach(b => b.addEventListener('click', async () => { const n = saved.find(x => x.id === b.dataset.id); if (!n || !confirm(`Excluir anotação de ${formatarData(n.data)}?`)) return; await dbAnotacoesDelete(n.id); renderAnotacoes(); }));
   host.querySelectorAll('.anotacao-ver-btn').forEach(b => b.addEventListener('click', () => { const n = saved.find(x => x.id === b.dataset.id); if (!n) return; const overlay = document.getElementById('anotacaoViewOverlay') || criarAnotacaoOverlay(), content = document.getElementById('anotacaoViewContent'); content.innerHTML = `<div class="nota-view"><div class="card-header"><h2>📅 ${formatarData(n.data)}</h2><button class="btn-small" id="anotacaoViewCloseBtn">✕ Fechar</button></div><div class="nota-tags">${_notaTags(n.etiquetas).map(t => `<span>${escapeHtml(t)}</span>`).join('')}</div><pre>${escapeHtml(n.conteudo)}</pre></div>`; overlay.classList.add('open'); document.getElementById('anotacaoViewCloseBtn').onclick = () => overlay.classList.remove('open'); }));
   document.getElementById('anotacaoRefreshBtn')?.addEventListener('click', () => dbAnotacoesLoad().then(renderAnotacoes));

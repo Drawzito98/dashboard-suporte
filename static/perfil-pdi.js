@@ -10,14 +10,14 @@
     return user && typeof getTrustedUserRole === 'function' && getTrustedUserRole(user) === 'admin' ? user.id : '';
   }
   function allowed() { return Boolean(userId()) && document.body.dataset.role === 'admin'; }
-  function read(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; } }
+  function read(key, fallback) { try { return JSON.parse(appStorage.getItem(key)) || fallback; } catch { return fallback; } }
   const storageKey = () => `sistema_perfil_pdi_v1_${owner}`;
   const person = () => state[nome] || { complemento: {}, planos: [] };
   function notice(message, error = false) { const el = get('pdiNotice'); if (el) { el.textContent = message; el.classList.toggle('error', error); } }
   function persist(data) {
     if (!allowed() || owner !== userId()) throw new Error('A sessão mudou. Abra novamente a análise de perfil.');
     const next = { ...state, [nome]: data };
-    localStorage.setItem(storageKey(), JSON.stringify(next));
+    appStorage.setItem(storageKey(), JSON.stringify(next));
     state = next;
   }
   function registros() { return typeof rawRecords !== 'undefined' && Array.isArray(rawRecords) ? rawRecords : []; }

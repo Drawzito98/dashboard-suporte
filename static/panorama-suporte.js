@@ -252,7 +252,7 @@
         const parsed = await parseCsvFile(values.get('file'));
         if (requestVersion !== version) return;
         if (parsed.errors?.length) throw new Error('CSV inválido. Verifique delimitadores e quantidade de colunas.');
-        const registry = typeof dbColabInfoLoad === 'function' ? await dbColabInfoLoad() : JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+        const registry = typeof dbColabInfoLoad === 'function' ? await dbColabInfoLoad() : JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}');
         if (requestVersion !== version) return;
         source = { rows: process(parsed.data, parsed.meta.fields), options: { start: values.get('start'), end: values.get('end'), hide: values.get('privacy') === 'hide', order: values.get('order') }, registry, records: typeof rawRecords === 'undefined' ? [] : rawRecords };
         render();

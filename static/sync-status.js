@@ -1,47 +1,24 @@
+// Status concerns indicators only; it does not claim all modules are synchronized.
 (function () {
-  function pendingCount() {
-    return typeof getPendingSync === 'function' ? getPendingSync().length : 0;
+  function render() {
+    const button = document.getElementById('syncStatusBtn'); if (!button) return;
+    const state = typeof AppState !== 'undefined' ? AppState.get('records') : null;
+    const count = typeof getPendingSync === 'function' ? getPendingSync().length : 0;
+    const offline = navigator.onLine === false || state?.status === 'offline';
+    button.classList.toggle('has-pending', count > 0);button.classList.toggle('is-offline', offline);button.dataset.count = String(count);
+    let label = 'Aguardando dados', title = 'O estado dos indicadores ainda não foi confirmado.';
+    if (state?.status === 'loading') { label = 'Consultando indicadores'; title = 'Buscando a fonte oficial.'; }
+    else if (count) { label = count + ' pendente' + (count === 1 ? '' : 's'); title = 'Há alterações de indicadores ainda não confirmadas no servidor. Clique para tentar enviar.'; }
+    else if (offline) { label = 'Usando dados locais'; title = 'Servidor indisponível. O cache é desta conta e pode estar desatualizado.'; }
+    else if (state?.source === 'server') { label = 'Indicadores atualizados'; title = state?.error === 'cache-unavailable' ? 'Indicadores consultados no servidor; o cache offline não pôde ser salvo.' : 'Indicadores consultados no servidor. O status de outros módulos é independente.'; }
+    button.innerHTML = '<span class="sync-status-dot"></span><span>' + label + '</span>';button.title = title;
   }
-
-  function renderSyncStatus() {
+  async function retry() {
     const button = document.getElementById('syncStatusBtn');
-    if (!button) return;
-    const count = pendingCount();
-    const offline = navigator.onLine === false;
-    button.classList.toggle('has-pending', count > 0);
-    button.classList.toggle('is-offline', offline);
-    button.dataset.count = String(count);
-    if (offline) {
-      button.innerHTML = `<span class="sync-status-dot"></span><span>${count ? `${count} pendente${count === 1 ? '' : 's'}` : 'Offline'}</span>`;
-      button.title = count ? 'Os dados serão enviados quando a conexão voltar.' : 'Sem conexão com o servidor.';
-    } else if (count) {
-      button.innerHTML = `<span class="sync-status-dot"></span><span>${count} pendente${count === 1 ? '' : 's'}</span>`;
-      button.title = 'Clique para tentar sincronizar agora.';
-    } else {
-      button.innerHTML = '<span class="sync-status-dot"></span><span>Sincronizado</span>';
-      button.title = 'Todos os registros estão sincronizados.';
-    }
-  }
-
-  async function retryPendingSync() {
-    const button = document.getElementById('syncStatusBtn');
-    if (!button || pendingCount() === 0 || navigator.onLine === false || document.body.dataset.role !== 'admin') return;
+    if (!button || navigator.onLine === false || document.body.dataset.role !== 'admin') return;
     button.disabled = true;
-    button.innerHTML = '<span class="sync-status-dot"></span><span>Sincronizando...</span>';
-    try {
-      await syncPendingRecords();
-    } finally {
-      button.disabled = false;
-      renderSyncStatus();
-    }
+    try { await syncPendingRecords(); } finally { button.disabled = false; render(); }
   }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('syncStatusBtn')?.addEventListener('click', retryPendingSync);
-    renderSyncStatus();
-  });
-  window.addEventListener('pending-sync-changed', renderSyncStatus);
-  window.addEventListener('online', renderSyncStatus);
-  window.addEventListener('offline', renderSyncStatus);
-  window.addEventListener('storage', event => { if (event.key === 'sistema_pending_sync') renderSyncStatus(); });
+  document.addEventListener('DOMContentLoaded', () => { document.getElementById('syncStatusBtn')?.addEventListener('click', retry); render(); });
+  for (const name of ['app-data-changed','pending-sync-changed','online','offline','storage']) window.addEventListener(name, render);
 })();

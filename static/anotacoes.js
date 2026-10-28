@@ -17,8 +17,8 @@ function renderAnotacoes() {
   const container = document.getElementById('anotacoesOverlayContent');
   if (!container) return;
 
-  const saved = JSON.parse(localStorage.getItem(ANOTACOES_LOCAL_KEY) || '[]');
-  const editingRaw = localStorage.getItem(ANOTACOES_EDITING_KEY);
+  const saved = JSON.parse(appStorage.getItem(ANOTACOES_LOCAL_KEY) || '[]');
+  const editingRaw = appStorage.getItem(ANOTACOES_EDITING_KEY);
   const editing = editingRaw ? JSON.parse(editingRaw) : null;
 
   let html = '';
@@ -95,10 +95,10 @@ function bindAnotacaoEvents(saved) {
 
   if (textoInput && dataInput) {
     function autoSave() {
-      const cur = JSON.parse(localStorage.getItem(ANOTACOES_EDITING_KEY) || '{}');
+      const cur = JSON.parse(appStorage.getItem(ANOTACOES_EDITING_KEY) || '{}');
       cur.data = dataInput.value;
       cur.conteudo = textoInput.value;
-      localStorage.setItem(ANOTACOES_EDITING_KEY, JSON.stringify(cur));
+      appStorage.setItem(ANOTACOES_EDITING_KEY, JSON.stringify(cur));
     }
     textoInput.addEventListener('input', autoSave);
     dataInput.addEventListener('change', autoSave);
@@ -112,7 +112,7 @@ function bindAnotacaoEvents(saved) {
         showToast('Preencha a data e o conteúdo.', 'error', 'Anotação');
         return;
       }
-      const editingRaw = localStorage.getItem(ANOTACOES_EDITING_KEY);
+      const editingRaw = appStorage.getItem(ANOTACOES_EDITING_KEY);
       const editing = editingRaw ? JSON.parse(editingRaw) : null;
       const anotacao = {
         id: editing?.id || Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
@@ -121,7 +121,7 @@ function bindAnotacaoEvents(saved) {
         createdAt: editing?.createdAt || new Date().toISOString()
       };
       await dbAnotacoesSave(anotacao);
-      localStorage.removeItem(ANOTACOES_EDITING_KEY);
+      appStorage.removeItem(ANOTACOES_EDITING_KEY);
       showToast('Anotação salva!', 'success', 'Anotações');
       renderAnotacoes();
     });
@@ -130,7 +130,7 @@ function bindAnotacaoEvents(saved) {
   const cancelarBtn = document.getElementById('anotacaoCancelarBtn');
   if (cancelarBtn) {
     cancelarBtn.addEventListener('click', () => {
-      localStorage.removeItem(ANOTACOES_EDITING_KEY);
+      appStorage.removeItem(ANOTACOES_EDITING_KEY);
       renderAnotacoes();
     });
   }
@@ -160,7 +160,7 @@ function bindAnotacaoEvents(saved) {
     btn.addEventListener('click', () => {
       const a = saved.find(x => String(x.id) === btn.dataset.id);
       if (!a) return;
-      localStorage.setItem(ANOTACOES_EDITING_KEY, JSON.stringify({ ...a }));
+      appStorage.setItem(ANOTACOES_EDITING_KEY, JSON.stringify({ ...a }));
       renderAnotacoes();
       const input = document.getElementById('anotacaoTextoInput');
       input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -208,7 +208,7 @@ function openAnotacoesOverlay() {
   if (!content) return;
   // Abrir a área sempre inicia uma nova anotação. A edição só é ativada
   // pelo botão correspondente no histórico.
-  localStorage.removeItem(ANOTACOES_EDITING_KEY);
+  appStorage.removeItem(ANOTACOES_EDITING_KEY);
   content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
   overlay.classList.add('open');
   setTimeout(() => renderAnotacoes(), 50);

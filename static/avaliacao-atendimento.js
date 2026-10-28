@@ -52,7 +52,7 @@ function normalizeAvalAtend(a) {
 
 function getAvalAtendSaved() {
   try {
-    return JSON.parse(localStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY) || '[]').map(normalizeAvalAtend);
+    return JSON.parse(appStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY) || '[]').map(normalizeAvalAtend);
   } catch { return []; }
 }
 
@@ -64,8 +64,8 @@ function renderAvaliacaoAtendimento(containerId) {
   const colabs = [...new Set((rawRecords || [])
     .filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']))
     .map(r => r['Atendente']))].sort();
-  const filtroColab = localStorage.getItem(AVAL_ATEND_FILTRO_COLAB_KEY) || '';
-  const filtroNota = localStorage.getItem(AVAL_ATEND_FILTRO_NOTA_KEY) || '';
+  const filtroColab = appStorage.getItem(AVAL_ATEND_FILTRO_COLAB_KEY) || '';
+  const filtroNota = appStorage.getItem(AVAL_ATEND_FILTRO_NOTA_KEY) || '';
 
   let html = '';
 
@@ -173,8 +173,8 @@ function renderAvalAtendLista(containerId) {
   if (!lista) return;
   const container = document.getElementById(containerId);
   const all = getAvalAtendSaved();
-  const filtroColab = localStorage.getItem(AVAL_ATEND_FILTRO_COLAB_KEY) || '';
-  const filtroNota = localStorage.getItem(AVAL_ATEND_FILTRO_NOTA_KEY) || '';
+  const filtroColab = appStorage.getItem(AVAL_ATEND_FILTRO_COLAB_KEY) || '';
+  const filtroNota = appStorage.getItem(AVAL_ATEND_FILTRO_NOTA_KEY) || '';
 
   let saved = all;
   if (filtroColab) saved = saved.filter(a => a.colaborador === filtroColab);
@@ -316,14 +316,14 @@ function bindAvaliacaoAtendEvents(containerId) {
   });
 
   document.getElementById('avalFiltroColabInput')?.addEventListener('change', (e) => {
-    if (e.target.value) localStorage.setItem(AVAL_ATEND_FILTRO_COLAB_KEY, e.target.value);
-    else localStorage.removeItem(AVAL_ATEND_FILTRO_COLAB_KEY);
+    if (e.target.value) appStorage.setItem(AVAL_ATEND_FILTRO_COLAB_KEY, e.target.value);
+    else appStorage.removeItem(AVAL_ATEND_FILTRO_COLAB_KEY);
     renderAvalAtendLista(containerId);
   });
 
   document.getElementById('avalFiltroNotaInput')?.addEventListener('change', (e) => {
-    if (e.target.value) localStorage.setItem(AVAL_ATEND_FILTRO_NOTA_KEY, e.target.value);
-    else localStorage.removeItem(AVAL_ATEND_FILTRO_NOTA_KEY);
+    if (e.target.value) appStorage.setItem(AVAL_ATEND_FILTRO_NOTA_KEY, e.target.value);
+    else appStorage.removeItem(AVAL_ATEND_FILTRO_NOTA_KEY);
     renderAvalAtendLista(containerId);
   });
 }

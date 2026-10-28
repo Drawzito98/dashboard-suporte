@@ -60,7 +60,7 @@ function renderPainelLider() {
   const aliasMap = buildAliasMap(colaboradores);
 
   // Colaboradores com conduta negativa
-  const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+  const colabInfo = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}');
   const flaggedColabs = new Set();
   Object.entries(colabInfo).forEach(([nm, info]) => {
     if ((info.conduta_negativa === 'true' || info.conduta_negativa === true) && colaboradores.includes(nm))

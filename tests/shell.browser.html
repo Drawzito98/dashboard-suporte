@@ -1,5 +1,6 @@
 <!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shell — validação local</title>
-<pre id="testResult">RUNNING</pre><script>
+<pre id="testResult">RUNNING</pre><script>var appStorage = localStorage;</script>
+<script>
 (async () => {
   if (!['localhost','127.0.0.1'].includes(location.hostname)) throw Error('Somente servidor local');
   const assert = (value, message) => { if (!value) throw Error(message); };

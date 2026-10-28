@@ -18,6 +18,7 @@
   function destroyChart() { if (window.__colabDetailChart) { window.__colabDetailChart.destroy(); window.__colabDetailChart = null; } }
   function resetDialog() {
     if (!dialog) return;
+    if (typeof AppState !== 'undefined') AppState.publish('profile', null);
     dialog.querySelector('#e360Body').replaceChildren();dialog.querySelector('#e360Tabs').replaceChildren();
     dialog.querySelector('#e360Title').textContent='';dialog.querySelector('#e360Subtitle').textContent='Perfil 360º';dialog.removeAttribute('aria-busy');
   }
@@ -130,9 +131,10 @@
     dialog.querySelector('#e360Body').textContent='Consultando as fontes desta pessoa…';
     dialog.setAttribute('aria-busy','true');
     try {
-      const loaded=await window.Equipe360Data.create({client:sbClient,storage:localStorage}).load(name,user.id);
+      const loaded=await window.Equipe360Data.create({client:sbClient,storage:appStorage}).load(name,user.id);
       if(request!==version||!dialog.open||allowed()?.id!==loaded.owner)return false;
-      model=loaded;render();return true;
+      if (typeof AppState !== 'undefined') { AppState.publish('profile', loaded); model=AppState.get('profile'); } else model=loaded;
+      render();return true;
     }catch(_){if(request===version&&dialog.open)dialog.querySelector('#e360Body').innerHTML='<p class="e360-warning">Não foi possível validar a sessão ou consultar o perfil. Nenhum dado privado de cache compartilhado foi usado. Feche e tente novamente.</p>';return false;}
     finally{if(request===version)dialog.removeAttribute('aria-busy');}
   }

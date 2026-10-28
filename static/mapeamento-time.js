@@ -47,18 +47,18 @@
   }
 
   function salvarEstado() {
-    try { localStorage.setItem('mapeamento_time_dados', JSON.stringify(colaboradores)); } catch (e) { console.warn('[Mapeamento] Erro ao salvar dados:', e); }
-    try { localStorage.setItem('mapeamento_time_next_id', String(proximoId)); } catch (e) { console.warn('[Mapeamento] Erro ao salvar ID:', e); }
+    try { appStorage.setItem('mapeamento_time_dados', JSON.stringify(colaboradores)); } catch (e) { console.warn('[Mapeamento] Erro ao salvar dados:', e); }
+    try { appStorage.setItem('mapeamento_time_next_id', String(proximoId)); } catch (e) { console.warn('[Mapeamento] Erro ao salvar ID:', e); }
   }
 
   function carregarEstado() {
     try {
-      const saved = localStorage.getItem('mapeamento_time_dados');
+      const saved = appStorage.getItem('mapeamento_time_dados');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length) {
           colaboradores = parsed;
-          const nid = localStorage.getItem('mapeamento_time_next_id');
+          const nid = appStorage.getItem('mapeamento_time_next_id');
           if (nid) proximoId = parseInt(nid, 10) || colaboradores.length + 1;
         }
       }

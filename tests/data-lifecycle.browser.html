@@ -1,0 +1,36 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dados — ciclo de vida</title>
+<link rel="stylesheet" href="../static/css/tokens.css"><link rel="stylesheet" href="../static/styles.css">
+<body data-role="admin"><button id="syncStatusBtn" class="sync-status" type="button"></button><pre id="testResult">RUNNING</pre>
+<script>
+let user={id:'lifecycle-a',app_metadata:{role:'admin'}},rows=[{id:1,Atendente:'Pessoa A',Score:4.9,Finalizados:10}],offline=false,authOffline=false;
+const calls=[];
+const client={auth:{getUser:async()=>authOffline?{error:Error('offline')}:{data:{user}}},from(){let payload=null,id=null;return {
+ select(){return this},order(){return this},range:async(start,end)=>offline?{error:Error('offline')}:{data:rows.slice(start,end+1)},
+ update(value){payload=value;return this},eq(key,value){if(key==='id')id=value;return this},
+ async then(resolve,reject){try{calls.push({payload,id});if(offline)return resolve({error:Error('offline')});rows=rows.map(r=>r.id===id?{...r,...payload}:r);resolve({data:rows.filter(r=>r.id===id).map(r=>({id:r.id}))});}catch(e){reject(e)}}
+}}};const supabase={createClient:()=>client};
+</script>
+<script src="../static/data-runtime.js"></script><script src="../static/records-repository.js"></script><script src="../static/db.js"></script><script src="../static/sync-status.js"></script>
+<script>
+(async()=>{
+ const assert=(v,m)=>{if(!v)throw Error(m)},tick=()=>new Promise(r=>setTimeout(r,20));
+ if(!['localhost','127.0.0.1'].includes(location.hostname))throw Error('Somente teste local');
+ localStorage.clear();localStorage.setItem('sistema_pending_sync','[{"Atendente":"Legado sem conta"}]');localStorage.setItem('sistema_gestao_state_v1','legacy');
+ AppDataSession.bind(user);
+ let result=await dbLoadRecords();assert(result.length===1,'Consulta oficial');await tick();assert(document.getElementById('syncStatusBtn').textContent.includes('Indicadores atualizados'),'Status restrito aos indicadores');
+ assert(getPendingSync().length===0,'Fila global antiga não é enviada');assert(calls.length===0,'Nenhuma escrita durante carga');
+ rows=[];result=await dbLoadRecords();assert(result.length===0,'Servidor vazio não restaura cache');
+ offline=true;result=await dbLoadRecords();await tick();assert(result.length===0&&AppState.get('records').source==='cache','Cache vazio é válido');assert(document.getElementById('syncStatusBtn').textContent.includes('locais'),'Origem offline explícita');
+ offline=false;rows=[{id:1,Atendente:'Pessoa A',Score:4.9,Finalizados:10}];await dbLoadRecords();offline=true;authOffline=true;
+ assert(await dbUpdateRecord(1,{Finalizados:20})===false,'Escrita offline não confirmada');assert(getPendingSync().length===1,'Edição offline durável mesmo sem auth de rede');
+ assert(AppState.get('records').view[0].Finalizados===20,'Projeção mantém edição pendente');
+ const native={getItem:k=>localStorage.getItem(k),setItem:(k,v)=>localStorage.setItem(k,v),removeItem:k=>localStorage.removeItem(k)};
+ const other=DataRuntime.create({storage:native});other.bind({id:'lifecycle-b'});assert(other.cache.getItem('records_pending_v1')===null,'Outra conta não lê a fila');
+ offline=false;authOffline=false;document.getElementById('syncStatusBtn').click();await tick();assert(getPendingSync().length===0,'Retry confirmado remove pendência');assert(AppState.get('records').view[0].Finalizados===20,'Dado confirmado preservado');
+ const snap=AppState.get('records');snap.view[0].Finalizados=999;assert(AppState.get('records').view[0].Finalizados===20,'Snapshot não altera estado');
+ assert(localStorage.getItem('sistema_gestao_state_v1')==='legacy','Legado não apagado');
+ AppDataSession.invalidate();assert(AppState.get('records')===null&&getPendingSync().length===0,'Invalidação limpa seleção e fila visível');
+ assert(appStorage.getItem('records_confirmed_v1')===null,'Nenhuma leitura privada sem sessão');
+ document.getElementById('testResult').textContent='PASS: servidor vazio, cache por conta, dados antigos preservados, offline, fila durável, retry, status e sessão invalidada';
+})().catch(e=>{document.getElementById('testResult').textContent='FAIL: '+e.message;console.error(e)});
+</script></body></html>

@@ -40,7 +40,7 @@ function renderHome() {
   let pendingTasks = 0;
   let pendingTaskList = [];
   try {
-    const tarefas = JSON.parse(localStorage.getItem('sistema_tarefas_v1') || '[]');
+    const tarefas = JSON.parse(appStorage.getItem('sistema_tarefas_v1') || '[]');
     pendingTaskList = tarefas.filter(t => t.status !== 'concluida' && t.status !== 'cancelada');
     pendingTasks = pendingTaskList.length;
   } catch (e) { console.error('[Home] Erro:', e); }
@@ -76,8 +76,8 @@ function renderHome() {
 
   let colabInfo = {};
   let vacations = [];
-  try { colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (e) {}
-  try { vacations = JSON.parse(localStorage.getItem('sistema_ferias_v1') || '[]'); } catch (e) {}
+  try { colabInfo = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (e) {}
+  try { vacations = JSON.parse(appStorage.getItem('sistema_ferias_v1') || '[]'); } catch (e) {}
 
   const upcomingBirthdays = Object.entries(colabInfo).map(([name, info]) => {
     if (!info?.data_aniversario || (typeof isColabActive === 'function' && !isColabActive(name))) return null;
@@ -114,7 +114,7 @@ function renderHome() {
   // Recent activity from historico
   let recentActivity = [];
   try {
-    const history = JSON.parse(localStorage.getItem('sistema_historico_v1') || '[]');
+    const history = JSON.parse(appStorage.getItem('sistema_historico_v1') || '[]');
     if (Array.isArray(history)) {
       recentActivity = history.slice()
         .sort((a, b) => new Date(b.ts || b.data || b.createdAt || 0) - new Date(a.ts || a.data || a.createdAt || 0))

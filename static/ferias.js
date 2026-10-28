@@ -7,7 +7,7 @@ function formatarDataBr(d) {
 }
 
 function temFeriasSobrepostas(colaborador, inicio, fim, ignoreId) {
-  const saved = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
+  const saved = JSON.parse(appStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
   return saved.some(f => {
     if (ignoreId && String(f.id) === String(ignoreId)) return false;
     if (f.colaborador !== colaborador) return false;
@@ -48,7 +48,7 @@ function acharIdsDuplicados(lista) {
 }
 
 async function resolverDuplicatas() {
-  const saved = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
+  const saved = JSON.parse(appStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
   const idsDuplicados = acharIdsDuplicados(saved);
   if (!idsDuplicados.size) return;
 
@@ -140,7 +140,7 @@ function renderFerias(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const saved = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
+  const saved = JSON.parse(appStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
   const colabs = [...new Set((rawRecords || [])
     .filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']))
     .map(r => r['Atendente']))].sort();

@@ -45,7 +45,7 @@ function renderColabDetail(name) {
   // Get setor
   const setores = [...new Set(records.map(r => r['Setor']))].filter(Boolean);
   const perfilLink = getPerfilDocsLink(name);
-  const cadastro = JSON.parse(localStorage.getItem("sistema_colaboradores_info_v1") || "{}")[name] || {};
+  const cadastro = JSON.parse(appStorage.getItem("sistema_colaboradores_info_v1") || "{}")[name] || {};
 
   // Month-over-month evolution
   const monthlyData = meses.map(m => {
@@ -146,7 +146,7 @@ async function renderColab360Extras(name, container) {
   const normalize = value => String(value || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
   const key = normalize(name);
   const readList = storageKey => {
-    try { const value = JSON.parse(localStorage.getItem(storageKey) || '[]'); return Array.isArray(value) ? value : []; }
+    try { const value = JSON.parse(appStorage.getItem(storageKey) || '[]'); return Array.isArray(value) ? value : []; }
     catch (_) { return []; }
   };
   const feedbacks = readList('sistema_feedbacks_v1').filter(item => normalize(item.colaborador) === key);

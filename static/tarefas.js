@@ -10,7 +10,7 @@ function updateTarefasBadge() {
   const badge = document.getElementById('tarefasBadge');
   if (!badge) return;
   try {
-    const saved = JSON.parse(localStorage.getItem('sistema_tarefas_v1') || '[]');
+    const saved = JSON.parse(appStorage.getItem('sistema_tarefas_v1') || '[]');
     const today = hoje();
     const count = saved.filter(t => t.data === today && t.status !== 'concluida' && t.status !== 'cancelada').length;
     if (count > 0) {
@@ -35,7 +35,7 @@ function formatarData(dataStr) {
 
 function verificarLembretesRotina(tarefas) {
   const hojeKey = hoje();
-  const avisados = JSON.parse(localStorage.getItem('sistema_rotina_lembretes_v1') || '{}');
+  const avisados = JSON.parse(appStorage.getItem('sistema_rotina_lembretes_v1') || '{}');
   tarefas.filter(function(t) { return t.rotinaAtiva && t.status === 'pendente' && t.rotinaProximaData; }).forEach(function(t) {
     const alvo = new Date(t.rotinaProximaData + 'T12:00:00');
     const agora = new Date(hojeKey + 'T12:00:00');
@@ -48,7 +48,7 @@ function verificarLembretesRotina(tarefas) {
       avisados[t.id] = hojeKey;
     }
   });
-  localStorage.setItem('sistema_rotina_lembretes_v1', JSON.stringify(avisados));
+  appStorage.setItem('sistema_rotina_lembretes_v1', JSON.stringify(avisados));
 }
 const PRIORIDADE_LABEL = { baixa: '🟢 Baixa', media: '🟡 Média', alta: '🔴 Alta' };
 const STATUS_LABEL = { pendente: '⏳ Pendente', concluida: '✅ Concluída', cancelada: '❌ Cancelada' };
@@ -65,7 +65,7 @@ function renderTarefas() {
   const container = document.getElementById('tarefasContent');
   if (!container) return;
 
-  const saved = JSON.parse(localStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
+  const saved = JSON.parse(appStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
   verificarLembretesRotina(saved);
   const filtroStatus = sessionStorage.getItem('tarefas_filtro_status') || 'todas';
 
@@ -319,7 +319,7 @@ function onTarefasTabActivated() {
   const container = document.getElementById('tarefasContent');
   if (!container) return;
   // Limpa qualquer resquício do antigo sistema de edição
-  localStorage.removeItem('sistema_tarefa_editando_v1');
+  appStorage.removeItem('sistema_tarefa_editando_v1');
   inlineEditingId = null;
   container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4)"><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title" style="width:30%"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div></div>';
   setTimeout(() => renderTarefas(), 50);

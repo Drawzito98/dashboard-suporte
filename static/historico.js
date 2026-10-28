@@ -13,7 +13,7 @@ function closeHistorico() {
 
 function loadHistoricoFromStorage() {
   try {
-    const raw = localStorage.getItem('sistema_historico_v1');
+    const raw = appStorage.getItem('sistema_historico_v1');
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
 }
@@ -93,7 +93,7 @@ function renderHistorico() {
       clearBtn.addEventListener('click', () => {
         if (!requireAdmin()) return;
         if (confirm('Tem certeza? Isso vai apagar todo o histórico.')) {
-          localStorage.removeItem('sistema_historico_v1');
+          appStorage.removeItem('sistema_historico_v1');
           renderHistorico();
         }
       });

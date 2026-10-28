@@ -5,12 +5,12 @@ const DEFAULT_INACTIVE = ['Caio', 'Carina', 'Diogo', 'Gabriel', 'Jessé', 'Joyce
 function getInactiveColabs() {
   if (!window.__inactiveColabs) {
     try {
-      const raw = localStorage.getItem(INACTIVE_COLABS_KEY);
+      const raw = appStorage.getItem(INACTIVE_COLABS_KEY);
       if (raw) {
         window.__inactiveColabs = new Set(JSON.parse(raw));
       } else {
         window.__inactiveColabs = new Set(DEFAULT_INACTIVE);
-        localStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify(DEFAULT_INACTIVE));
+        appStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify(DEFAULT_INACTIVE));
       }
     } catch (e) {
       window.__inactiveColabs = new Set(DEFAULT_INACTIVE);
@@ -21,7 +21,7 @@ function getInactiveColabs() {
 
 function saveInactiveColabs() {
   try {
-    localStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify([...getInactiveColabs()]));
+    appStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify([...getInactiveColabs()]));
   } catch (e) { console.error('[Inactive] Erro ao carregar estado:', e); }
   if (typeof dbInativosSave === 'function') {
     dbInativosSave(getInactiveColabs());
@@ -61,12 +61,12 @@ const INACTIVE_SETORES_KEY = 'sistema_inactive_setores_v1';
 function getInactiveSetores() {
   if (!window.__inactiveSetores) {
     try {
-      const raw = localStorage.getItem(INACTIVE_SETORES_KEY);
+      const raw = appStorage.getItem(INACTIVE_SETORES_KEY);
       if (raw) {
         window.__inactiveSetores = new Set(JSON.parse(raw));
       } else {
         window.__inactiveSetores = new Set();
-        localStorage.setItem(INACTIVE_SETORES_KEY, JSON.stringify([]));
+        appStorage.setItem(INACTIVE_SETORES_KEY, JSON.stringify([]));
       }
     } catch (e) {
       window.__inactiveSetores = new Set();
@@ -77,7 +77,7 @@ function getInactiveSetores() {
 
 function saveInactiveSetores() {
   try {
-    localStorage.setItem(INACTIVE_SETORES_KEY, JSON.stringify([...getInactiveSetores()]));
+    appStorage.setItem(INACTIVE_SETORES_KEY, JSON.stringify([...getInactiveSetores()]));
   } catch (e) { console.error('[Inactive] Erro ao salvar estado:', e); }
   if (typeof dbSetorInativosSave === 'function') {
     dbSetorInativosSave(getInactiveSetores());

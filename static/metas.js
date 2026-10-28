@@ -4,7 +4,7 @@ let goals = [];
 
 function loadMetas() {
   try {
-    const raw = localStorage.getItem(METAS_STORAGE_KEY);
+    const raw = appStorage.getItem(METAS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) { goals = parsed; return; }
@@ -23,7 +23,7 @@ function loadMetas() {
 }
 
 function saveMetas() {
-  try { localStorage.setItem(METAS_STORAGE_KEY, JSON.stringify(goals)); } catch (e) { console.warn('[Metas] Erro ao salvar metas:', e); }
+  try { appStorage.setItem(METAS_STORAGE_KEY, JSON.stringify(goals)); } catch (e) { console.warn('[Metas] Erro ao salvar metas:', e); }
   if (typeof dbMetasSave === 'function') {
     dbMetasSave(goals);
   }

@@ -6,8 +6,8 @@ function renderBonus() {
   const container = document.getElementById('bonusContent');
   if (!container) return;
 
-  const saved = JSON.parse(localStorage.getItem('sistema_pontos_extras_v1') || '[]');
-  const editingRaw = localStorage.getItem(BONUS_EDITING_KEY);
+  const saved = JSON.parse(appStorage.getItem('sistema_pontos_extras_v1') || '[]');
+  const editingRaw = appStorage.getItem(BONUS_EDITING_KEY);
   const editing = editingRaw ? JSON.parse(editingRaw) : null;
 
   const colabs = [...new Set((rawRecords || [])
@@ -126,7 +126,7 @@ function bindBonusEvents(saved) {
       showToast('A quantidade de pontos deve ser positiva.', 'error', 'Bônus');
       return;
     }
-    const editingRaw = localStorage.getItem(BONUS_EDITING_KEY);
+    const editingRaw = appStorage.getItem(BONUS_EDITING_KEY);
     const editing = editingRaw ? JSON.parse(editingRaw) : null;
     const mes = document.getElementById('bonusMesInput').value || '';
     const bonus = {
@@ -138,7 +138,7 @@ function bindBonusEvents(saved) {
       createdAt: editing?.createdAt || new Date().toISOString()
     };
     await dbPontosExtrasSave(bonus);
-    localStorage.removeItem(BONUS_EDITING_KEY);
+    appStorage.removeItem(BONUS_EDITING_KEY);
     const label = sinal > 0 ? 'Adicionado' : 'Removido';
     showToast(`${label} ${absPts.toFixed(1)} pts ${sinal > 0 ? 'para' : 'de'} ${colaborador}!`, 'success', 'Bônus');
     renderBonus();
@@ -167,7 +167,7 @@ function bindBonusEvents(saved) {
         showToast('A quantidade de pontos deve ser positiva.', 'error', 'Bônus');
         return;
       }
-      const editingRaw = localStorage.getItem(BONUS_EDITING_KEY);
+      const editingRaw = appStorage.getItem(BONUS_EDITING_KEY);
       const editing = editingRaw ? JSON.parse(editingRaw) : null;
       if (!editing) return;
       const originalSinal = (parseFloat(editing.pontos) || 0) >= 0 ? 1 : -1;
@@ -179,7 +179,7 @@ function bindBonusEvents(saved) {
         pontos: absPts * originalSinal
       };
       await dbPontosExtrasSave(bonus);
-      localStorage.removeItem(BONUS_EDITING_KEY);
+      appStorage.removeItem(BONUS_EDITING_KEY);
       showToast(`Bônus atualizado!`, 'success', 'Bônus');
       renderBonus();
       if (typeof renderGamification === 'function') renderGamification();
@@ -189,7 +189,7 @@ function bindBonusEvents(saved) {
   const cancelarBtn = document.getElementById('bonusCancelarBtn');
   if (cancelarBtn) {
     cancelarBtn.addEventListener('click', () => {
-      localStorage.removeItem(BONUS_EDITING_KEY);
+      appStorage.removeItem(BONUS_EDITING_KEY);
       renderBonus();
     });
   }
@@ -198,7 +198,7 @@ function bindBonusEvents(saved) {
     btn.addEventListener('click', () => {
       const b = saved.find(x => x.id === btn.dataset.id);
       if (!b) return;
-      localStorage.setItem(BONUS_EDITING_KEY, JSON.stringify({ ...b }));
+      appStorage.setItem(BONUS_EDITING_KEY, JSON.stringify({ ...b }));
       renderBonus();
     });
   });
@@ -221,7 +221,7 @@ function toggleBonusPanel() {
   const isOpen = overlay.style.display !== 'none';
   if (isOpen) {
     overlay.style.display = 'none';
-    localStorage.removeItem(BONUS_EDITING_KEY);
+    appStorage.removeItem(BONUS_EDITING_KEY);
   } else {
     overlay.style.display = 'flex';
     renderBonus();
@@ -233,6 +233,6 @@ const _bonusCloseBtn = document.getElementById('bonusOverlayClose');
 if (_bonusCloseBtn) {
   _bonusCloseBtn.addEventListener('click', () => {
     document.getElementById('bonusOverlay').style.display = 'none';
-    localStorage.removeItem(BONUS_EDITING_KEY);
+    appStorage.removeItem(BONUS_EDITING_KEY);
   });
 }

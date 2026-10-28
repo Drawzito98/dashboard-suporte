@@ -12,7 +12,7 @@
   const names = () => {
     const found = availableRecords().map(r => r && r.Atendente).filter(Boolean);
     try {
-      const info = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+      const info = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}');
       if (info && typeof info === 'object') {
         Object.entries(info).forEach(([key, value]) => found.push(value && value.nome ? value.nome : key));
       }
@@ -36,7 +36,7 @@
     const ass=monthly.reduce((s,x)=>s+x.assumidos,0),fin=monthly.reduce((s,x)=>s+x.finalizados,0),tra=monthly.reduce((s,x)=>s+x.transferidos,0),avg=score(records),prod=ass?fin/ass*100:0,tx=ass?tra/ass*100:0;
     const latest=monthly.at(-1),previous=monthly.at(-2),alias=typeof buildAliasMap==='function'?buildAliasMap([name]):{},display=typeof getDisplayName==='function'?getDisplayName(name,alias):name;
     const initials=String(display).split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase(), perfil=typeof getPerfilDocsLink==='function'?getPerfilDocsLink(name):null;
-    const cadastro=info || JSON.parse(localStorage.getItem("sistema_colaboradores_info_v1")||"{}")[name]||{};
+    const cadastro=info || JSON.parse(appStorage.getItem("sistema_colaboradores_info_v1")||"{}")[name]||{};
     const trend=(current,old,inverse=false)=>{if(!old)return'<span class="pp-neutral">Sem comparação</span>';const d=current-old,good=inverse?d<=0:d>=0;return`<span class="${good?'pp-up':'pp-down'}">${d>=0?'+':''}${d.toFixed(1).replace('.',',')}</span>`;};
     host.innerHTML = (source ? '' : `<div class="pp-header">${typeof colabAvatarHtml==='function'?colabAvatarHtml(name,64):`<div class="colab-detail-avatar">${esc(initials)}</div>`}<div><span>PERFIL DO ATENDENTE</span><h2>${esc(display)}</h2><p>${esc([...new Set(records.map(r=>r.Setor).filter(Boolean))].join(' • '))}</p><p>Tempo de empresa: ${esc(getTempoEmpresa(cadastro.data_admissao))}</p></div><div class="pp-header-actions"><button type="button" class="btn-small pdi-profile-btn" id="ppPdiBtn">Análise e PDI</button><span>${months.length} período${months.length===1?'':'s'} no histórico</span>${perfil?'<button class="btn-small" id="colabPerfilBtn" type="button">Abrir perfil</button>':''}</div></div>
     <nav class="pp-nav"><a href="#pp-summary">Resumo</a><a href="#pp-evolution">Evolução</a><a href="#pp-history">Histórico completo</a><a href="#pp-360">Visão 360°</a></nav>
@@ -61,11 +61,11 @@
   function mentions(text){return [...String(text||'').matchAll(/@\[([^\]]+)\]/g)].map(m=>m[1]);}
   function enhanceNotes(){
     const root=document.getElementById('anotacoesOverlayContent'),text=document.getElementById('anotacaoTextoInput'); if(!root||!text)return;
-    const options=names(), editing=JSON.parse(localStorage.getItem('sistema_anotacao_editando_v1')||'null');
+    const options=names(), editing=JSON.parse(appStorage.getItem('sistema_anotacao_editando_v1')||'null');
     const mention=document.createElement('div'); mention.className='note-mention-field'; mention.innerHTML=`<label class="field"><span>Mencionar pessoa <small>(opcional)</small></span><select id="noteMentionSelect"><option value="">Selecione para inserir…</option>${options.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}</select></label><small>A menção será inserida na anotação e ficará disponível nos filtros.</small>`;
     text.closest('.field')?.insertAdjacentElement('beforebegin',mention);
     document.getElementById('noteMentionSelect')?.addEventListener('change',e=>{if(!e.target.value)return;const token=`@[${e.target.value}]`;if(!text.value.includes(token))text.value=`${text.value}${text.value?'\n':''}${token} `;text.dispatchEvent(new Event('input',{bubbles:true}));text.focus();e.target.value='';});
-    const saved=JSON.parse(localStorage.getItem(ANOTACOES_LOCAL_KEY)||'[]'), used=[...new Set(saved.flatMap(a=>mentions(a.conteudo)))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const saved=JSON.parse(appStorage.getItem(ANOTACOES_LOCAL_KEY)||'[]'), used=[...new Set(saved.flatMap(a=>mentions(a.conteudo)))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
     const history=root.querySelectorAll('.card')[1]; if(!history||!saved.length)return;
     const bar=document.createElement('div');bar.className='note-filter-bar';bar.innerHTML=`<label class="field"><span>Filtrar por pessoa mencionada</span><select id="noteMentionFilter"><option value="">Todas as pessoas</option>${used.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}</select></label>`;
     history.querySelector('.card-header')?.insertAdjacentElement('afterend',bar);
