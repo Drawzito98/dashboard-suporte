@@ -23,3 +23,7 @@ Gamificação, metas, bônus, histórico, comentários, notificações, usuário
 ## Organização na Fase 2
 
 As 13 telas acima permanecem, agora agrupadas em Início, Operação, Pessoas e Rotina. Ferramentas transversais ficam no painel sob demanda. Consulte [navegação](navigation.md) para o mapa e os contratos preservados.
+
+## Organização na Fase 3
+
+O acesso principal de cada pessoa abre a Equipe 360º: visão geral, desempenho, desenvolvimento, presença/ponto e histórico/fontes. Edição de cadastro continua explícita. Os módulos e históricos anteriores permanecem; o perfil não cria uma cópia persistida. Consulte [Equipe 360º](equipe-360.md).

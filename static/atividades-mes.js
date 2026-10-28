@@ -122,8 +122,9 @@ const AtividadesMes = (() => {
       });
     }));
   }
-  async function open() {
+  async function open(personName) {
     if (!isAdmin()) return;
+    if (typeof personName === 'string') selectedPerson = personName;
     let overlay = document.getElementById('atividadesMesOverlay');
     if (!overlay) {
       overlay = document.createElement('div'); overlay.id = 'atividadesMesOverlay'; overlay.className = 'colab-detail-overlay'; overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-modal', 'true'); overlay.setAttribute('aria-label', 'Atividades do mês');
@@ -139,6 +140,6 @@ const AtividadesMes = (() => {
     catch { document.getElementById('atividadesMesContent').textContent = 'Não foi possível carregar os registros. Feche e tente novamente.'; }
   }
   if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => document.getElementById('atividadesMesBtn')?.addEventListener('click', open));
-  return { load, people, months: () => [...new Set(items.map(item => item.mes))].sort(), feedback: (person, month) => textFor(items, person, month), monthKey, decode, textFor };
+  return { load, people, openPerson: name => open(name), months: () => [...new Set(items.map(item => item.mes))].sort(), feedback: (person, month) => textFor(items, person, month), monthKey, decode, textFor };
 })();
 if (typeof module !== 'undefined') module.exports = AtividadesMes;

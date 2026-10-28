@@ -53,7 +53,7 @@ function renderColaboradores() {
     const hasData = info.salario != null || info.setor_atual || info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa || info.feito_relevante;
     const conduta = info.conduta_negativa === 'true' || info.conduta_negativa === true;
     const feito = info.feito_relevante === 'true' || info.feito_relevante === true;
-    html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''}" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Clique para ver/editar">`;
+    html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''}" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Abrir perfil 360º">`;
     html += '<div style="display:flex;align-items:center;gap:var(--s-4)">';
     html += `<div style="font-size:28px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 64) : '👤'}</div>`;
     html += '<div style="flex:1;min-width:0">';
@@ -90,7 +90,7 @@ function renderColaboradores() {
     html += '</div>';
     html += `<div style="font-size:18px;color:var(--text-muted)">${hasData ? '✅' : '➕'}</div>`;
     html += '</div>';
-    html += `<div class="colab-card-actions"><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button><button type="button" class="btn-small pdi-profile-btn">Análise e PDI</button></div>`;
+    html += `<div class="colab-card-actions"><button type="button" class="btn-primary colab-360-btn">Perfil 360º</button><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button><button type="button" class="btn-small pdi-profile-btn">Análise e PDI</button></div>`;
     html += '</div>';
   }
   html += '</div>';
@@ -106,11 +106,14 @@ function renderColaboradores() {
     });
   });
 
-  // Click to open overlay
+  container.querySelectorAll('.colab-edit-btn').forEach(button => button.addEventListener('click', event => {
+    event.stopPropagation(); openColabDetailOverlay(button.closest('.colab-card').dataset.nome);
+  }));
+  // A entrada principal reúne o perfil; edição continua explícita.
   container.querySelectorAll('.colab-card').forEach(card => {
     card.addEventListener('click', () => {
       const nome = card.dataset.nome;
-      openColabDetailOverlay(nome);
+      openColabDetail(nome);
     });
   });
 }
@@ -576,6 +579,7 @@ function openColabDetailOverlay(nome) {
       closeColabDetail();
       renderColaboradores();
       if (typeof globalFilters !== 'undefined') globalFilters.popularOptions();
+      window.dispatchEvent(new CustomEvent('colab-profile-saved', { detail: { name: nome, synced } }));
     } catch (error) { showToast(error.message || 'Não foi possível salvar as alterações.', 'error', 'Colaboradores'); }
     finally { saveButton.disabled = false; photoInput.disabled = false; photoRemove.disabled = false; }
   });

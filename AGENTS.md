@@ -117,8 +117,12 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.15.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.16.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
 Consulte `docs/navigation.md`. `shell.js` organiza as quatro áreas e ferramentas; `app.js` mantém callbacks de ativação. Preserve IDs/data-tab e restrições por papel. Não reintroduzir os antigos organizadores de sidebar/menu mobile. Antes de mudar o shell, execute também a fixture `tests/shell.browser.html` em desktop e celular. CSS legado ainda existe e será consolidado na Fase 6.
+
+## Fase 3 — Equipe 360º
+
+Leia `docs/equipe-360.md` antes de alterar perfis. `equipe360-data.js` é somente leitura, paginado, com sessão e identidade exatas; `equipe360.js` apresenta as fontes e usa os editores atuais. Não adicionar fallback de caches privados globais nem unir variantes de nome automaticamente. PDI permanece local e por usuário. Execute `npm test` e a fixture `tests/equipe360.browser.html` (desktop/celular); mudanças em Ponto/PDI/Atividades também exigem as fixtures desses módulos.

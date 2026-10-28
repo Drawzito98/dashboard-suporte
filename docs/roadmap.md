@@ -6,7 +6,7 @@ Cada fase deve ter branch própria, diffs revisáveis e validação proporcional
 |---|---|---|
 | 1 — Foundation/Estabilização | baseline técnico, inventário, migrations documentadas, npm test agregado e cache verificável; validação registrada | Implementada em chore/foundation-estabilizacao (dee1cfb); resultados em testing-release.md |
 | 2 — Shell e navegação | agrupar áreas por domínio, simplificar filtros/sidebar; validar todos os destinos e permissões | Implementada em feat/fase2-shell-navegacao; validação em navigation.md |
-| 3 — Equipe 360º | centralizar visão da pessoa com vínculos explícitos; preservar históricos e fontes | Pendente |
+| 3 — Equipe 360º | centralizar visão da pessoa com vínculos explícitos; preservar históricos e fontes | Implementada em feat/fase3-equipe-360; validação em equipe-360.md |
 | 4 — Dados | AppState/eventos/repositories graduais, Supabase oficial e cache/offline explícitos; validar falhas e troca de conta | Pendente |
 | 5 — Modularização | extrair responsabilidades de app.js/db-extra.js e carregar módulos sob demanda; preservar ordem/dependências | Pendente |
 | 6 — Design System / UX | tokens, controles, modais, tabelas, vazios, mobile e acessibilidade consistentes | Pendente |

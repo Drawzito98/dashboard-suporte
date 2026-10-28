@@ -27,3 +27,7 @@ Consulte [inventário](feature-inventory.md), [validação e releases](testing-r
 ## Evolução — Fase 2
 
 O baseline acima foi registrado na Fase 1. A versão funcional agora é 1.15.0; `static/shell.js` adiciona apresentação por áreas e dialog de ferramentas sem centralizar estado/dados. `static/shell.css` isola o novo layout. O app.js perdeu os organizadores antigos e a identidade da sidebar; conta permanece no cabeçalho. Consulte [navegação](navigation.md) para contratos e validação.
+
+## Evolução — Fase 3
+
+Versão 1.16.0. A Equipe 360º acrescenta uma projeção de leitura por pessoa (`equipe360-data.js`) e um dialog (`equipe360.js`/`.css`). A aplicação geral mantém seus loaders e persistência anteriores; esta fase não implementa o estado/repository global planejado para a Fase 4. Consulte [contratos de fontes e identidade](equipe-360.md).

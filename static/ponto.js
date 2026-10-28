@@ -5,7 +5,7 @@
   const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const keys = ['entrada_1', 'saida_1', 'entrada_2', 'saida_2', 'horas_normais', 'debito', 'credito', 'saldo'];
   const labels = ['Entrada', 'Saída intervalo', 'Retorno', 'Saída', 'Horas normais', 'Débito', 'Crédito', 'Saldo'];
-  let employees = [], imports = [], preview = null, lines = [], file = null, owner = null, busy = false, generation = 0, activeTask = null, requestedEmployee = null, configuredRules = { ...E.DEFAULT_RULES };
+  let employees = [], imports = [], preview = null, lines = [], file = null, owner = null, busy = false, generation = 0, activeTask = null, requestedEmployee = null, requestedEmployeeExact = false, requestedAnalysis = null, configuredRules = { ...E.DEFAULT_RULES };
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const root = () => document.getElementById('pontoRoot');
   const get = id => document.getElementById(id);
@@ -55,10 +55,14 @@
       <div id="pontoContent"></div></div>`;
     root().querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => view(b.dataset.view)));
     if (requestedEmployee) {
-      const name = requestedEmployee; requestedEmployee = null;
+      const name = requestedEmployee, exact = requestedEmployeeExact; requestedEmployee = null; requestedEmployeeExact = false;
       view('colaboradores');
       const person = systemPeople().find(p => p.nome === name) || { nome: name, setor: '', ativo: true, ponto_jornadas: [], system: true };
-      editEmployee(resolvePerson(person));
+      if (exact) {
+        const matches = employees.filter(e => e.nome === name);
+        if (matches.length > 1 || (!matches.length && employees.some(e => E.normalizeName(e.nome) === E.normalizeName(name)))) throw new Error('Há cadastro de ponto ambíguo ou com variação deste nome. Confirme a identidade na auditoria antes de editar a jornada.');
+        editEmployee(matches.length ? { ...matches[0], system: true } : person);
+      } else editEmployee(resolvePerson(person));
     } else view('importar');
   }
   function view(name) {
@@ -326,26 +330,27 @@
       if (matches.length > 1) { element.textContent = 'Há cadastros de ponto ambíguos para este nome. Revise na auditoria.'; return; }
       const employee = matches[0];
       element.innerHTML = `<strong>Jornada de ponto</strong>${employee ? `<p>Status: ${employee.ativo ? 'Ativo' : 'Inativo'}</p>${employee.ponto_jornadas.map(j => `<p>${days[j.dia_semana]}: ${j.trabalha ? keys.slice(0, 4).map(k => esc(j[k]?.slice(0, 5) || '—')).join(' | ') + ' · ' + fmt(j.minutos_esperados).slice(1) : 'Folga'}</p>`).join('')}` : '<p>Jornada ainda não cadastrada.</p>'}<button class="btn-small" type="button">${employee ? 'Editar jornada' : 'Cadastrar jornada'}</button>`;
-      element.querySelector('button').onclick = () => {
-        if (busy) return;
-        requestedEmployee = name;
-        if (typeof closeColabDetail === 'function') closeColabDetail();
-        if (document.body.dataset.activeTab === 'ponto') window.onPontoTabActivated();
-        else document.querySelector('[data-tab="ponto"]')?.click();
-      };
+      element.querySelector('button').onclick = () => window.openPontoEmployee(name);
     } catch (_) { if (element.isConnected) element.textContent = 'Não foi possível carregar a jornada de ponto. Consulte a auditoria.'; }
   };
+  function openContext() {
+    if (typeof closeColabDetail === 'function') closeColabDetail();
+    if (document.body.dataset.activeTab === 'ponto') window.onPontoTabActivated();
+    else document.querySelector('[data-tab="ponto"]')?.click();
+  }
+  window.openPontoEmployee = (name, exact = false) => { if (busy) return; requestedEmployee = name; requestedEmployeeExact = exact; requestedAnalysis = null; openContext(); };
+  window.openPontoAnalysis = id => { if (busy) return; requestedAnalysis = id; requestedEmployee = null; openContext(); };
   window.onPontoTabActivated = () => {
     if (!root() || busy) return;
     root().innerHTML = '<div class="ponto-module"><div id="pontoNotice" role="status">Carregando auditoria…</div></div>';
-    action(async () => { await load(); render(); });
+    action(async () => { await load(); render(); if (requestedAnalysis) { const id = requestedAnalysis; requestedAnalysis = null; await showResult(id); } });
   };
   document.addEventListener('DOMContentLoaded', () => {
     const button = document.querySelector('[data-tab="ponto"]');
     // UI visibility is secondary; RLS enforces access on every operation.
-    const syncAccess = () => { const allowed = document.body.dataset.role === 'admin'; if (button) button.hidden = !allowed; if (!allowed) { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; configuredRules = { ...E.DEFAULT_RULES }; clearFile(); if (root()) root().innerHTML = ''; } };
+    const syncAccess = () => { const allowed = document.body.dataset.role === 'admin'; if (button) button.hidden = !allowed; if (!allowed) { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; requestedEmployeeExact = false; requestedAnalysis = null; configuredRules = { ...E.DEFAULT_RULES }; clearFile(); if (root()) root().innerHTML = ''; } };
     new MutationObserver(syncAccess).observe(document.body, { attributes: true, attributeFilter: ['data-role'] }); syncAccess();
     new MutationObserver(() => { if (document.body.dataset.activeTab !== 'ponto' && (file || preview || activeTask)) { generation++; clearFile(); if (root()) root().innerHTML = ''; } }).observe(document.body, { attributes: true, attributeFilter: ['data-active-tab'] });
-    sbClient?.auth.onAuthStateChange(event => { if (event === 'SIGNED_OUT') { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; configuredRules = { ...E.DEFAULT_RULES }; clearFile(); if (root()) root().innerHTML = ''; } });
+    sbClient?.auth.onAuthStateChange(event => { if (event === 'SIGNED_OUT') { generation++; employees = []; imports = []; owner = null; requestedEmployee = null; requestedEmployeeExact = false; requestedAnalysis = null; configuredRules = { ...E.DEFAULT_RULES }; clearFile(); if (root()) root().innerHTML = ''; } });
   });
 })();

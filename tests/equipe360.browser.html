@@ -1,0 +1,91 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Equipe 360º — teste local</title>
+<link rel="stylesheet" href="../static/css/tokens.css"><link rel="stylesheet" href="../static/styles.css"><link rel="stylesheet" href="../static/css/visual-refresh.css"><link rel="stylesheet" href="../static/equipe360.css"><link rel="stylesheet" href="../static/ponto.css">
+<body data-role="admin"><button id="origin">Abrir pessoa</button><pre id="testResult">RUNNING</pre>
+<script>
+let user={id:'owner',app_metadata:{role:'admin'},user_metadata:{name:'Líder de teste'}};
+const name='Ana Maria', other='Ana Mariana', callbacks=[];
+let rawRecords=[{Atendente:name,Setor:'Suporte','Mês':'2026-10',Finalizados:99,Assumidos:110,SCORE:4.8}];
+const getCurrentUser=()=>user, getTrustedUserRole=u=>u?.app_metadata?.role;
+const isAdmin=()=>document.body.dataset.role==='admin',requireAdmin=()=>isAdmin(),_getUserId=async()=>user?.id;
+const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isAggregateName=()=>false,isColabActive=()=>true,getTempoEmpresa=()=> '2 anos';
+const formatMesLabel=value=>value, getClasseScore=()=>'', getDisplayName=n=>n,buildAliasMap=()=>({});
+let lastPdi='',lastEditor='',legacy='',allowDiscard=true;
+window.confirm=()=>allowDiscard;window.showToast=()=>{};
+window.openPerfilPdi=n=>lastPdi=n;window.openColabDetail=n=>legacy=n;
+window.closeColabDetail=()=>document.getElementById('colabDetailOverlay')?.classList.remove('open');
+const dbColabInfoSave=async()=>true;
+const tables={
+ colaboradores_info:[{id:'cadastro',user_id:'owner',nome:name,setor_atual:'Suporte',nivel:'N1',objetivos_futuros:'Desenvolver análise',observacoes:'<img src=x onerror=alert(1)>',data_admissao:'2024-01-01'},{id:'empty',user_id:'owner',nome:'Sem Indicadores',setor_atual:'Suporte'}],
+ registros:[{id:1,Atendente:name,Setor:'Suporte','Mês':'2026-09',Finalizados:100,Assumidos:110,Score:4.9},{id:2,Atendente:other,Finalizados:999,Score:1}],
+ avaliacoes:[{id:1,user_id:'owner',colaborador:name,ciclo:'Set-Dez 2026',scores:{1:3},status:'revisado',observacoes_gerais:'Evidência de avaliação',created_at:'2026-10-01'}],
+ feedbacks:[{id:1,user_id:'owner',colaborador:name,mes:'2026-10',feedback_final:'Feedback confirmado <script>não executar</scr'+'ipt>',created_at:'2026-10-03'}],
+ ferias:[{id:1,user_id:'owner',colaborador:name,data_inicio:'2026-11-01',data_fim:'2026-11-10'}],
+ ausencias:[{id:1,user_id:'owner',colaborador:name,data:'2026-10-08',periodo:'manha',motivo:'Motivo registrado'}],
+ historico:[{id:1,colaborador:name,created_at:'2026-10-02',action:'edit',campo:'Finalizados',before_value:'99',after_value:'100'}],
+ ponto_colaboradores:[{id:'employee',user_id:'owner',nome:name,ativo:true,ponto_jornadas:[]}],
+ ponto_importacoes:[{id:'analysis',user_id:'owner',colaborador_id:'employee',periodo_inicio:'2026-10-01',periodo_fim:'2026-10-31',data_importacao:'2026-10-05',snapshot:{colaborador:name,regras:{tolerancia_batida:5,tolerancia_diaria:10},versao:'teste'}}],
+ ponto_configuracoes:[],anotacoes_diarias:[],ponto_registros:[],ponto_justificativas:[]
+};
+let failTable='',deferName='',releaseDeferred;let deferred;
+function query(table){const filters=[];let single=false,range=null;const q={
+ select(){return q},eq(k,v){filters.push([k,v]);return q},order(){return q},like(){return q},limit(){return q},
+ range(a,b){range=[a,b];return q},single(){single=true;return q},maybeSingle(){single=true;return q},
+ async then(resolve,reject){try{if(deferName&&filters.some(([k,v])=>v===deferName))await deferred;
+ if(table===failTable)return resolve({error:new Error('offline')});
+ let data=(tables[table]||[]).filter(row=>filters.every(([key,value])=>row[key]===value));
+ if(range)data=data.slice(range[0],range[1]+1);return resolve({data:single?(data[0]||null):data});}catch(e){reject(e)}}};return q;}
+const sbClient={auth:{getUser:async()=>({data:{user}}),onAuthStateChange:cb=>callbacks.push(cb)},from:query};
+(async()=>{
+ if(!['localhost','127.0.0.1'].includes(location.hostname))throw Error('Somente local');
+ const assert=(v,m)=>{if(!v)throw Error(m)},tick=()=>new Promise(r=>setTimeout(r,20));
+ const doc=new DOMParser().parseFromString(await(await fetch('../index.html')).text(),'text/html');
+ for(const id of ['appScreen','colabDetailOverlay','feriasOverlay','ausenciasOverlay']){const node=doc.getElementById(id);if(node){node.querySelectorAll('script').forEach(s=>s.remove());document.body.appendChild(node)}}
+ const load=src=>new Promise((r,j)=>{const s=document.createElement('script');s.src=src;s.onload=r;s.onerror=j;document.body.appendChild(s)});
+ localStorage.clear();localStorage.setItem('sistema_feedbacks_v1',JSON.stringify([{colaborador:name,feedback_final:'CACHE DE OUTRA CONTA'}]));
+ localStorage.setItem('sistema_colaboradores_info_v1',JSON.stringify({[name]:{setor_atual:'Suporte'},'Sem Indicadores':{}}));
+ localStorage.setItem('sistema_perfil_pdi_v1_owner',JSON.stringify({[name]:{complemento:{objetivo:'Objetivo local confirmado'},planos:[{versao:1,status:'aprovado',salvoEm:'2026-10-04',objetivos:[{objetivo:'Plano preservado',acao:'Ação do plano',prazo:'2026-12-01'}],snapshot:{nome:name}}]}}));
+ await load('../static/colaboradores.js');await load('../static/people-profile-notes-v2.js');await load('../static/atividades-mes.js');await load('../static/ponto-engine.js');await load('../static/ponto.js');await load('../static/equipe360-data.js');await load('../static/equipe360.js');
+ document.querySelectorAll('#tabBar .tab-btn').forEach(b=>b.onclick=()=>{document.body.dataset.activeTab=b.dataset.tab;if(b.dataset.tab==='ponto')onPontoTabActivated()});
+ document.dispatchEvent(new Event('DOMContentLoaded'));await tick();
+ document.getElementById('origin').focus();assert(await openEquipe360(name),'Abre perfil autenticado');
+ const dialog=document.getElementById('equipe360Dialog');
+ assert(dialog.open&&dialog.textContent.includes('Desenvolver análise'),'Cadastro exato consultado');
+ assert(!dialog.querySelector('img[onerror]'),'Escape de HTML no cadastro');
+ const tab=async key=>{dialog.querySelector('[data-e360-tab="'+key+'"]').click();await tick()};
+ await tab('desempenho');assert(dialog.textContent.includes('100')&&!dialog.textContent.includes('999'),'Indicadores somente desta pessoa, fora do filtro global');
+ await tab('desenvolvimento');assert(dialog.textContent.includes('Feedback confirmado')&&dialog.textContent.includes('Plano preservado'),'Feedback e versão de PDI');
+ assert(!dialog.textContent.includes('CACHE DE OUTRA CONTA')&&!dialog.querySelector('script'),'Sem fallback de cache privado compartilhado');
+ dialog.querySelector('[data-e360-action="pdi"]').click();await tick();assert(lastPdi===name&&!dialog.open,'PDI recebe identidade original');
+ await openEquipe360(name,'presenca');assert(dialog.textContent.includes('01/11/2026')&&dialog.textContent.includes('Motivo registrado'),'Presença integrada');
+ dialog.querySelector('[data-e360-action="ponto-0"]').click();await tick();assert(document.querySelector('#pontoContent').textContent.includes('Ana Maria'),'Abre análise original por ID');
+ await openEquipe360(name,'historico');assert(dialog.textContent.includes('99 → 100')&&dialog.textContent.includes('PDI local'),'Histórico e fontes preservados');
+ await tab('resumo');dialog.querySelector('[data-e360-action="cadastro"]').click();await tick();assert(document.getElementById('colabInfoForm'),'Editor original acessível');
+ const back=[...document.querySelectorAll('#colabDetailContent button')].find(b=>b.textContent==='Voltar ao perfil 360º');back.click();await tick();
+ assert(dialog.open,'Retorno ao perfil');await tick();
+ dialog.querySelector('[data-e360-action="cadastro"]').click();await tick();
+ const draftInput=document.getElementById('ciObservacoes');draftInput.value='Rascunho preservado';draftInput.dispatchEvent(new Event('input',{bubbles:true}));allowDiscard=false;
+ [...document.querySelectorAll('#colabDetailContent button')].find(b=>b.textContent==='Voltar ao perfil 360º').click();await tick();assert(!dialog.open&&document.getElementById('ciObservacoes').value==='Rascunho preservado','Recusar descarte preserva formulário');allowDiscard=true;
+ document.getElementById('ciSalvarBtn').click();await tick();await tick();assert(dialog.open&&dialog.textContent.includes(name),'Salvar no editor retorna ao perfil');
+ dialog.querySelector('[data-e360-action="atividades"]').click();await tick();assert(document.getElementById('atividadePessoa').value===name,'Atividade abre para a mesma pessoa');
+ document.querySelector('#atividadesMesOverlay .colab-detail-close').click();await tick();
+ await openEquipe360(name,'presenca');dialog.querySelector('[data-e360-action="jornada"]').click();await tick();assert(document.querySelector('#pontoEmployeeForm [name="nome"]').value===name,'Jornada abre para a mesma pessoa');
+
+ await openEquipe360('Sem Indicadores','desempenho');assert(dialog.textContent.includes('Não há indicadores sincronizados'),'Cadastro sem CSV continua acessível');
+ await tab('resumo');assert(dialog.textContent.includes('Sem Indicadores'),'Identidade sem indicadores preservada');
+ tables.ponto_colaboradores.push({id:'variant',user_id:'owner',nome:'SEM INDICADORES',ativo:true,ponto_jornadas:[]});
+ await openEquipe360('Sem Indicadores','presenca');dialog.querySelector('[data-e360-action="jornada"]').click();await tick();assert(document.getElementById('pontoNotice').textContent.includes('variação'),'Atalho exige confirmação para nome variante');
+
+ failTable='ferias';await openEquipe360(name,'presenca');assert(dialog.textContent.includes('Fonte indisponível'),'Falha parcial explícita');failTable='';
+ await tab('historico');const selected=dialog.querySelector('[aria-selected="true"]');selected.dispatchEvent(new KeyboardEvent('keydown',{key:'Home',bubbles:true}));assert(dialog.querySelector('#e360Tab-resumo').getAttribute('aria-selected')==='true','Navegação por teclado');
+ document.getElementById('e360Close').click();await tick();
+ deferred=new Promise(r=>releaseDeferred=r);deferName=name;const old=openEquipe360(name);await tick();const newest=openEquipe360('Sem Indicadores');assert(await newest,'Segunda pessoa carregada');deferName='';releaseDeferred();await old;
+ assert(dialog.querySelector('h2').textContent==='Sem Indicadores','Resposta antiga não sobrescreve nova pessoa');
+ user={id:'other',app_metadata:{role:'admin'}};callbacks.forEach(cb=>cb('SIGNED_IN',{user}));await tick();assert(!dialog.open&&!dialog.querySelector('#e360Body').textContent,'Troca de conta limpa dados');
+ user={id:'owner',user_metadata:{role:'admin'}};assert(await openEquipe360(name)===false,'Papel forjado bloqueado');
+ user={id:'owner',app_metadata:{role:'admin'}};document.body.dataset.role='viewer';assert(await openEquipe360(name)===false,'Viewer sem acesso ao novo perfil privado');document.body.dataset.role='admin';
+ await openEquipe360(name);document.body.classList.add('privacy-screen-on');await tick();assert(!dialog.open,'Proteção visual fecha o dialog nativo');assert(await openEquipe360(name)===false,'Proteção visual impede reabertura');document.body.classList.remove('privacy-screen-on');
+ await openEquipe360(name);assert(dialog.scrollWidth<=innerWidth,'Sem overflow horizontal no perfil');
+ document.getElementById('testResult').textContent='PASS: fontes reais simuladas, cadastro sem CSV, identidade, desempenho, histórico, PDI, editor, ponto, teclado, falha parcial, corrida entre pessoas e troca de conta';
+})().catch(e=>{document.getElementById('testResult').textContent='FAIL: '+e.message;console.error(e)});
+</script></body></html>

@@ -1,0 +1,53 @@
+/* Person workspace. Original module editors are unchanged. */
+#equipe360Dialog {
+  width: min(1140px, calc(100% - 40px)); max-width: 100%; max-height: calc(100dvh - 40px);
+  margin: auto; padding: 0; border: 1px solid var(--border); border-radius: 16px;
+  background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 24px 80px #0004;
+}
+#equipe360Dialog::backdrop { background: #0008; }
+.e360-heading { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 22px 26px; border-bottom: 1px solid var(--border); background: var(--bg-surface); }
+.e360-heading h2 { margin: 4px 0 0; font-size: 24px; overflow-wrap: anywhere; }
+.e360-heading > div > span, .e360-source { color: var(--text-muted); font-size: 13px; }
+.e360-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#e360Tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 14px 26px; border-bottom: 1px solid var(--border); }
+#e360Tabs button { min-height: 42px; padding: 9px 13px; border: 1px solid transparent; border-radius: 8px; font: inherit; font-size: 14px; color: var(--text-secondary); background: transparent; cursor: pointer; }
+#e360Tabs button[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); font-weight: 700; }
+#e360Body { padding: 22px 26px 28px; min-width: 0; }
+#e360Body h3 { margin: 0 0 10px; font-size: 17px; }
+#e360Body h4 { margin: 16px 0 6px; }
+#e360Body p { line-height: 1.65; }
+.e360-counters { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 18px 0; }
+.e360-counters article { display: flex; flex-direction: column; gap: 8px; padding: 18px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; }
+.e360-counters strong { font-size: 26px; color: var(--text-strong); }
+.e360-counters small { color: var(--text-muted); }
+.e360-section { margin: 18px 0 0; padding: 20px; border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+.e360-facts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+.e360-facts dt { font-size: 13px; color: var(--text-muted); }
+.e360-facts dd { margin: 5px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.e360-warning { padding: 12px; border-left: 3px solid var(--warning); background: var(--bg-inset); }
+.e360-empty { color: var(--text-muted); }
+.e360-entry { display: block; padding: 13px 0; border-bottom: 1px solid var(--border); }
+.e360-entry summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+.e360-entry summary::before { content: '▸ '; color: var(--accent); }
+.e360-entry[open] > summary::before { content: '▾ '; }
+.e360-text, #e360Body pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+#e360Body pre { font-size: 12px; max-height: 360px; overflow: auto; }
+.e360-timeline { padding-left: 20px; }
+.e360-timeline li { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.e360-timeline li > span, .e360-timeline li > strong { display: block; margin-bottom: 6px; }
+.e360-timeline li > span { color: var(--text-muted); font-size: 13px; }
+#e360Body .pp-table { overflow-x: auto; }
+.colab-card-actions { flex-wrap: wrap; }
+@media(max-width:600px) {
+  #equipe360Dialog { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; }
+  .e360-heading { padding: 16px; align-items: flex-start; flex-direction: column; }
+  .e360-heading h2 { font-size: 20px; }
+  .e360-heading .e360-actions { justify-content: flex-start; max-width: none; }
+  .e360-heading .btn-small { padding-inline: 9px; font-size: 12px; }
+  #e360Tabs { padding: 10px 16px; gap: 4px; }
+  #e360Tabs button { font-size: 13px; padding: 8px; }
+  #e360Body { padding: 16px; }
+  .e360-counters { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .e360-counters article, .e360-section { padding: 14px; }
+  .e360-facts { grid-template-columns: minmax(0,1fr); }
+}
