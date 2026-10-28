@@ -2,11 +2,15 @@
 
 App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer), gamificação, relatórios inteligentes, e deploy no Vercel.
 
-**Versão atual:** `1.7.2` (constante `APP_VERSION` em `static/app.js`)
+**Versão atual:** `1.14.0` (constante `APP_VERSION` em `static/app.js`)
 
 ## Diagnóstico gerencial
 
 A auditoria, metodologia, limitações e validação da nova seção estão em [docs/diagnostico-gerencial.md](docs/diagnostico-gerencial.md). A migração aditiva `migration_v49.sql` foi aplicada ao banco de produção em 22/10/2026, habilitando revisões privadas sincronizadas.
+
+## Foundation / Estabilização
+
+Baseline e continuidade: [arquitetura](docs/architecture.md), [inventário atual](docs/feature-inventory.md), [roadmap](docs/roadmap.md), [testes e cache](docs/testing-release.md), [catálogo de migrations](docs/migrations.md). Esses documentos atualizam as descrições históricas de módulos, abas e migrations abaixo. A Fase 1 não altera regras de negócio ou o banco.
 
 ## Changelog
 
@@ -20,7 +24,7 @@ A auditoria, metodologia, limitações e validação da nova seção estão em [
 
 ## Stack
 
-- **Frontend:** HTML/CSS/JS vanilla (SPA, 29 módulos, sem build step)
+- **Frontend:** HTML/CSS/JS vanilla (SPA, módulos globais, sem build step)
 - **Backend:** Supabase (Auth, PostgreSQL, RLS, REST API)
 - **Deploy:** Vercel (static + serverless functions)
 - **Charts:** Chart.js (CDN)
@@ -33,7 +37,7 @@ A auditoria, metodologia, limitações e validação da nova seção estão em [
 - **Vercel project:** `andre-tavares/dashboard-suporte`
 - **Git remote:** `origin` → `https://github.com/Drawzito98/dashboard-suporte`
 - **Branch:** `main`
-- **Deploy manual:** `git push origin main && npx vercel deploy --prod --yes`
+- **Publicação:** merge e deploy somente com autorização explícita. Consulte [validação e release](docs/testing-release.md).
 
 ## Supabase
 
@@ -65,22 +69,9 @@ A auditoria, metodologia, limitações e validação da nova seção estão em [
 | `avaliacoes` | Avaliações de desempenho (14 competências) | Por `user_id` |
 | `notificacoes` | Notificações de audit trail | Authenticated |
 
-### Migrations (executar no SQL Editor do Supabase)
+### Migrations
 
-| Migration | Conteúdo |
-|---|---|
-| `migration.sql` | Tabela `registros` + RLS |
-| `migration_v2.sql` | 7 tabelas extras + RLS (19/06) |
-| `migration_v3.sql` | Tabela `feedbacks` + RLS |
-| `migration_v4.sql` | Tabela `anotacoes_diarias` + RLS |
-| `migration_v5.sql` | Tabela `tarefas` + RLS |
-| `migration_v6.sql` | Tabela `pontos_extras` + RLS |
-| `migration_v7.sql` | Tabela `colaboradores_info` + RLS |
-| `migration_v8.sql` | Colunas `conduta_negativa` / `conduta_motivo` em `colaboradores_info` |
-| `migration_v9.sql` | Coluna `mes` em `pontos_extras` |
-| `migration_v10.sql` | Tabela `setor_inativos` + RLS |
-| `migration_v11.sql` | Tabela `notificacoes` + RLS |
-| `migration_v12.sql` | Tabela `avaliacoes` + RLS |
+Consulte o [catálogo completo e procedimento](docs/migrations.md), que cobre a sequência até v49. A antiga tabela resumida não correspondia ao conteúdo de alguns arquivos e foi substituída por esse catálogo. Não executar SQL como parte de testes ou push.
 
 ### RLS Policies
 
@@ -184,7 +175,7 @@ usuarios.js → csv-import.js → reports.js → app.js
 3. Login usa `sbClient.auth.signInWithPassword()`
 4. Cadastro usa `sbClient.auth.signUp()` (sem confirmação de email)
 5. Logout usa `sbClient.auth.signOut()` + reload
-6. Admin é definido automaticamente via API quando papel está ausente
+6. Autorizações dependem dos metadados protegidos e das verificações do servidor; consulte `auth-policy.js` e `api/users.js`.
 
 ## Fluxo de dados
 
@@ -204,19 +195,14 @@ usuarios.js → csv-import.js → reports.js → app.js
 ## Riscos conhecidos
 
 1. ~~**Service Role Key exposta** em `api/users.js`~~ ✅ **Corrigido** — lê de `process.env.SERVICE_ROLE_KEY` no Vercel
-2. **Sem build step** — sem typecheck, sem linter, sem testes automatizados
-3. **`app.js` ~3031 linhas** — monolítico, difícil de manter
+2. **Sem build step** — sem typecheck ou linter; testes locais disponíveis via `npm test`
+3. **`app.js` concentra responsabilidades** — monolítico, difícil de manter
 
 ## Comandos úteis
 
 ```bash
-# Deploy completo
-git add -A && git commit -m "mensagem" && git push origin main && npx vercel deploy --prod --yes
-
-# Apenas deploy (se já commitado)
-npx vercel deploy --prod --yes
-
-# Git
+npm test
+npm run release:check
 git status
 git log --oneline -10
 ```

@@ -95,33 +95,26 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 - **Colaboradores inativos:** mesmo padrão via `isColabActive()`
 
 ## Migrations
-- `migration.sql` — tabela `registros` + RLS
-- `migration_v2.sql` — 7 tabelas base (metas, comentarios, historico, scoring_config, alertas_config, colaborador_fotos, colab_inativos) + RLS
-- `migration_v3.sql` — tabela `feedbacks`
-- `migration_v4.sql` — tabela `anotacoes_diarias`
-- `migration_v5.sql` — tabela `tarefas`
-- `migration_v6.sql` — tabela `pontos_extras`
-- `migration_v7.sql` — tabela `colaboradores_info`
-- `migration_v8.sql` — colunas `conduta_negativa` e `conduta_motivo` em `colaboradores_info`
-- `migration_v9.sql` — coluna `mes` em `pontos_extras`
-- `migration_v10.sql` — tabela `setor_inativos` + RLS
-- `migration_v11.sql` — tabela `notificacoes` + RLS
-- `migration_v12.sql` — tabela `avaliacoes` + RLS
+
+Consulte `docs/migrations.md` para a sequência até v49. Não presumir aplicação em produção pela existência do arquivo. A antiga lista parcial foi substituída pelo catálogo baseado no conteúdo dos SQLs.
 
 ## Observações
-- **Migrations v10-v12:** já executadas no Supabase
-- **Regra de scoring `pontos_extras`:** lê do localStorage `sistema_pontos_extras_v1`; defaultValue na config (padrão 1x) multiplica os pontos lançados
-- **Integração gamificação:** ao salvar/excluir bônus, `renderGamification()` é chamado automaticamente
+
+- A regra `pontos_extras` usa configuração e persistência existentes; não alterar durante estabilização.
+- Ao salvar/excluir bônus, a integração atual atualiza a gamificação.
 
 ## Comandos Úteis
 ```bash
-# Deploy
-git add -A && git commit -m "mensagem" && git push && npx vercel --prod
+# Publicação somente com autorização explícita; nunca encadear push com deploy.
 
 # Testes
-node tests/runner.js
+npm test
 
 # Ver status
 git status
 git log --oneline -5
 ```
+
+## Baseline e continuidade (28/10/2026)
+
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.14.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
