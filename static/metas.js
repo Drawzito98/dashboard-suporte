@@ -15,7 +15,7 @@ function loadMetas() {
     dbMetasLoad().then(loaded => {
       if (loaded && Array.isArray(loaded)) {
         goals = loaded;
-        saveMetas();
+        // dbMetasLoad already refreshed the cache; reads must never rewrite server goals.
         if (document.querySelector('#tab-gamificacao.active')) renderMetas();
       }
     }).catch(() => {});

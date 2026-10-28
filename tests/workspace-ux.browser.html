@@ -1,0 +1,71 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workspace UX — dados simulados</title>
+<style>html,body{margin:0;height:100%}#testResult{white-space:pre-wrap;margin:0;font:12px monospace}iframe{display:block;width:100%;height:calc(100% - 44px);border:0}</style>
+<pre id="testResult">RUNNING: interface completa, somente dados simulados</pre><iframe id="workspace" title="Painel com dados simulados"></iframe>
+<script>
+(async()=>{
+ if(!['localhost','127.0.0.1'].includes(location.hostname))throw Error('Somente servidor local');
+ const assert=(v,m)=>{if(!v)throw Error(m)},wait=async(fn,message)=>{const end=Date.now()+25000;while(Date.now()<end){if(fn())return;await new Promise(r=>setTimeout(r,60))}throw Error(message)};
+ const html=await(await fetch('../index.html')).text(),doc=new DOMParser().parseFromString(html,'text/html');
+ const seed=()=>{
+  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,String(v)),removeItem:k=>memory.delete(k)}});
+  const theme=new URLSearchParams(parent.location.search).get('theme')||'light';localStorage.setItem('theme',theme);
+  const user={id:'ux-local-test',email:'teste@local.invalid',app_metadata:{role:'admin'},user_metadata:{name:'Gestão de teste'}};
+  const people=Array.from({length:12},(_,i)=>({nome:`Pessoa de teste ${i+1} com nome extenso para revisão de interface`,setor_atual:i<6?'Financeiro':'Estoque e OS',nivel:i%2?'N1':'N2',user_id:user.id,id:'person-'+i,observacoes:'Contexto de acompanhamento. '.repeat(25)}));
+  const records=people.flatMap((p,i)=>Array.from({length:6},(_,m)=>({id:i*6+m+1,user_id:user.id,Atendente:p.nome,Setor:p.setor_atual,'Mês':`2026-0${m+4}`,Assumidos:150+i,Finalizados:120+i,Transferidos:15,Score:4.8,Total:12,TMA:'00:20:00',TMR:'00:02:00'})));
+  const tables={registros:records,colaboradores_info:people,anotacoes_diarias:[],feedbacks:[],avaliacoes:[],tarefas:[],ferias:[],ausencias:[]};
+  function query(table){let single=false,range=null,filters=[];const q=new Proxy({}, {get(_,key){
+   if(['insert','upsert','update','delete'].includes(key))return()=>{throw Error('Teste permite somente leitura: '+table)};
+   if(key==='then')return(resolve,reject)=>Promise.resolve().then(()=>{let data=[...(tables[table]||[])];for(const[k,v]of filters)data=data.filter(r=>r[k]===v);if(range)data=data.slice(range[0],range[1]+1);return{data:single?data[0]||null:data,error:null,count:data.length}}).then(resolve,reject);
+   if(key==='eq')return(k,v)=>{filters.push([k,v]);return q};
+   if(key==='range')return(a,b)=>{range=[a,b];return q};
+   if(key==='single'||key==='maybeSingle')return()=>{single=true;return q};
+   return()=>q;
+  }});return q}
+  const client={auth:{getUser:async()=>({data:{user}}),getSession:async()=>({data:{session:{user,access_token:'local-test'}}}),refreshSession:async()=>({data:{session:{user,access_token:'local-test'}}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},from:query,channel:()=>query('channel'),removeChannel(){},storage:{from:()=>({getPublicUrl:()=>({data:{publicUrl:''}})})}};
+  Object.defineProperty(window,'supabase',{get:()=>({createClient:()=>client}),set(){}});
+  Object.defineProperty(navigator,'serviceWorker',{value:{register:async()=>({})}});
+  window.__uxErrors=[];addEventListener('error',e=>{if(e.message)window.__uxErrors.push(e.message)});addEventListener('unhandledrejection',e=>window.__uxErrors.push(String(e.reason)));
+  window.open=()=>({document:{open(){},write(html){window.__uxPrintHTML=html},close(){}}});
+  window.__uxDownloads=[];const click=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(this.download){window.__uxDownloads.push({name:this.download,href:this.href,content:this.href.startsWith('blob:')?fetch(this.href).then(r=>r.text()):null});return}return click.call(this)};
+ };
+ const base=doc.createElement('base');base.href=location.origin+'/';doc.head.prepend(base);
+ const setup=doc.createElement('script');setup.textContent='('+seed.toString()+')()';base.after(setup);
+ doc.querySelectorAll('script[src*="supabase-js"]').forEach(n=>n.remove());
+ const frame=document.getElementById('workspace');frame.srcdoc='<!doctype html>'+doc.documentElement.outerHTML;
+ const win=()=>frame.contentWindow,d=()=>frame.contentDocument;
+ await wait(()=>d()?.body?.dataset.workspaceReady==='true'&&d().querySelectorAll('#gfSetor option').length>=3,'Inicialização autenticada');
+ const click=id=>{const el=d().getElementById(id);assert(el,'Controle ausente: '+id);el.click()};
+ const tab=async name=>{d().querySelector(`[data-tab="${name}"]`).click();await wait(()=>d().body.dataset.activeTab===name,'Aba '+name);await new Promise(r=>setTimeout(r,120))};
+ const bounds=el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=frame.clientWidth+1};
+ for(const name of ['home','dashboard','relatorio-setorial','saude-operacional','tarefas','regras','ponto','colaboradores','lider','insights','avaliacao','perfil-pdi','mapeamento-time']){
+  await tab(name);assert(d().documentElement.scrollWidth<=frame.clientWidth,'Overflow global: '+name);assert(bounds(d().getElementById('appPageTitle')),'Título dentro do cabeçalho: '+name);
+ }
+ await tab('dashboard');const sector=d().getElementById('gfSetor');sector.value='Financeiro';sector.dispatchEvent(new (win().Event)('change',{bubbles:true}));
+ await wait(()=>win().Chart?.getChart(d().getElementById('mainChart'))?.data.datasets.length,'Chart.js real e gráfico com dados');
+ assert(d().querySelectorAll('#previewTable tbody tr').length>0,'Tabela preenchida');
+ click('exportChartPngBtn');await wait(()=>win().__uxDownloads.some(r=>r.name.endsWith('.png')),'Exportação PNG');
+ const png=win().__uxDownloads.find(r=>r.name.endsWith('.png'));assert(png.href.startsWith('data:image/png;base64,'),'PNG válido');
+ const image=new (win().Image)();image.src=png.href;await image.decode();assert(image.naturalWidth>0&&image.naturalHeight>0,'PNG decodificável');
+ click('generateReportBtn');await wait(()=>d().getElementById('rsGenerateBtn'),'Filtros setoriais');
+ d().getElementById('rsFilterSector').value='Financeiro';d().getElementById('rsFilterMonthStart').value='2026-04';d().getElementById('rsFilterMonthEnd').value='2026-09';click('rsGenerateBtn');await wait(()=>d().getElementById('reportText')?.value?.length>100,'Relatório executivo');
+ click('exportPdfBtn');assert(win().__uxPrintHTML?.includes('<html'),'HTML de impressão gerado');
+ const printDoc=new DOMParser().parseFromString(win().__uxPrintHTML,'text/html');assert(printDoc.body.textContent.includes('Financeiro'),'Impressão mantém o setor');
+ win().backupCsv();await wait(()=>win().__uxDownloads.some(r=>r.name.endsWith('.csv')),'Backup CSV');const csv=win().__uxDownloads.find(r=>r.name.endsWith('.csv'));assert(csv,'Backup CSV');const text=await csv.content;assert(text.split('\n').length===73,'CSV completo com 72 registros e cabeçalho');
+ // Use the existing close action so the editor stack remains authoritative.
+ d().querySelectorAll('.colab-detail-overlay, .modal-overlay').forEach(overlay=>{if(overlay.getClientRects().length)overlay.querySelector('[aria-label*="Fechar"],.colab-detail-close,.modal-close')?.click()});
+ await tab('colaboradores');win().openNovoColaboradorModal();await wait(()=>d().getElementById('novoColaboradorNome'),'Cadastro');
+ assert(bounds(d().querySelector('.novo-colaborador-modal')),'Cadastro cabe na tela');
+ click('novoColaboradorCancelar');await wait(()=>!d().getElementById('novoColaboradorModal'),'Cancelar cadastro');
+ win().openColabDetailOverlay('Pessoa de teste 1 com nome extenso para revisão de interface');await wait(()=>d().getElementById('ciSalvarBtn'),'Editor de perfil');
+ assert(bounds(d().querySelector('#colabDetailOverlay .colab-detail-panel')),'Editor cabe na tela');
+ d().getElementById('colabDetailOverlay').querySelector('[aria-label*="Fechar"]').click();
+ await tab('mapeamento-time');d().querySelector('.mt-btn-edit').click();await wait(()=>d().querySelector('.mt-modal-overlay.open #mtModalClose'),'Editor de mapeamento');
+ assert(bounds(d().querySelector('.mt-modal')),'Editor de mapeamento cabe na tela');click('mtModalClose');await wait(()=>!d().querySelector('.mt-modal-overlay'),'Fechar editor de mapeamento');
+ await tab('ponto');await wait(()=>d().querySelector('.ponto-card'),'Ponto sob demanda');assert(bounds(d().querySelector('.ponto-card')),'Card Ponto contido');
+ const current=d().querySelector('[data-tab="ponto"]');current.focus();current.dispatchEvent(new (win().KeyboardEvent)('keydown',{key:'ArrowLeft',bubbles:true,cancelable:true}));
+ assert(d().activeElement.dataset.tab==='mapeamento-time','Setas navegam no submenu');assert(bounds(d().activeElement),'Opção focada revelada');
+ assert(win().__uxErrors.length===0,'Erros: '+win().__uxErrors.join('; '));
+ document.getElementById('testResult').textContent='PASS: 13 abas, dados extensos, Chart.js real, PNG, CSV, impressão, relatório, cadastro, editores, teclado e Ponto; sem escrita de produção';
+})().catch(error=>{document.getElementById('testResult').textContent='FAIL: '+error.message;console.error(error)});
+</script></html>

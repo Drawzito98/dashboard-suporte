@@ -21,6 +21,15 @@
     // Domain hiding uses hidden; role restrictions continue to use the original CSS.
     return !button.disabled && getComputedStyle(button).display !== 'none';
   }
+  // Scroll only the tab strip: revealing a destination must not move page content.
+  function reveal(button) {
+    if (!button || button.hidden || bar.hidden || !window.matchMedia('(max-width: 900px)').matches) return;
+    const bounds = bar.getBoundingClientRect(), target = button.getBoundingClientRect();
+    if (target.left < bounds.left) bar.scrollLeft -= bounds.left - target.left;
+    else if (target.right > bounds.right) bar.scrollLeft += target.right - bounds.right;
+  }
+  bar.addEventListener('focusin', event => reveal(event.target.closest('.tab-btn')));
+  window.addEventListener('resize', () => reveal(buttons.find(button => button.classList.contains('active'))));
   function sync(tab) {
     const group = groups.find(([, , tabs]) => tabs.includes(tab)) || groups[0];
     last.set(group[0], tab);
@@ -33,6 +42,7 @@
     });
     bar.setAttribute('aria-label', 'Telas de ' + group[1]);
     bar.hidden = group[2].length === 1;
+    reveal(buttons.find(button => button.dataset.tab === tab));
   }
   function refresh() {
     // Temporarily reveal for role CSS inspection; no data or role is changed.

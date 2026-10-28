@@ -670,9 +670,6 @@ function renderRelatorioSetorial() {
     if (pieCanvas) {
       const sorted = setorMetrics.slice().sort((a, b) => b.fin - a.fin);
       const totalPie = sorted.reduce((s, x) => s + x.fin, 0);
-      if (typeof ChartDataLabels !== 'undefined') {
-        Chart.register(ChartDataLabels);
-      }
       const neutralColors = typeof ChartTheme !== 'undefined'
         ? ChartTheme.neutralPalette(sorted.length)
         : ['#2563eb','#059669','#d97706','#7c3aed','#ea580c','#0891b2','#e11d48','#8b5cf6','#16a34a','#f97316'];
@@ -682,6 +679,7 @@ function renderRelatorioSetorial() {
         return c + '60';
       });
       window.__rsCharts.pieChart = new Chart(pieCanvas.getContext('2d'), {
+        plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : [],
         type: 'doughnut',
         data: {
           labels: sorted.map(s => s.nome),
@@ -765,6 +763,7 @@ function renderRelatorioSetorial() {
 
       const barColor = typeof ChartTheme !== 'undefined' ? ChartTheme.blue() : (_isDark ? 'rgba(96,165,250,0.8)' : 'rgba(37,99,235,0.8)');
       window.__rsCharts[`chart_${setorIdx}`] = new Chart(ctx, {
+        plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : [],
         type: 'bar',
         data: {
           labels: monthData.map(d => d.label),

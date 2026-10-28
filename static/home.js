@@ -303,6 +303,8 @@ function renderHome() {
     </div>`;
   }
 
+  const previousCanvas = container.querySelector('#homeTrendCanvas');
+  if (previousCanvas && typeof Chart !== 'undefined') Chart.getChart?.(previousCanvas)?.destroy();
   container.innerHTML = html;
 
   container.querySelectorAll('[data-home-tab]').forEach(button => {
@@ -451,13 +453,15 @@ function renderHome() {
 
   // Render mini trend chart
   if (trendData.length > 1) {
-    setTimeout(() => renderHomeTrendChart(trendData), 100);
+    const trendCanvas = container.querySelector('#homeTrendCanvas');
+    setTimeout(() => { if (trendCanvas?.isConnected) renderHomeTrendChart(trendData); }, 100);
   }
 }
 
 function renderHomeTrendChart(data) {
   const canvas = document.getElementById('homeTrendCanvas');
   if (!canvas || typeof Chart === 'undefined') return;
+  Chart.getChart?.(canvas)?.destroy();
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';

@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.19.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.19.1. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -137,4 +137,4 @@ Leia `docs/modularization.md`. O manifest declara dependências, estilos e expor
 
 ## Fase 6 — Base visual e continuidade
 
-Leia docs/design-system.md antes de retomar. O ciclo inicial foi encerrado a pedido do usuário com autorização de commit/deploy, sem merge; há refinamentos pendentes no roadmap. Tokens/componentes compartilhados ficam em css/tokens.css e css/components.css; navegação em shell.css. ui-accessibility.js é o proprietário de teclado/foco dos overlays. Preserve guards, close handlers e semântica de tabelas. Rode npm test, design-system-browser-runner.js e fixtures das áreas afetadas em desktop/celular. A validação de contraste é amostral.
+Leia docs/design-system.md antes de retomar. Fase concluída em 1.19.1; o roadmap aponta a Fase 7 como próxima. A primeira entrega 1.19.0 foi publicada; a conclusão registra commit/push sem novo deploy. Tokens/componentes compartilhados ficam em css/tokens.css e css/components.css; navegação em shell.css. ui-accessibility.js é o proprietário de teclado/foco dos overlays. Preserve guards, close handlers e semântica de tabelas. Rode npm test e fixtures de design-system, shell, workspace-ux e áreas afetadas em desktop/celular. A validação de contraste é amostral.

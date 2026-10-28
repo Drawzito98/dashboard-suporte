@@ -43,3 +43,7 @@ Versão 1.18.0. O núcleo delega gráficos/relatório e separa administração/i
 ## Evolução — Fase 6 (base compartilhada)
 
 Versão 1.19.0. css/components.css substitui visual-refresh, consolidando contratos sobre tokens e estilos históricos. ui-accessibility.js assume teclado/foco dos overlays e regiões de tabela. A consolidação do CSS é gradual; escopo, validação e continuidade em [design-system.md](design-system.md).
+
+## Conclusão — Fase 6
+
+Versão 1.19.1. Navegação móvel com faixa horizontal e foco revelado; limpeza das camadas da sidebar antiga; grades e editores contidos; instâncias de gráficos com ciclo de vida corrigido e plugin setorial local. Consultar metas não regrava a coleção. Teste integrado usa bibliotecas reais e backend simulado: [design-system.md](design-system.md). Próxima fase: Cockpit gerencial.

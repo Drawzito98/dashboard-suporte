@@ -129,6 +129,9 @@
   :is(.btn-primary, .btn-small, .btn-secondary, .fileButton) { white-space: normal; overflow-wrap: anywhere; }
   .card { padding: var(--s-5); }
   .card, .panel { min-width: 0; }
+  .colab-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: var(--s-3); }
+  .colab-cards-skeleton { padding: var(--s-4); }
+  .colab-card { min-width: 0; overflow-wrap: anywhere; }
   .kpi { min-height: 112px; }
   .kpi .label { font-size: var(--font-caption); text-transform: none; letter-spacing: 0; }
   .kpi .value { font-variant-numeric: tabular-nums; }
@@ -145,14 +148,14 @@
   body.has-accessible-dialog { overflow: hidden; }
 
   /* Modais legados compartilham superfície; dimensões especializadas continuam locais. */
-  :is(.modal-box, .modal-sheet, .colab-detail-panel) { border: 1px solid var(--border); border-radius: var(--dialog-radius); background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-lg); min-width: 0; max-width: min(800px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; scroll-padding: var(--dialog-gutter); }
+  :is(.modal-box, .modal-sheet, .colab-detail-panel, .mt-modal) { border: 1px solid var(--border); border-radius: var(--dialog-radius); background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-lg); min-width: 0; max-width: min(800px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; scroll-padding: var(--dialog-gutter); }
   .colab-detail-panel > h2 { padding-right: var(--control-height); overflow-wrap: anywhere; }
   :is(.modal-actions, .colab-card-actions) { gap: var(--s-2); flex-wrap: wrap; }
-  :is(.modal-close, .colab-detail-close, .rs-modal-close, .kpi-drill-close) { min-width: var(--control-height); min-height: var(--control-height); flex-shrink: 0; }
+  :is(.modal-close, .mt-modal-close, .colab-detail-close, .rs-modal-close, .kpi-drill-close) { min-width: var(--control-height); min-height: var(--control-height); flex-shrink: 0; }
   :is(.colab-detail-overlay, .modal-overlay, .kpi-drill-overlay, .rs-modal-overlay) { background: var(--overlay); }
   dialog::backdrop { background: var(--overlay); }
   @media (max-width: 600px) {
-    :is(.modal-box, .modal-sheet, .colab-detail-panel) { max-width: 100%; max-height: calc(100dvh - 16px); border-radius: var(--r-lg) var(--r-lg) 0 0; padding-bottom: max(var(--s-4), env(safe-area-inset-bottom)); }
+    :is(.modal-box, .modal-sheet, .colab-detail-panel, .mt-modal) { max-width: 100%; max-height: calc(100dvh - 16px); border-radius: var(--r-lg) var(--r-lg) 0 0; padding-bottom: max(var(--s-4), env(safe-area-inset-bottom)); }
     :is(.modal-actions, .reportActions) > button { flex: 1 1 140px; }
     .card-header { flex-wrap: wrap; }
     .empty-state { padding: var(--s-5) var(--s-4); }

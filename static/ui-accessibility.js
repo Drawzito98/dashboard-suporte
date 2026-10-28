@@ -1,7 +1,7 @@
 /* Shared keyboard behavior for legacy overlays and horizontal table regions. */
 (function () {
   'use strict';
-  const selector = '.colab-detail-overlay, .modal-overlay, .kpi-drill-overlay, .rs-modal-overlay';
+  const selector = '.colab-detail-overlay, .modal-overlay, .kpi-drill-overlay, .rs-modal-overlay, .mt-modal-overlay';
   const scrollSelector = '.table-wrap, .ranking-table-wrap, .pp-table, .projecao-table-scroll, .ponto-table, .diag-scroll, .panorama-table-wrap';
   const opened = new Map(), scrollRegions = new WeakMap();
   let stack = [], scheduled = false;
@@ -44,6 +44,7 @@
   }
   function syncTables() {
     for (const region of document.querySelectorAll(scrollSelector)) {
+      if (region.matches('table')) continue;
       const overflow = region.scrollWidth > region.clientWidth + 1 && visible(region);
       if (overflow && !scrollRegions.has(region)) {
         const added = [];
@@ -78,7 +79,7 @@
     if (!dialog) return;
     if (event.key === 'Escape') {
       event.preventDefault(); event.stopImmediatePropagation();
-      dialog.querySelector('.colab-detail-close, .modal-close, .rs-modal-close, .kpi-drill-close, [data-close], [aria-label*="Fechar"]')?.click();
+      dialog.querySelector('.colab-detail-close, .modal-close, .mt-modal-close, .rs-modal-close, .kpi-drill-close, [data-close], [aria-label*="Fechar"]')?.click();
       return;
     }
     const controls = items(dialog), first = controls[0], last = controls[controls.length - 1];

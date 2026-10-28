@@ -2,7 +2,7 @@
 
 App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer), gamificação, relatórios inteligentes, e deploy no Vercel.
 
-**Versão atual:** `1.19.0` (constante `APP_VERSION` em `static/app.js`)
+**Versão atual:** `1.19.1` (constante `APP_VERSION` em `static/app.js`)
 
 ## Diagnóstico gerencial
 
@@ -10,7 +10,7 @@ A auditoria, metodologia, limitações e validação da nova seção estão em [
 
 ## Design System / UX — Fase 6
 
-Base compartilhada de componentes, temas, estados vazios, tabelas e teclado de modais. Este ciclo foi encerrado a pedido do usuário; os refinamentos de continuidade estão em [design-system.md](docs/design-system.md).
+Base compartilhada de componentes, temas, estados vazios, tabelas e teclado de modais. Fase concluída com navegação compacta no celular, filtros legíveis e revisão dos gráficos e editores. Contratos e limites estão em [design-system.md](docs/design-system.md).
 
 ## Modularização — Fase 5
 
@@ -36,6 +36,7 @@ Baseline e continuidade: [arquitetura](docs/architecture.md), [inventário atual
 
 | Versão | Data | Alterações |
 |--------|------|------------|
+| 1.19.1 | 28/10/2026 | Conclusão da Fase 6: submenu móvel com rolagem, filtros/cabeçalho responsivos, limpeza da sidebar, ciclo de gráficos e leitura de metas sem regravação. |
 | 1.19.0 | 28/10/2026 | Base de componentes e tokens, tabelas acessíveis por teclado, foco de modais e consistência de temas; refinamentos da Fase 6 documentados. |
 | 1.18.0 | 28/10/2026 | Extração dos módulos centrais, persistência por domínio e carregamento sob demanda com retentativa e proteção de sessão. |
 | 1.17.0 | 28/10/2026 | Estado/eventos e repository de indicadores; cache por conta, sessão invalidável, vazios autoritativos e confirmação de pendências por revisão. |

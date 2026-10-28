@@ -258,27 +258,27 @@
     overlay.className = 'mt-modal-overlay';
     overlay.innerHTML = `
       <div class="mt-modal">
-        <button class="mt-modal-close" id="mtModalClose" type="button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <button class="mt-modal-close" id="mtModalClose" type="button" aria-label="Fechar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         <h3 style="font-size:18px;font-weight:600;color:var(--text-strong);margin-bottom:var(--s-5)">${titulo}</h3>
         <div class="mt-modal-form">
           <div class="field">
-            <label class="label">Nome</label>
+            <label class="label" for="mtFormNome">Nome</label>
             <input type="text" id="mtFormNome" class="input" value="${escHtml(n)}" placeholder="Nome do colaborador">
           </div>
           <div class="field">
-            <label class="label">Setor</label>
+            <label class="label" for="mtFormSetor">Setor</label>
             <input type="text" id="mtFormSetor" class="input" value="${escHtml(s)}" placeholder="Setor">
           </div>
           <div class="field">
-            <label class="label">Perfil</label>
+            <label class="label" for="mtFormPerfil">Perfil</label>
             <textarea id="mtFormPerfil" class="input" rows="3" placeholder="Descrição do perfil">${escHtml(p)}</textarea>
           </div>
           <div class="field">
-            <label class="label">Ação Imediata do Líder</label>
+            <label class="label" for="mtFormAcao">Ação Imediata do Líder</label>
             <textarea id="mtFormAcao" class="input" rows="2" placeholder="Ação imediata">${escHtml(a)}</textarea>
           </div>
           <div class="field">
-            <label class="label">Categoria</label>
+            <label class="label" for="mtFormCategoria">Categoria</label>
             <select id="mtFormCategoria" class="input">
               <option value="pilares" ${cat === 'pilares' ? 'selected' : ''}>🟢 Referências</option>
               <option value="promissores" ${cat === 'promissores' ? 'selected' : ''}>🔵 Em Desenvolvimento</option>
@@ -346,7 +346,7 @@
     overlay.className = 'mt-modal-overlay';
     overlay.innerHTML = `
       <div class="mt-modal" style="max-width:400px">
-        <button class="mt-modal-close" id="mtDelClose" type="button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <button class="mt-modal-close" id="mtDelClose" type="button" aria-label="Fechar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         <h3 style="font-size:18px;font-weight:600;color:var(--text-strong);margin-bottom:var(--s-3)">Excluir Colaborador</h3>
         <p style="color:var(--text-secondary);margin-bottom:var(--s-5);font-size:14px;line-height:1.5">Tem certeza que deseja excluir <strong>${escHtml(colab.nome)}</strong> da lista?</p>
         <div class="mt-modal-btns">
@@ -509,7 +509,7 @@
   gap: var(--s-3, 12px);
 }
 .mt-header-actions { display: flex; align-items: center; gap: 8px; }
-#mtExportPdfBtn, .mt-details-export { flex: 0 0 auto; min-height: 30px; padding: 5px 10px; font-size: 12px; line-height: 1; white-space: nowrap; }
+#mtExportPdfBtn, .mt-details-export { flex: 0 0 auto; min-height: var(--control-height, 44px); padding: 5px 10px; font-size: 12px; line-height: 1; white-space: nowrap; }
 .mt-filtros {
   display: flex;
   flex-wrap: wrap;
@@ -517,6 +517,7 @@
   padding: var(--s-3, 12px) 0;
 }
 .mt-filtro-btn {
+  min-height: var(--control-height, 44px);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -541,10 +542,12 @@
 }
 .mt-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
   gap: var(--s-4, 16px);
 }
 .mt-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
   background: var(--bg-surface, #fff);
   border: 1px solid var(--border, #e2e8f0);
   border-radius: var(--r-lg, 10px);
@@ -559,11 +562,12 @@
   box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.07));
 }
 .mt-card:focus-visible {
-  outline: 3px solid var(--accent-soft, rgba(37, 99, 235, 0.3));
+  outline: 3px solid var(--focus-color, var(--accent));
   outline-offset: 2px;
   border-color: var(--accent, #2563eb);
 }
 .mt-card-top {
+  flex-wrap: wrap;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -588,8 +592,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: var(--control-height, 44px);
+  height: var(--control-height, 44px);
   border: 1px solid var(--border, #e2e8f0);
   border-radius: var(--r-sm, 6px);
   background: var(--bg-surface, #fff);

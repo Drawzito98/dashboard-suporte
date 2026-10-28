@@ -39,3 +39,7 @@ Versão 1.18.0. Checks de loader, domínios e gráficos/relatório agregados a n
 ## Registro da Fase 6 — ciclo inicial
 
 Versão 1.19.0. npm test aprovado, fixtures de áreas em desktop/celular e runner de teclado/temas em 1440/390/320px. Ver [design-system.md](design-system.md). Commit/push e deploy foram autorizados pelo usuário ao encerrar este ciclo; merge continua sem autorização.
+
+## Conclusão da Fase 6
+
+1.19.1: npm test e cache aprovados; interface-assets e metas-read entram no agregador. Fixtures de áreas passaram em 320px/1440px. workspace-ux testa gráficos/CDNs reais, PNG, CSV, HTML de impressão e editores com dados simulados em 320/390/1440px. Detalhes e limites em [design-system.md](design-system.md). Esta rodada faz commit/push na branch da fase, sem merge ou novo deploy.

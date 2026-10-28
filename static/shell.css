@@ -1,11 +1,13 @@
 /* Shared navigation layout; component appearance lives in css/components.css. */
-body.shell-v2 main.app,
-body.shell-v2[data-role="admin"].admin-sidebar-collapsed main.app {
+body.shell-v2 main.app {
   display: flex; flex-direction: column; gap: 0; width: 100%; max-width: none;
   min-height: 100dvh; margin: 0; padding: 0;
 }
-body.shell-v2 .topbar { order: 0; width: 100%; padding: 16px 28px; }
+body.shell-v2 #appScreen { min-height: 100dvh; }
+body.shell-v2 .topbar { order: 0; width: 100%; padding: 16px 28px; position: sticky; top: 0; z-index: 110; background: var(--bg-surface); border: 0; border-bottom: 1px solid var(--border); border-radius: 0; box-shadow: none; }
+body.shell-v2 .topbar::after { display: none; }
 body.shell-v2 .topbar .titleblock { flex: 1; min-width: 0; }
+body.shell-v2 .topbar .titleblock > div { min-width: 0; max-width: 100%; }
 body.shell-v2 .domain-nav { order: 1; display: flex; gap: 6px; padding: 10px 28px; border-bottom: 1px solid var(--border); background: var(--bg-surface); }
 .domain-nav button { padding: 10px 20px; min-height: 44px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-secondary); font: inherit; cursor: pointer; }
 .domain-nav button[aria-current="page"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 700; }
@@ -51,7 +53,8 @@ body.shell-v2 #toolsDialog .sidebar {
 body.shell-v2 #toolsDialog .sidebar .panel { background: var(--bg-surface); }
 body.shell-v2 #toolsDialog .panel-header { cursor: pointer; }
 body.shell-v2 .filter-disclosure { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-body.shell-v2 .filter-disclosure .filter-hint { margin: 0; }
+body.shell-v2 .filter-disclosure .filter-hint { margin: 0; min-width: 0; }
+body.shell-v2 .filter-disclosure #gfToggleBtn { flex-shrink: 0; white-space: nowrap; overflow-wrap: normal; }
 body.shell-v2 .global-filter-inner.is-compact > :is(.global-filter-row, .global-filter-multi) { display: none !important; }
 body.shell-v2[data-role="colaborador"] :is(.domain-nav, .shell-navigation, .menu-btn),
 body.shell-v2.presentation-mode :is(.domain-nav, .shell-navigation, .menu-btn) { display: none !important; }
@@ -64,7 +67,14 @@ body.shell-v2[data-role="colaborador"] #toolsDialog .sidebar { display: none !im
   body.shell-v2 .sync-status > span:last-child { display: none; }
   body.shell-v2 .domain-nav { padding: 8px 12px; gap: 4px; }
   .domain-nav button { flex: 1; padding: 8px; font-size: 13px; }
-  body.shell-v2 .shell-navigation { padding: 6px 12px; }
+  body.shell-v2 .shell-navigation { padding: 4px 12px; min-width: 0; }
+  body.shell-v2 .shell-navigation #tabBar { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; max-width: 100%; padding-block: 4px; overscroll-behavior-inline: contain; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; scroll-padding-inline: 4px; }
+  body.shell-v2 .shell-navigation #tabBar .tab-btn:focus-visible { outline-offset: -3px; }
+  body.shell-v2 .shell-navigation #tabBar .tab-btn { flex: 0 0 auto; white-space: nowrap; max-width: 100%; }
+  body.shell-v2 .filter-disclosure { flex-wrap: wrap; }
+  body.shell-v2 .filter-disclosure .filter-hint { flex: 1 1 150px; }
+  body.shell-v2 .filter-disclosure #gfToggleBtn { margin-left: auto; }
+  body.shell-v2 .topbar-logo { display: none; }
   body.shell-v2 .page-controls { padding: 12px 12px 0; }
   body.shell-v2 .layout { padding: 0 12px 24px; }
   body.shell-v2 .menu-btn::after { display: none; }
@@ -77,6 +87,7 @@ body.shell-v2[data-role="colaborador"] #toolsDialog .sidebar { display: none !im
 @media screen {
   body.shell-v2 .topbar { margin-bottom: 0; min-height: 68px; }
   body.shell-v2 .topbar-right { opacity: 1; }
+  body.shell-v2[data-role="admin"] .topbar-logo { display: none; }
   body.shell-v2 .titleblock h1 { font-size: 22px; letter-spacing: -.025em; }
   body.shell-v2 .shell-navigation .tab-icon svg { width: 18px; height: 18px; }
   body.shell-v2 #toolsDialog .sidebar :is(.btn-small, .btn-primary) { min-height: var(--control-height); font-size: 13px; }
@@ -89,4 +100,11 @@ body.shell-v2[data-role="colaborador"] #toolsDialog .sidebar { display: none !im
     body.shell-v2 .shell-navigation #tabBar .tab-btn { min-height: var(--control-height); }
     body.shell-v2 .domain-nav button { padding-inline: 10px; }
   }
+}
+
+@media screen and (max-width: 600px) {
+  body.shell-v2 .topbar { flex-wrap: wrap; row-gap: 8px; }
+  body.shell-v2 .topbar .titleblock { order: 2; flex: 1 1 100%; width: 100%; }
+  body.shell-v2 .topbar-right { margin-left: auto; }
+  body.shell-v2 .topbar-right :is(.quick-command-btn, .sync-status, .current-user.user-menu-trigger, .notif-btn) { min-width: var(--control-height); width: var(--control-height); min-height: var(--control-height); height: var(--control-height); }
 }

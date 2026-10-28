@@ -47,7 +47,7 @@ function renderColaboradores() {
     return;
   }
 
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s-3)">';
+  html += '<div class="colab-cards-grid">';
   for (const nome of colabs) {
     const info = colabInfo[nome] || {};
     const hasData = info.salario != null || info.setor_atual || info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa || info.feito_relevante;
@@ -626,6 +626,6 @@ document.getElementById('colabReportPrint')?.addEventListener('click', async () 
 function onColaboradoresTabActivated() {
   const container = document.getElementById('colaboradoresContent');
   if (!container) return;
-  container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s-3);padding:var(--s-4)"><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div></div>';
+  container.innerHTML = '<div class="colab-cards-grid colab-cards-skeleton"><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div></div>';
   setTimeout(() => renderColaboradores(), 50);
 }
