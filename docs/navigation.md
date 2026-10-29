@@ -38,3 +38,7 @@ Não houve aplicação de migrations, alteração de regras de negócio, merge o
 ## Continuação 1.22.0 — Operação
 
 O mapa acima descreve a Fase 2. Operação agora tem Visão geral, Análises e Metas. Análises contém Indicadores, Relatório por setor e Tendências e alertas. IDs antigos preservados; 14 destinos com a nova tela de metas. Os dois grupos de tabs possuem teclado/rolagem próprios. Estado atual e verificações em [operacao-e-metas.md](operacao-e-metas.md).
+
+## Continuação 1.23.0
+
+Pessoas agora tem Equipe e Gestão coletiva. As visões coletivas e as rotas individuais anteriores continuam acessíveis em seus grupos próprios; o shell respeita cancelamentos de navegação. Ver [pessoas-equipe360.md](pessoas-equipe360.md).

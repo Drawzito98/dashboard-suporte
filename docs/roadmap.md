@@ -27,3 +27,7 @@ Feedbacks/metas com confirmação, rascunhos e operações por item; Relatório 
 ### Continuação 1.22.0
 
 Organização de Operação e acesso às metas implementados: Visão geral, Análises com três visualizações e Metas. O editor deixa de depender de um container apenas de teste. Ver [operacao-e-metas.md](operacao-e-metas.md). Continuidade: caminhos de Pessoas/Equipe, demais escritas complementares, redução da carga inicial e consolidação de CSS.
+
+## Continuação 1.23.0
+
+Simplificação de Pessoas e ações individuais implementadas. Confirmação dos demais salvamentos complementares, redução de scripts iniciais e consolidação de CSS continuam pendentes. Ver [pessoas-equipe360.md](pessoas-equipe360.md).

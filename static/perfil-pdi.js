@@ -4,6 +4,7 @@
   const E = window.PerfilPDIEngine;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const get = id => document.getElementById(id);
+  let contextualName = '';
   let nome = '', owner = '', state = {}, draft = null, dirty = false, draftDirty = false;
   function userId() {
     const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
@@ -41,8 +42,8 @@
     if (!host) return;
     if (!allowed()) { host.innerHTML = '<div class="empty-state">Análise de perfil disponível para líderes administradores autenticados.</div>'; return; }
     const uid = userId();
-    if (uid !== owner) { owner = uid; state = read(storageKey(), {}); nome = ''; draft = null; dirty = false; draftDirty = false; }
-    const options = names();
+    if (uid !== owner) { contextualName = ''; owner = uid; state = read(storageKey(), {}); nome = ''; draft = null; dirty = false; draftDirty = false; }
+    const options = [...new Set([...names(), ...(contextualName ? [contextualName] : [])])].sort((a,b)=>a.localeCompare(b,'pt-BR'));
     if (!options.includes(nome)) { nome = options[0] || ''; draft = null; dirty = false; draftDirty = false; }
     host.innerHTML = `<div class="pdi-heading"><div><span class="pdi-eyebrow">Desenvolvimento da equipe</span><h2>Análise de perfil e PDI</h2><p>Transforme evidências e objetivos em um plano acompanhado.</p></div><span class="pdi-chip">Rascunhos para revisão do líder</span></div>
       <div class="pdi-local-note">Nesta primeira versão, complementos e planos são salvos neste navegador para seu usuário. Exporte o plano para guardar uma cópia. As fontes usam todo o histórico disponível, independentemente dos filtros globais.</div>
@@ -132,16 +133,18 @@
   }
   window.onPerfilPdiTabActivated = render;
   window.openPerfilPdi = function (personName) {
-    if (!allowed()) return;
-    if (dirty && !confirm('Descartar alterações não salvas e abrir outra pessoa?')) return;
+    if (!allowed()) return false;
+    if (dirty && owner === userId() && nome === personName && document.body.dataset.activeTab === 'perfil-pdi') return true;
+    if (dirty && !confirm('Descartar alterações não salvas e abrir outra pessoa?')) return false;
     if (owner !== userId()) { owner = userId(); state = read(storageKey(), {}); }
-    nome = personName; draft = null; dirty = false; draftDirty = false;
+    contextualName = personName; nome = personName; draft = null; dirty = false; draftDirty = false;
     document.querySelector('.tab-btn[data-tab="perfil-pdi"]')?.click();
+    return document.body.dataset.activeTab === 'perfil-pdi';
   };
   const initFeature = () => {
     if (typeof sbClient !== 'undefined' && sbClient) sbClient.auth.onAuthStateChange((event, session) => {
       const nextOwner = session?.user && getTrustedUserRole(session.user) === 'admin' ? session.user.id : '';
-      if (owner && owner !== nextOwner) { nome = ''; owner = ''; state = {}; draft = null; dirty = false; draftDirty = false; const host = get('perfilPdiContent'); if (host) host.replaceChildren(); }
+      if (owner && owner !== nextOwner) { contextualName = ''; nome = ''; owner = ''; state = {}; draft = null; dirty = false; draftDirty = false; const host = get('perfilPdiContent'); if (host) host.replaceChildren(); }
     });
     document.getElementById('tabBar')?.addEventListener('click', event => {
       const button = event.target.closest('.tab-btn');

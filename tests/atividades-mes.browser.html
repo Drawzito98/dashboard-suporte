@@ -3,7 +3,7 @@
 <script>var appStorage = localStorage;</script>
 <script>
 const rawRecords = [{Atendente:'Ana', 'Mês':'2026-09'}, {Atendente:'Bia', 'Mês':'2026-09'}];
-const isAdmin = () => true, isAggregateName = () => false, isColabActive = () => true;
+const requireAdmin = () => true, isAdmin = () => true, isAggregateName = () => false, isColabActive = () => true;
 const _getUserId = async () => 'gestor-1';
 const showToast = () => {}, escapeHtml = text => String(text).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 window.confirm = () => true;
@@ -63,6 +63,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.querySelector('[data-delete]').click();await tick();
     check(rows.length===1 && !document.querySelector('.atividade-item'),'exclusão');
     await AtividadesMes.load();check(!AtividadesMes.feedback('Ana','2026-09'),'exclusão refletida no feedback');
+    rows.length=0;await AtividadesMes.load();await openFeedbacksPerson('Pessoa sem métricas');check(get('fbColabSelect').value==='Pessoa sem métricas'&&get('fbSalvarBtn').disabled,'entrada contextual sem CSV não inventa texto');
     get('result').textContent='PASS: criação, edição, exclusão, filtros, privacidade, falha de rede, HTML e feedback sem métricas';
   } catch(error) {get('result').textContent='FAIL: '+error.stack;}
 });

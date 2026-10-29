@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.22.0';
+const APP_VERSION = '1.23.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -1834,7 +1834,7 @@ if (!rawRecords || !rawRecords.length) {
       metas: ['Metas da operação', 'Objetivos e progresso no recorte selecionado'],
       tarefas: ['Rotina', 'Agenda, tarefas e anotações diárias'],
       regras: ['Regras', 'Quadro de normas e orientações atuais'],
-      colaboradores: ['Equipe', 'Cadastro e informações da equipe'],
+      colaboradores: ['Equipe', 'Perfis 360º e acompanhamento individual'],
       ponto: ['Auditoria de Ponto', 'Importação, jornadas e conferência dos cartões de ponto'],
       lider: ['Acompanhamento da equipe', 'Acompanhamento gerencial e alertas da operação'],
       insights: ['Tendências e alertas', 'Diagnósticos automáticos e oportunidades de melhoria'],
@@ -2157,7 +2157,7 @@ if (!rawRecords || !rawRecords.length) {
         else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
         else if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
         else if (tab === 'saude-operacional' && typeof onSaudeOperacionalTabActivated === 'function') onSaudeOperacionalTabActivated();
-        else if (tab === 'avaliacao' && typeof onAvaliacaoTabActivated === 'function') { onAvaliacaoTabActivated(); if (typeof onFeedbacksTabActivated === 'function') onFeedbacksTabActivated(); }
+        else if (tab === 'avaliacao' && typeof onAvaliacaoTabActivated === 'function') onAvaliacaoTabActivated();
       }
     });
   }

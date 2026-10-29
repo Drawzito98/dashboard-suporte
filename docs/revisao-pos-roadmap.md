@@ -83,3 +83,7 @@ Os dois primeiros itens foram implementados: confirmação explícita para feedb
 ## Continuação 1.22.0
 
 Operação foi organizada em Visão geral, Análises e Metas. Metas têm acesso próprio; os destinos analíticos anteriores permanecem dentro de Análises. A lacuna de localização do editor foi resolvida nesta entrega; ver [operacao-e-metas.md](operacao-e-metas.md). Permanecem as demais pendências de dados, Pessoas e consolidação técnica.
+
+## Continuação 1.23.0
+
+Equipe 360º passa a ser a entrada principal do acompanhamento individual; Gestão coletiva preserva visão da equipe, Mapeamento e Ponto. Avaliações/feedbacks/PDI recebem a pessoa exata e têm retorno com proteção de edição. As pendências técnicas de persistência complementar e consolidação permanecem. Ver [pessoas-equipe360.md](pessoas-equipe360.md).

@@ -11,9 +11,9 @@ const isAdmin=()=>document.body.dataset.role==='admin',requireAdmin=()=>isAdmin(
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isAggregateName=()=>false,isColabActive=()=>true,getTempoEmpresa=()=> '2 anos';
 const formatMesLabel=value=>value, getClasseScore=()=>'', getDisplayName=n=>n,buildAliasMap=()=>({});
-let lastPdi='',lastEditor='',legacy='',allowDiscard=true;
+let lastEvaluation='',lastFeedback='',lastPdi='',lastEditor='',legacy='',allowDiscard=true;
 window.confirm=()=>allowDiscard;window.showToast=()=>{};
-window.openPerfilPdi=n=>lastPdi=n;window.openColabDetail=n=>legacy=n;
+window.openPerfilPdi=n=>{lastPdi=n;return true};window.openAvaliacaoPerson=n=>{lastEvaluation=n;return true};window.openFeedbacksPerson=async n=>{lastFeedback=n;return true};window.openColabDetail=n=>legacy=n;
 window.closeColabDetail=()=>document.getElementById('colabDetailOverlay')?.classList.remove('open');
 const dbColabInfoSave=async()=>true;
 const tables={
@@ -42,7 +42,7 @@ const sbClient={auth:{getUser:async()=>({data:{user}}),onAuthStateChange:cb=>cal
  const assert=(v,m)=>{if(!v)throw Error(m)},tick=()=>new Promise(r=>setTimeout(r,20));
  const doc=new DOMParser().parseFromString(await(await fetch('../index.html')).text(),'text/html');
  for(const id of ['appScreen','colabDetailOverlay','feriasOverlay','ausenciasOverlay']){const node=doc.getElementById(id);if(node){node.querySelectorAll('script').forEach(s=>s.remove());document.body.appendChild(node)}}
- const load=src=>new Promise((r,j)=>{const s=document.createElement('script');s.src=src;s.onload=r;s.onerror=j;document.body.appendChild(s)});
+ const load=src=>new Promise((r,j)=>{const s=document.createElement('script');s.src=src+'?fixture='+Date.now();s.onload=r;s.onerror=j;document.body.appendChild(s)});
  localStorage.clear();localStorage.setItem('sistema_feedbacks_v1',JSON.stringify([{colaborador:name,feedback_final:'CACHE DE OUTRA CONTA'}]));
  localStorage.setItem('sistema_colaboradores_info_v1',JSON.stringify({[name]:{setor_atual:'Suporte'},'Sem Indicadores':{}}));
  localStorage.setItem('sistema_perfil_pdi_v1_owner',JSON.stringify({[name]:{complemento:{objetivo:'Objetivo local confirmado'},planos:[{versao:1,status:'aprovado',salvoEm:'2026-10-04',objetivos:[{objetivo:'Plano preservado',acao:'Ação do plano',prazo:'2026-12-01'}],snapshot:{nome:name}}]}}));
@@ -58,6 +58,8 @@ const sbClient={auth:{getUser:async()=>({data:{user}}),onAuthStateChange:cb=>cal
  await tab('desenvolvimento');assert(dialog.textContent.includes('Feedback confirmado')&&dialog.textContent.includes('Plano preservado'),'Feedback e versão de PDI');
  assert(!dialog.textContent.includes('CACHE DE OUTRA CONTA')&&!dialog.querySelector('script'),'Sem fallback de cache privado compartilhado');
  dialog.querySelector('[data-e360-action="pdi"]').click();await tick();assert(lastPdi===name&&!dialog.open,'PDI recebe identidade original');
+ await openEquipe360(name,'desenvolvimento');dialog.querySelector('[data-e360-action="avaliacao"]').click();await tick();assert(lastEvaluation===name&&!dialog.open,'Avaliação recebe identidade exata');
+ await openEquipe360(name,'desenvolvimento');dialog.querySelector('[data-e360-action="feedback"]').click();await tick();assert(lastFeedback===name&&!dialog.open,'Feedback recebe identidade exata');
  await openEquipe360(name,'presenca');assert(dialog.textContent.includes('01/11/2026')&&dialog.textContent.includes('Motivo registrado'),'Presença integrada');
  dialog.querySelector('[data-e360-action="ponto-0"]').click();await tick();assert(document.querySelector('#pontoContent').textContent.includes('Ana Maria'),'Abre análise original por ID');
  await openEquipe360(name,'historico');assert(dialog.textContent.includes('99 → 100')&&dialog.textContent.includes('PDI local'),'Histórico e fontes preservados');

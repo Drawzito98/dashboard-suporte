@@ -123,3 +123,11 @@ body.shell-v2 #tabBar .shell-analysis-entry.active { color: var(--accent); backg
 }
 
 #shellAnalysisPanel[hidden] { display: none !important; }
+
+/* Pessoas: Equipe é a entrada individual; visões coletivas mantêm seu seletor próprio. */
+.shell-detail-tabs { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+#shellCollectiveTabsPanel[hidden], #shellIndividualTabsPanel[hidden], .shell-group-entry[hidden] { display: none !important; }
+body.shell-v2 #tabBar .shell-group-entry { width: auto; min-height: 44px; padding: 9px 16px; border: 0; border-radius: 8px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
+body.shell-v2 #tabBar .shell-group-entry.active, body.shell-v2 #tabBar .shell-parent-selected { color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 -2px var(--accent); font-weight: 700; }
+.e360-return { margin: 12px 0; max-width: 100%; }
+@media (max-width: 900px) { .shell-detail-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; } .shell-detail-tabs > button { flex-shrink: 0; white-space: nowrap; } }

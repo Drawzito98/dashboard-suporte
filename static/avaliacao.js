@@ -156,6 +156,7 @@ function renderAvaliacao() {
   const container = document.getElementById('avaliacaoContent');
   if (!container) return;
 
+  container.dataset.personDirty = 'false';
   const avaliacoes = getAvaliacoesLocal();
   const colabs = [...new Set((rawRecords || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
 
@@ -1621,9 +1622,40 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
 }
 
 function onAvaliacaoTabActivated() {
+  if (document.getElementById('avaliacaoContent')?.dataset.personDirty === 'true') return;
   renderAvaliacao();
 }
 
 window.addEventListener('colab-active-state-changed', () => {
   if (document.getElementById('avaliacaoContent')) renderAvaliacao();
 });
+
+// Entrada contextual: seleciona a pessoa, sem gerar uma avaliação nem escolher notas/ciclo.
+function openAvaliacaoPerson(name) {
+  if (typeof name !== 'string' || !name || typeof requireAdmin !== 'function' || !requireAdmin()) return false;
+  const host = document.getElementById('avaliacaoContent');
+  if (host?.dataset.personDirty === 'true' && document.body.dataset.activeTab === 'avaliacao' && document.getElementById('avaliacaoColabSelect')?.value === name && (!document.getElementById('avaliacaoForm') || document.getElementById('avaliacaoForm').dataset.colaborador === name)) return true;
+  if (host?.dataset.personDirty === 'true' && !confirm('Descartar alterações não salvas da avaliação para abrir esta pessoa?')) return false;
+  if (host) host.dataset.personDirty = 'false';
+  document.querySelector('[data-tab="avaliacao"]')?.click();
+  if (document.body.dataset.activeTab !== 'avaliacao') return false;
+  for (const id of ['avaliacaoColabSelect', 'avaliacaoHistSelect']) {
+    const select = document.getElementById(id); if (!select) continue;
+    if (![...select.options].some(option => option.value === name)) select.add(new Option(name, name));
+    select.value = name; select.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  return true;
+}
+document.addEventListener('input', event => {
+  if (event.target.closest?.('#avaliacaoForm, #avaliacaoQualitativa')) document.getElementById('avaliacaoContent').dataset.personDirty = 'true';
+});
+document.addEventListener('change', event => {
+  if (event.target.closest?.('#avaliacaoForm')) document.getElementById('avaliacaoContent').dataset.personDirty = 'true';
+});
+document.getElementById('tabBar')?.addEventListener('click', event => {
+  if (!event.target.closest('.tab-btn')) return;
+  const host = document.getElementById('avaliacaoContent');
+  if (document.body.dataset.activeTab !== 'avaliacao' || host?.dataset.personDirty !== 'true') return;
+  if (!confirm('Há alterações não salvas na avaliação. Deseja sair e descartá-las?')) { event.preventDefault(); event.stopImmediatePropagation(); return; }
+  host.dataset.personDirty = 'false';
+}, true);

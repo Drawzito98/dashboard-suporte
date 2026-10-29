@@ -62,3 +62,7 @@ O perfil privado novo não é disponibilizado a viewer/colaborador. O caminho an
 Fixtures existentes aprovadas: Shell, Ponto (PDF sintético), Perfil/PDI, Atividades e Diagnóstico. Smoke do index completo com Supabase simulado também verificou inicialização e navegação. Não valida login real, RLS publicada, dados de produção ou integridade transacional entre fontes. A biblioteca de gráficos pode ficar indisponível no teste sem CDN; a tabela histórica continua acessível.
 
 Para repetir: servir o repositório em localhost e abrir `/tests/equipe360.browser.html`, aguardando PASS. Com servidor na porta 8765 e Chrome de teste na 9228, usar `node --experimental-websocket tests/ponto-browser-runner.js equipe360.browser.html`. Repetir com viewport de celular. A fixture antiga de Atividades usa `#result` em vez de `#testResult`; seu resultado pode ser lido diretamente no navegador.
+
+## Continuação 1.23.0
+
+Avaliações e feedbacks passam a receber a pessoa exata, como o PDI; os três fluxos têm retorno ao perfil e preservam rascunhos da mesma pessoa. Os acessos de Avaliações/Férias/Ausências descritos na entrega histórica acima mantinham seletores globais: somente avaliações/feedbacks/PDI foram contextualizados neste ciclo. Ver [pessoas-equipe360.md](pessoas-equipe360.md).

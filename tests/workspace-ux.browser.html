@@ -59,6 +59,37 @@
  const click=id=>{const el=d().getElementById(id);assert(el,'Controle ausente: '+id);el.click()};
  const tab=async name=>{d().querySelector(`[data-tab="${name}"]`).click();await wait(()=>d().body.dataset.activeTab===name,'Aba '+name);await new Promise(r=>setTimeout(r,120))};
  const bounds=el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=frame.clientWidth+1};
+ if(new URLSearchParams(location.search).has('people')){
+  const one='Pessoa de teste 1 com nome extenso para revisão de interface',two='Pessoa de teste 2 com nome extenso para revisão de interface';
+  const profile=()=>d().getElementById('equipe360Dialog');
+  await tab('colaboradores');assert(!d().querySelector('.pdi-profile-btn'),'PDI não duplica ação no cartão');
+  d().querySelector('.colab-360-btn').click();await wait(()=>profile()?.open&&profile().querySelector('[data-e360-action="avaliacao"]'),'Perfil a partir do cartão');
+  await win().openEquipe360(one);assert(bounds(profile())&&profile().scrollWidth<=profile().clientWidth+1,'Perfil cabe na tela com nome extenso');profile().querySelector('[data-e360-action="avaliacao"]').click();await wait(()=>!profile().open&&d().getElementById('avaliacaoColabSelect')?.value===one,'Avaliação com pessoa selecionada');
+  assert(!d().getElementById('avaliacaoForm'),'Acesso não cria avaliação automaticamente');assert(bounds(d().querySelector('#tab-avaliacao [data-e360-back]')),'Retorno da avaliação cabe na tela');
+  d().getElementById('avaliacaoQualitativa').value='Rascunho não salvo';d().getElementById('avaliacaoQualitativa').dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  d().querySelector('#tab-avaliacao [data-e360-back]').click();await wait(()=>profile().open&&profile().querySelector('[data-e360-action="avaliacao"]'),'Voltar ao perfil');
+  profile().querySelector('[data-e360-action="avaliacao"]').click();await wait(()=>!profile().open,'Retomar avaliação da mesma pessoa');assert(d().getElementById('avaliacaoQualitativa').value==='Rascunho não salvo','Mesma pessoa conserva o formulário');
+  await win().openEquipe360(two);win().confirm=()=>false;profile().querySelector('[data-e360-action="avaliacao"]').click();await new Promise(r=>setTimeout(r,100));
+  assert(profile().open&&d().getElementById('avaliacaoQualitativa').value==='Rascunho não salvo','Recusa mantém avaliação anterior');
+  win().confirm=()=>true;profile().querySelector('[data-e360-action="avaliacao"]').click();await wait(()=>!profile().open&&d().getElementById('avaliacaoColabSelect').value===two,'Segunda pessoa exata na avaliação');
+  await win().openEquipe360(two);win().appStorage.setItem('sistema_feedback_editando_v1',JSON.stringify({colaborador:one,feedback_final:'Rascunho da primeira pessoa'}));win().confirm=()=>false;
+  profile().querySelector('[data-e360-action="feedback"]').click();await wait(()=>!profile().querySelector('[data-e360-action="feedback"]').disabled,'Decisão sobre rascunho de feedback');
+  assert(profile().open&&JSON.parse(win().appStorage.getItem('sistema_feedback_editando_v1')).colaborador===one,'Não troca rascunho sem confirmação');
+  win().confirm=()=>true;profile().querySelector('[data-e360-action="feedback"]').click();await wait(()=>!profile().open&&d().getElementById('fbColabSelect')?.value===two,'Feedback da segunda pessoa');
+  assert(bounds(d().querySelector('#feedbacksOverlay [data-e360-back]')),'Retorno do feedback cabe na tela');
+  assert(!d().getElementById('fbFinalTexto').value&&d().getElementById('fbSalvarBtn').disabled,'Não gera nem salva texto automaticamente');
+  d().getElementById('fbFinalTexto').value='Novo rascunho da segunda pessoa';d().getElementById('fbFinalTexto').dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  d().querySelector('#feedbacksOverlay [data-e360-back]').click();await wait(()=>profile().open&&profile().querySelector('[data-e360-action="pdi"]'),'Retorno do feedback ao perfil');
+  profile().querySelector('[data-e360-action="pdi"]').click();await wait(()=>!profile().open&&d().getElementById('pdiPerson')?.value===two,'PDI da pessoa exata');
+  d().getElementById('pdiObjetivo').value='Objetivo ainda não salvo';d().getElementById('pdiObjetivo').dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  d().querySelector('#tab-perfil-pdi [data-e360-back]').click();await wait(()=>profile().open&&profile().querySelector('[data-e360-action="pdi"]'),'Voltar do PDI ao perfil');
+  profile().querySelector('[data-e360-action="pdi"]').click();await wait(()=>!profile().open,'Retomar PDI');assert(d().getElementById('pdiObjetivo').value==='Objetivo ainda não salvo','Mesma pessoa conserva rascunho do PDI');
+  win().confirm=()=>false;d().querySelector('.shell-group-entry').click();assert(d().body.dataset.activeTab==='perfil-pdi'&&d().getElementById('pdiObjetivo').value==='Objetivo ainda não salvo','Recusa mantém PDI e rota ativa');
+  assert(d().querySelector('[data-tab="colaboradores"]').getAttribute('aria-selected')==='true','Shell não muda contexto quando guard cancela');
+  win().confirm=()=>true;d().querySelector('.shell-group-entry').click();assert(d().body.dataset.activeTab==='lider','Gestão coletiva abre explicitamente');
+  assert(win().__uxWrites.length===0,'Navegação não grava dados');assert(!win().__uxErrors.length,'Sem exceções: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: Equipe/gestão coletiva, perfil, avaliação/feedback/PDI com pessoa exata, retorno, rascunhos protegidos, cancelamento coerente e navegação sem escrita';return;
+ }
  if(new URLSearchParams(location.search).has('saves')){
   await tab('metas');assert(d().querySelector('#tab-metas.active #metasContent'),'Metas acessíveis pela navegação real');click('newMetaBtn');assert(d().activeElement.id==='metaTitleInput','Nova meta leva ao formulário');
   d().getElementById('metaTitleInput').value='Meta de teste';d().getElementById('metaTitleInput').dispatchEvent(new (win().Event)('input',{bubbles:true}));

@@ -22,7 +22,7 @@
     dialog.querySelector('#e360Body').replaceChildren();dialog.querySelector('#e360Tabs').replaceChildren();
     dialog.querySelector('#e360Title').textContent='';dialog.querySelector('#e360Subtitle').textContent='Perfil 360º';dialog.removeAttribute('aria-busy');
   }
-  function clear() { version++; model = null; destroyChart(); if (dialog) { dialog.close(); resetDialog(); } }
+  function clear() { document.querySelectorAll('[data-e360-back]').forEach(button=>button.remove()); version++; model = null; destroyChart(); if (dialog) { dialog.close(); resetDialog(); } }
   function sourceNote(key, empty = 'Nenhum registro nesta fonte.') {
     const source = model.sources[key];
     if (source?.status === 'unlinked') return '<p class="e360-empty">Sem vínculo exato com um cadastro de ponto. Nenhuma análise foi associada automaticamente.</p>';
@@ -46,7 +46,7 @@
     return `<p>Todo o histórico desta pessoa, independentemente dos filtros globais. Dados privados consultados para sua conta.</p>${pendingNotice && model.name === pendingPerson ? `<p class="e360-warning">${esc(pendingNotice)}</p>` : ''}
       <div class="e360-counters">${cards.map(([key,label]) => `<article><span>${label}</span><strong>${model.sources[key]?.status === 'ok' ? rows(key).length : '—'}</strong><small>${model.sources[key]?.status === 'ok' ? 'registros consultados' : model.sources[key]?.status === 'unlinked' ? 'sem vínculo exato de ponto' : 'fonte indisponível ou ambígua'}</small></article>`).join('')}</div>
       ${panel('Cadastro', sourceNote('cadastro', 'Cadastro ainda não encontrado no servidor. Você pode completar o cadastro pelo editor existente.') + (info ? `<dl class="e360-facts">${facts.map(([label,value]) => `<div><dt>${label}</dt><dd>${esc(value || 'Não informado')}</dd></div>`).join('')}</dl>` : '') + action('cadastro','Editar cadastro'), 'Fonte: cadastro no servidor. Alterações locais ainda não sincronizadas podem não aparecer aqui.')}
-      ${panel('Acessos da pessoa', `<div class="e360-actions">${action('pdi','Abrir análise e PDI')}${profileURL(model.name) ? action('documento','Abrir documento de perfil') : ''}${action('diagnostico','Abrir diagnósticos')}${action('avaliacao','Abrir avaliações')}${action('atividades','Registrar atividade do mês')}${action('ferias','Abrir gestão de férias')}${action('ausencias','Abrir gestão de ausências')}</div><p>Os editores de cada área preservam suas regras e históricos.</p>`)}
+      ${panel('Acessos da pessoa', `<div class="e360-actions">${action('pdi','Abrir análise e PDI')}${profileURL(model.name) ? action('documento','Abrir documento de perfil') : ''}${action('diagnostico','Abrir diagnósticos')}${action('avaliacao','Abrir avaliações')}${action('feedback','Preparar feedback')}${action('atividades','Registrar atividade do mês')}${action('ferias','Abrir gestão de férias')}${action('ausencias','Abrir gestão de ausências')}</div><p>Os editores de cada área preservam suas regras e históricos.</p>`)}
       ${panel('Vínculos entre fontes', `<p>Cadastro e registros usam o nome completo exato: <strong>${esc(model.name)}</strong>. Variações de nome e apelidos não são unidos automaticamente.</p><p>${rows('jornadas')[0] ? `Jornada vinculada ao cadastro de ponto ${esc(rows('jornadas')[0].id)}. As análises são ligadas por esse identificador.` : 'Nenhum vínculo exato de ponto disponível. Confira Presença e ponto para distinguir ausência de cadastro e erro de leitura.'}</p><p>O Mapeamento de Time continua dependendo da confirmação explícita na análise de Perfil/PDI.</p>`)}
     `;
   }
@@ -59,7 +59,7 @@
     const confirmed = mapping?.cadastro === model.name && mapping.confirmadoEm;
     const plansHtml = pdi.status !== 'ok' ? '<p class="e360-warning">Não foi possível ler os planos locais desta conta.</p>' : `${text(pdi.data?.complemento?.objetivo,'Objetivo complementar não informado')}<p>${confirmed ? 'Vínculo declarado no PDI: ' + esc(mapping.nome) + ' · confirmado em ' + esc(date(mapping.confirmadoEm)) + '. Revise sua atualidade na origem.' : 'Sem vínculo confirmado com o Mapeamento nesta fonte.'}</p>${plans.length ? plans.slice().reverse().map(plan => details(`Versão ${plan.versao ?? '—'} · ${plan.status || 'rascunho'} · ${date(plan.salvoEm || plan.geradoEm)}`, (Array.isArray(plan.objetivos) ? plan.objetivos : []).map(o => `<h4>${esc(o.objetivo)}</h4>${text(o.acao)}<p>Prazo: ${esc(date(o.prazo))}</p>${text(o.progresso,'Sem progresso registrado')}`).join('') + text(plan.revisoes,'Sem revisão registrada') + details('Fontes preservadas desta versão', `<pre>${esc(JSON.stringify(plan.snapshot || {}, null, 2))}</pre>`))).join('') : '<p class="e360-empty">Nenhuma versão de PDI salva para esta pessoa nesta conta e navegador.</p>'}${action('pdi','Abrir análise e PDI')}`;
     const activities = sourceNote('atividades') + rows('atividades').map(r => details(`${date(r.data)} · ${r.tipo === 'positivo' ? 'Positivo' : 'Ponto de atenção'}`,text(r.descricao))).join('');
-    return panel('Avaliações', evaluations + action('avaliacao','Abrir avaliações'), 'Fonte: avaliações privadas no servidor; notas e textos originais, sem novo cálculo.') + panel('Feedbacks', feedbacks, 'Fonte: feedbacks privados no servidor.') + panel('Perfil e PDI', plansHtml, 'Fonte: versões locais da sua conta neste navegador; não sincronizadas pelo perfil 360º.') + panel('Atividades registradas',activities + action('atividades','Registrar atividade do mês'),'Fonte: atividades estruturadas privadas do gestor. Anotações comuns não são associadas por semelhança de texto.');
+    return panel('Avaliações', evaluations + action('avaliacao','Abrir avaliações'), 'Fonte: avaliações privadas no servidor; notas e textos originais, sem novo cálculo.') + panel('Feedbacks', feedbacks + action('feedback','Preparar feedback'), 'Fonte: feedbacks privados no servidor.') + panel('Perfil e PDI', plansHtml, 'Fonte: versões locais da sua conta neste navegador; não sincronizadas pelo perfil 360º.') + panel('Atividades registradas',activities + action('atividades','Registrar atividade do mês'),'Fonte: atividades estruturadas privadas do gestor. Anotações comuns não são associadas por semelhança de texto.');
   }
   function attendance() {
     const employee = rows('jornadas')[0];
@@ -72,8 +72,20 @@
     const labels = {cadastro:'Cadastro',registros:'Indicadores',avaliacoes:'Avaliações',feedbacks:'Feedbacks',ferias:'Férias',ausencias:'Ausências',bonus:'Bônus / penalidades',historico:'Histórico compartilhado de dados',atividades:'Atividades',jornadas:'Cadastro de ponto',ponto:'Análises de ponto'};
     return panel('Situação das fontes',`<ul>${Object.entries(labels).map(([key,label]) => `<li>${label}: <strong>${model.sources[key].status === 'ok' ? rows(key).length + ' registro(s) consultado(s)' : model.sources[key].status === 'ambiguous' ? 'vínculo ambíguo; dados não reunidos' : model.sources[key].status === 'unlinked' ? 'sem vínculo exato' : 'indisponível'}</strong></li>`).join('')}<li>PDI: ${model.pdi.status === 'ok' ? 'armazenamento local da conta' : 'indisponível'}</li></ul><p>Consulta: ${esc(date(model.loadedAt))}. Dados indisponíveis não são tratados como zero. O histórico compartilhado respeita as permissões já existentes no servidor.</p>`) + panel('Linha do tempo', model.events.length ? `<ol class="e360-timeline">${model.events.map(e => `<li><span>${esc(e.source)} · ${esc(date(e.date))}</span><strong>${esc(e.title)}</strong>${text(e.text,'Sem descrição')}</li>`).join('')}</ol>` : '<p class="e360-empty">Nenhum evento nas fontes consultadas. Confira a situação das fontes acima.</p>', 'Ordem pela data registrada em cada fonte; datas de férias/ausências são datas do período, não necessariamente da criação.');
   }
+  function backToPerson(host, name, owner) {
+    if (!host) return;
+    host.querySelectorAll('[data-e360-back]').forEach(button => button.remove());
+    const token = typeof AppDataSession !== 'undefined' ? AppDataSession.token() : null;
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'btn-small e360-return'; button.dataset.e360Back = 'true'; button.textContent = 'Voltar ao perfil de ' + name;
+    button.addEventListener('click', () => {
+      if (allowed()?.id !== owner || (token && !AppDataSession.current(token))) { button.remove(); return; }
+      document.getElementById('feedbacksOverlay')?.classList.remove('open');
+      open(name, 'desenvolvimento');
+    });
+    host.prepend(button); button.focus();
+  }
   function bindActions() {
-    dialog.querySelectorAll('[data-e360-action]').forEach(button => button.addEventListener('click', () => {
+    dialog.querySelectorAll('[data-e360-action]').forEach(button => button.addEventListener('click', async () => {
       if (!allowed() || allowed().id !== model?.owner) { clear(); return; }
       const name = model.name, owner = model.owner, id = button.dataset.e360Action;
       if (id === 'cadastro') {
@@ -86,7 +98,24 @@
         document.getElementById('colabDetailContent')?.prepend(back);
         return;
       }
-      const actions = {documento:()=>{const url=profileURL(name);if(url)window.open(url,'_blank','noopener,noreferrer');},diagnostico:()=>document.querySelector('[data-tab="insights"]')?.click(),pdi:()=>window.openPerfilPdi?.(name),avaliacao:()=>document.querySelector('[data-tab="avaliacao"]')?.click(),atividades:()=>{if(typeof AtividadesMes!=='undefined')AtividadesMes.openPerson(name);},ferias:()=>window.openFeriasOverlay?.(),ausencias:()=>window.openAusenciasOverlay?.(),jornada:()=>window.openPontoEmployee?.(name,true)};
+      if (['avaliacao', 'pdi', 'feedback'].includes(id)) {
+        const request = version;
+        const current = () => request === version && dialog.open && model?.name === name && allowed()?.id === owner;
+        button.disabled = true;
+        try {
+          if (id === 'pdi' && typeof FeatureLoader !== 'undefined') await FeatureLoader.ensure('pdi');
+          if (!current()) return;
+          const launch = id === 'avaliacao' ? window.openAvaliacaoPerson : id === 'feedback' ? window.openFeedbacksPerson : window.openPerfilPdi;
+          if (typeof launch !== 'function') throw new Error('Editor indisponível.');
+          const accepted = await launch(name, current);
+          if (accepted === false || !current()) return;
+          dialog.close();
+          backToPerson(id === 'feedback' ? document.querySelector('#feedbacksOverlay .colab-detail-panel') : document.getElementById(id === 'avaliacao' ? 'tab-avaliacao' : 'tab-perfil-pdi'), name, owner);
+        } catch (_) { if (current() && typeof showToast === 'function') showToast('Não foi possível abrir esta ação. Tente novamente.', 'error'); }
+        finally { if (button.isConnected) button.disabled = false; }
+        return;
+      }
+      const actions = {documento:()=>{const url=profileURL(name);if(url)window.open(url,'_blank','noopener,noreferrer');},diagnostico:()=>document.querySelector('[data-tab="insights"]')?.click(),atividades:()=>{if(typeof AtividadesMes!=='undefined')AtividadesMes.openPerson(name);},ferias:()=>window.openFeriasOverlay?.(),ausencias:()=>window.openAusenciasOverlay?.(),jornada:()=>window.openPontoEmployee?.(name,true)};
       if (id.startsWith('ponto-')) { const row=rows('ponto')[Number(id.slice(6))];dialog.close();window.openPontoAnalysis?.(row.id);return; }
       dialog.close();actions[id]?.();
     }));

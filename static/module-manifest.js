@@ -116,7 +116,7 @@ window.APP_MODULES = {
   "pdi": {
     "scripts": [
       "/static/perfil-pdi-engine.js?v=1",
-      "/static/perfil-pdi.js?v=4"
+      "/static/perfil-pdi.js?v=7"
     ],
     "styles": [
       "/static/perfil-pdi.css?v=1"
@@ -129,7 +129,7 @@ window.APP_MODULES = {
   "equipe360": {
     "scripts": [
       "/static/equipe360-data.js?v=1",
-      "/static/equipe360.js?v=3"
+      "/static/equipe360.js?v=6"
     ],
     "styles": [
       "/static/equipe360.css?v=2"

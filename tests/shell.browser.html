@@ -60,6 +60,12 @@
   document.querySelector('.shell-analysis-entry').click();assert(document.body.dataset.activeTab==='insights','Análises restaura sua última visualização');
   document.querySelector('[data-tab="saude-operacional"]').click();assert(document.getElementById('shellAnalysisPanel').hidden,'Resumo não exibe seletor analítico');
   document.querySelector('.shell-analysis-entry').click();assert(!document.getElementById('shellAnalysisPanel').hidden,'Análises revela visualizações');
+  document.querySelector('[data-tab="colaboradores"]').click();
+  assert([...primary.querySelectorAll('[role=tab]')].filter(b=>!b.hidden&&getComputedStyle(b).display!=='none').length===2,'Pessoas tem Equipe e Gestão coletiva');
+  assert(document.getElementById('shellIndividualTabsPanel').hidden,'Ferramentas individuais fora do menu principal');
+  document.querySelector('.shell-group-entry').click();assert(document.body.dataset.activeTab==='ponto','Gestão coletiva preserva última visualização');
+  document.querySelector('[data-tab="avaliacao"]').click();assert(!document.getElementById('shellIndividualTabsPanel').hidden,'Rota antiga individual continua acessível');
+  assert(document.querySelector('[data-tab="colaboradores"]').getAttribute('aria-selected')==='true','Equipe permanece como contexto principal');assert(document.querySelector('[data-tab="colaboradores"]').getAttribute('aria-controls')==='shellIndividualTabsPanel','Contexto principal controla painel visível');
   const toggle = document.getElementById('gfToggleBtn');
   if (toggle.getAttribute('aria-expanded') === 'false') toggle.click();
   document.getElementById('gfPesquisa').value = 'Pessoa teste';

@@ -47,7 +47,7 @@ function renderColaboradores() {
     return;
   }
 
-  html += '<div class="colab-cards-grid">';
+  html += '<p class="text-muted">' + (document.body.dataset.role === 'admin' ? 'Abra o Perfil 360º para consultar desempenho, avaliações, feedbacks e PDI de cada pessoa.' : 'Abra o perfil para consultar as informações disponíveis para seu acesso.') + ' As visões coletivas ficam em Gestão coletiva.</p><div class="colab-cards-grid">';
   for (const nome of colabs) {
     const info = colabInfo[nome] || {};
     const hasData = info.salario != null || info.setor_atual || info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa || info.feito_relevante;
@@ -85,12 +85,12 @@ function renderColaboradores() {
       html += `<div style="font-size:12px;color:var(--danger);margin-top:2px;padding:2px 6px;background:var(--danger-soft);border-radius:var(--r-sm)">📝 ${escapeHtml(info.observacoes)}</div>`;
     }
     if (!hasData) {
-      html += `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">Clique para cadastrar</div>`;
+      html += `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">Abra o perfil para consultar ou completar o cadastro</div>`;
     }
     html += '</div>';
     html += `<div style="font-size:18px;color:var(--text-muted)">${hasData ? '✅' : '➕'}</div>`;
     html += '</div>';
-    html += `<div class="colab-card-actions"><button type="button" class="btn-primary colab-360-btn">Perfil 360º</button><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button><button type="button" class="btn-small pdi-profile-btn">Análise e PDI</button></div>`;
+    html += `<div class="colab-card-actions"><button type="button" class="btn-primary colab-360-btn">Perfil 360º</button><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button></div>`;
     html += '</div>';
   }
   html += '</div>';
@@ -98,13 +98,6 @@ function renderColaboradores() {
   container.innerHTML = html;
 
   document.getElementById("novoColaboradorBtn")?.addEventListener("click", openNovoColaboradorModal);
-
-  container.querySelectorAll(".pdi-profile-btn").forEach(button => {
-    button.addEventListener("click", event => {
-      event.stopPropagation();
-      if (typeof openPerfilPdi === "function") openPerfilPdi(button.closest(".colab-card").dataset.nome);
-    });
-  });
 
   container.querySelectorAll('.colab-edit-btn').forEach(button => button.addEventListener('click', event => {
     event.stopPropagation(); openColabDetailOverlay(button.closest('.colab-card').dataset.nome);

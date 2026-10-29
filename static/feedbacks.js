@@ -208,13 +208,14 @@ function renderFeedbacks() {
   const container = document.getElementById('feedbacksOverlayContent') || document.getElementById('feedbacksContent');
   if (!container) return;
 
+  const draftPerson = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || 'null')?.colaborador;
   const data = typeof rawRecords !== 'undefined' ? (rawRecords || []) : _fbData();
-  if ((!data || !data.length) && !AtividadesMes.months().length) {
+  if ((!data || !data.length) && !AtividadesMes.months().length && !draftPerson) {
     container.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado disponível</div><div class="empty-sub">Importe um CSV para começar.</div></div>';
     return;
   }
 
-  const colabs = AtividadesMes.people();
+  const colabs = [...new Set([...AtividadesMes.people(), ...(draftPerson ? [draftPerson] : [])])].sort();
   const meses = [...new Set([..._uniqueMonths(typeof rawRecords !== 'undefined' ? rawRecords : data).map(AtividadesMes.monthKey).filter(Boolean), ...AtividadesMes.months()])].sort();
   const saved = JSON.parse(appStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
 
@@ -403,6 +404,8 @@ function bindFbEvents(colabs, meses, saved) {
   }
 
   if (salvarBtn) {
+    salvarBtn.disabled = !editing?.colaborador || !finalTexto?.value.trim();
+    finalTexto?.addEventListener('input', () => { salvarBtn.disabled = !JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}').colaborador || !finalTexto.value.trim(); });
     salvarBtn.addEventListener('click', async () => {
       if (salvarBtn.disabled) return;
       const cur = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}');
@@ -541,25 +544,47 @@ function criarOverlay() {
 
 // ─── Overlay ────────────────────────────────────────────────────
 
-async function openFeedbacksOverlay() {
-  const overlay = document.getElementById('feedbacksOverlay');
-  if (!overlay) return;
-  const content = document.getElementById('feedbacksOverlayContent');
-  if (!content) return;
-  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
-  overlay.classList.add('open');
-  try { await AtividadesMes.load(); renderFeedbacks(); }
-  catch { content.textContent = 'Não foi possível carregar as atividades para o feedback. Feche e tente novamente.'; }
+let feedbackOpenVersion = 0;
+async function openFeedbacksOverlay(personName, contextCurrent = () => true) {
+  const name = typeof personName === 'string' ? personName : '';
+  const token = typeof AppDataSession !== 'undefined' ? AppDataSession.token() : null;
+  const current = () => (!token || AppDataSession.current(token)) && contextCurrent();
+  if (name && (typeof requireAdmin !== 'function' || !requireAdmin())) return false;
+  const overlay = document.getElementById('feedbacksOverlay'), content = document.getElementById('feedbacksOverlayContent');
+  if (!overlay || !content) return false;
+  const request = ++feedbackOpenVersion;
+  if (!name) { overlay.querySelectorAll('[data-e360-back]').forEach(button => button.remove()); overlay.classList.add('open'); content.innerHTML = '<p role="status">Carregando feedbacks…</p>'; }
+  // A leitura pode aguardar a rede; o rascunho só é trocado após conferir sessão e consentimento.
+  try {
+    await AtividadesMes.load();
+    if (!current() || request !== feedbackOpenVersion || (!name && !overlay.classList.contains('open'))) return false;
+    if (name) {
+      const draft = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || 'null');
+      const hasContent = draft && (draft.id || [draft.feedback_final, draft.anotacoes, draft.sugestao_automatica].some(value => String(value || '').trim()));
+      if (hasContent && draft.colaborador !== name && !confirm('Há um rascunho de feedback de outra pessoa. Deseja descartá-lo para abrir este colaborador?')) return false;
+      if (!current()) return false;
+      if (!draft || draft.colaborador !== name) appStorage.setItem(FB_EDITING_KEY, JSON.stringify({ id: null, colaborador: name, mes: 'all', feedback_final: '', anotacoes: '', sugestao_automatica: '' }));
+    }
+    overlay.classList.add('open'); renderFeedbacks(); return true;
+  } catch (_) {
+    if (current() && request === feedbackOpenVersion) {
+      if (!name && overlay.classList.contains('open')) content.textContent = 'Não foi possível carregar os feedbacks. Feche e tente novamente.';
+      showToast('Não foi possível abrir os feedbacks. Tente novamente.', 'error', 'Feedbacks');
+    }
+    return false;
+  }
 }
+function openFeedbacksPerson(name, contextCurrent) { return openFeedbacksOverlay(name, contextCurrent); }
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('feedbacksBtn')?.addEventListener('click', openFeedbacksOverlay);
   document.getElementById('feedbacksOverlayClose')?.addEventListener('click', () => {
+    feedbackOpenVersion++;
     document.getElementById('feedbacksOverlay')?.classList.remove('open');
   });
   const overlay = document.getElementById('feedbacksOverlay');
   overlay?.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.classList.remove('open');
+    if (e.target === overlay) { feedbackOpenVersion++; overlay.classList.remove('open'); }
   });
 });
 

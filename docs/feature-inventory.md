@@ -31,3 +31,7 @@ O acesso principal de cada pessoa abre a Equipe 360º: visão geral, desempenho,
 ## Continuação 1.22.0
 
 Operação passa a Visão geral, Análises e Metas. A nova tela de Metas usa o editor existente e os contratos de confirmação de 1.21.0. Os 13 destinos anteriores permanecem, com três visualizações dentro de Análises. Ver [operacao-e-metas.md](operacao-e-metas.md).
+
+## Continuação 1.23.0
+
+Os 14 destinos permanecem. Pessoas tem Equipe e Gestão coletiva; Avaliações e Perfil/PDI ficam acessíveis a partir do perfil e por rotas antigas. Nenhum histórico foi removido. Ver [pessoas-equipe360.md](pessoas-equipe360.md).

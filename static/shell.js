@@ -26,14 +26,32 @@
     const target = buttons.find(button => button.dataset.tab === lastAnalysis && allowed(button)) || buttons.find(button => analysisTabs.includes(button.dataset.tab) && allowed(button));
     target?.click();
   });
-  primary.append(...buttons.filter(button => !analysisTabs.includes(button.dataset.tab)));
+  const collectiveTabs = ['lider', 'mapeamento-time', 'ponto'], individualTabs = ['avaliacao', 'perfil-pdi'];
+  const peopleTabs = [...collectiveTabs, ...individualTabs];
+  let lastCollective = 'lider';
+  function peopleGroup(id, label, tabs) {
+    const panel = document.createElement('div'); panel.id = id + 'Panel';
+    const list = document.createElement('div'); list.id = id; list.className = 'shell-detail-tabs'; list.setAttribute('role', 'tablist'); list.setAttribute('aria-label', label);
+    list.append(...tabs.map(tab => buttons.find(button => button.dataset.tab === tab)).filter(Boolean));
+    panel.append(list); return { panel, list };
+  }
+  const collective = peopleGroup('shellCollectiveTabs', 'Visões coletivas de Pessoas', collectiveTabs);
+  const individual = peopleGroup('shellIndividualTabs', 'Ferramentas individuais', individualTabs);
+  const collectiveEntry = document.createElement('button'); collectiveEntry.id = 'shell-collective-entry'; collectiveEntry.type = 'button'; collectiveEntry.className = 'shell-group-entry'; collectiveEntry.textContent = 'Gestão coletiva'; collectiveEntry.setAttribute('role', 'tab'); collectiveEntry.setAttribute('aria-controls', collective.panel.id);
+  collective.panel.setAttribute('role', 'tabpanel'); collective.panel.setAttribute('aria-labelledby', collectiveEntry.id);
+  collectiveEntry.addEventListener('click', () => {
+    const target = buttons.find(button => button.dataset.tab === lastCollective && allowed(button)) || buttons.find(button => collectiveTabs.includes(button.dataset.tab) && allowed(button)); target?.click();
+  });
+  primary.append(...buttons.filter(button => !analysisTabs.includes(button.dataset.tab) && !peopleTabs.includes(button.dataset.tab)));
+  const teamEntry = buttons.find(button => button.dataset.tab === 'colaboradores');
+  if (teamEntry) { teamEntry.id ||= 'tab-button-colaboradores'; individual.panel.setAttribute('role', 'tabpanel'); individual.panel.setAttribute('aria-labelledby', teamEntry.id); teamEntry.after(collectiveEntry); }
   const overview = buttons.find(button => button.dataset.tab === 'saude-operacional');
   overview?.after(analysisEntry);
   analysis.append(...analysisTabs.map(tab => buttons.find(button => button.dataset.tab === tab)).filter(Boolean));
   bar.setAttribute('role', 'presentation');
   analysisPanel.append(analysis);
-  bar.replaceChildren(primary, analysisPanel);
-  const labels = { 'saude-operacional': 'Visão geral', dashboard: 'Indicadores', 'relatorio-setorial': 'Relatório por setor', insights: 'Tendências e alertas' };
+  bar.replaceChildren(primary, analysisPanel, collective.panel, individual.panel);
+  const labels = { 'saude-operacional': 'Visão geral', dashboard: 'Indicadores', 'relatorio-setorial': 'Relatório por setor', insights: 'Tendências e alertas', lider: 'Visão da equipe', avaliacao: 'Avaliações', 'perfil-pdi': 'Perfil e PDI' };
   buttons.forEach(button => { if (labels[button.dataset.tab]) {
     const icon = button.querySelector('.tab-icon');
     button.replaceChildren(...(icon ? [icon, document.createTextNode(' ')] : []), document.createTextNode(labels[button.dataset.tab]));
@@ -56,7 +74,7 @@
     if (target.left < bounds.left) strip.scrollLeft -= bounds.left - target.left;
     else if (target.right > bounds.right) strip.scrollLeft += target.right - bounds.right;
   }
-  bar.addEventListener('focusin', event => reveal(event.target.closest('.tab-btn, .shell-analysis-entry')));
+  bar.addEventListener('focusin', event => reveal(event.target.closest('.tab-btn, .shell-analysis-entry, .shell-group-entry')));
   window.addEventListener('resize', () => reveal(buttons.find(button => button.classList.contains('active'))));
   function sync(tab) {
     const group = groups.find(([, , tabs]) => tabs.includes(tab)) || groups[0];
@@ -65,6 +83,11 @@
       button.setAttribute('aria-current', button.dataset.domain === group[0] ? 'page' : 'false');
     });
     const inAnalysis = group[0] === 'operacao' && analysisTabs.includes(tab);
+    const inCollective = group[0] === 'pessoas' && collectiveTabs.includes(tab), inIndividual = group[0] === 'pessoas' && individualTabs.includes(tab);
+    if (inCollective) lastCollective = tab;
+    collectiveEntry.hidden = group[0] !== 'pessoas' || !buttons.some(button => collectiveTabs.includes(button.dataset.tab) && allowed(button));
+    collectiveEntry.classList.toggle('active', inCollective); collectiveEntry.setAttribute('aria-selected', String(inCollective)); collectiveEntry.tabIndex = inCollective ? 0 : -1;
+    collective.panel.hidden = !inCollective; individual.panel.hidden = !inIndividual;
     if (inAnalysis) lastAnalysis = tab;
     analysisEntry.hidden = group[0] !== 'operacao' || !buttons.some(button => analysisTabs.includes(button.dataset.tab) && allowed(button));
     analysisEntry.classList.toggle('active', inAnalysis);
@@ -74,13 +97,19 @@
     analysis.hidden = !inAnalysis;
     primary.setAttribute('aria-label', 'Telas de ' + group[1]);
     buttons.forEach(button => {
-      button.hidden = !group[2].includes(button.dataset.tab) || (analysisTabs.includes(button.dataset.tab) && !inAnalysis);
+      button.hidden = !group[2].includes(button.dataset.tab) || (analysisTabs.includes(button.dataset.tab) && !inAnalysis) || (collectiveTabs.includes(button.dataset.tab) && !inCollective) || (individualTabs.includes(button.dataset.tab) && !inIndividual);
       button.setAttribute('tabindex', button.dataset.tab === tab ? '0' : '-1');
     });
+    if (teamEntry) {
+      teamEntry.classList.toggle('shell-parent-selected', inIndividual); teamEntry.setAttribute('aria-selected', String(tab === 'colaboradores' || inIndividual)); teamEntry.setAttribute('aria-controls', inIndividual ? individual.panel.id : 'tab-colaboradores');
+      if (inIndividual) { teamEntry.setAttribute('aria-selected', 'true'); teamEntry.tabIndex = 0; }
+    }
     bar.setAttribute('aria-label', 'Telas de ' + group[1]);
     bar.hidden = group[2].length === 1;
     reveal(inAnalysis ? analysisEntry : buttons.find(button => button.dataset.tab === tab));
     if (inAnalysis) reveal(buttons.find(button => button.dataset.tab === tab));
+    if (inCollective) reveal(collectiveEntry);
+    if (inIndividual) reveal(teamEntry);
   }
   function refresh() {
     // Temporarily reveal for role CSS inspection; no data or role is changed.
@@ -96,7 +125,7 @@
         buttons.forEach(item => item.hidden = false);
         const candidates = tabs.map(tab => buttons.find(item => item.dataset.tab === tab)).filter(item => item && allowed(item));
         const target = candidates.find(item => item.dataset.tab === last.get(id)) || candidates[0];
-        if (target) { target.click(); sync(target.dataset.tab); }
+        if (target) target.click();
       });
       nav.appendChild(button);
     });
