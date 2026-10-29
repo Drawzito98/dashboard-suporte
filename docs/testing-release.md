@@ -47,3 +47,7 @@ Versão 1.19.0. npm test aprovado, fixtures de áreas em desktop/celular e runne
 ## Fase 7 — Cockpit gerencial
 
 A conclusão da Fase 6 (c4c782a) foi publicada e conferida por hash antes de iniciar a Fase 7. A versão 1.20.0 agrega cockpit-engine.check.js a npm test. O cenário workspace-ux.browser.html?cockpit=1 valida as ações com backend simulado; &race=1 cobre resposta após encerrar sessão. Ver [cockpit.md](cockpit.md). Cache cobre 114 arquivos locais. Deploy autorizado neste ciclo; não houve merge ou migrations.
+
+## Continuação 1.25.0 — Rotina
+
+Confirmação e rascunhos de tarefas/notas com servidor simulado. npm test, release:check e diff --check aprovados; formulários em 1440/320px e regressões de workspace, cockpit/race, sessão, lazy-modules, design-system e atividades. Evidências e limites em [rotina-confirmada.md](rotina-confirmada.md). Publicação autorizada; nenhum merge ou teste de escrita em produção.

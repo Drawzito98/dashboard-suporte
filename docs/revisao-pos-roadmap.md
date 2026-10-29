@@ -91,3 +91,7 @@ Equipe 360º passa a ser a entrada principal do acompanhamento individual; Gest�
 ## Continuação 1.24.0
 
 Avaliações deixam de usar o salvamento otimista citado no limite da entrega 1.23.0. Escritas, status e exclusão exigem confirmação; rascunhos ficam separados do histórico. Demais persistências e consolidação técnica continuam pendentes. Ver [avaliacoes-confirmadas.md](avaliacoes-confirmadas.md).
+
+## Continuação 1.25.0
+
+Tarefas/anotações passam a ter confirmação, rascunhos privados e retentativa estável de recorrência; atividades compartilhadas são protegidas. Ver [rotina-confirmada.md](rotina-confirmada.md). Demais cadastros, carga inicial/globais e CSS continuam em consolidação; Panorama permanece desativado.

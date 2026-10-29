@@ -88,15 +88,17 @@ window.APP_MODULES = {
   },
   "data-routine": {
     "scripts": [
-      "/static/repositories/routine.js?v=1"
+      "/static/repositories/routine.js?v=2"
     ],
     "exports": [
       "AppRepositories.routine.dbAnotacoesLoad",
       "AppRepositories.routine.dbAnotacoesSave",
       "AppRepositories.routine.dbAnotacoesDelete",
+      "AppRepositories.routine.dbAnotacaoFavorito",
       "AppRepositories.routine.dbTarefasLoad",
       "AppRepositories.routine.dbTarefasSave",
       "AppRepositories.routine.dbTarefasDelete",
+      "AppRepositories.routine.dbTarefaStatus",
       "AppRepositories.routine.dbRegrasLoad",
       "AppRepositories.routine.dbRegrasSave",
       "AppRepositories.routine.dbRegrasDelete"

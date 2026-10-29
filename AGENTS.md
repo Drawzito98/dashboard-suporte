@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.24.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.25.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -162,3 +162,7 @@ Leia docs/pessoas-equipe360.md. Equipe é a entrada individual e Gestão coletiv
 ## Continuação 1.24.0 — Avaliações
 
 Leia docs/avaliacoes-confirmadas.md. Persistência de avaliações fica no repository development e fachada db-extra; UI não publica dados otimistas. AppState.avaliacoes/cache contêm confirmados; rascunho privado usa sistema_avaliacao_rascunho_v1 e UUID estável. dbAvaliacaoStatus atualiza apenas status, nunca reenvia notas/textos. Exigir retorno de ID/proprietário, preservar rascunho em falha e conferir sessão. Não introduzir envio automático nem alegar trava entre dispositivos. Rode npm test e workspace (?evaluations=1, ?people=1, ?saves=1), data-lifecycle, Equipe360, PDI, lazy-modules e design-system em desktop/celular; sem escrita de testes em produção ou merge sem autorização.
+
+## Continuação 1.25.0 — Rotina
+
+Leia docs/rotina-confirmada.md. Tarefas/notas usam confirmação no repository routine, rascunhos privados e UUID estável. Status/favorito são patches isolados; recorrência preserva o mesmo destino na retentativa manual. Não apagar rascunhos ao abrir/alternar a tela, nem tocar atividades com prefixo atividade-colaborador:v1: pela API de notas. UI pertence a rotina-cards.js; os arquivos antigos mantêm apenas helpers/overlays. Não alegar fila automática ou trava entre dispositivos. Rode npm test e workspace (?routine=1 e cockpit/race), data-lifecycle, lazy-modules, design-system e atividades-mes; sem escrita de teste em produção ou merge sem autorização.

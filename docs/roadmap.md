@@ -35,3 +35,7 @@ Simplificação de Pessoas e ações individuais implementadas. Confirmação do
 ## Continuação 1.24.0
 
 Confirmação de salvamento de avaliações implementada, com rascunhos e retentativa. Próximos domínios devem ser revisados individualmente (tarefas/anotações e demais cadastros), além das pendências de carga inicial/CSS. Ver [avaliacoes-confirmadas.md](avaliacoes-confirmadas.md).
+
+## Continuação 1.25.0
+
+Tarefas/anotações passam a ter confirmação, rascunhos privados e retentativa estável de recorrência; atividades compartilhadas são protegidas. Ver [rotina-confirmada.md](rotina-confirmada.md). Demais cadastros, carga inicial/globais e CSS continuam em consolidação; Panorama permanece desativado.

@@ -7,8 +7,9 @@
  const assert=(v,m)=>{if(!v)throw Error(m)},wait=async(fn,message)=>{const end=Date.now()+25000;while(Date.now()<end){if(fn())return;await new Promise(r=>setTimeout(r,60))}throw Error(message)};
  const html=await(await fetch('../index.html',{cache:'no-store'})).text(),doc=new DOMParser().parseFromString(html,'text/html');
  const seed=()=>{
-  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(window.__uxDraftQuota&&k.endsWith('sistema_avaliacao_rascunho_v1'))throw Error('Quota simulada');memory.set(k,String(v))},removeItem:k=>memory.delete(k)}});
+  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(window.__uxDraftQuota&&['sistema_avaliacao_rascunho_v1','sistema_tarefa_rascunho_v1','sistema_anotacao_editando_v1','sistema_tarefa_transicao_v1'].some(suffix=>k.endsWith(suffix)))throw Error('Quota simulada');memory.set(k,String(v))},removeItem:k=>memory.delete(k)}});
   const theme=new URLSearchParams(parent.location.search).get('theme')||'light';localStorage.setItem('theme',theme);
+  const routineMode=new URLSearchParams(parent.location.search).has('routine');
   const evaluationsMode=new URLSearchParams(parent.location.search).has('evaluations');
   const savesMode=new URLSearchParams(parent.location.search).has('saves');
   const cockpitMode=new URLSearchParams(parent.location.search).has('cockpit');
@@ -26,9 +27,9 @@
     records.push({...records[0],id:999,'Mês':'2026-10',Score:0});
     tables.tarefas=[{id:'late',user_id:user.id,titulo:'Conferir amostra <script> não executar',data:'2026-10-27',status:'pendente'},{id:'today',user_id:user.id,titulo:'Feedback de hoje',data:'2026-10-28',status:'andamento'},{id:'done',user_id:user.id,titulo:'Concluída',data:'2026-10-01',status:'concluida'}];
   }
-  window.__uxResetRecords=()=>{tables.registros=records};window.__uxEmptyRecords=()=>{tables.registros=[]};window.__uxEvaluationRows=()=>tables.avaliacoes.map(row=>({...row}));
+  window.__uxResetRecords=()=>{tables.registros=records};window.__uxEmptyRecords=()=>{tables.registros=[]};window.__uxEvaluationRows=()=>tables.avaliacoes.map(row=>({...row}));window.__uxRoutineRows=table=>(tables[table]||[]).map(row=>({...row}));
   function query(table){let single=false,range=null,filters=[],mode='read',payload;const q=new Proxy({}, {get(_,key){
-   if(['insert','upsert','update','delete'].includes(key))return p=>{if(!((savesMode&&['feedbacks','metas'].includes(table))||(evaluationsMode&&table==='avaliacoes')))throw Error('Teste permite somente leitura: '+table);mode=key;payload=p;return q};
+   if(['insert','upsert','update','delete'].includes(key))return p=>{if(!((savesMode&&['feedbacks','metas'].includes(table))||(evaluationsMode&&table==='avaliacoes')||(routineMode&&['tarefas','anotacoes_diarias'].includes(table))))throw Error('Teste permite somente leitura: '+table);mode=key;payload=p;return q};
    if(key==='then')return(resolve,reject)=>Promise.resolve().then(async()=>{window.__uxReads.push(table);if(mode!=='read'){
      window.__uxWrites.push(table+':'+mode);
      if(window.__uxSaveDelay)await new Promise(r=>setTimeout(r,120));
@@ -62,6 +63,34 @@
  const click=id=>{const el=d().getElementById(id);assert(el,'Controle ausente: '+id);el.click()};
  const tab=async name=>{d().querySelector(`[data-tab="${name}"]`).click();await wait(()=>d().body.dataset.activeTab===name,'Aba '+name);await new Promise(r=>setTimeout(r,120))};
  const bounds=el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=frame.clientWidth+1};
+ if(new URLSearchParams(location.search).has('routine')){
+  win().confirm=()=>true;
+  const enter=(id,value)=>{d().getElementById(id).value=value;d().getElementById(id).dispatchEvent(new(win().Event)('input',{bubbles:true}))};
+  const taskDraft=()=>JSON.parse(win().appStorage.getItem('sistema_tarefa_rascunho_v1')||'null'),noteDraft=()=>JSON.parse(win().appStorage.getItem('sistema_anotacao_editando_v1')||'null');
+  const tasks=()=>win().AppState.get('tarefas')||[],notes=()=>win().AppState.get('anotacoes')||[];
+  await tab('tarefas');click('tarefaNovaBtn');enter('tarefaTituloInput','Verificação de rotina');enter('tarefaDescricaoInput','Rascunho com contexto');enter('tarefaDataInput','2026-10-29');
+  d().getElementById('tarefaRotinaAtiva').checked=true;d().getElementById('tarefaRotinaAtiva').dispatchEvent(new(win().Event)('change',{bubbles:true}));
+  const id=taskDraft().id;win().__uxDraftQuota=true;let before=win().__uxWrites.length;click('tarefaSalvarBtn');assert(win().__uxWrites.length===before,'Quota impede envio');win().__uxDraftQuota=false;
+  win().__uxSaveError=true;win().__uxSaveDelay=true;click('tarefaSalvarBtn');click('tarefaSalvarBtn');await wait(()=>!d().getElementById('tarefaSalvarBtn').disabled,'Falha tarefa');
+  assert(tasks().length===0&&taskDraft().id===id&&win().__uxWrites.length===before+1,'Falha não publica e duplo clique bloqueado');
+  await tab('home');await tab('tarefas');assert(d().getElementById('tarefaTituloInput').value==='Verificação de rotina','Retoma ao voltar');
+  d().querySelector('[data-task-view="lista"]').click();assert(taskDraft().id===id&&d().getElementById('tarefaDescricaoInput').value==='Rascunho com contexto','Vista preserva edição');
+  win().__uxSaveError=false;win().__uxSaveLost=true;click('tarefaSalvarBtn');await wait(()=>!d().getElementById('tarefaSalvarBtn').disabled,'Resposta tarefa perdida');assert(taskDraft().id===id&&tasks().length===0,'Resposta perdida preserva rascunho');
+  win().__uxSaveLost=false;click('tarefaSalvarBtn');await wait(()=>tasks().length===1&&!taskDraft(),'Tarefa confirmada');assert(win().__uxRoutineRows('tarefas').length===1,'UUID não duplica');
+  const select=()=>d().querySelector('.tarefa-card-status');win().__uxSaveLost=true;select().value='concluida';select().dispatchEvent(new(win().Event)('change',{bubbles:true}));await wait(()=>d().getElementById('tarefaRetryStatusBtn')&&!select().disabled,'Mudança perdida');assert(tasks()[0].rotinaProximaData==='2026-10-29','Recorrência não otimista');
+  await win().dbTarefasLoad();win().renderTarefas();const next=tasks()[0].rotinaProximaData;win().__uxSaveLost=false;click('tarefaRetryStatusBtn');await wait(()=>!d().getElementById('tarefaRetryStatusBtn'),'Retenta status');assert(tasks()[0].rotinaProximaData===next,'Retentativa não avança novamente');
+  win().__uxSaveError=true;d().querySelector('.tarefa-card-excluir').click();await wait(()=>!d().querySelector('.tarefa-card-excluir').disabled,'Excluir tarefa falha');assert(tasks().length===1,'Não remove tarefa antes da confirmação');win().__uxSaveError=false;
+  click('rotinaAnotacoesBtn');await wait(()=>d().getElementById('anotacaoTextoInput'),'Notas');enter('anotacaoTextoInput','Observação privada preservada');enter('anotacaoTagsInput','processo, reunião');const nid=noteDraft().id;
+  click('anotacoesOverlayClose');click('rotinaAnotacoesBtn');assert(noteDraft().id===nid&&d().getElementById('anotacaoTextoInput').value==='Observação privada preservada','Reabrir preserva nota');
+  enter('anotacaoBusca','inexistente');assert(d().getElementById('anotacaoTextoInput').value==='Observação privada preservada','Busca preserva nota');enter('anotacaoBusca','');
+  win().__uxSaveError=true;click('anotacaoSalvarBtn');await wait(()=>!d().getElementById('anotacaoSalvarBtn').disabled,'Nota falha');assert(notes().length===0&&noteDraft().id===nid,'Nota só após confirmação');
+  win().__uxSaveError=false;win().__uxSaveLost=true;click('anotacaoSalvarBtn');await wait(()=>!d().getElementById('anotacaoSalvarBtn').disabled,'Nota resposta perdida');win().__uxSaveLost=false;click('anotacaoSalvarBtn');await wait(()=>notes().length===1&&!noteDraft(),'Nota confirmada');assert(win().__uxRoutineRows('anotacoes_diarias').length===1,'Nota sem duplicação');
+  win().__uxSaveError=true;d().querySelector('.nota-fav-btn').click();await wait(()=>!d().querySelector('.nota-fav-btn').disabled,'Favorito falha');assert(!notes()[0].favorito,'Favorito não otimista');win().__uxSaveError=false;d().querySelector('.nota-fav-btn').click();await wait(()=>notes()[0].favorito,'Favorito confirmado');
+  d().querySelector('.anotacao-editar-btn').click();enter('anotacaoTextoInput','Edição ainda não enviada');win().__uxSaveError=true;d().querySelector('.anotacao-excluir-btn').click();await wait(()=>!d().querySelector('.anotacao-excluir-btn').disabled,'Excluir nota falha');assert(notes().length===1&&noteDraft().conteudo==='Edição ainda não enviada','Erro preserva registro e edição');
+  win().__uxSaveError=false;d().querySelector('.anotacao-excluir-btn').click();await wait(()=>notes().length===0,'Nota excluída');assert(noteDraft().conteudo==='Edição ainda não enviada','Excluir não apaga edição');
+  assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: tarefas/notas reais com servidor simulado, rascunhos/retomada, quota, falhas, UUID estável, duplo clique, recorrência após resposta perdida, favoritos e exclusões confirmadas';return;
+ }
  if(new URLSearchParams(location.search).has('evaluations')){
   const person='Pessoa de teste 1 com nome extenso para revisão de interface';
   const toasts=[],originalToast=win().showToast;win().showToast=(text,type,...rest)=>{toasts.push({text,type});return originalToast(text,type,...rest)};win().confirm=()=>true;

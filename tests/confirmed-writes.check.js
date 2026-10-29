@@ -3,13 +3,13 @@ const { webcrypto: crypto } = require('node:crypto');
 const { create } = require('../static/data-runtime.js');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function setup() {
-  const memory = new Map(), tables = { feedbacks: new Map(), metas: new Map(), avaliacoes: new Map() }, calls = [];
+  const memory = new Map(), tables = { feedbacks: new Map(), metas: new Map(), avaliacoes: new Map(), tarefas: new Map(), anotacoes_diarias: new Map() }, calls = [];
   const session = create({ storage: { getItem: k => memory.get(k) || null, setItem: (k,v) => { if(control.cacheFail) throw Error('quota'); memory.set(k,v); }, removeItem: k => memory.delete(k) } });
   session.bind({ id: 'owner', app_metadata: { role: 'admin' } });
   const control = { mode: 'ok', hold: null, release: null, admin: true };
   const client = { auth: { getUser: async () => ({ data: { user: { id: 'owner' } } }) }, from(table) {
     let mode = 'read', payload, single = false, range = null; const filters = [];
-    const q = { range(a,b) { range=[a,b]; return q; }, select() { return q; }, order() { return q; }, eq(k,v) { filters.push([k,v]); return q; }, single() { single = true; return q; },
+    const q = { range(a,b) { range=[a,b]; return q; }, select() { return q; }, order() { return q; }, eq(k,v) { filters.push([k,v]); return q; }, single() { single = true; return q; }, maybeSingle() { single=true;return q; }, not(k,op,v){filters.push([k,v,'notLike']);return q;},
       update(p) { mode='update';payload=p;return q; }, upsert(p) { mode = 'write'; payload = p; return q; }, delete() { mode = 'delete'; return q; },
       then(resolve,reject) { return Promise.resolve().then(async () => {
         calls.push({ table, mode, payload, filters, range });
@@ -20,8 +20,8 @@ function setup() {
         if (control.mode === 'error') return { error: { message: 'RLS' } };
         let rows;
         if (mode === 'write') { rows = (Array.isArray(payload) ? payload : [payload]).map(r => ({ ...r, created_at: r.created_at || '2026-10-29' })); rows.forEach(r => tables[table].set(r.id,r)); }
-        else { rows = snapshot.filter(r => filters.every(([k,v]) => r[k] === v)); if (range) rows=rows.slice(range[0],range[1]+1); if (mode === 'delete') rows.forEach(r => tables[table].delete(r.id)); if (mode === 'update') {rows=rows.map(r=>({...r,...payload}));rows.forEach(r=>tables[table].set(r.id,r));} }
-        if (control.mode === 'lost' && mode === 'write') throw Error('response lost');
+        else { rows = snapshot.filter(r => filters.every(([k,v,op]) => op==='notLike'?!String(r[k]||'').startsWith(v.slice(0,-1)):r[k]===v)); if (range) rows=rows.slice(range[0],range[1]+1); if (mode === 'delete') rows.forEach(r => tables[table].delete(r.id)); if (mode === 'update') {rows=rows.map(r=>({...r,...payload}));rows.forEach(r=>tables[table].set(r.id,r));} }
+        if (control.mode === 'lost' && ['write','update'].includes(mode)) throw Error('response lost');
         if(control.foreign) rows=rows.map(row=>({...row,user_id:'other'}));
         return { data: control.mode === 'missing' ? null : single ? rows[0] : rows, error: null };
       }).then(resolve,reject); }
@@ -29,7 +29,7 @@ function setup() {
   }};
   const c = { console, crypto, AppState:session.state, AppDataSession: session, appStorage: session.cache, sbClient: client, requireAdmin: () => control.admin, FeatureLoader: { ensure: async () => {} }, AppRepositories: {} }; c.window = c;
   vm.createContext(c);
-  for (const name of ['db-extra','repositories/development','repositories/performance']) vm.runInContext(fs.readFileSync('static/'+name+'.js','utf8'),c);
+  for (const name of ['db-extra','repositories/development','repositories/performance','repositories/routine']) vm.runInContext(fs.readFileSync('static/'+name+'.js','utf8'),c);
   return { c, session, calls, control, tables, memory };
 }
 (async () => {
@@ -91,6 +91,42 @@ function setup() {
   }
   const wrongAuth=setup();wrongAuth.c.sbClient.auth.getUser=async()=>({data:{user:{id:'another-owner'}}});await assert.rejects(wrongAuth.c.dbAvaliacaoSave(evaluation));assert.equal(wrongAuth.calls.length,0,'Sessão de rede diferente não envia');
   const lateRead=setup();lateRead.tables.avaliacoes.set(evaluation.id,{...evaluation,user_id:'owner'});lateRead.control.hold=new Promise(r=>lateRead.control.release=r);const response=lateRead.c.dbAvaliacoesLoad();await tick();lateRead.session.invalidate();lateRead.control.release();assert.equal((await response).length,0,'Leitura tardia não devolve dados da conta anterior');
+  const rt=setup(), task={id:crypto.randomUUID(),titulo:'Conferir',descricao:'Original',data:'2026-10-29',prioridade:'alta',status:'pendente',rotinaAtiva:true,rotinaProximaData:'2026-10-29',rotinaIntervalo:15}, note={id:crypto.randomUUID(),data:'2026-10-29',conteudo:'Nota privada',etiquetas:'reunião'};
+  for(const [resource,save,item,remove] of [['tarefas','dbTarefasSave',task,'dbTarefasDelete'],['anotacoes','dbAnotacoesSave',note,'dbAnotacoesDelete']]) {
+    for(const mode of ['error','network','missing']){rt.control.mode=mode;await assert.rejects(rt.c[save](item));assert.equal(rt.c.AppState.get(resource),null);}
+    rt.control.mode='ok';rt.control.foreign=true;await assert.rejects(rt.c[save](item));rt.control.foreign=false;
+    rt.control.mode='lost';await assert.rejects(rt.c[save](item));rt.control.mode='ok';await rt.c[save](item);
+    assert.equal(rt.c.AppState.get(resource).length,1,'Retentativa confirma o mesmo UUID');
+    rt.control.mode='error';await assert.rejects(rt.c[remove](item.id));assert.equal(rt.c.AppState.get(resource).length,1,'Exclusão não é otimista');rt.control.mode='ok';
+  }
+  await rt.c.dbTarefaStatus(task.id,{status:'andamento'});let call=rt.calls.at(-1);assert.deepEqual(Object.keys(call.payload).sort(),['status','updated_at']);
+  await rt.c.dbTarefasSave({...task,titulo:'Texto editado'});assert.equal(rt.c.AppState.get('tarefas')[0].status,'andamento');
+  await rt.c.dbAnotacaoFavorito(note.id,true);call=rt.calls.at(-1);assert.deepEqual(Object.keys(call.payload).sort(),['favorito','updated_at']);
+  await rt.c.dbAnotacoesSave({...note,conteudo:'Nova nota',favorito:false});assert.equal(rt.c.AppState.get('anotacoes')[0].favorito,true,'Editar texto preserva favorito atual');
+  const activity={id:crypto.randomUUID(),user_id:'owner',conteudo:'atividade-colaborador:v1:{"tipo":"atividade"}'};rt.tables.anotacoes_diarias.set(activity.id,activity);
+  await assert.rejects(rt.c.dbAnotacoesSave({...note,id:activity.id}));await assert.rejects(rt.c.dbAnotacoesSave({...note,conteudo:activity.conteudo}));
+  await assert.rejects(rt.c.dbAnotacoesDelete(activity.id));await assert.rejects(rt.c.dbAnotacaoFavorito(activity.id,true));assert.equal(rt.tables.anotacoes_diarias.get(activity.id).conteudo,activity.conteudo);
+  assert.equal((await rt.c.dbAnotacoesLoad()).length,1,'Atividades não entram na biblioteca');
+  rt.control.cacheFail=true;rt.c.console={...console,warn(){}};await rt.c.dbTarefasSave({...task,titulo:'Servidor confirmou sem cache'});assert.equal(rt.c.AppState.get('tarefas')[0].titulo,'Servidor confirmou sem cache');rt.control.cacheFail=false;
+  const recurrence={status:'pendente',data:'2026-10-29',rotinaUltimaConclusao:'2026-10-29',rotinaProximaData:'2026-11-13'};
+  await rt.c.dbTarefaStatus(task.id,recurrence);await rt.c.dbTarefaStatus(task.id,recurrence);assert.equal(rt.c.AppState.get('tarefas')[0].rotinaProximaData,'2026-11-13','Patch recorrente é idempotente');
+  for(const [resource,load,table]of [['tarefas','dbTarefasLoad','tarefas'],['anotacoes','dbAnotacoesLoad','anotacoes_diarias']]){
+    const paged=setup();for(let i=0;i<1101;i++){const id=crypto.randomUUID();paged.tables[table].set(id,{...task,...note,id,user_id:'owner'});}
+    paged.control.failPage=500;assert.equal((await paged.c[load]()).length,0,'Falha de página não publica parcial');paged.control.failPage=null;assert.equal((await paged.c[load]()).length,1101);
+    paged.tables[table].clear();assert.equal((await paged.c[load]()).length,0,'Servidor vazio é oficial');
+  }
+  for(const [method,args]of [['dbTarefasSave',[task]],['dbTarefaStatus',[task.id,{status:'concluida'}]],['dbTarefasDelete',[task.id]],['dbAnotacoesSave',[note]],['dbAnotacaoFavorito',[note.id,true]],['dbAnotacoesDelete',[note.id]]]){
+    const late=setup();late.tables.tarefas.set(task.id,{...task,user_id:'owner'});late.tables.anotacoes_diarias.set(note.id,{...note,user_id:'owner'});late.control.hold=new Promise(r=>late.control.release=r);
+    const pending=late.c[method](...args);await tick();const before=[...late.memory.entries()];late.session.invalidate();late.control.release();await assert.rejects(pending,/Sessão alterada/);assert.deepEqual([...late.memory.entries()],before);
+  }
+  for(const [load,resource,table,item]of [['dbTarefasLoad','tarefas','tarefas',task],['dbAnotacoesLoad','anotacoes','anotacoes_diarias',note]]){
+    const late=setup();late.tables[table].set(item.id,{...item,user_id:'owner'});late.control.hold=new Promise(r=>late.control.release=r);const pending=late.c[load]();await tick();late.session.invalidate();late.control.release();assert.equal((await pending).length,0);assert.equal(late.c.AppState.get(resource),null);
+  }
+  for(const [load,save,resource,item,field,value]of [['dbTarefasLoad','dbTarefasSave','tarefas',task,'titulo','Edição mais recente'],['dbAnotacoesLoad','dbAnotacoesSave','anotacoes',note,'conteudo','Nota mais recente']]){
+    const concurrent=setup();await concurrent.c[save](item);concurrent.control.hold=new Promise(r=>concurrent.control.release=r);const reading=concurrent.c[load]();await tick();await concurrent.c[save]({...item,[field]:value});concurrent.control.release();await reading;assert.equal(concurrent.c.AppState.get(resource)[0][field],value,'Leitura antiga não desfaz gravação confirmada');
+  }
+  rt.control.admin=false;await assert.rejects(rt.c.dbTarefasSave(task));await assert.rejects(rt.c.dbTarefaStatus(task.id,{status:'concluida'}));await assert.rejects(rt.c.dbTarefasDelete(task.id));await rt.c.dbAnotacoesSave(note);rt.control.admin=true;
+  console.log('Rotina: confirmação/UUID/dono, paginação, exclusão, sessão, cache indisponível, status e favorito isolados, recorrência idempotente, notas privadas e atividades protegidas.');
   console.log('Avaliações: confirmação/ID/dono, erro/rede/retentativa, paginação, status isolado, cache indisponível, rascunho separado, permissões, leituras antigas, fila local e sessão encerrada.');
   console.log('Escritas confirmadas: erros/RLS/rede, retorno sem ID, retentativa idempotente, serialização, metas por item, exclusão, papel, leitura concorrente e sessão encerrada.');
 })().catch(e => { console.error(e); process.exitCode = 1; });

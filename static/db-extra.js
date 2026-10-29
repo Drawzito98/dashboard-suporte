@@ -346,3 +346,6 @@ async function initDbExtra() {
     if (!token || AppDataSession.current(token)) window.dispatchEvent?.(new Event('app-extra-data-loaded'));
   } catch (e) { console.error('[db-extra]', e); }
 }
+
+async function dbTarefaStatus(...args) { await _loadDataDomain('data-routine'); return AppRepositories.routine.dbTarefaStatus(...args); }
+async function dbAnotacaoFavorito(...args) { await _loadDataDomain('data-routine'); return AppRepositories.routine.dbAnotacaoFavorito(...args); }
