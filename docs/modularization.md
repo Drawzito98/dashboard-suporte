@@ -31,3 +31,7 @@ Chart.js, bibliotecas de CSV/exportação e vários módulos históricos ainda c
 `npm test` inclui os novos checks module-loader, repository-domains e dashboard-modules: ordem/carregamento único/retentativa/ciclos, contratos de leitura/escrita sem migração, totais/ranking/Score/evolução e relatório preservados.
 
 `tests/lazy-modules.browser.html` usa scripts reais com servidor simulado: primeiro acesso, erro/retentativa, inicialização tardia, proteção de rascunho, concorrência, navegação abandonada, abertura de perfil e troca de sessão. Fixtures de shell, Equipe360, PDI, Ponto, diagnóstico, filtros de Panorama e ciclo de dados também passaram. Smoke do HTML completo percorreu as 13 abas e perfil com dados simulados; não valida integrações de produção ou aparência dos gráficos reais com CDN.
+
+## Atualização 1.20.1
+
+O bundle interno panorama conserva a chave por compatibilidade, mas carrega somente relatorio-setorial.js. O Panorama parcial deixou o HTML e o manifest de execução; seu parser/UI e testes isolados permanecem para reuso. A contagem de scripts iniciais e a modularização residual foram revistas em [revisao-pos-roadmap.md](revisao-pos-roadmap.md).

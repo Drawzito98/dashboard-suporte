@@ -2,11 +2,15 @@
 
 App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer), gamificação, relatórios inteligentes, e deploy no Vercel.
 
-**Versão atual:** `1.20.0` (constante `APP_VERSION` em `static/app.js`)
+**Versão atual:** `1.20.1` (constante `APP_VERSION` em `static/app.js`)
 
 ## Diagnóstico gerencial
 
 A auditoria, metodologia, limitações e validação da nova seção estão em [docs/diagnostico-gerencial.md](docs/diagnostico-gerencial.md). A migração aditiva `migration_v49.sql` foi aplicada ao banco de produção em 22/10/2026, habilitando revisões privadas sincronizadas.
+
+## Revisão após o roadmap
+
+Panorama parcial retirado do Relatório Setorial, com implementação preservada para possível realocação após definir o CSV. Pendências técnicas e prioridades de interface estão em [revisao-pos-roadmap.md](docs/revisao-pos-roadmap.md).
 
 ## Cockpit gerencial — Fase 7
 
@@ -40,6 +44,7 @@ Baseline e continuidade: [arquitetura](docs/architecture.md), [inventário atual
 
 | Versão | Data | Alterações |
 |--------|------|------------|
+| 1.20.1 | 28/10/2026 | Retirada do Panorama parcial da tela setorial e revisão das pendências do roadmap e da interface. |
 | 1.20.0 | 28/10/2026 | Cockpit gerencial: período encerrado por padrão, evidências e ações vinculadas, notas ausentes explícitas e atualização somente leitura por conta. |
 | 1.19.1 | 28/10/2026 | Conclusão da Fase 6: submenu móvel com rolagem, filtros/cabeçalho responsivos, limpeza da sidebar, ciclo de gráficos e leitura de metas sem regravação. |
 | 1.19.0 | 28/10/2026 | Base de componentes e tokens, tabelas acessíveis por teclado, foco de modais e consistência de temas; refinamentos da Fase 6 documentados. |
@@ -210,13 +215,12 @@ usuarios.js → csv-import.js → reports.js → app.js
 
 ## Fluxo de dados
 
-1. **DOMContentLoaded** em `app.js`:
-   - `initAuth()` → verifica sessão
-   - `initDbExtra()` → carrega os domínios complementares após autenticação; sem migração automática
-   - `dbLoadRecords()` → carrega registros do Supabase (`importacoes`)
-2. Dados de CSV passam por RLS (filtrados por `user_id` ou nulos)
-3. Dados extras (metas, fotos, etc.) usam **localStorage como fallback** se Supabase offline
-4. Escrita é **síncrona no localStorage** + **assíncrona no Supabase**
+1. A autenticação vincula a conta antes de carregar dados.
+2. Indicadores vêm da tabela registros via RecordsRepository/AppState, com cache por conta e fila de alterações por revisão. Resposta vazia do servidor é válida.
+3. Módulos complementares usam a fachada db-extra e repositories por domínio, com contratos de escrita ainda heterogêneos. Nem todos têm confirmação remota/fila durável como os indicadores.
+4. Migração automática de chaves legadas sem dono não é executada. PDI permanece local por conta/dispositivo.
+
+Detalhes em [data-architecture.md](docs/data-architecture.md) e pendências em [revisao-pos-roadmap.md](docs/revisao-pos-roadmap.md).
 
 ## Papéis
 

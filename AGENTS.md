@@ -51,9 +51,9 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 | `notificacoes` | Notificações audit trail | `notificacoes.js` |
 
 ## Arquitetura de Dados
-- **Leitura:** localStorage primeiro (síncrono), Supabase atualiza em background
-- **Escrita:** localStorage + Supabase em paralelo (app nunca quebra se Supabase offline)
-- **Migração:** `migrateLocalToSupabase()` executa uma vez na primeira carga (flag `sistema_migrated_to_supabase_v1`)
+- Indicadores: RecordsRepository/AppState, servidor como fonte oficial, cache privado e fila por revisão; resposta vazia é autoritativa.
+- Complementares: fachada db-extra e repositories por domínio, com confirmação/fila ainda não uniformes; ver docs/data-architecture.md.
+- Sem migração automática de dados legados sem dono. PDI continua local por conta/dispositivo.
 
 ## Funcionalidades Implementadas
 
@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.20.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.20.1. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -142,3 +142,7 @@ Leia docs/design-system.md antes de retomar. Fase concluída em 1.19.1; o cockpi
 ## Fase 7 — Cockpit gerencial
 
 Leia docs/cockpit.md. HomeCockpit usa AppState/appStorage da conta e CockpitEngine, que reutiliza DiagnosticoEngine. Período padrão é o último mês encerrado com registros; filtros explícitos prevalecem. Ausência não é zero; não ponderar Score por volume nem rankear níveis por produtividade. Tarefas/agenda são da conta e de hoje, separadas do filtro temporal dos indicadores. Atualizar dados é somente leitura; preserve a proteção de sessão e os editores originais. Execute npm test e workspace-ux.browser.html?cockpit=1 (também &race=1), além das regressões em desktop/celular. O roadmap de sete fases está entregue nos escopos documentados; adoção gradual e limites continuam registrados.
+
+## Revisão 1.20.1 — Panorama e continuidade
+
+Leia docs/revisao-pos-roadmap.md. Panorama parcial foi retirado do HTML e dos recursos do bundle interno panorama, que agora serve apenas o Relatório Setorial. Preserve os arquivos/testes isolados para eventual realocação após definir o CSV. Não reativar automaticamente esse bloco. As sete entregas não encerram toda a consolidação: confirmar escritas dos complementares, reduzir carga inicial/globais e unificar contexto de análise são prioridades. Merge continua dependendo de autorização explícita.

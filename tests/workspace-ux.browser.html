@@ -77,7 +77,7 @@
   document.getElementById('testResult').textContent='PASS: cockpit, mês fechado/parcial, ausência de nota, evidências, perfil exato, tarefa focada, filtros, cache, vazio e atualização sem escrita';return;
  }
  for(const name of ['home','dashboard','relatorio-setorial','saude-operacional','tarefas','regras','ponto','colaboradores','lider','insights','avaliacao','perfil-pdi','mapeamento-time']){
-  await tab(name);assert(d().documentElement.scrollWidth<=frame.clientWidth,'Overflow global: '+name);assert(bounds(d().getElementById('appPageTitle')),'Título dentro do cabeçalho: '+name);
+  await tab(name);if(name==='relatorio-setorial'){assert(!d().getElementById('panoramaSuporteRoot'),'Panorama fora da tela setorial');assert(!d().querySelector('script[src*="panorama-suporte"],link[href*="panorama-suporte"]'),'Relatório não carrega recursos do Panorama');}assert(d().documentElement.scrollWidth<=frame.clientWidth,'Overflow global: '+name);assert(bounds(d().getElementById('appPageTitle')),'Título dentro do cabeçalho: '+name);
  }
  await tab('dashboard');const sector=d().getElementById('gfSetor');sector.value='Financeiro';sector.dispatchEvent(new (win().Event)('change',{bubbles:true}));
  await wait(()=>win().Chart?.getChart(d().getElementById('mainChart'))?.data.datasets.length,'Chart.js real e gráfico com dados');

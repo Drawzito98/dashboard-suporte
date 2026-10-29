@@ -6,7 +6,7 @@ Baseline local de 28/10/2026. As 13 entradas de navegação em `index.html` são
 |---|---|
 | Início | cockpit, atalhos e indicadores — home.js |
 | Dashboard | importações, filtros, gráficos e tabela — app.js, csv-import.js, reports.js |
-| Panorama / relatório setorial | análise por equipe/período — panorama-suporte.js, relatorio-setorial.js |
+| Relatório setorial | análise por equipe/período — relatorio-setorial.js; Panorama parcial retirado da interface em 1.20.1, implementação preservada para eventual reuso |
 | Saúde Operacional | indicadores e acompanhamento — saude-operacional.js, indicator-health-v3.js |
 | Rotina / tarefas | agenda, atividades e notas — tarefas.js, rotina-cards.js, atividades-mes.js, anotacoes.js |
 | Regras | regras operacionais — regras.js |

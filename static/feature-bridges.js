@@ -40,7 +40,7 @@
   bind('ponto','openPontoAnalysis','análise de ponto');
   bind('pdi','onPerfilPdiTabActivated','Perfil e PDI',{tab:'perfil-pdi'});
   bind('pdi','openPerfilPdi','Perfil e PDI');
-  bind('panorama','onRelatorioSetorialTabActivated','Relatório Setorial e Panorama',{tab:'relatorio-setorial'});
+  bind('panorama','onRelatorioSetorialTabActivated','Relatório Setorial',{tab:'relatorio-setorial'});
   bind('equipe360','openEquipe360','Equipe 360º');
   bind('equipe360','openColabDetail','Equipe 360º',{fallback:window.openColabDetail});
 })();

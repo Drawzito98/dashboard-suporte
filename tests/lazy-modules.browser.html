@@ -32,6 +32,7 @@ const sbClient={auth:{getUser:async()=>({data:{user}}),onAuthStateChange:cb=>cal
  click('relatorio-setorial');const old=activation;AppDataSession.invalidate();user={id:'another-owner',app_metadata:{role:'admin'}};callbacks.forEach(cb=>cb('SIGNED_IN',{user}));release();await old;
  assert(!document.getElementById('relatorioSetorialContent').textContent.trim(),'Callback de sessão anterior descartado');
  assert(!document.querySelector('script[data-module-asset*="repositories/legacy"]'),'Migração antiga não é carregada');
+ assert(!document.getElementById('panoramaSuporteRoot'),'Panorama retirado do HTML principal');assert(!document.querySelector('script[src*="panorama-suporte"],link[href*="panorama-suporte"]'),'Panorama não carrega junto do relatório');
  document.getElementById('testResult').textContent='PASS: primeiro acesso, falha/retentativa, DOM tardio, rascunho, concorrência, navegação abandonada, perfil e sessão trocada';
 })().catch(e=>{document.getElementById('testResult').textContent='FAIL: '+e.message;console.error(e)});
 </script></html>

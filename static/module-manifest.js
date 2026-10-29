@@ -139,12 +139,9 @@ window.APP_MODULES = {
   },
   "panorama": {
     "scripts": [
-      "/static/relatorio-setorial.js?v=86",
-      "/static/panorama-suporte.js?v=14"
+      "/static/relatorio-setorial.js?v=86"
     ],
-    "styles": [
-      "/static/panorama-suporte.css?v=6"
-    ],
+    "styles": [],
     "exports": [
       "onRelatorioSetorialTabActivated"
     ]
