@@ -19,13 +19,28 @@ function _rsAvgScoreBySetor(rows) {
   const avgs = Object.values(bySetor).filter(a => a.length > 0).map(a => a.reduce((x, y) => x + y, 0) / a.length);
   return avgs.length ? avgs.reduce((x, y) => x + y, 0) / avgs.length : 0;
 }
+// Relatórios executivos abrem o Setorial e usam o mesmo contexto global dessa tela.
+function executiveReportContext() {
+  const f = typeof globalFilters !== 'undefined' ? globalFilters : null;
+  const rows = (f ? f.aplicar(rawRecords || []) : getCurrentFilteredRows()).filter(r => r && !isAggregateName(r['Atendente']) && (typeof isSetorActive !== 'function' || isSetorActive(String(r['Setor'] || '').trim())));
+  const months = [...new Set(rows.map(r => String(r['Mês'] || '')).filter(Boolean))].sort();
+  const scope = ['Setor: ' + (f?.setor && f.setor !== 'all' ? f.setor : 'Todos'), 'Meses com dados: ' + months.join(', ')];
+  if (f?.nivel && f.nivel !== 'all') scope.push('Nível: ' + f.nivel);
+  if (f?.colaborador && f.colaborador !== 'all') scope.push('Pessoa: ' + f.colaborador);
+  if (f?.pesquisa) scope.push('Busca: ' + f.pesquisa);
+  if (typeof presentationMode !== 'undefined' && presentationMode) scope.push('Modo apresentação ativo');
+  return { rows, scope, setor: f?.setor || 'all' };
+}
+
 function generateAndShowReport() {
   // Gera o relatório e garante feedback visual (sem depender do botão "Atualizar")
   try {
     setLoading(true, 'Gerando relatório…');
     const ta = document.getElementById('reportText');
 
-    const text = buildReportText();
+    const context = executiveReportContext();
+    const text = buildReportText(context);
+    window.__lastReportContextKey = JSON.stringify(context);
     window.__lastReportText = text;
 
     if (ta) {
@@ -176,7 +191,8 @@ function escapeHtml(str) {
 
 function generateIntelReport() {
   try {
-    const rows = getCurrentFilteredRows();
+    const context = executiveReportContext();
+    const rows = context.rows;
     if (!rows.length) {
       showToast('Sem dados no escopo atual para gerar análise.', 'warn', 'Relatório Inteligente');
       return;
@@ -232,7 +248,7 @@ function generateIntelReport() {
     }
 
     // Build report
-    const lines = [];
+    const lines = [context.scope.join(' · ')];
     lines.push(`📊 Análise Inteligente do Período`);
     lines.push('');
     if (leader) {

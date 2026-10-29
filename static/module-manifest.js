@@ -34,7 +34,7 @@ window.APP_MODULES = {
   },
   "data-development": {
     "scripts": [
-      "/static/repositories/development.js?v=1"
+      "/static/repositories/development.js?v=2"
     ],
     "exports": [
       "AppRepositories.development.dbFeedbacksLoad",
@@ -67,11 +67,12 @@ window.APP_MODULES = {
   },
   "data-performance": {
     "scripts": [
-      "/static/repositories/performance.js?v=1"
+      "/static/repositories/performance.js?v=2"
     ],
     "exports": [
       "AppRepositories.performance.dbMetasLoad",
       "AppRepositories.performance.dbMetasSave",
+      "AppRepositories.performance.dbMetasDelete",
       "AppRepositories.performance.dbScoringLoad",
       "AppRepositories.performance.dbScoringSave",
       "AppRepositories.performance.dbAlertasLoad",
@@ -139,7 +140,7 @@ window.APP_MODULES = {
   },
   "panorama": {
     "scripts": [
-      "/static/relatorio-setorial.js?v=86"
+      "/static/relatorio-setorial.js?v=92"
     ],
     "styles": [],
     "exports": [

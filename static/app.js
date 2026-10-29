@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.20.1';
+const APP_VERSION = '1.21.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -1464,7 +1464,7 @@ function getCurrentFilteredRows() {
   }).filter(r => !isAggregateName(r['Atendente']));
 }
 
-function buildReportText() { return DashboardReport.build(); }
+function buildReportText(options) { return DashboardReport.build(options); }
 
 // ── Removed: clearReportTextOnly, generateAndShowReport, copyReportToClipboard, exportReportToPDF, exportPDFcomGrafico, escapeHtml moved to static/reports.js; handleError moved to static/csv-import.js ──
 

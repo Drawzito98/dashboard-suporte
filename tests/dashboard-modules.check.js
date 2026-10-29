@@ -15,5 +15,6 @@ context.hiddenLabels.add('Ana');context.DashboardCharts.render(rows);assert.deep
 context.atendenteSelect.value='Ana';context.DashboardCharts.render(rows.filter(r=>r.Atendente==='Ana'));assert.deepEqual(json(captured.data.datasets[1].data),[80,45]);assert.equal(destroyed,2);
 context.DashboardCharts.render([]);assert.equal(empty,true);
 const report=context.DashboardReport.build();assert.match(report,/225/);assert.match(report,/250/);assert.match(report,/4\.85/);assert.match(report,/90\.0%/);assert.ok(report.includes('Ana')&&report.includes('Bia'));assert.ok(report.indexOf('Ana liderou')>0);
+const scoped=context.DashboardReport.build({rows:[rows[2]],scope:['Meses com dados: 2026-10','Setor: Financeiro'],setor:'Financeiro'});assert.ok(scoped.includes('Meses com dados: 2026-10'));assert.ok(scoped.includes('Bia'));assert.ok(!scoped.includes('Ana'));
 context.getCurrentFilteredRows=()=>[];assert.equal(context.DashboardReport.build(),'Sem dados no escopo atual.');
 console.log('Dashboard extraído: totais, Score por setor, ranking, evolução mensal, ocultação, ciclo do gráfico, escopo vazio e relatório preservados.');

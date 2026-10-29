@@ -274,8 +274,8 @@ function renderFeedbacks() {
   html += '</div>';
 
   html += '<div style="display:flex;gap:var(--s-3)">';
-  if (editing && editing.id) {
-    html += `<button class="btn-primary" id="fbSalvarBtn" type="button">💾 Atualizar</button>`;
+  if (editing && editing.colaborador) {
+    html += `<button class="btn-primary" id="fbSalvarBtn" type="button">💾 ${editing.id ? 'Atualizar' : 'Salvar'}</button>`;
     html += `<button class="btn-small" id="fbCancelarBtn" type="button">Cancelar</button>`;
   } else {
     html += `<button class="btn-primary" id="fbSalvarBtn" type="button" disabled>💾 Salvar</button>`;
@@ -344,6 +344,9 @@ function bindFbEvents(colabs, meses, saved) {
     function updateGerarBtn() {
       gerarBtn.disabled = !colabSel.value;
     }
+    if (editing?.colaborador) colabSel.value = editing.colaborador;
+    if (editing?.mes) mesSel.value = editing.mes;
+    updateGerarBtn();
     colabSel.addEventListener('change', updateGerarBtn);
     mesSel.addEventListener('change', updateGerarBtn);
 
@@ -401,15 +404,18 @@ function bindFbEvents(colabs, meses, saved) {
 
   if (salvarBtn) {
     salvarBtn.addEventListener('click', async () => {
+      if (salvarBtn.disabled) return;
       const cur = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}');
       if (!cur.colaborador) return;
+      const token = AppDataSession.token();
+      salvarBtn.disabled = true;
       if (typeof setLoading === 'function') setLoading(true, 'Salvando feedback…');
       try {
         const final = document.getElementById('fbFinalTexto').value;
         const anotacoes = document.getElementById('fbAnotacoesTexto').value;
         const sugestao = (document.getElementById('fbSugestaoTexto') || {}).value || cur.sugestao_automatica || '';
         const fb = {
-          id: cur.id || Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+          id: _writeUuid(cur.id),
           colaborador: cur.colaborador,
           mes: cur.mes || 'all',
           sugestao_automatica: sugestao,
@@ -417,11 +423,18 @@ function bindFbEvents(colabs, meses, saved) {
           feedback_final: final,
           createdAt: cur.createdAt || new Date().toISOString()
         };
-        await dbFeedbacksSave(fb);
-        appStorage.removeItem(FB_EDITING_KEY);
+        appStorage.setItem(FB_EDITING_KEY, JSON.stringify(fb));
+        const result = await dbFeedbacksSave(fb);
+        if (!AppDataSession.current(token)) return;
+        if (result?.status !== 'confirmed') throw new Error('Gravação não confirmada. Seu rascunho foi mantido.');
+        const unchanged = appStorage.getItem(FB_EDITING_KEY) === JSON.stringify(fb);
+        if (unchanged) appStorage.removeItem(FB_EDITING_KEY);
         showToast('Feedback salvo com sucesso!', 'success', 'Feedbacks');
-        renderFeedbacks();
+        if (unchanged) renderFeedbacks();
+      } catch (error) {
+        showToast(error.message || 'Não foi possível salvar. Seu rascunho foi mantido.', 'error', 'Feedbacks');
       } finally {
+        salvarBtn.disabled = false;
         if (typeof setLoading === 'function') setLoading(false);
       }
     });
@@ -469,8 +482,10 @@ function bindFbEvents(colabs, meses, saved) {
       const id = btn.dataset.id;
       const fb = saved.find(f => f.id === id);
       if (!fb || !confirm(`Excluir feedback de ${fb.colaborador} (${fb.mes})?`)) return;
-      await dbFeedbacksDelete(id);
-      renderFeedbacks();
+      btn.disabled = true;
+      try { await dbFeedbacksDelete(id); renderFeedbacks(); }
+      catch (error) { showToast(error.message || 'Não foi possível excluir.', 'error', 'Feedbacks'); }
+      finally { btn.disabled = false; }
     });
   });
 

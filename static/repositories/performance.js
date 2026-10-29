@@ -5,11 +5,13 @@
 
 
 async function dbMetasLoad() {
+  const token = AppDataSession.token(), revision = _confirmedRevisions.get('metas');
   if (!sbClient) return _fallbackLoad(METAS_LOCAL_KEY, []);
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(METAS_LOCAL_KEY, []);
     const { data, error } = await sbClient.from('metas').select('*').eq('user_id', uid);
+    if (!AppDataSession.current(token) || revision !== _confirmedRevisions.get('metas')) return _fallbackLoad(METAS_LOCAL_KEY, []);
     if (!error && Array.isArray(data)) {
       const goals = data.map(r => ({
         id: r.id,
@@ -31,30 +33,40 @@ async function dbMetasLoad() {
   }
 }
 
+// Compatibilidade com arrays legados: somente upsert dos itens enviados, nunca substituição da coleção.
 async function dbMetasSave(goals) {
-  if (!requireAdmin()) return;
-  appStorage.setItem(METAS_LOCAL_KEY, JSON.stringify(goals));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const { error: delError } = await sbClient.from('metas').delete().eq('user_id', uid);
-    if (delError) return;
-    if (goals.length === 0) return;
-    const rows = goals.filter(g => g && (g.id || g.title)).map(g => ({
-      user_id: uid,
-      title: g.title || 'Meta',
-      type: g.type || 'monthly',
-      metric: g.metric || 'finalizados',
-      target: parseFloat(g.target) || 0,
-      setor: g.setor || 'all',
-      collaborator: g.collaborator || '',
-      period: g.period || 'all'
+  if (!requireAdmin()) throw new Error('Apenas administradores podem alterar metas.');
+  const drafts = goals.map(g => ({ ...g, id: _writeUuid(g.id) }));
+  return _confirmedWrite('metas', async ({ uid, request }) => {
+    if (!drafts.length) return { status: 'confirmed', data: [] };
+    const rows = drafts.map(g => ({
+      id: g.id, user_id: uid, created_at: g.createdAt || new Date().toISOString(), title: g.title || 'Meta', type: g.type || 'monthly',
+      metric: g.metric || 'finalizados', target: parseFloat(g.target) || 0,
+      setor: g.setor || 'all', collaborator: g.collaborator || '', period: g.period || 'all'
     }));
-    await sbClient.from('metas').insert(rows);
-  } catch (e) { console.error('[db-extra] dbMetasSave:', e); }
+    const saved = await request(() => sbClient.from('metas').upsert(rows, { onConflict: 'id' }).select('*'));
+    if (!Array.isArray(saved) || saved.length !== rows.length || rows.some(r => !saved.some(s => s.id === r.id))) {
+      throw new Error('Gravação da meta não confirmada. Tente novamente.');
+    }
+    const confirmed = drafts.map(g => ({ ...g, createdAt: saved.find(s => s.id === g.id).created_at || g.createdAt }));
+    const list = _confirmedList(METAS_LOCAL_KEY);
+    confirmed.forEach((g, index) => {
+      const at = list.findIndex(item => item.id === goals[index].id || item.id === g.id);
+      if (at >= 0) list[at] = g; else list.push(g);
+    });
+    _confirmedCache(METAS_LOCAL_KEY, list);
+    return { status: 'confirmed', data: confirmed };
+  });
 }
-
+async function dbMetasDelete(id) {
+  if (!requireAdmin()) throw new Error('Apenas administradores podem alterar metas.');
+  return _confirmedWrite('metas', async ({ uid, request }) => {
+    const rows = await request(() => sbClient.from('metas').delete().eq('id', id).eq('user_id', uid).select('id'));
+    if (!Array.isArray(rows) || !rows.some(row => row.id === id)) throw new Error('Exclusão não confirmada. Atualize a lista e tente novamente.');
+    _confirmedCache(METAS_LOCAL_KEY, _confirmedList(METAS_LOCAL_KEY).filter(g => g.id !== id));
+    return { status: 'confirmed', id };
+  });
+}
 
 // ─── SCORING RULES ───────────────────────────────────────────────
 
@@ -199,5 +211,5 @@ async function dbPontosExtrasDelete(id) {
 
 
   root.AppRepositories = root.AppRepositories || {};
-  root.AppRepositories.performance = { dbMetasLoad, dbMetasSave, dbScoringLoad, dbScoringSave, dbAlertasLoad, dbAlertasSave, dbPontosExtrasLoad, dbPontosExtrasSave, dbPontosExtrasDelete };
+  root.AppRepositories.performance = { dbMetasLoad, dbMetasSave, dbMetasDelete, dbScoringLoad, dbScoringSave, dbAlertasLoad, dbAlertasSave, dbPontosExtrasLoad, dbPontosExtrasSave, dbPontosExtrasDelete };
 })(window);

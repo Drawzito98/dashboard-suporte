@@ -75,3 +75,7 @@ A linha validada ainda não foi integrada à main nesta sessão, por falta de au
 ## Validação desta alteração
 
 npm test aprovado (171 testes do runner e checks adicionais); release:check e git diff --check aprovados. O cache agora cobre 112 assets do shell/manifest, sem os dois recursos do Panorama. Lazy modules e workspace integrado verificam explicitamente que o host e os recursos do Panorama não aparecem, enquanto relatórios, filtros, gráficos, exportações e destinos existentes continuam funcionando. Testes isolados do Panorama permanecem disponíveis para reuso.
+
+## Continuação em 29/10/2026 — 1.21.0
+
+Os dois primeiros itens foram implementados: confirmação explícita para feedbacks/metas, gravação de metas por item e contexto único do Relatório Setorial. As evidências acima descrevem a base 1.20.1. O estado posterior e seus limites estão em [confirmacao-e-contexto.md](confirmacao-e-contexto.md). Confirmar escritas dos demais complementares, reduzir carga inicial e consolidar navegação/CSS continuam pendentes. O editor legado de metas não possui destino visível no shell; sua localização é uma decisão para o próximo ciclo.

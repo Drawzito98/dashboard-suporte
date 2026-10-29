@@ -3,6 +3,7 @@ const METAS_STORAGE_KEY = 'sistema_metas_v1';
 let goals = [];
 
 function loadMetas() {
+  const token = typeof AppDataSession !== 'undefined' ? AppDataSession.token() : null;
   try {
     const raw = appStorage.getItem(METAS_STORAGE_KEY);
     if (raw) {
@@ -13,7 +14,7 @@ function loadMetas() {
   goals = [];
   if (typeof dbMetasLoad === 'function') {
     dbMetasLoad().then(loaded => {
-      if (loaded && Array.isArray(loaded)) {
+      if ((!token || AppDataSession.current(token)) && loaded && Array.isArray(loaded)) {
         goals = loaded;
         // dbMetasLoad already refreshed the cache; reads must never rewrite server goals.
         if (document.querySelector('#tab-gamificacao.active')) renderMetas();
@@ -22,24 +23,13 @@ function loadMetas() {
   }
 }
 
-function saveMetas() {
-  try { appStorage.setItem(METAS_STORAGE_KEY, JSON.stringify(goals)); } catch (e) { console.warn('[Metas] Erro ao salvar metas:', e); }
-  if (typeof dbMetasSave === 'function') {
-    dbMetasSave(goals);
-  }
-}
-
-function addMeta(meta) {
-  meta.id = 'meta_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-  meta.createdAt = new Date().toISOString();
-  goals.push(meta);
-  saveMetas();
-  renderMetas();
-}
-
-function removeMeta(id) {
+let metasSaving = false;
+async function removeMeta(id) {
+  const token = AppDataSession.token();
+  const result = await dbMetasDelete(id);
+  if (!AppDataSession.current(token)) throw new Error('Sessão alterada.');
+  if (result?.status !== 'confirmed') throw new Error('Exclusão da meta não confirmada.');
   goals = goals.filter(g => g.id !== id);
-  saveMetas();
   renderMetas();
 }
 
@@ -247,20 +237,30 @@ function suggestAutoMeta() {
   </div>`;
 
   container.innerHTML = html;
+  try {
+    const draft = JSON.parse(appStorage.getItem('sistema_meta_rascunho_v1') || 'null');
+    if (draft) for (const [field, id] of Object.entries({ title:'metaTitleInput', type:'metaTypeSelect', metric:'metaMetricSelect', target:'metaTargetInput', setor:'metaSetorSelect', collaborator:'metaColabSelect', period:'metaPeriodSelect' })) {
+      const input = document.getElementById(id); if (input) input.value = draft[field] ?? '';
+    }
+  } catch (_) {}
+
 
   // Bind remove buttons
   container.querySelectorAll('.remove-meta-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (confirm('Excluir esta meta?')) {
-        removeMeta(btn.getAttribute('data-id'));
-      }
+    btn.addEventListener('click', async () => {
+      if (metasSaving || !confirm('Excluir esta meta?')) return;
+      metasSaving = true; btn.disabled = true;
+      try { await removeMeta(btn.getAttribute('data-id')); showToast('Meta excluída.', 'success', 'Meta'); }
+      catch (error) { showToast(error.message || 'Não foi possível excluir a meta.', 'error', 'Meta'); }
+      finally { metasSaving = false; btn.disabled = false; }
     });
   });
 
   // Bind save button
   const saveBtn = document.getElementById('saveMetaBtn');
   if (saveBtn) {
-    saveBtn.addEventListener('click', () => {
+    saveBtn.addEventListener('click', async () => {
+      if (metasSaving) return;
       const title = document.getElementById('metaTitleInput')?.value?.trim() || 'Meta';
       const type = document.getElementById('metaTypeSelect')?.value || 'monthly';
       const metric = document.getElementById('metaMetricSelect')?.value || 'finalizados';
@@ -274,13 +274,25 @@ function suggestAutoMeta() {
         return;
       }
 
-      addMeta({ title, type, metric, target: parseFloat(target), setor, collaborator, period });
-      showToast('Meta cadastrada com sucesso!', 'success', 'Meta');
-      // Reset form fields
-      const titleInput = document.getElementById('metaTitleInput');
-      if (titleInput) titleInput.value = '';
-      const targetInput = document.getElementById('metaTargetInput');
-      if (targetInput) targetInput.value = '';
+      const token = AppDataSession.token();
+      metasSaving = true; saveBtn.disabled = true;
+      try {
+        // ID estável para retentativa mesmo se a resposta da inserção se perder.
+        const draftKey = 'sistema_meta_rascunho_v1';
+        const previous = JSON.parse(appStorage.getItem(draftKey) || 'null');
+        const fields = { title, type, metric, target: parseFloat(target), setor, collaborator, period };
+        const meta = { ...fields, id: previous?.id || crypto.randomUUID(), createdAt: previous?.createdAt || new Date().toISOString() };
+        appStorage.setItem(draftKey, JSON.stringify(meta));
+        const result = await dbMetasSave([meta]);
+        if (!AppDataSession.current(token)) return;
+        if (result?.status !== 'confirmed') throw new Error('Gravação da meta não confirmada.');
+        goals = goals.filter(g => g.id !== meta.id).concat(result.data);
+        appStorage.removeItem(draftKey);
+        showToast('Meta cadastrada com sucesso!', 'success', 'Meta');
+        renderMetas();
+      } catch (error) {
+        showToast(error.message || 'Não foi possível salvar. Os campos foram mantidos para tentar novamente.', 'error', 'Meta');
+      } finally { metasSaving = false; saveBtn.disabled = false; }
     });
   }
 

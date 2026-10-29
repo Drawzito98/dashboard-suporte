@@ -60,3 +60,7 @@ O indicador do cabeçalho diz `Indicadores atualizados`, `N pendentes` ou `Usand
 Também foram aprovadas no navegador as fixtures de Shell, Equipe 360º, PDI, Ponto sintético, Diagnóstico e Atividades. Smoke do index completo verificou as 13 telas e o perfil com autenticação/dados simulados. Testes não acessam produção, não aplicam SQL e não comprovam a RLS publicada, transações ou concorrência de múltiplas abas/dispositivos. O controle por revisão protege atualizações concorrentes nesta instância; localStorage não oferece transação entre abas.
 
 Para repetir o teste de navegador: servir o repositório em localhost e abrir `/tests/data-lifecycle.browser.html`, aguardando PASS, ou usar `node --experimental-websocket tests/ponto-browser-runner.js data-lifecycle.browser.html` com servidor 8765 / Chrome de teste 9228.
+
+## Continuação 1.21.0
+
+Feedbacks/metas agora confirmam IDs antes de atualizar cache/interface; falhas preservam rascunhos, metas deixam de substituir a coleção e a sessão invalida respostas atrasadas. Não há fila automática global nem bloqueio entre dispositivos. Contratos e testes em [confirmacao-e-contexto.md](confirmacao-e-contexto.md). Os demais módulos complementares continuam com adoção pendente.

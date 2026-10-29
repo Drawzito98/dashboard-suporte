@@ -2,9 +2,9 @@
 
 function _rsData() {
   let data;
-  if (typeof getCurrentFilteredRows === 'function') data = getCurrentFilteredRows();
+  if (typeof globalFilters !== 'undefined' && globalFilters) data = globalFilters.aplicar(rawRecords || []);
+  else if (typeof getCurrentFilteredRows === 'function') data = getCurrentFilteredRows();
   else if (typeof getDataFiltered === 'function') data = getDataFiltered();
-  else if (typeof globalFilters !== 'undefined' && globalFilters) data = globalFilters.aplicar(rawRecords || []);
   else data = rawRecords || [];
   if (typeof isSetorActive === 'function') {
     data = data.filter(r => r && isSetorActive(String(r['Setor'] || '').trim()));
@@ -13,12 +13,16 @@ function _rsData() {
 }
 
 function getFilteredMeses(rows) {
-  if (typeof getActiveMonths === 'function') {
-    const ativos = getActiveMonths();
-    if (ativos.length) return ativos;
-  }
-  const meses = [...new Set((rows || []).filter(r => r && r['Mês']).map(r => r['Mês']))].filter(Boolean).sort();
-  return meses.slice(-6);
+  return [...new Set((rows || []).filter(r => r && r['Mês']).map(r => String(r['Mês'])))].sort();
+}
+
+function _rsContextLabel({ privateNames = true } = {}) {
+  const f = typeof globalFilters !== 'undefined' ? globalFilters : {};
+  const parts = ['Setor: ' + (f.setor && f.setor !== 'all' ? f.setor : 'Todos')];
+  if (f.nivel && f.nivel !== 'all') parts.push('Nível: ' + f.nivel);
+  if (f.colaborador && f.colaborador !== 'all') parts.push(privateNames ? 'Pessoa: ' + f.colaborador : 'Filtro individual aplicado');
+  if (f.pesquisa) parts.push(privateNames ? 'Busca: ' + f.pesquisa : 'Busca aplicada');
+  return parts.join(' · ');
 }
 
 function _calcDeltaPct(prev, curr) {
@@ -70,129 +74,30 @@ function _avgScoreBySetor(rows) {
   return avgs.length ? avgs.reduce((x, y) => x + y, 0) / avgs.length : 0;
 }
 
-// ── Filtros do relatório setorial ──
-let __rsFilterState = { sector: null, monthStart: null, monthEnd: null, generated: false };
-
-function _renderFilterBar(setores, meses) {
-  const ss = __rsFilterState.sector || '';
-  const ms = __rsFilterState.monthStart || '';
-  const me = __rsFilterState.monthEnd || '';
-  return `<div class="rs-filter-bar">
-    <div class="rs-filter-group sector">
-      <label>Setor</label>
-      <select id="rsFilterSector">
-        <option value="">Todos os setores</option>
-        ${setores.map(s => `<option value="${escapeHtml(s)}"${ss === s ? ' selected' : ''}>${escapeHtml(s)}</option>`).join('')}
-      </select>
-    </div>
-    <div class="rs-filter-group period">
-      <label>De</label>
-      <select id="rsFilterMonthStart">
-        <option value="">Selecionar</option>
-        ${meses.map(m => `<option value="${escapeHtml(m)}"${ms === m ? ' selected' : ''}>${escapeHtml(m)}</option>`).join('')}
-      </select>
-    </div>
-    <div class="rs-filter-group period">
-      <label>Até</label>
-      <select id="rsFilterMonthEnd">
-        <option value="">Selecionar</option>
-        ${meses.map(m => `<option value="${escapeHtml(m)}"${me === m ? ' selected' : ''}>${escapeHtml(m)}</option>`).join('')}
-      </select>
-    </div>
-    <button id="rsGenerateBtn" type="button" class="btn-primary" style="padding:var(--s-2) var(--s-4);font-size:13px">${__rsFilterState.generated ? 'Atualizar Relatório' : 'Gerar Relatório'}</button>
-    ${__rsFilterState.generated ? '<button id="rsChangeFilterBtn" type="button" class="btn-small" style="padding:var(--s-2) var(--s-3);font-size:13px">Alterar Filtros</button>' : ''}
-  </div>`;
-}
-
-function __bindFilterEvents(container, setores, meses) {
-  const genBtn = document.getElementById('rsGenerateBtn');
-  if (genBtn) {
-    genBtn.addEventListener('click', () => {
-      const sector = document.getElementById('rsFilterSector')?.value || null;
-      const monthStart = document.getElementById('rsFilterMonthStart')?.value || null;
-      const monthEnd = document.getElementById('rsFilterMonthEnd')?.value || null;
-      if (!sector && !monthStart && !monthEnd) {
-        if (typeof showToast === 'function') showToast('Selecione ao menos um filtro.', 'warning');
-        return;
-      }
-      if ((monthStart && !monthEnd) || (!monthStart && monthEnd)) {
-        if (typeof showToast === 'function') showToast('Selecione o período completo (De e Até).', 'warning');
-        return;
-      }
-      if (monthStart && monthEnd && meses.indexOf(monthStart) > meses.indexOf(monthEnd)) {
-        if (typeof showToast === 'function') showToast('"De" deve ser anterior a "Até".', 'warning');
-        return;
-      }
-      __rsFilterState.sector = sector || null;
-      __rsFilterState.monthStart = monthStart || null;
-      __rsFilterState.monthEnd = monthEnd || null;
-      __rsFilterState.generated = true;
-      renderRelatorioSetorial();
-    });
-  }
-  const changeBtn = document.getElementById('rsChangeFilterBtn');
-  if (changeBtn) {
-    changeBtn.addEventListener('click', () => {
-      __rsFilterState.generated = false;
-      renderRelatorioSetorial();
-    });
-  }
-}
-
 function renderRelatorioSetorial() {
   const container = document.getElementById('relatorioSetorialContent');
   if (!container) return;
   container.classList.add('rs-container');
+  Object.values(window.__rsCharts || {}).forEach(chart => { try { chart.destroy(); } catch (_) {} });
+  window.__rsCharts = {};
   const data = _rsData();
   if (!data || !data.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado carregado</div><div class="empty-sub">Importe dados para gerar o relatório setorial.</div></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-title">Sem dados neste recorte</div><div class="empty-sub">Revise os filtros do topo ou importe os indicadores.</div></div>';
     return;
   }
 
-  let rows = data.filter(r => r && !isAggregateName(r['Atendente']));
+  const rows = data.filter(r => r && !isAggregateName(r['Atendente']));
   const allMeses = getFilteredMeses(rows);
   if (!allMeses.length) {
     container.innerHTML = '<div class="empty-state"><div class="empty-title">Sem períodos</div><div class="empty-sub">Nenhum mês encontrado no filtro atual.</div></div>';
     return;
   }
 
-  // All setores for the filter dropdown (before filtering)
-  const bySetorAll = {};
-  rows.forEach(r => {
-    const s = String(r['Setor'] || '').trim() || '(sem setor)';
-    if (!bySetorAll[s]) bySetorAll[s] = [];
-    bySetorAll[s].push(r);
-  });
-  const allSetores = Object.keys(bySetorAll).sort();
-
-  // ── Filter bar ──
-  const filterBarHtml = _renderFilterBar(allSetores, allMeses);
-
-  if (!__rsFilterState.generated) {
-    container.innerHTML = filterBarHtml + '<div class="empty-state" style="margin-top:var(--s-6)"><div class="empty-title">Selecione um setor e período</div><div class="empty-sub">Escolha o setor e o período de análise acima e clique em "Gerar Relatório" para visualizar os dados.</div></div>';
-    __bindFilterEvents(container, allSetores, allMeses);
-    return;
-  }
-
-  // ── Apply filters ──
-  if (__rsFilterState.sector) {
-    rows = rows.filter(r => String(r['Setor'] || '').trim() === __rsFilterState.sector);
-  }
-  if (__rsFilterState.monthStart && __rsFilterState.monthEnd) {
-    const sIdx = allMeses.indexOf(__rsFilterState.monthStart);
-    const eIdx = allMeses.indexOf(__rsFilterState.monthEnd);
-    if (sIdx >= 0 && eIdx >= 0 && sIdx <= eIdx) {
-      const range = allMeses.slice(sIdx, eIdx + 1);
-      rows = rows.filter(r => range.indexOf(String(r['Mês'] || '')) >= 0);
-    }
-  }
-
-  const meses = getFilteredMeses(rows);
-  if (!meses.length) {
-    container.innerHTML = filterBarHtml + '<div class="empty-state" style="margin-top:var(--s-6)"><div class="empty-title">Sem dados para o filtro</div><div class="empty-sub">Tente um período maior ou selecione outro setor.</div></div>';
-    __bindFilterEvents(container, allSetores, allMeses);
-    return;
-  }
+  const meses = allMeses;
+  const contextHtml = `<div class="rs-context" role="status" style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">
+    <p>Este relatório usa os filtros do topo. As alterações são aplicadas automaticamente.</p>
+    <p>${escapeHtml(_rsContextLabel())} · Meses com dados: ${escapeHtml(meses.join(', '))}</p>
+  </div>`;
 
   const bySetor = {};
   rows.forEach(r => {
@@ -243,7 +148,7 @@ function renderRelatorioSetorial() {
   const hasTmr = tmrGeral !== null;
   const hasDur = hasTma || hasTmr;
 
-  let html = filterBarHtml;
+  let html = contextHtml;
 
   // ── Header ──
   html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-5);flex-wrap:wrap;gap:var(--s-3)">
@@ -251,11 +156,11 @@ function renderRelatorioSetorial() {
       <h2 style="font-size:20px;font-weight:700;color:var(--text-strong);margin:0">\uD83D\uDCCA Relatório Setorial</h2>
       <p style="font-size:14px;color:var(--text-secondary);margin-top:2px">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 Rankings, análise setorial, tendências e relatório executivo</p>
     </div>
-    <div style="display:flex;gap:var(--s-2);align-items:center">
+    <div style="display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center;max-width:100%">
       <span id="rsPresentationModeIndicator" style="font-size:12px;color:var(--text-muted);display:none">\uD83D\uDCF1 Modo apresentação</span>
-      <button id="rsPresentationToggle" class="btn-small" type="button" title="Ocultar botões de ação para captura de tela">\uD83D\uDCF1 Apresentação</button>
-      <button class="btn-primary" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
-      <button class="btn-primary" id="rsPdfBtn" type="button">\uD83D\uDCC4 PDF (equipe)</button>
+      <button id="rsPresentationToggle" style="white-space:nowrap;flex-shrink:0" class="btn-small" type="button" title="Ocultar botões de ação para captura de tela">\uD83D\uDCF1 Apresentação</button>
+      <button class="btn-primary" id="rsPrintBtn" style="width:auto;flex:0 0 auto" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
+      <button class="btn-primary" id="rsPdfBtn" style="width:auto;flex:0 0 auto" type="button">\uD83D\uDCC4 PDF (equipe)</button>
     </div>
   </div>`;
 
@@ -267,7 +172,6 @@ function renderRelatorioSetorial() {
     if (firstIdx > 0) prevRange = allMeses.slice(Math.max(0, firstIdx - meses.length), firstIdx);
   }
   const prevRows = baseData.filter(r => r && !isAggregateName(r['Atendente']))
-      .filter(r => !__rsFilterState.sector || String(r['Setor'] || '').trim() === __rsFilterState.sector)
       .filter(r => prevRange.indexOf(String(r['Mês'] || '')) >= 0);
   const prevFin = prevRows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
   const prevAss = prevRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
@@ -483,7 +387,7 @@ function renderRelatorioSetorial() {
     return { setor: s.nome, priority, score, prazo, sample: s.ass < 30 ? 'Amostra reduzida' : `${fmtNum(s.ass)} assumidos`, issues };
   }).sort((a, b) => b.score - a.score || a.setor.localeCompare(b.setor, 'pt-BR'));
 
-  const visibleActions = actionItems.slice(0, __rsFilterState.sector ? actionItems.length : 6);
+  const visibleActions = actionItems.slice(0, setores.length === 1 ? actionItems.length : 6);
   const criticalCount = actionItems.filter(item => item.priority === 'critical').length;
   const highCount = actionItems.filter(item => item.priority === 'high').length;
   const priorityLabels = { critical: 'Urgente', high: 'Prioridade alta', attention: 'Atenção', monitor: 'Manutenção' };
@@ -636,13 +540,13 @@ function renderRelatorioSetorial() {
         <button id="deleteReportBtn" type="button" class="btn-small btn-danger">Apagar</button>
       </div>
     </div>
-    <textarea id="reportText" class="reportText" placeholder="Clique em “Gerar relatório executivo” no menu lateral para montar o texto automaticamente…"></textarea>
+    <textarea id="reportText" class="reportText" placeholder="Clique em Atualizar para gerar o texto para os filtros atuais…"></textarea>
   </div>`;
 
   container.innerHTML = html;
 
   // ── Bind dos botões do relatório executivo ──
-  __bindFilterEvents(container, allSetores, allMeses);
+
   const copyBtn = document.getElementById('copyReportBtn');
   const exportPdfBtn = document.getElementById('exportPdfBtn');
   const refreshBtn = document.getElementById('refreshReportBtn');
@@ -654,7 +558,7 @@ function renderRelatorioSetorial() {
   if (refreshBtn && typeof generateAndShowReport === 'function') refreshBtn.addEventListener('click', () => generateAndShowReport());
   if (delBtn && typeof clearReportTextOnly === 'function') delBtn.addEventListener('click', () => clearReportTextOnly());
   // Preenche relatório se já existir
-  if (window.__lastReportText) {
+  if (window.__lastReportText && typeof executiveReportContext === 'function' && window.__lastReportContextKey === JSON.stringify(executiveReportContext())) {
     const ta = document.getElementById('reportText');
     if (ta && !ta.value) ta.value = window.__lastReportText;
   }
@@ -662,7 +566,6 @@ function renderRelatorioSetorial() {
   // ── Renderizar gráficos ──
   if (typeof Chart !== 'undefined') {
     if (!window.__rsCharts) window.__rsCharts = {};
-    Object.values(window.__rsCharts).forEach(c => { try { c.destroy(); } catch (e) { console.warn('[RelatorioSetorial] Erro ao destruir chart:', e); } });
     window.__rsCharts = {};
 
     // Pie chart — distribuição por setor
@@ -879,7 +782,24 @@ function renderRelatorioSetorial() {
         logging: false,
         onclone: function(doc) {
           const cloned = doc.querySelector('.rs-container');
-          if (cloned) cloned.style.background = isDark ? '#0f172a' : '#ffffff';
+          if (cloned) {
+            cloned.style.background = isDark ? '#0f172a' : '#ffffff';
+            // html2canvas 1.x não interpreta color(srgb), produzido por color-mix.
+            // Converter somente a cópia da captura, preservando as cores da tela.
+            const pixel = doc.createElement('canvas'); pixel.width = pixel.height = 1;
+            const ctx = pixel.getContext('2d');
+            const properties = ['color', 'background-color', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color', 'outline-color', 'text-decoration-color'];
+            for (const element of [cloned, ...cloned.querySelectorAll('*')]) {
+              const style = doc.defaultView.getComputedStyle(element);
+              for (const property of properties) {
+                const color = style.getPropertyValue(property);
+                if (!/color\(|oklch\(|oklab\(|lab\(|lch\(/.test(color)) continue;
+                ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = color; ctx.fillRect(0, 0, 1, 1);
+                const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+                element.style.setProperty(property, `rgba(${r},${g},${b},${a / 255})`, 'important');
+              }
+            }
+          }
         }
       }).then(canvas => {
         const link = document.createElement('a');
@@ -887,7 +807,8 @@ function renderRelatorioSetorial() {
         link.href = canvas.toDataURL('image/png');
         link.click();
         if (typeof showToast === 'function') showToast('PNG exportado com sucesso!', 'success');
-      }).catch(() => {
+      }).catch(error => {
+        console.warn('[RelatorioSetorial] Erro ao exportar PNG:', error);
         if (typeof showToast === 'function') showToast('Erro ao exportar. Tente novamente.', 'error');
       });
     });
@@ -897,7 +818,7 @@ function renderRelatorioSetorial() {
   const pdfBtn = document.getElementById('rsPdfBtn');
   if (pdfBtn) {
     pdfBtn.addEventListener('click', () => {
-      exportSetorPdf(setorMetrics, meses, { avgScore, prodGeral, traGeral, totalAtendentes, totalAss, totalFin, totalTra, hasPrev, prevLabel: prevRange.length ? prevRange[0] + (prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : '') : '', setorMetricsPrev: prevSetorMap, totalFinPrev: prevFin, totalAssPrev: prevAss, totalTraPrev: prevTra, avgScorePrev: prevAvg, prodGeralPrev: prevProd, traGeralPrev: prevTraG, hasTma, hasTmr, tmaGeral, tmrGeral });
+      exportSetorPdf(setorMetrics, meses, { contextLabel: _rsContextLabel({ privateNames: false }), avgScore, prodGeral, traGeral, totalAtendentes, totalAss, totalFin, totalTra, hasPrev, prevLabel: prevRange.length ? prevRange[0] + (prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : '') : '', setorMetricsPrev: prevSetorMap, totalFinPrev: prevFin, totalAssPrev: prevAss, totalTraPrev: prevTra, avgScorePrev: prevAvg, prodGeralPrev: prevProd, traGeralPrev: prevTraG, hasTma, hasTmr, tmaGeral, tmrGeral });
     });
   }
 }
@@ -974,7 +895,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   const border = C.border;
   const white = C.white;
 
-  const period = meses && meses.length ? (meses.length === 1 ? String(meses[0]) : `${meses[0]} \u2013 ${meses[meses.length - 1]}`) : '—';
+  const period = meses && meses.length ? meses.join(', ') : '—';
   const now = new Date().toLocaleString('pt-BR', { hour12: false });
   const fmtInt = n => (Number(n) || 0).toLocaleString('pt-BR');
   const fmtScore = n => n > 0 ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014';
@@ -994,7 +915,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.setTextColor(white);
     setFont('bold', 17); doc.text('Resumo por Setor', M, 11);
     setFont('normal', 10); doc.text('IXC CG \u00B7 Painel de Suporte', M, 18.5);
-    setFont('bold', 11); doc.text(`Período: ${period}`, pageW - M, 11, { align: 'right' });
+    setFont('bold', 8); doc.text(doc.splitTextToSize(`Meses: ${period}`, 130), pageW - M, 9, { align: 'right' });
     setFont('normal', 9); doc.text(`Gerado em ${now}`, pageW - M, 18.5, { align: 'right' });
     return y;
   }
@@ -1083,6 +1004,11 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   const cardW = (pageW - M * 2 - gap * (kpis.length - 1)) / kpis.length;
   const cardH = 28;
   y = 34;
+  if (opts.contextLabel) {
+    doc.setTextColor(muted); setFont('normal', 9);
+    const lines = doc.splitTextToSize(opts.contextLabel, pageW - 2 * M);
+    doc.text(lines, M, y); y += lines.length * 4 + 4;
+  }
   kpis.forEach((k, i) => {
     const x = M + i * (cardW + gap);
     doc.setFillColor(light);

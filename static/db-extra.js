@@ -37,6 +37,47 @@ function _fallbackLoad(key, defaultVal) {
 }
 
 
+// Serializa mutações locais e impede respostas de uma sessão encerrada de publicar dados.
+const _confirmedWrites = new Map();
+const _confirmedRevisions = new Map();
+function _confirmedWrite(resource, operation) {
+  const token = AppDataSession.token();
+  _confirmedRevisions.set(resource, (_confirmedRevisions.get(resource) || 0) + 1);
+  const key = token.owner + ':' + token.epoch + ':' + resource;
+  const check = () => {
+    if (!AppDataSession.current(token)) throw new Error('Sessão alterada. Reabra a tela.');
+  };
+  const run = async () => {
+    check();
+    if (!sbClient) throw new Error('Sem conexão com o servidor. Tente novamente.');
+    const uid = await _getUserId();
+    check();
+    if (!uid || uid !== token.owner) throw new Error('Confirme sua sessão antes de salvar.');
+    return operation({ uid, check, request: async build => {
+      check();
+      const result = await build();
+      check();
+      if (result?.error) throw new Error('O servidor não confirmou a operação. Tente novamente.');
+      return result?.data;
+    }});
+  };
+  const pending = (_confirmedWrites.get(key) || Promise.resolve()).catch(() => {}).then(run);
+  _confirmedWrites.set(key, pending);
+  pending.finally(() => { _confirmedRevisions.set(resource, (_confirmedRevisions.get(resource) || 0) + 1); if (_confirmedWrites.get(key) === pending) _confirmedWrites.delete(key); }).catch(() => {});
+  return pending;
+}
+function _confirmedList(key) {
+  const data = _fallbackLoad(key, []);
+  return Array.isArray(data) ? data.filter(item => item && typeof item === 'object') : [];
+}
+function _confirmedCache(key, data) {
+  // A confirmação remota continua válida se o navegador não puder atualizar seu cache.
+  try { appStorage.setItem(key, JSON.stringify(data)); } catch (error) { console.warn('Cache indisponível após confirmação.', error); }
+}
+function _writeUuid(id) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || '') ? id : crypto.randomUUID();
+}
+
 const METAS_LOCAL_KEY = 'sistema_metas_v1';
 const SCORING_LOCAL_KEY = 'sistema_scoring_rules_v1';
 const ALERTAS_LOCAL_KEY = 'sistema_alertas_config_v1';
@@ -71,6 +112,10 @@ async function dbMetasLoad(...args) {
 async function dbMetasSave(...args) {
   await _loadDataDomain("data-performance");
   return AppRepositories.performance.dbMetasSave(...args);
+}
+async function dbMetasDelete(...args) {
+  await _loadDataDomain("data-performance");
+  return AppRepositories.performance.dbMetasDelete(...args);
 }
 async function dbScoringLoad(...args) {
   await _loadDataDomain("data-performance");

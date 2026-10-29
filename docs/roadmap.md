@@ -19,3 +19,7 @@ Antes de retomar: conferir status/origin/branch, ler estes documentos, executar 
 ## Revisão após as sete entregas
 
 As entregas funcionais não encerram toda a consolidação original. Pendências, evidências e prioridades estão em [revisao-pos-roadmap.md](revisao-pos-roadmap.md). Prioridade: confirmação de gravação dos módulos legados e contexto único das análises. Panorama parcial retirado da tela setorial em 1.20.1; reuso depende de definir o CSV.
+
+### Continuação 1.21.0
+
+Feedbacks/metas com confirmação, rascunhos e operações por item; Relatório Setorial com filtros globais como contexto único. Ver [confirmacao-e-contexto.md](confirmacao-e-contexto.md). Próximos escopos: demais escritas complementares e revisão das entradas de Operação/Pessoas, incluindo a localização das metas.

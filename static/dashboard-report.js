@@ -1,12 +1,12 @@
 // Geração textual do Dashboard; fórmulas e escopo existentes preservados.
 (function (root) {
-function buildReportText() {
+function buildReportText(options = {}) {
   const now = new Date();
-  const setorVal = setorSelect.value;
-  const mesVal = getActiveMonths();
-  const arquivoVal = arquivoSelect ? arquivoSelect.value : 'all';
+  const setorVal = options.setor ?? setorSelect.value;
+  const mesVal = options.scope ? [] : getActiveMonths();
+  const arquivoVal = options.scope ? 'all' : (arquivoSelect ? arquivoSelect.value : 'all');
 
-  const rows = getCurrentFilteredRows();
+  const rows = options.rows || getCurrentFilteredRows();
   if (!rows.length) return 'Sem dados no escopo atual.';
 
   const sum = (key) => rows.reduce((s, r) => s + (parseInt(r[key]) || 0), 0);
@@ -19,13 +19,15 @@ function buildReportText() {
   const produtividade = totalAss > 0 ? (totalFin / totalAss) : null;
   const taxaTrans = totalAss > 0 ? (totalTrans / totalAss) : null;
 
-  const scope = [];
-  if (arquivoVal !== 'all') scope.push(`Arquivo: ${arquivoVal}`);
-  if (setorVal !== 'all') scope.push(`Setor: ${setorVal}`);
-  if (mesVal.length) scope.push(`Período: ${getMonthScopeLabel()}`);
-  if (presentationMode) scope.push('Modo apresentação ativo');
-  const q = (searchAtendenteInput?.value || '').trim();
-  if (q) scope.push(`Busca: ${q}`);
+  const scope = options.scope ? [...options.scope] : [];
+  if (!options.scope) {
+    if (arquivoVal !== 'all') scope.push(`Arquivo: ${arquivoVal}`);
+    if (setorVal !== 'all') scope.push(`Setor: ${setorVal}`);
+    if (mesVal.length) scope.push(`Período: ${getMonthScopeLabel()}`);
+    if (presentationMode) scope.push('Modo apresentação ativo');
+    const q = (searchAtendenteInput?.value || '').trim();
+    if (q) scope.push(`Busca: ${q}`);
+  }
 
   const byAtt = {};
   rows.forEach(r => {

@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.20.1. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.21.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -146,3 +146,7 @@ Leia docs/cockpit.md. HomeCockpit usa AppState/appStorage da conta e CockpitEngi
 ## Revisão 1.20.1 — Panorama e continuidade
 
 Leia docs/revisao-pos-roadmap.md. Panorama parcial foi retirado do HTML e dos recursos do bundle interno panorama, que agora serve apenas o Relatório Setorial. Preserve os arquivos/testes isolados para eventual realocação após definir o CSV. Não reativar automaticamente esse bloco. As sete entregas não encerram toda a consolidação: confirmar escritas dos complementares, reduzir carga inicial/globais e unificar contexto de análise são prioridades. Merge continua dependendo de autorização explícita.
+
+## Continuação 1.21.0
+
+Leia docs/confirmacao-e-contexto.md. Feedbacks/metas exigem IDs confirmados, UUID estável do rascunho e sessão atual; não reintroduzir salvamento otimista nem DELETE da coleção de metas. dbMetasSave faz upsert somente dos itens enviados, dbMetasDelete exclui por ID. A serialização é local; não alegar trava entre dispositivos/fila automática. Relatório Setorial usa apenas globalFilters e os meses presentes no recorte, sem filtros locais nem truncamento silencioso. Rode npm test, workspace-ux.browser.html (também ?saves=1), lazy-modules e data-lifecycle em desktop/celular. O editor de metas ainda não tem destino no shell; não adicioná-lo silenciosamente como parte de correções de persistência.
