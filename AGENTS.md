@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.26.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.27.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -170,3 +170,7 @@ Leia docs/rotina-confirmada.md. Tarefas/notas usam confirmação no repository r
 ## Continuação 1.26.0 — Cadastro
 
 Leia docs/cadastro-confirmado.md. Cadastro usa confirmação por user_id,nome e patch dos campos enviados; não reintroduzir mescla por timestamp local nem fallback que omite salário. AppState.colaboradores/getColabInfoLocal alimentam consumidores. Rascunho privado em sistema_colaborador_rascunho_v1, cópia anterior em sistema_colaboradores_backup_v1 sem envio automático. Fotos mantêm o escopo compartilhado do esquema; cadastro/foto/reativação não são transação única, exibir falhas parciais. dbColabActivate atua apenas nos IDs da pessoa; gerenciadores gerais de inativos continuam pendentes. Rode npm test e workspace (?cadastro=1 e ?people=1), Equipe360, Ponto, PDI, data-lifecycle, lazy-modules e design-system em desktop/celular. Sem SQL/testes de escrita em produção ou merge sem autorização.
+
+## Continuação 1.27.0 — Bônus
+
+Leia docs/bonus-confirmados.md. Bônus usam UUID/conta confirmados e AppState.pontosExtras/getPontosExtrasLocal, incluindo mes após a leitura. Não reintroduzir cache otimista, geração de outro ID na retentativa ou exclusão de coleção. Rascunho privado em sistema_bonus_editando_v1; sinal reservado após tentativa nova, edição mantém pessoa/sinal. Acesso é Pessoas → Equipe, não reativar Gamificação como tela. Preservar fórmula/multiplicadores/filtros e cópia privada anterior. Rode npm test e workspace (?bonus=1, completo e ?people=1), Equipe360, data-lifecycle, lazy-modules e design-system em desktop/celular; sem SQL/testes de escrita em produção ou merge sem autorização.

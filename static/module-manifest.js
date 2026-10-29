@@ -72,7 +72,7 @@ window.APP_MODULES = {
   },
   "data-performance": {
     "scripts": [
-      "/static/repositories/performance.js?v=2"
+      "/static/repositories/performance.js?v=3"
     ],
     "exports": [
       "AppRepositories.performance.dbMetasLoad",

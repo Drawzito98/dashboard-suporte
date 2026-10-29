@@ -9,7 +9,7 @@ const {create}=require('../static/data-runtime.js');
  vm.createContext(context);
  context.AppRepositories={};context.window.AppRepositories=context.AppRepositories;context.FeatureLoader={ensure:async()=>true};
  for(const file of ['db-extra.js',...['performance','people','development','routine','attendance','audit'].map(name=>'repositories/'+name+'.js'),'avaliacao.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../static',file),'utf8'),context);
- const cases=[['dbFeedbacksLoad','sistema_feedbacks_v1',[]],['dbFeriasLoad','sistema_ferias_v1',[]],['dbAusenciasLoad','sistema_ausencias_v1',[]],['dbAvaliacoesLoad','sistema_avaliacoes_v1',[]],['dbColabInfoLoad','sistema_colaboradores_info_v1',{}]];
+ const cases=[['dbPontosExtrasLoad','sistema_pontos_extras_v1',[]],['dbFeedbacksLoad','sistema_feedbacks_v1',[]],['dbFeriasLoad','sistema_ferias_v1',[]],['dbAusenciasLoad','sistema_ausencias_v1',[]],['dbAvaliacoesLoad','sistema_avaliacoes_v1',[]],['dbColabInfoLoad','sistema_colaboradores_info_v1',{}]];
  for(const [load,key,empty] of cases){session.cache.setItem(key,JSON.stringify(Array.isArray(empty)?[{id:'stale'}]:{old:{id:'stale'}}));raw.setItem(key,'unowned-legacy');const result=await context[load]();assert.equal(JSON.stringify(result),JSON.stringify(empty),load);assert.equal(raw.getItem(key),'unowned-legacy');}
  offline=true;session.cache.setItem('sistema_feedbacks_v1',JSON.stringify([{id:'owned-offline'}]));assert.equal((await context.dbFeedbacksLoad())[0].id,'owned-offline');
  offline=false;await context.initDbExtra();assert.equal(writes,0);

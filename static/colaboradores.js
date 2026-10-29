@@ -503,7 +503,7 @@ function openColabDetailOverlay(nome) {
     <label class="field"><textarea id="ciObservacoes" rows="4" placeholder="Registre observações gerais sobre o colaborador...">${escapeHtml(info.observacoes || "")}</textarea></label>
   </section>`;
 
-  const allBonus = JSON.parse(appStorage.getItem("sistema_pontos_extras_v1") || "[]");
+  const allBonus = (typeof getPontosExtrasLocal==='function'?getPontosExtrasLocal():JSON.parse(appStorage.getItem("sistema_pontos_extras_v1") || "[]"));
   const penalties = allBonus.filter(b => String(b.colaborador) === nome && (parseFloat(b.pontos) || 0) < 0);
   if (penalties.length) {
     html += `<section class="ci-form-section"><div class="ci-form-section-title"><div><strong>Histórico de penalidades</strong><small>${penalties.length} registro(s)</small></div></div><div class="ci-penalty-list">`;

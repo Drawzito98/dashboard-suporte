@@ -99,3 +99,7 @@ Tarefas/anotações passam a ter confirmação, rascunhos privados e retentativa
 ## Continuação 1.26.0 — Cadastro
 
 Cadastro de colaboradores, foto e reativação na criação exigem confirmação, com rascunho privado e falhas parciais explícitas. A cópia privada anterior é preservada separadamente. Ver [cadastro-confirmado.md](cadastro-confirmado.md). Bônus, regras, presença e gerenciadores de inativos ainda aguardam revisão; carga inicial/CSS e Panorama mantêm os limites documentados.
+
+## Continuação 1.27.0 — Bônus e penalidades
+
+Bônus/penalidades com confirmação, rascunho privado, UUID/sinal estáveis e mês preservado na recarga. Acesso disponível em Pessoas → Equipe, sem reintroduzir a tela de Gamificação. Ver [bonus-confirmados.md](bonus-confirmados.md). Os demais domínios, carga inicial/CSS e Panorama mantêm as pendências documentadas.

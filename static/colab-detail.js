@@ -152,7 +152,7 @@ async function renderColab360Extras(name, container) {
     catch (_) { return []; }
   };
   const feedbacks = readList('sistema_feedbacks_v1').filter(item => normalize(item.colaborador) === key);
-  const bonuses = readList('sistema_pontos_extras_v1').filter(item => normalize(item.colaborador) === key);
+  const bonuses = (typeof getPontosExtrasLocal==='function'?getPontosExtrasLocal():readList('sistema_pontos_extras_v1')).filter(item => normalize(item.colaborador) === key);
   const evaluations = readList('sistema_avaliacoes_v1').filter(item => normalize(item.colaborador) === key);
   const bonusTotal = bonuses.reduce((sum, item) => sum + (Number(item.pontos) || 0), 0);
   let activity = [];

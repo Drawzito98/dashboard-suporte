@@ -144,69 +144,50 @@ async function dbAlertasSave(config) {
 
 
 
-async function dbPontosExtrasLoad() {
-  if (!sbClient) return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
-  try {
-    const uid = await _getUserId();
-    if (!uid) return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
-    const { data, error } = await sbClient.from('pontos_extras').select('*').eq('user_id', uid).order('created_at', { ascending: false });
-    if (!error && Array.isArray(data)) {
-      const list = data.map(r => ({
-        id: r.id,
-        colaborador: r.colaborador,
-        descricao: r.descricao || '',
-        pontos: parseFloat(r.pontos) || 0,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
-      appStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(list));
-      return list;
-    }
-    return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
+function bonusModel(row){return {id:row.id,colaborador:row.colaborador,descricao:row.descricao||'',pontos:parseFloat(row.pontos)||0,mes:row.mes||'',createdAt:row.created_at,updatedAt:row.updated_at};}
+function publishBonuses(list){
+  let cacheAllowed=true;
+  if(typeof AppState==='undefined'||!AppState.get('pontosExtras')){
+    try{const old=appStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY),key='sistema_bonus_backup_v1';if(old&&JSON.parse(old).length&&!appStorage.getItem(key))appStorage.setItem(key,old);}catch(_){cacheAllowed=false;}
   }
+  if(cacheAllowed)_confirmedCache(PONTOS_EXTRAS_LOCAL_KEY,list);
+  if(typeof invalidateGamificationCache==='function')invalidateGamificationCache();
+  if(typeof AppState!=='undefined')AppState.publish('pontosExtras',list);
 }
-
-async function dbPontosExtrasSave(bonus) {
-  const list = JSON.parse(appStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
-  const idx = list.findIndex(b => b.id === bonus.id);
-  if (idx >= 0) list[idx] = bonus;
-  else list.unshift(bonus);
-  appStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(list));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('pontos_extras').select('id').eq('id', bonus.id).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('pontos_extras').update({
-        colaborador: bonus.colaborador,
-        descricao: bonus.descricao || '',
-        pontos: parseFloat(bonus.pontos) || 0,
-        mes: bonus.mes || '',
-        updated_at: new Date().toISOString()
-      }).eq('id', bonus.id);
-    } else {
-      await sbClient.from('pontos_extras').insert({
-        user_id: uid,
-        colaborador: bonus.colaborador,
-        descricao: bonus.descricao || '',
-        pontos: parseFloat(bonus.pontos) || 0,
-        mes: bonus.mes || ''
-      });
+async function dbPontosExtrasLoad(){
+  const token=AppDataSession.token(),revision=_confirmedRevisions.get('pontosExtras');
+  if(!sbClient||!AppDataSession.current(token))return getPontosExtrasLocal();
+  try{
+    const uid=await _getUserId();if(!uid||!AppDataSession.current(token))return getPontosExtrasLocal();
+    const rows=[];
+    for(let start=0;;start+=500){
+      const {data,error}=await sbClient.from('pontos_extras').select('*').eq('user_id',uid).order('created_at',{ascending:false}).order('id',{ascending:true}).range(start,start+499);
+      if(!AppDataSession.current(token)||revision!==_confirmedRevisions.get('pontosExtras'))return getPontosExtrasLocal();
+      if(error||!Array.isArray(data)||data.some(row=>row.user_id!==uid))return getPontosExtrasLocal();
+      rows.push(...data.map(bonusModel));if(data.length<500)break;
     }
-  } catch (e) { console.error('[db-extra]', e); }
+    publishBonuses(rows);return rows;
+  }catch(_){return getPontosExtrasLocal();}
 }
-
-async function dbPontosExtrasDelete(id) {
-  const list = JSON.parse(appStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
-  const filtered = list.filter(b => b.id !== id);
-  appStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(filtered));
-  if (!sbClient) return;
-  try {
-    await sbClient.from('pontos_extras').delete().eq('id', id);
-  } catch (e) { console.error('[db-extra]', e); }
+async function dbPontosExtrasSave(bonus){
+  if(!requireAdmin())throw Error('Apenas administradores podem alterar bônus e penalidades.');
+  const draft={...bonus,id:_writeUuid(bonus.id)};
+  if(!draft.colaborador||!Number.isFinite(Number(draft.pontos))||!Number(draft.pontos))throw Error('Informe colaborador e pontos válidos.');
+  return _confirmedWrite('pontosExtras',async({uid,request})=>{
+    const row=await request(()=>sbClient.from('pontos_extras').upsert({id:draft.id,user_id:uid,colaborador:draft.colaborador,descricao:draft.descricao||'',pontos:Number(draft.pontos),mes:draft.mes||'',created_at:draft.createdAt||new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'id'}).select('*').single());
+    if(!row||row.id!==draft.id||row.user_id!==uid)throw Error('O servidor não confirmou o lançamento. Seu rascunho foi mantido.');
+    const confirmed=bonusModel(row),list=getPontosExtrasLocal(),index=list.findIndex(item=>item.id===draft.id||(draft._localId&&item.id===draft._localId));
+    if(index<0)list.unshift(confirmed);else list[index]=confirmed;
+    publishBonuses(list);return {status:'confirmed',data:confirmed};
+  });
+}
+async function dbPontosExtrasDelete(id){
+  if(!requireAdmin())throw Error('Apenas administradores podem excluir bônus e penalidades.');
+  return _confirmedWrite('pontosExtras',async({uid,request})=>{
+    const rows=await request(()=>sbClient.from('pontos_extras').delete().eq('id',id).eq('user_id',uid).select('id'));
+    if(!Array.isArray(rows)||!rows.some(row=>row.id===id))throw Error('Exclusão não confirmada. Atualize a lista e tente novamente.');
+    publishBonuses(getPontosExtrasLocal().filter(item=>item.id!==id));return {status:'confirmed',id};
+  });
 }
 
 

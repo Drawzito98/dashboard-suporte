@@ -1,18 +1,40 @@
 // bonus.js — Bônus manuais (pontos extras por auxílio, projetos, etc)
 
 const BONUS_EDITING_KEY = 'sistema_bonus_editando_v1';
+let bonusBusy=false,bonusDraftFailed=false;
+function bonusDraft(){try{const draft=JSON.parse(appStorage.getItem(BONUS_EDITING_KEY)||'null');return draft&&typeof draft==='object'?draft:null;}catch(_){return null;}}
+function bonusMessage(text){const host=document.getElementById('bonusContent');if(!host)return;let message=host.querySelector('.bonus-save-message');if(!message){message=document.createElement('p');message.className='ui-message bonus-save-message';message.setAttribute('role','alert');host.prepend(message);}message.textContent=text;}
+function storeBonusDraft(draft){
+  const id=_writeUuid(draft.id);if(draft.id&&draft.id!==id)draft={...draft,_localId:draft.id};
+  try{appStorage.setItem(BONUS_EDITING_KEY,JSON.stringify({...draft,id}));bonusDraftFailed=false;return true;}
+  catch(_){bonusDraftFailed=true;bonusMessage('Não foi possível guardar o rascunho neste dispositivo. Mantenha esta tela aberta.');return false;}
+}
+function captureBonusDraft(){
+  if(!document.getElementById('bonusDescricaoInput'))return true;
+  const old=bonusDraft()||{id:crypto.randomUUID(),_editing:false,createdAt:new Date().toISOString()};
+  return storeBonusDraft({...old,_editing:old._editing??Boolean(old.id),colaborador:document.getElementById('bonusColaboradorInput').value,magnitude:document.getElementById('bonusPontosInput').value,descricao:document.getElementById('bonusDescricaoInput').value,mes:document.getElementById('bonusMesInput').value});
+}
+async function runBonusWrite(operation,done){
+  if(bonusBusy)return;const token=AppDataSession.token();bonusBusy=true;
+  const host=document.getElementById('bonusContent'),controls=[...host.querySelectorAll('button,input,select,textarea')],disabled=controls.map(el=>el.disabled);
+  host.setAttribute('aria-busy','true');controls.forEach(el=>el.disabled=true);bonusMessage('Aguardando confirmação do servidor…');
+  try{await operation();if(AppDataSession.current(token)){bonusBusy=false;done?.();}}
+  catch(error){if(AppDataSession.current(token))bonusMessage(error.message||'Lançamento não confirmado. Seu rascunho foi mantido.');}
+  finally{bonusBusy=false;host.removeAttribute('aria-busy');controls.forEach((el,i)=>el.disabled=disabled[i]);}
+}
+function refreshBonusViews(){renderBonus();if(typeof renderGamification==='function')renderGamification();}
 
 function renderBonus() {
   const container = document.getElementById('bonusContent');
   if (!container) return;
 
-  const saved = JSON.parse(appStorage.getItem('sistema_pontos_extras_v1') || '[]');
-  const editingRaw = appStorage.getItem(BONUS_EDITING_KEY);
-  const editing = editingRaw ? JSON.parse(editingRaw) : null;
+  if(bonusBusy||bonusDraftFailed)return;
+  const saved=getPontosExtrasLocal(),editing=bonusDraft();
+  const isEditing=Boolean(editing&&(editing._editing??Boolean(editing.id)));
 
   const colabs = [...new Set((rawRecords || [])
     .filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']))
-    .map(r => r['Atendente']))].sort();
+    .map(r => r['Atendente']).concat(editing?.colaborador?[editing.colaborador]:[]))].sort();
 
   let html = '';
 
@@ -24,11 +46,11 @@ function renderBonus() {
 
   // ── Formulário ──
   html += '<div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--s-4);margin-bottom:var(--s-4)">';
-  const formTitle = editing?.id ? '✏️ Editar' : '➕ Novo';
+  const formTitle = isEditing ? (Number(editing.pontos)<0?'✏️ Editar penalidade':'✏️ Editar bônus') : '➕ Novo lançamento';
   html += `<div style="font-size:13px;font-weight:600;margin-bottom:var(--s-3)">${formTitle}</div>`;
   html += '<div class="grid-2col" style="margin-bottom:var(--s-3)">';
   html += '<div class="field"><span>Colaborador</span>';
-  html += `<select id="bonusColaboradorInput">`;
+  html += `<select id="bonusColaboradorInput" aria-label="Colaborador"${isEditing?' disabled':''}>`;
   html += `<option value="">Selecione...</option>`;
   for (const c of colabs) {
     const sel = editing?.colaborador === c ? ' selected' : '';
@@ -36,33 +58,34 @@ function renderBonus() {
   }
   html += '</select></div>';
   html += '<div class="field"><span>Pontos</span>';
-  html += `<input type="number" id="bonusPontosInput" step="0.5" min="0.5" max="999" placeholder="Ex: 3" value="${editing ? Math.abs(parseFloat(editing.pontos) || 1) : 1}">`;
+  html += `<input type="number" id="bonusPontosInput" aria-label="Pontos" step="0.5" min="0.5" max="999" placeholder="Ex: 3" value="${escapeHtml(String(editing?.magnitude??(editing?Math.abs(parseFloat(editing.pontos)||1):1)))}">`;
   html += '</div></div>';
   html += '<div class="field" style="margin-bottom:var(--s-3)"><span>Descrição</span>';
-  html += `<textarea id="bonusDescricaoInput" style="width:100%;min-height:50px;font-size:13px;line-height:1.6" placeholder="Ex: Auxiliou a equipe no projeto X...">${editing ? escapeHtml(editing.descricao || '') : ''}</textarea>`;
+  html += `<textarea id="bonusDescricaoInput" aria-label="Descrição" style="width:100%;min-height:50px;font-size:13px;line-height:1.6" placeholder="Ex: Auxiliou a equipe no projeto X...">${editing ? escapeHtml(editing.descricao || '') : ''}</textarea>`;
   html += '</div>';
   html += '<div class="field" style="margin-bottom:var(--s-3)"><span>Mês de referência (opcional)</span>';
-  html += '<select id="bonusMesInput">';
+  html += '<select id="bonusMesInput" aria-label="Mês de referência">';
   html += '<option value="">-- Sem mês --</option>';
-  const _availMeses = [...new Set((rawRecords || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
+  const _availMeses = [...new Set((rawRecords || []).filter(r => r && r['Mês']).map(r => r['Mês']).concat(editing?.mes?[editing.mes]:[]))].sort();
   const _editingMes = editing?.mes || '';
   for (const m of _availMeses) {
     const sel = _editingMes === m ? ' selected' : '';
     html += `<option value="${escapeHtml(m)}"${sel}>${escapeHtml(m)}</option>`;
   }
   html += '</select></div>';
-  if (editing && editing.id) {
+  html += '<p class="hint">O cálculo por mês considera apenas lançamentos com o mesmo mês de referência.</p>';
+  if (isEditing) {
     html += '<div style="display:flex;gap:var(--s-2)">';
     html += `<button class="btn-primary" id="bonusSalvarBtn" type="button" style="flex:1">💾 Atualizar</button>`;
     html += `<button class="btn-small" id="bonusCancelarBtn" type="button">Cancelar</button>`;
     html += '</div>';
   } else {
     html += '<div style="display:flex;gap:var(--s-2)">';
-    html += `<button class="btn-primary" id="bonusAdicionarBtn" type="button" style="flex:1;background:var(--success)">➕ Adicionar</button>`;
-    html += `<button class="btn-primary" id="bonusRemoverBtn" type="button" style="flex:1;background:var(--danger)">➖ Remover</button>`;
+    html += `<button class="btn-primary" id="bonusAdicionarBtn" type="button" style="flex:1;background:var(--success)">➕ Conceder bônus</button>`;
+    html += `<button class="btn-primary" id="bonusRemoverBtn" type="button" style="flex:1;background:var(--danger)">➖ Registrar penalidade</button>`;
     html += '</div>';
   }
-  html += '</div>';
+  html += '<button class="btn-small" id="bonusDescartarBtn" type="button">Descartar rascunho</button><p class="hint">Fechar preserva a edição neste dispositivo. Editar mantém a pessoa e o tipo do lançamento.</p></div>';
 
   // ── Resumo ──
   const acumulo = {};
@@ -99,8 +122,8 @@ function renderBonus() {
       html += `<div style="font-size:11px;color:var(--text-muted);margin-top:1px">${mesInfo}${mesInfo ? ' · ' : ''}${b.createdAt ? new Date(b.createdAt).toLocaleString('pt-BR') : ''}</div>`;
       html += '</div>';
       html += '<div style="display:flex;gap:var(--s-1)">';
-      html += `<button class="btn-small bonus-editar-btn" data-id="${b.id}" type="button">✏️</button>`;
-      html += `<button class="btn-small btn-delete bonus-excluir-btn" data-id="${b.id}" type="button">🗑️</button>`;
+      html += `<button class="btn-small bonus-editar-btn" data-id="${b.id}" aria-label="Editar lançamento de ${escapeHtml(b.colaborador)}" type="button">✏️</button>`;
+      html += `<button class="btn-small btn-delete bonus-excluir-btn" data-id="${b.id}" aria-label="Excluir lançamento de ${escapeHtml(b.colaborador)}" type="button">🗑️</button>`;
       html += '</div></div>';
     }
     html += '</div>';
@@ -110,129 +133,53 @@ function renderBonus() {
   bindBonusEvents(saved);
 }
 
-function bindBonusEvents(saved) {
-  const container = document.getElementById('bonusContent');
-  if (!container) return;
-
-  async function salvarBonus(sinal) {
-    const colaborador = document.getElementById('bonusColaboradorInput').value;
-    const absPts = parseFloat(document.getElementById('bonusPontosInput').value) || 0;
-    const descricao = document.getElementById('bonusDescricaoInput').value;
-    if (!colaborador) {
-      showToast('Selecione um colaborador.', 'error', 'Bônus');
-      return;
-    }
-    if (absPts <= 0) {
-      showToast('A quantidade de pontos deve ser positiva.', 'error', 'Bônus');
-      return;
-    }
-    const editingRaw = appStorage.getItem(BONUS_EDITING_KEY);
-    const editing = editingRaw ? JSON.parse(editingRaw) : null;
-    const mes = document.getElementById('bonusMesInput').value || '';
-    const bonus = {
-      id: editing?.id || Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-      colaborador: colaborador,
-      mes: mes,
-      descricao: descricao.trim(),
-      pontos: absPts * sinal,
-      createdAt: editing?.createdAt || new Date().toISOString()
-    };
-    await dbPontosExtrasSave(bonus);
-    appStorage.removeItem(BONUS_EDITING_KEY);
-    const label = sinal > 0 ? 'Adicionado' : 'Removido';
-    showToast(`${label} ${absPts.toFixed(1)} pts ${sinal > 0 ? 'para' : 'de'} ${colaborador}!`, 'success', 'Bônus');
-    renderBonus();
-    if (typeof renderGamification === 'function') renderGamification();
-  }
-
-  const addBtn = document.getElementById('bonusAdicionarBtn');
-  if (addBtn) addBtn.addEventListener('click', () => { if (!requireAdmin()) return; salvarBonus(1); });
-
-  const remBtn = document.getElementById('bonusRemoverBtn');
-  if (remBtn) remBtn.addEventListener('click', () => { if (!requireAdmin()) return; salvarBonus(-1); });
-
-  // Editing mode
-  const salvarBtn = document.getElementById('bonusSalvarBtn');
-  if (salvarBtn) {
-    salvarBtn.addEventListener('click', async () => {
-      if (!requireAdmin()) return;
-      const colaborador = document.getElementById('bonusColaboradorInput').value;
-      const absPts = parseFloat(document.getElementById('bonusPontosInput').value) || 0;
-      const descricao = document.getElementById('bonusDescricaoInput').value;
-      if (!colaborador) {
-        showToast('Selecione um colaborador.', 'error', 'Bônus');
-        return;
-      }
-      if (absPts <= 0) {
-        showToast('A quantidade de pontos deve ser positiva.', 'error', 'Bônus');
-        return;
-      }
-      const editingRaw = appStorage.getItem(BONUS_EDITING_KEY);
-      const editing = editingRaw ? JSON.parse(editingRaw) : null;
-      if (!editing) return;
-      const originalSinal = (parseFloat(editing.pontos) || 0) >= 0 ? 1 : -1;
-      const mes = document.getElementById('bonusMesInput').value || '';
-      const bonus = {
-        ...editing,
-        mes: mes,
-        descricao: descricao.trim(),
-        pontos: absPts * originalSinal
-      };
-      await dbPontosExtrasSave(bonus);
-      appStorage.removeItem(BONUS_EDITING_KEY);
-      showToast(`Bônus atualizado!`, 'success', 'Bônus');
-      renderBonus();
-      if (typeof renderGamification === 'function') renderGamification();
+function bindBonusEvents(saved){
+  const container=document.getElementById('bonusContent');if(!container)return;
+  container.querySelectorAll('input,select,textarea').forEach(el=>{el.addEventListener('input',captureBonusDraft);el.addEventListener('change',captureBonusDraft);});
+  function save(sign){
+    if(!requireAdmin()||bonusBusy||!captureBonusDraft())return;
+    const draft=bonusDraft(),amount=Number(draft.magnitude);
+    if(!draft.colaborador||!Number.isFinite(amount)||amount<=0){bonusMessage('Selecione um colaborador e informe uma quantidade de pontos positiva.');return;}
+    const editing=draft._editing??Boolean(draft.id),originalSign=Number(draft.pontos)<0?-1:1;
+    if(!editing&&draft._sendSign&&draft._sendSign!==sign){bonusMessage('Há um lançamento sem confirmação. Repita a mesma ação ou descarte o rascunho para iniciar outro.');return;}
+    const chosen=editing?originalSign:sign;
+    if(!storeBonusDraft({...draft,_sendSign:chosen}))return;
+    runBonusWrite(()=>dbPontosExtrasSave({...draft,pontos:amount*chosen,descricao:draft.descricao.trim()}),()=>{
+      appStorage.removeItem(BONUS_EDITING_KEY);refreshBonusViews();showToast('Lançamento confirmado.','success','Bônus e penalidades');
     });
   }
-
-  const cancelarBtn = document.getElementById('bonusCancelarBtn');
-  if (cancelarBtn) {
-    cancelarBtn.addEventListener('click', () => {
-      appStorage.removeItem(BONUS_EDITING_KEY);
-      renderBonus();
-    });
-  }
-
-  container.querySelectorAll('.bonus-editar-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const b = saved.find(x => x.id === btn.dataset.id);
-      if (!b) return;
-      appStorage.setItem(BONUS_EDITING_KEY, JSON.stringify({ ...b }));
-      renderBonus();
-    });
-  });
-
-  container.querySelectorAll('.bonus-excluir-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!requireAdmin()) return;
-      const b = saved.find(x => x.id === btn.dataset.id);
-      if (!b || !confirm(`Excluir bônus de ${parseFloat(b.pontos).toFixed(1)} pts para ${b.colaborador}?`)) return;
-      await dbPontosExtrasDelete(b.id);
-      renderBonus();
-      if (typeof renderGamification === 'function') renderGamification();
-    });
-  });
+  document.getElementById('bonusAdicionarBtn')?.addEventListener('click',()=>save(1));
+  document.getElementById('bonusRemoverBtn')?.addEventListener('click',()=>save(-1));
+  document.getElementById('bonusSalvarBtn')?.addEventListener('click',()=>save());
+  const discard=()=>{if(bonusBusy||!confirm('Descartar este rascunho?'))return;appStorage.removeItem(BONUS_EDITING_KEY);bonusDraftFailed=false;renderBonus();};
+  document.getElementById('bonusCancelarBtn')?.addEventListener('click',discard);
+  document.getElementById('bonusDescartarBtn')?.addEventListener('click',discard);
+  container.querySelectorAll('.bonus-editar-btn').forEach(button=>button.addEventListener('click',()=>{
+    if(!requireAdmin()||bonusBusy)return;const row=saved.find(item=>item.id===button.dataset.id);if(!row)return;
+    const draft=bonusDraft();if(draft?.id===row.id)return;
+    if(draft&&!confirm('Descartar o rascunho atual e editar este lançamento?'))return;
+    if(!storeBonusDraft({...row,_editing:true,magnitude:String(Math.abs(row.pontos))}))return;renderBonus();
+  }));
+  container.querySelectorAll('.bonus-excluir-btn').forEach(button=>button.addEventListener('click',()=>{
+    if(!requireAdmin()||bonusBusy)return;if(bonusDraftFailed&&!captureBonusDraft())return;const row=saved.find(item=>item.id===button.dataset.id);
+    if(!row||!confirm(`Excluir lançamento de ${row.pontos} pts para ${row.colaborador}?`))return;
+    runBonusWrite(()=>dbPontosExtrasDelete(row.id),()=>{refreshBonusViews();showToast('Exclusão confirmada.','success','Bônus e penalidades');});
+  }));
+  const refresh=document.createElement('button');refresh.type='button';refresh.id='bonusAtualizarBtn';refresh.className='btn-small';refresh.textContent='Atualizar lista';
+  refresh.onclick=()=>runBonusWrite(dbPontosExtrasLoad,refreshBonusViews);container.prepend(refresh);
 }
-
-function toggleBonusPanel() {
-  const overlay = document.getElementById('bonusOverlay');
-  if (!overlay) return;
-  const isOpen = overlay.style.display !== 'none';
-  if (isOpen) {
-    overlay.style.display = 'none';
-    appStorage.removeItem(BONUS_EDITING_KEY);
-  } else {
-    overlay.style.display = 'flex';
-    renderBonus();
-  }
+function closeBonusPanel(){
+  if(bonusBusy)return false;
+  if(bonusDraftFailed&&!captureBonusDraft())return false;
+  const overlay=document.getElementById('bonusOverlay');if(!overlay)return false;
+  overlay.classList.remove('open');overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','true');return true;
 }
-
-// Close button wiring
-const _bonusCloseBtn = document.getElementById('bonusOverlayClose');
-if (_bonusCloseBtn) {
-  _bonusCloseBtn.addEventListener('click', () => {
-    document.getElementById('bonusOverlay').style.display = 'none';
-    appStorage.removeItem(BONUS_EDITING_KEY);
-  });
+function toggleBonusPanel(){
+  if(!requireAdmin())return;const overlay=document.getElementById('bonusOverlay');if(!overlay)return;
+  if(overlay.classList.contains('open')){closeBonusPanel();return;}
+  overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','false');overlay.classList.add('open');renderBonus();
+  const token=AppDataSession.token();dbPontosExtrasLoad().then(()=>{if(AppDataSession.current(token))renderBonus();}).catch(()=>{});
 }
+document.getElementById('bonusOverlayClose')?.addEventListener('click',closeBonusPanel);
+
+document.getElementById('bonusPanelBtn')?.addEventListener('click',toggleBonusPanel);

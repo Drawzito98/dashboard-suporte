@@ -87,7 +87,7 @@ function computeScoreForCollaborator(name, records) {
       }, 0);
     } else if (rule.id === 'pontos_extras') {
       try {
-        const bonusList = JSON.parse(appStorage.getItem('sistema_pontos_extras_v1') || '[]');
+        const bonusList = (typeof getPontosExtrasLocal==='function'?getPontosExtrasLocal():JSON.parse(appStorage.getItem('sistema_pontos_extras_v1') || '[]'));
         const meses = [...new Set(rows.filter(r => r && r['Mês']).map(r => r['Mês']))];
         let filteredBonus = bonusList.filter(b => String(b.colaborador) === name);
         if (meses.length > 0) {

@@ -7,8 +7,9 @@
  const assert=(v,m)=>{if(!v)throw Error(m)},wait=async(fn,message)=>{const end=Date.now()+25000;while(Date.now()<end){if(fn())return;await new Promise(r=>setTimeout(r,60))}throw Error(message)};
  const html=await(await fetch('../index.html',{cache:'no-store'})).text(),doc=new DOMParser().parseFromString(html,'text/html');
  const seed=()=>{
-  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(window.__uxDraftQuota&&['sistema_avaliacao_rascunho_v1','sistema_tarefa_rascunho_v1','sistema_anotacao_editando_v1','sistema_tarefa_transicao_v1','sistema_colaborador_rascunho_v1'].some(suffix=>k.endsWith(suffix)))throw Error('Quota simulada');memory.set(k,String(v))},removeItem:k=>memory.delete(k)}});
+  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(window.__uxDraftQuota&&['sistema_avaliacao_rascunho_v1','sistema_tarefa_rascunho_v1','sistema_anotacao_editando_v1','sistema_tarefa_transicao_v1','sistema_colaborador_rascunho_v1','sistema_bonus_editando_v1'].some(suffix=>k.endsWith(suffix)))throw Error('Quota simulada');memory.set(k,String(v))},removeItem:k=>memory.delete(k)}});
   const theme=new URLSearchParams(parent.location.search).get('theme')||'light';localStorage.setItem('theme',theme);
+  const bonusMode=new URLSearchParams(parent.location.search).has('bonus');
   const cadastroMode=new URLSearchParams(parent.location.search).has('cadastro');
   const routineMode=new URLSearchParams(parent.location.search).has('routine');
   const evaluationsMode=new URLSearchParams(parent.location.search).has('evaluations');
@@ -30,7 +31,7 @@
   }
   window.__uxResetRecords=()=>{tables.registros=records};window.__uxEmptyRecords=()=>{tables.registros=[]};window.__uxEvaluationRows=()=>tables.avaliacoes.map(row=>({...row}));window.__uxRoutineRows=table=>(tables[table]||[]).map(row=>({...row}));
   function query(table){let single=false,range=null,filters=[],mode='read',payload,conflict;const q=new Proxy({}, {get(_,key){
-   if(['insert','upsert','update','delete'].includes(key))return(p,options)=>{conflict=options?.onConflict;if(!((savesMode&&['feedbacks','metas'].includes(table))||(evaluationsMode&&table==='avaliacoes')||(routineMode&&['tarefas','anotacoes_diarias'].includes(table))||(cadastroMode&&['colaboradores_info','colaborador_fotos','colab_inativos'].includes(table))))throw Error('Teste permite somente leitura: '+table);mode=key;payload=p;return q};
+   if(['insert','upsert','update','delete'].includes(key))return(p,options)=>{conflict=options?.onConflict;if(!((savesMode&&['feedbacks','metas'].includes(table))||(evaluationsMode&&table==='avaliacoes')||(routineMode&&['tarefas','anotacoes_diarias'].includes(table))||(cadastroMode&&['colaboradores_info','colaborador_fotos','colab_inativos'].includes(table))||(bonusMode&&table==='pontos_extras')))throw Error('Teste permite somente leitura: '+table);mode=key;payload=p;return q};
    if(key==='then')return(resolve,reject)=>Promise.resolve().then(async()=>{window.__uxReads.push(table);if(mode!=='read'){
      window.__uxWrites.push(table+':'+mode);
      if(window.__uxSaveDelay)await new Promise(r=>setTimeout(r,120));
@@ -64,6 +65,27 @@
  const click=id=>{const el=d().getElementById(id);assert(el,'Controle ausente: '+id);el.click()};
  const tab=async name=>{d().querySelector(`[data-tab="${name}"]`).click();await wait(()=>d().body.dataset.activeTab===name,'Aba '+name);await new Promise(r=>setTimeout(r,120))};
  const bounds=el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=frame.clientWidth+1};
+ if(new URLSearchParams(location.search).has('bonus')){
+  const person='Pessoa de teste 1 com nome extenso para revisão de interface';win().confirm=()=>true;
+  const draft=()=>JSON.parse(win().appStorage.getItem('sistema_bonus_editando_v1')||'null'),list=()=>win().getPontosExtrasLocal(),extra=()=>win().computeScoreForCollaborator(person,[{Atendente:person,'Mês':'2026-09'}]).breakdown.pontos_extras;
+  const enter=(id,value)=>{d().getElementById(id).value=value;d().getElementById(id).dispatchEvent(new(win().Event)('input',{bubbles:true}));};
+  await tab('colaboradores');click('bonusPanelBtn');assert(d().getElementById('bonusOverlay').classList.contains('open'),'Acesso real abre editor');const bonusPanel=d().querySelector('#bonusOverlay .colab-detail-panel');assert(bounds(bonusPanel)&&bonusPanel.scrollWidth<=bonusPanel.clientWidth+1,'Editor sem overflow');
+  enter('bonusColaboradorInput',person);enter('bonusPontosInput','3');enter('bonusDescricaoInput','Auxílio em projeto');enter('bonusMesInput','2026-09');const id=draft().id;
+  win().__uxDraftQuota=true;let before=win().__uxWrites.length;click('bonusAdicionarBtn');assert(win().__uxWrites.length===before&&d().querySelector('.bonus-save-message').textContent.includes('rascunho'),'Quota impede envio');win().__uxDraftQuota=false;
+  win().__uxSaveError=true;win().__uxSaveDelay=true;click('bonusAdicionarBtn');click('bonusAdicionarBtn');await wait(()=>!d().getElementById('bonusAdicionarBtn').disabled,'Falha bônus');assert(list().length===0&&extra()===0&&win().__uxWrites.length===before+1,'Falha não muda pontos e duplo clique bloqueado');
+  before=win().__uxWrites.length;click('bonusRemoverBtn');assert(win().__uxWrites.length===before,'Tentativa não muda o sinal sem descarte');
+  click('bonusOverlayClose');click('bonusPanelBtn');assert(draft().id===id&&d().getElementById('bonusDescricaoInput').value==='Auxílio em projeto'&&d().getElementById('bonusMesInput').value==='2026-09','Reabre com edição completa');
+  win().__uxSaveError=false;win().__uxSaveLost=true;click('bonusAdicionarBtn');await wait(()=>!d().getElementById('bonusAdicionarBtn').disabled,'Resposta bônus perdida');assert(list().length===0&&draft().id===id,'Resposta perdida mantém rascunho');
+  win().__uxSaveLost=false;click('bonusAtualizarBtn');await wait(()=>list().length===1&&!d().getElementById('bonusAtualizarBtn').disabled,'Releitura confirma servidor');assert(list()[0].mes==='2026-09'&&draft().id===id,'Mês e rascunho preservados na leitura');click('bonusAdicionarBtn');await wait(()=>!draft(),'Retentativa confirmada');assert(win().__uxRoutineRows('pontos_extras').length===1&&extra()===3,'Mesmo UUID e mês afetam pontuação');
+  d().querySelector('.bonus-editar-btn').click();assert(d().getElementById('bonusColaboradorInput').disabled,'Edição mantém pessoa');enter('bonusDescricaoInput','Descrição editada');win().__uxSaveError=true;click('bonusSalvarBtn');await wait(()=>!d().getElementById('bonusSalvarBtn').disabled,'Edição falha');assert(list()[0].descricao==='Auxílio em projeto'&&draft().descricao==='Descrição editada','Edição falha preserva original');win().__uxSaveError=false;click('bonusSalvarBtn');await wait(()=>!draft(),'Edição confirmada');assert(list()[0].descricao==='Descrição editada'&&list()[0].mes==='2026-09','Mês mantido após edição');
+  enter('bonusColaboradorInput',person);enter('bonusPontosInput','2');enter('bonusDescricaoInput','Penalidade simulada');enter('bonusMesInput','2026-09');click('bonusRemoverBtn');await wait(()=>list().length===2&&!draft(),'Penalidade confirmada');const negative=list().find(row=>row.pontos<0);assert(extra()===1,'Sinais preservados na fórmula');
+  d().querySelector(`.bonus-editar-btn[data-id="${negative.id}"]`).click();enter('bonusPontosInput','4');click('bonusSalvarBtn');await wait(()=>!draft(),'Edição de penalidade');assert(list().find(row=>row.id===negative.id).pontos===-4&&extra()===-1,'Edição mantém sinal negativo');
+  d().querySelector(`.bonus-editar-btn[data-id="${negative.id}"]`).click();enter('bonusDescricaoInput','Rascunho mantido na exclusão');win().__uxSaveError=true;d().querySelector(`.bonus-excluir-btn[data-id="${negative.id}"]`).click();await wait(()=>!d().querySelector('.bonus-excluir-btn').disabled,'Excluir falha');assert(list().length===2&&draft().descricao==='Rascunho mantido na exclusão','Falha não remove registro/rascunho');
+  win().__uxSaveError=false;win().__uxSaveLost=true;d().querySelector(`.bonus-excluir-btn[data-id="${negative.id}"]`).click();await wait(()=>!d().querySelector('.bonus-excluir-btn').disabled,'Resposta exclusão perdida');assert(list().length===2,'Exclusão sem ID não publica sucesso');win().__uxSaveLost=false;click('bonusAtualizarBtn');await wait(()=>list().length===1&&!d().getElementById('bonusAtualizarBtn').disabled,'Reconciliar exclusão');assert(draft().descricao==='Rascunho mantido na exclusão'&&extra()===3,'Releitura preserva rascunho e atualiza pontos');
+  before=win().__uxWrites.length;d().querySelector('.bonus-excluir-btn').click();d().querySelector('.bonus-excluir-btn').click();await wait(()=>list().length===0,'Exclusão confirmada');assert(win().__uxWrites.length===before+1&&draft(),'Duplo clique bloqueado e rascunho separado');
+  assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: acesso real, bônus/penalidades confirmados, mês/fórmula, quota, falhas, rascunho retomado, UUID e sinal estáveis, duplo clique, edição e exclusão após resposta perdida; servidor simulado';return;
+ }
  if(new URLSearchParams(location.search).has('cadastro')){
   const person='Pessoa de teste 1 com nome extenso para revisão de interface';win().confirm=()=>true;
   const draft=()=>JSON.parse(win().appStorage.getItem('sistema_colaborador_rascunho_v1')||'null'),map=()=>win().getColabInfoLocal();

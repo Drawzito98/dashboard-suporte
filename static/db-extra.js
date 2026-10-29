@@ -352,3 +352,5 @@ async function dbAnotacaoFavorito(...args) { await _loadDataDomain('data-routine
 
 function getColabInfoLocal(){const state=typeof AppState!=='undefined'?AppState.get('colaboradores'):null;return state||_fallbackLoad(COLAB_INFO_LOCAL_KEY,{});}
 async function dbColabActivate(...args){await _loadDataDomain('data-people');return AppRepositories.people.dbColabActivate(...args);}
+
+function getPontosExtrasLocal(){const state=typeof AppState!=='undefined'?AppState.get('pontosExtras'):null;return Array.isArray(state)?state:_confirmedList(PONTOS_EXTRAS_LOCAL_KEY);}
