@@ -49,3 +49,7 @@ A identidade segue sendo o nome completo exato das fontes legadas. Duplicidade/h
 Fixtures são locais com serviços simulados. Não comprovam RLS publicada, leitor de tela completo ou persistência de produção. Testes não escrevem no banco de produção.
 
 Validação final: npm test aprovado (171 testes históricos mais checks adicionais), release:check, sintaxe dos scripts alterados e git diff --check aprovados. Fluxo individual com nomes extensos aprovado em desktop e 390/320 px; workspace completo, salvamentos e shell aprovados. Equipe360, PDI, Atividades (inclusive contexto sem CSV), Ponto sintético, lazy-modules e design-system aprovados; Equipe360/PDI/Ponto também em 390 px. A fixture de contraste passou a congelar transições somente durante a amostra dos estados finais, evitando medir uma cor intermediária. Captura da entrada Equipe inspecionada. Nenhuma validação de escrita foi feita em produção.
+
+## Continuação 1.24.0
+
+O limite histórico de persistência legada de avaliações acima foi tratado em 1.24.0: confirmação remota, rascunho separado e recuperação. A entrada individual e o retorno ao perfil permanecem. Ver [avaliacoes-confirmadas.md](avaliacoes-confirmadas.md).

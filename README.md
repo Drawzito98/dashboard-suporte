@@ -2,11 +2,15 @@
 
 App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer), gamificação, relatórios inteligentes, e deploy no Vercel.
 
-**Versão atual:** `1.23.0` (constante `APP_VERSION` em `static/app.js`)
+**Versão atual:** `1.24.0` (constante `APP_VERSION` em `static/app.js`)
 
 ## Diagnóstico gerencial
 
 A auditoria, metodologia, limitações e validação da nova seção estão em [docs/diagnostico-gerencial.md](docs/diagnostico-gerencial.md). A migração aditiva `migration_v49.sql` foi aplicada ao banco de produção em 22/10/2026, habilitando revisões privadas sincronizadas.
+
+## Avaliações: confirmação e recuperação
+
+Avaliações só entram na lista após confirmação do servidor. Falhas mantêm o rascunho privado com notas e comentários; Retomar permite continuar com o mesmo identificador. Status e exclusão também exigem confirmação. [Contratos e limites](docs/avaliacoes-confirmadas.md).
 
 ## Pessoas e Equipe 360º
 
@@ -56,6 +60,7 @@ Baseline e continuidade: [arquitetura](docs/architecture.md), [inventário atual
 
 | Versão | Data | Alterações |
 |--------|------|------------|
+| 1.24.0 | 29/10/2026 | Avaliações com confirmação remota, rascunho separado/retomada, retentativa por UUID e status/exclusão sem sucesso otimista. |
 | 1.23.0 | 29/10/2026 | Pessoas organizada em Equipe/Gestão coletiva, ações individuais contextualizadas e retorno ao perfil sem substituir rascunhos silenciosamente. |
 | 1.22.0 | 29/10/2026 | Operação organizada em Visão geral, Análises e Metas; acesso próprio a metas e rascunhos preservados ao filtrar. |
 | 1.21.0 | 29/10/2026 | Confirmação de feedbacks/metas, rascunhos para retentativa, metas por item e contexto único no Relatório Setorial. |

@@ -5,7 +5,7 @@ const {create:runtime}=require('../static/data-runtime.js');const {create:loader
  const session=runtime({storage:{getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)}});session.bind({id:'owner',app_metadata:{role:'admin'}});
  const context={crypto:require('node:crypto').webcrypto,console,Event:class { constructor(type){this.type=type} },dispatchEvent(){},AppDataSession:session,appStorage:session.cache,AppRepositories:{},document:{addEventListener(){},getElementById:()=>null},addEventListener(){},requireAdmin:()=>true};context.window=context;
  context.sbClient={auth:{getUser:async()=>({data:{user:{id:'owner',app_metadata:{role:'admin'}}}})},from(table){let mode='read',single=false,payloadRow;return {
- select(){return this},eq(){return this},order(){return this},limit(){return this},not(){return this},maybeSingle(){single=true;return this},single(){single=true;return this},
+ range(){return this},select(){return this},eq(){return this},order(){return this},limit(){return this},not(){return this},maybeSingle(){single=true;return this},single(){single=true;return this},
  upsert(payload){mode='write';payloadRow=payload;calls.push({table,payload});return this},
  insert(payload){mode='write';calls.push({table,payload});return this},update(payload){mode='write';calls.push({table,payload});return this},
  then(resolve,reject){return Promise.resolve({data:mode==='write'?(payloadRow?{...payloadRow}:{id:'saved'}):single?null:[]}).then(resolve,reject)}

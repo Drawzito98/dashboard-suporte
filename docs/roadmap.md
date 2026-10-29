@@ -31,3 +31,7 @@ Organização de Operação e acesso às metas implementados: Visão geral, Aná
 ## Continuação 1.23.0
 
 Simplificação de Pessoas e ações individuais implementadas. Confirmação dos demais salvamentos complementares, redução de scripts iniciais e consolidação de CSS continuam pendentes. Ver [pessoas-equipe360.md](pessoas-equipe360.md).
+
+## Continuação 1.24.0
+
+Confirmação de salvamento de avaliações implementada, com rascunhos e retentativa. Próximos domínios devem ser revisados individualmente (tarefas/anotações e demais cadastros), além das pendências de carga inicial/CSS. Ver [avaliacoes-confirmadas.md](avaliacoes-confirmadas.md).

@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.23.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.24.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -158,3 +158,7 @@ Leia docs/operacao-e-metas.md. Operação tem Visão geral, Análises e Metas; a
 ## Continuação 1.23.0 — Pessoas
 
 Leia docs/pessoas-equipe360.md. Equipe é a entrada individual e Gestão coletiva reúne lider/mapeamento-time/ponto. Rotas antigas avaliacao/perfil-pdi continuam nos tabs contextuais individuais; preserve data-tab e o estado real após guards cancelados. openAvaliacaoPerson/openFeedbacksPerson/openPerfilPdi recebem nomes exatos, não criam/salvam registros automaticamente e preservam edição da mesma pessoa. Não apagar rascunho de outra pessoa sem confirmação nem ampliar acesso ao perfil privado. A persistência de avaliações continua legada; não alegar confirmação remota nova. Execute npm test e fixtures shell, workspace (?people=1 e ?saves=1), Equipe360, PDI, Atividades, Ponto, design-system e lazy-modules em desktop/celular.
+
+## Continuação 1.24.0 — Avaliações
+
+Leia docs/avaliacoes-confirmadas.md. Persistência de avaliações fica no repository development e fachada db-extra; UI não publica dados otimistas. AppState.avaliacoes/cache contêm confirmados; rascunho privado usa sistema_avaliacao_rascunho_v1 e UUID estável. dbAvaliacaoStatus atualiza apenas status, nunca reenvia notas/textos. Exigir retorno de ID/proprietário, preservar rascunho em falha e conferir sessão. Não introduzir envio automático nem alegar trava entre dispositivos. Rode npm test e workspace (?evaluations=1, ?people=1, ?saves=1), data-lifecycle, Equipe360, PDI, lazy-modules e design-system em desktop/celular; sem escrita de testes em produção ou merge sem autorização.

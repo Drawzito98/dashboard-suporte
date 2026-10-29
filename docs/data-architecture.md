@@ -64,3 +64,7 @@ Para repetir o teste de navegador: servir o repositório em localhost e abrir `/
 ## Continuação 1.21.0
 
 Feedbacks/metas agora confirmam IDs antes de atualizar cache/interface; falhas preservam rascunhos, metas deixam de substituir a coleção e a sessão invalida respostas atrasadas. Não há fila automática global nem bloqueio entre dispositivos. Contratos e testes em [confirmacao-e-contexto.md](confirmacao-e-contexto.md). Os demais módulos complementares continuam com adoção pendente.
+
+## Continuação 1.24.0
+
+Avaliações agora usam o domínio development e AppState confirmado, com leitura paginada, rascunho separado e mutações confirmadas. Não há fila automática ou proteção de revisão entre dispositivos; demais complementares continuam pendentes. Ver [avaliacoes-confirmadas.md](avaliacoes-confirmadas.md).

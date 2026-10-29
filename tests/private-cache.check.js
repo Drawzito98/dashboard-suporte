@@ -4,7 +4,7 @@ const {create}=require('../static/data-runtime.js');
  const memory=new Map();const raw={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)};
  const session=create({storage:raw});session.bind({id:'owner',app_metadata:{role:'admin'}});
  let offline=false,writes=0;
- const client={auth:{getUser:async()=>({data:{user:{id:'owner',app_metadata:{role:'admin'}}}})},from(){const q={select(){return q},eq(){return q},order(){return q},limit(){return q},maybeSingle(){return q},not(){return q},insert(){writes++;throw Error('Read must not insert')},then(resolve){return Promise.resolve(offline?{error:Error('offline')}:{data:[]}).then(resolve)}};return q}};
+ const client={auth:{getUser:async()=>({data:{user:{id:'owner',app_metadata:{role:'admin'}}}})},from(){const q={select(){return q},range(){return q},eq(){return q},order(){return q},limit(){return q},maybeSingle(){return q},not(){return q},insert(){writes++;throw Error('Read must not insert')},then(resolve){return Promise.resolve(offline?{error:Error('offline')}:{data:[]}).then(resolve)}};return q}};
  const context={console,sbClient:client,AppDataSession:session,appStorage:session.cache,window:{addEventListener(){}},document:{addEventListener(){},getElementById:()=>null,body:{dataset:{role:'admin'}}},requireAdmin:()=>true};
  vm.createContext(context);
  context.AppRepositories={};context.window.AppRepositories=context.AppRepositories;context.FeatureLoader={ensure:async()=>true};

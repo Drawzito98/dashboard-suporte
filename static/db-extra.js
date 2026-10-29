@@ -177,6 +177,22 @@ async function dbColabInfoSave(...args) {
   await _loadDataDomain("data-people");
   return AppRepositories.people.dbColabInfoSave(...args);
 }
+async function dbAvaliacoesLoad(...args) {
+  await _loadDataDomain('data-development');
+  return AppRepositories.development.dbAvaliacoesLoad(...args);
+}
+async function dbAvaliacaoSave(...args) {
+  await _loadDataDomain('data-development');
+  return AppRepositories.development.dbAvaliacaoSave(...args);
+}
+async function dbAvaliacaoStatus(...args) {
+  await _loadDataDomain('data-development');
+  return AppRepositories.development.dbAvaliacaoStatus(...args);
+}
+async function dbAvaliacaoDelete(...args) {
+  await _loadDataDomain('data-development');
+  return AppRepositories.development.dbAvaliacaoDelete(...args);
+}
 async function dbFeedbacksLoad(...args) {
   await _loadDataDomain("data-development");
   return AppRepositories.development.dbFeedbacksLoad(...args);

@@ -7,8 +7,9 @@
  const assert=(v,m)=>{if(!v)throw Error(m)},wait=async(fn,message)=>{const end=Date.now()+25000;while(Date.now()<end){if(fn())return;await new Promise(r=>setTimeout(r,60))}throw Error(message)};
  const html=await(await fetch('../index.html',{cache:'no-store'})).text(),doc=new DOMParser().parseFromString(html,'text/html');
  const seed=()=>{
-  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,String(v)),removeItem:k=>memory.delete(k)}});
+  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(window.__uxDraftQuota&&k.endsWith('sistema_avaliacao_rascunho_v1'))throw Error('Quota simulada');memory.set(k,String(v))},removeItem:k=>memory.delete(k)}});
   const theme=new URLSearchParams(parent.location.search).get('theme')||'light';localStorage.setItem('theme',theme);
+  const evaluationsMode=new URLSearchParams(parent.location.search).has('evaluations');
   const savesMode=new URLSearchParams(parent.location.search).has('saves');
   const cockpitMode=new URLSearchParams(parent.location.search).has('cockpit');
   if(cockpitMode){const NativeDate=Date;class TestDate extends NativeDate{constructor(...args){super(...(args.length?args:[new NativeDate(2026,9,28,12).getTime()]))}};window.Date=TestDate;}
@@ -25,16 +26,18 @@
     records.push({...records[0],id:999,'Mês':'2026-10',Score:0});
     tables.tarefas=[{id:'late',user_id:user.id,titulo:'Conferir amostra <script> não executar',data:'2026-10-27',status:'pendente'},{id:'today',user_id:user.id,titulo:'Feedback de hoje',data:'2026-10-28',status:'andamento'},{id:'done',user_id:user.id,titulo:'Concluída',data:'2026-10-01',status:'concluida'}];
   }
-  window.__uxResetRecords=()=>{tables.registros=records};window.__uxEmptyRecords=()=>{tables.registros=[]};
+  window.__uxResetRecords=()=>{tables.registros=records};window.__uxEmptyRecords=()=>{tables.registros=[]};window.__uxEvaluationRows=()=>tables.avaliacoes.map(row=>({...row}));
   function query(table){let single=false,range=null,filters=[],mode='read',payload;const q=new Proxy({}, {get(_,key){
-   if(['insert','upsert','update','delete'].includes(key))return p=>{if(!savesMode||!['feedbacks','metas'].includes(table))throw Error('Teste permite somente leitura: '+table);mode=key;payload=p;return q};
+   if(['insert','upsert','update','delete'].includes(key))return p=>{if(!((savesMode&&['feedbacks','metas'].includes(table))||(evaluationsMode&&table==='avaliacoes')))throw Error('Teste permite somente leitura: '+table);mode=key;payload=p;return q};
    if(key==='then')return(resolve,reject)=>Promise.resolve().then(async()=>{window.__uxReads.push(table);if(mode!=='read'){
      window.__uxWrites.push(table+':'+mode);
      if(window.__uxSaveDelay)await new Promise(r=>setTimeout(r,120));
      if(window.__uxSaveError)return{error:{message:'Falha simulada'}};
      let rows;
      if(mode==='delete'){rows=(tables[table]||[]).filter(r=>filters.every(([k,v])=>r[k]===v));tables[table]=(tables[table]||[]).filter(r=>!rows.includes(r));}
+     else if(mode==='update'){rows=(tables[table]||[]).filter(r=>filters.every(([k,v])=>r[k]===v)).map(r=>({...r,...payload}));for(const row of rows){const at=tables[table].findIndex(r=>r.id===row.id);tables[table][at]=row;}}
      else{rows=(Array.isArray(payload)?payload:[payload]).map(r=>({...r,created_at:r.created_at||'2026-10-29'}));tables[table]||=[];for(const row of rows){const at=tables[table].findIndex(r=>r.id===row.id);if(at<0)tables[table].push(row);else tables[table][at]=row;}}
+     if(window.__uxSaveLost)throw Error('Resposta perdida após aplicar');
      return{data:single?rows[0]:rows,error:null};
     }if(table==='registros'&&window.__uxHoldRecords){window.__uxBlocked=true;await new Promise(r=>window.__uxReleaseRecords=r)}if(table==='registros'&&window.__uxOffline)return{error:{message:'Offline simulado'}};let data=[...(tables[table]||[])];for(const[k,v]of filters)data=data.filter(r=>r[k]===v);if(range)data=data.slice(range[0],range[1]+1);return{data:single?data[0]||null:data,error:null,count:data.length}}).then(resolve,reject);
    if(key==='eq')return(k,v)=>{filters.push([k,v]);return q};
@@ -59,6 +62,41 @@
  const click=id=>{const el=d().getElementById(id);assert(el,'Controle ausente: '+id);el.click()};
  const tab=async name=>{d().querySelector(`[data-tab="${name}"]`).click();await wait(()=>d().body.dataset.activeTab===name,'Aba '+name);await new Promise(r=>setTimeout(r,120))};
  const bounds=el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=frame.clientWidth+1};
+ if(new URLSearchParams(location.search).has('evaluations')){
+  const person='Pessoa de teste 1 com nome extenso para revisão de interface';
+  const toasts=[],originalToast=win().showToast;win().showToast=(text,type,...rest)=>{toasts.push({text,type});return originalToast(text,type,...rest)};win().confirm=()=>true;
+  const draft=()=>JSON.parse(win().appStorage.getItem('sistema_avaliacao_rascunho_v1')||'null'),confirmed=()=>win().getAvaliacoesLocal();
+  const enter=(id,value)=>{d().getElementById(id).value=value;d().getElementById(id).dispatchEvent(new (win().Event)('input',{bubbles:true}))};
+  await tab('avaliacao');assert(win().openAvaliacaoPerson(person),'Seleciona pessoa');click('avaliacaoNovaBtn');
+  const form=d().getElementById('avaliacaoForm');assert(form,'Formulário real');assert(d().documentElement.scrollWidth<=frame.clientWidth+1,'Avaliação expandida sem overflow global');
+  d().querySelector('#avaliacaoForm input[name="score_1"][value="3"]').click();enter('avaliacaoObsGerais','Evidência original');
+  const comp=d().querySelector('#avaliacaoForm [name="obs_1"]');comp.value='Exemplo específico preservado';comp.dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  enter('avaliacaoNovoComentarioInput','Comentário final preservado');click('avaliacaoAddComentarioBtn');await wait(()=>draft()?.comentarios_finais.length===1,'Rascunho completo');
+  const id=draft().id;assert(/^[a-f0-9-]{36}$/.test(id),'UUID estável antes de enviar');
+  win().__uxDraftQuota=true;let noSend=win().__uxWrites.length;form.requestSubmit();assert(d().getElementById('avaliacaoSaveMessage').textContent.includes('Não foi possível guardar')&&win().__uxWrites.length===noSend,'Falha ao preservar rascunho impede envio');win().__uxDraftQuota=false;
+  win().__uxSaveError=true;win().__uxSaveDelay=true;let before=win().__uxWrites.length;form.requestSubmit();form.requestSubmit();
+  await wait(()=>d().getElementById('avaliacaoSaveMessage')?.textContent.includes('não foi possível')||d().getElementById('avaliacaoSaveMessage')?.textContent.includes('Não foi possível'),'Falha visível');
+  assert(win().__uxWrites.length===before+1,'Duplo envio bloqueado');assert(confirmed().length===0&&!toasts.some(t=>t.type==='success'&&t.text.includes('salva com sucesso')),'Falha não vira sucesso');
+  assert(draft().scores['1']===3&&draft().observacoes_competencias['1']==='Exemplo específico preservado','Notas e evidências no rascunho');
+  click('avaliacaoCancelarBtn');assert(!d().getElementById('avaliacaoForm')&&d().getElementById('avaliacaoResumeDraft'),'Fechar editor mantém retomada');
+  win().__uxSaveError=false;await win().dbAvaliacoesLoad();assert(draft().id===id&&confirmed().length===0,'Servidor vazio não apaga rascunho');
+  if(new URLSearchParams(location.search).has('preview')){document.getElementById('testResult').textContent='PASS: prévia com falha simulada e rascunho preservado, sem gravação no servidor';return;}
+  click('avaliacaoResumeDraft');assert(d().querySelector('#avaliacaoForm input[name="score_1"]:checked')?.value==='3'&&d().querySelector('#avaliacaoForm [name="obs_1"]').value==='Exemplo específico preservado','Retoma notas e evidências');assert(d().getElementById('avaliacaoForm').dataset.id===id&&d().getElementById('avaliacaoObsGerais').value==='Evidência original','Retoma mesmo ID e texto');
+  win().__uxSaveLost=true;d().getElementById('avaliacaoForm').requestSubmit();await wait(()=>d().getElementById('avaliacaoSaveMessage')?.textContent.includes('mantido'),'Resposta perdida');
+  assert(win().__uxEvaluationRows().length===1&&confirmed().length===0,'Resposta perdida mantém apenas rascunho na projeção');
+  win().__uxSaveLost=false;d().getElementById('avaliacaoForm').requestSubmit();await wait(()=>confirmed().length===1&&!draft(),'Gravação confirmada');
+  assert(win().__uxEvaluationRows().length===1&&confirmed()[0].id===id,'Retentativa não duplica');
+  d().querySelector('.avaliacao-editar-btn').click();enter('avaliacaoObsGerais','Nova evidência ainda em rascunho');win().__uxSaveError=true;d().getElementById('avaliacaoForm').requestSubmit();
+  await wait(()=>d().getElementById('avaliacaoSaveMessage')?.textContent.includes('mantido'),'Falha de edição');assert(confirmed()[0].observacoes_gerais==='Evidência original','Falha preserva versão confirmada');click('avaliacaoCancelarBtn');
+  win().__uxSaveError=false;d().querySelector('.avaliacao-status-tag').click();await wait(()=>confirmed()[0].status==='revisado','Status confirmado');
+  assert(win().__uxEvaluationRows()[0].observacoes_gerais==='Evidência original'&&draft().observacoes_gerais==='Nova evidência ainda em rascunho','Status não reenvia texto do rascunho');
+  click('avaliacaoResumeDraft');d().getElementById('avaliacaoForm').requestSubmit();await wait(()=>!draft()&&confirmed()[0].observacoes_gerais==='Nova evidência ainda em rascunho','Edição confirmada');assert(confirmed()[0].status==='revisado','Edição não desfaz status');
+  d().body.dataset.role='viewer';win().renderAvaliacao();assert(d().getElementById('avaliacaoNovaBtn').disabled&&d().querySelector('.avaliacao-status-tag').disabled,'Consulta sem ações de edição');assert(win().renderAvaliacaoForm(person,'Teste',null)===false,'Viewer não abre edição');d().body.dataset.role='admin';win().renderAvaliacao();
+  win().__uxSaveError=true;d().querySelector('.avaliacao-excluir-btn').click();await wait(()=>!d().querySelector('.avaliacao-excluir-btn').disabled,'Erro de exclusão');assert(confirmed().length===1&&win().__uxEvaluationRows().length===1,'Exclusão falha não remove projeção');
+  win().__uxSaveError=false;before=win().__uxWrites.length;d().querySelector('.avaliacao-excluir-btn').click();d().querySelector('.avaliacao-excluir-btn').click();await wait(()=>confirmed().length===0,'Exclusão confirmada');assert(win().__uxWrites.length===before+1,'Duplo clique não duplica exclusão');
+  assert(!win().__uxErrors.length,'Sem exceções: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: avaliação real, falha sem falso sucesso, rascunho completo/retomada, resposta perdida/UUID estável, edição, status isolado, exclusão confirmada e duplo envio; servidor simulado';return;
+ }
  if(new URLSearchParams(location.search).has('people')){
   const one='Pessoa de teste 1 com nome extenso para revisão de interface',two='Pessoa de teste 2 com nome extenso para revisão de interface';
   const profile=()=>d().getElementById('equipe360Dialog');

@@ -35,3 +35,7 @@ Chart.js, bibliotecas de CSV/exportação e vários módulos históricos ainda c
 ## Atualização 1.20.1
 
 O bundle interno panorama conserva a chave por compatibilidade, mas carrega somente relatorio-setorial.js. O Panorama parcial deixou o HTML e o manifest de execução; seu parser/UI e testes isolados permanecem para reuso. A contagem de scripts iniciais e a modularização residual foram revistas em [revisao-pos-roadmap.md](revisao-pos-roadmap.md).
+
+## Continuação 1.24.0
+
+A persistência de avaliações saiu do arquivo de UI para o repository development, preservando os nomes públicos pela fachada db-extra. Não há novo script inicial ou domínio adicional; o manifest valida também os quatro exports de avaliações. Ver [avaliacoes-confirmadas.md](avaliacoes-confirmadas.md).

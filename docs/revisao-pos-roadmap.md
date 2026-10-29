@@ -87,3 +87,7 @@ Operação foi organizada em Visão geral, Análises e Metas. Metas têm acesso 
 ## Continuação 1.23.0
 
 Equipe 360º passa a ser a entrada principal do acompanhamento individual; Gestão coletiva preserva visão da equipe, Mapeamento e Ponto. Avaliações/feedbacks/PDI recebem a pessoa exata e têm retorno com proteção de edição. As pendências técnicas de persistência complementar e consolidação permanecem. Ver [pessoas-equipe360.md](pessoas-equipe360.md).
+
+## Continuação 1.24.0
+
+Avaliações deixam de usar o salvamento otimista citado no limite da entrega 1.23.0. Escritas, status e exclusão exigem confirmação; rascunhos ficam separados do histórico. Demais persistências e consolidação técnica continuam pendentes. Ver [avaliacoes-confirmadas.md](avaliacoes-confirmadas.md).

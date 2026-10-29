@@ -36,7 +36,9 @@ function sugerirCiclo() {
 
 function getAvaliacoesLocal() {
   try {
-    return JSON.parse(appStorage.getItem(AVALIACAO_KEY) || '[]');
+    const state = typeof AppState !== 'undefined' ? AppState.get('avaliacoes') : null;
+    const list = state || JSON.parse(appStorage.getItem(AVALIACAO_KEY) || '[]');
+    return Array.isArray(list) ? list : [];
   } catch { return []; }
 }
 
@@ -47,105 +49,54 @@ function getAvaliacoesAtivas() {
   );
 }
 
-function saveAvaliacoesLocal(list) {
-  appStorage.setItem(AVALIACAO_KEY, JSON.stringify(list));
+const AVALIACAO_DRAFT_KEY = 'sistema_avaliacao_rascunho_v1';
+let evaluationSaving = false;
+const evaluationCanEdit = () => document.body.dataset.role === 'admin' && typeof isAdmin === 'function' && isAdmin();
+function evaluationDraft() {
+  try { const draft = JSON.parse(appStorage.getItem(AVALIACAO_DRAFT_KEY) || 'null'); return draft?.id && draft.colaborador ? draft : null; } catch (_) { return null; }
 }
-
-async function dbAvaliacoesLoad() {
-  if (!sbClient) return getAvaliacoesLocal();
-  try {
-    const uid = await _getUserId();
-    if (!uid) return getAvaliacoesLocal();
-    const { data, error } = await sbClient.from('avaliacoes').select('*').eq('user_id', uid).order('created_at', { ascending: false });
-    if (!error && Array.isArray(data)) {
-      const localData = getAvaliacoesLocal();
-      const list = data.map(r => {
-        const local = localData.find(l => l.id === r.id);
-        return {
-          id: r.id,
-          colaborador: r.colaborador,
-          ciclo: r.ciclo,
-          scores: r.scores,
-          observacoes_gerais: r.observacoes_gerais || '',
-          observacoes_competencias: r.observacoes_competencias || {},
-          comentarios_ia: r.comentarios_ia || [],
-          comentarios_finais: r.comentarios_finais || [],
-          avaliacao_qualitativa: r.avaliacao_qualitativa || '',
-          status: r.status != null ? r.status : (local?.status || 'pendente'),
-          createdAt: r.created_at,
-          updatedAt: r.updated_at
-        };
-      });
-      saveAvaliacoesLocal(list);
-      return list;
-    }
-    return getAvaliacoesLocal();
-  } catch {
-    return getAvaliacoesLocal();
-  }
+function discardEvaluationDraft(id) {
+  try { if (!id || evaluationDraft()?.id === id) appStorage.removeItem(AVALIACAO_DRAFT_KEY); } catch (_) {}
 }
-
-async function dbAvaliacaoSave(avaliacao) {
-  const list = getAvaliacoesLocal();
-  const idx = list.findIndex(a => a.id === avaliacao.id);
-  if (idx >= 0) list[idx] = avaliacao;
-  else list.unshift(avaliacao);
-  saveAvaliacoesLocal(list);
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('avaliacoes').select('id').eq('id', avaliacao.id).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('avaliacoes').update({
-        colaborador: avaliacao.colaborador,
-        ciclo: avaliacao.ciclo,
-        scores: avaliacao.scores,
-        observacoes_gerais: avaliacao.observacoes_gerais || '',
-        observacoes_competencias: avaliacao.observacoes_competencias || {},
-        comentarios_ia: avaliacao.comentarios_ia || [],
-        comentarios_finais: avaliacao.comentarios_finais || [],
-        avaliacao_qualitativa: avaliacao.avaliacao_qualitativa || '',
-        status: avaliacao.status || 'pendente',
-        updated_at: new Date().toISOString()
-      }).eq('id', avaliacao.id);
-    } else {
-      await sbClient.from('avaliacoes').insert({
-        user_id: uid,
-        colaborador: avaliacao.colaborador,
-        ciclo: avaliacao.ciclo,
-        scores: avaliacao.scores,
-        observacoes_gerais: avaliacao.observacoes_gerais || '',
-        observacoes_competencias: avaliacao.observacoes_competencias || {},
-        comentarios_ia: avaliacao.comentarios_ia || [],
-        comentarios_finais: avaliacao.comentarios_finais || [],
-        avaliacao_qualitativa: avaliacao.avaliacao_qualitativa || '',
-        status: avaliacao.status || 'pendente'
-      }).then(result => {
-        if (result.data && result.data[0]) {
-          avaliacao.id = result.data[0].id;
-          const refreshed = getAvaliacoesLocal();
-          const ri = refreshed.findIndex(a => a.id === avaliacao.id || a.id === 'new_' + avaliacao.id);
-          if (ri >= 0) refreshed[ri].id = result.data[0].id;
-          else refreshed.unshift(avaliacao);
-          saveAvaliacoesLocal(refreshed);
-        }
-      });
-    }
-    if (typeof criarNotificacao === 'function') {
-      criarNotificacao('avaliacao', `Nova avaliação para ${avaliacao.colaborador || 'colaborador'} (${avaliacao.ciclo || 'sem ciclo'})`, 'avaliacao');
-    }
-  } catch (e) { console.error('[avaliacao] dbAvaliacaoSave:', e); }
+function captureEvaluation() {
+  const form = document.getElementById('avaliacaoForm'); if (!form) return null;
+  const scores = {}, observacoes_competencias = {};
+  getCompetencias().forEach(comp => {
+    const radio = form.querySelector(`input[name="score_${comp.id}"]:checked`);
+    scores[comp.id] = radio ? parseInt(radio.value) : null;
+    const value = form.querySelector(`[name="obs_${comp.id}"]`)?.value.trim();
+    if (value) observacoes_competencias[comp.id] = value;
+  });
+  const comments = selector => [...document.querySelectorAll(selector + ' .avaliacao-comentario-item')].map(item => item.querySelector('textarea')?.value || item.querySelector('.avaliacao-comentario-texto')?.textContent || '').filter(Boolean);
+  return { id: form.dataset.id, _localId: form.dataset.localId || '', _draftNew: form.dataset.draftNew === 'true',
+    colaborador: form.dataset.colaborador, ciclo: document.getElementById('avaliacaoCicloInput')?.value.trim() || '', scores,
+    observacoes_gerais: document.getElementById('avaliacaoObsGerais')?.value.trim() || '', observacoes_competencias,
+    comentarios_ia: comments('#avaliacaoComentariosIaList'), comentarios_finais: comments('#avaliacaoComentariosFinaisList'),
+    avaliacao_qualitativa: document.getElementById('avaliacaoQualitativa')?.value.trim() || '',
+    _pendingComment: document.getElementById('avaliacaoNovoComentarioInput')?.value || '', status: form.dataset.status || 'pendente', createdAt: form.dataset.createdAt };
 }
-
-async function dbAvaliacaoDelete(id) {
-  const list = getAvaliacoesLocal();
-  const filtered = list.filter(a => a.id !== id);
-  saveAvaliacoesLocal(filtered);
-  if (!sbClient) return;
-  try {
-    await sbClient.from('avaliacoes').delete().eq('id', id);
-  } catch (e) { console.error('[avaliacao] dbAvaliacaoDelete:', e); }
+function preserveEvaluationDraft() {
+  const draft = captureEvaluation();
+  if (!draft || !AppDataSession.current(AppDataSession.token())) return;
+  appStorage.setItem(AVALIACAO_DRAFT_KEY, JSON.stringify(draft));
+  document.getElementById('avaliacaoContent').dataset.personDirty = 'true';
+}
+function evaluationMessage(text, tone = 'error') {
+  const message = document.getElementById('avaliacaoSaveMessage');
+  if (message) { message.textContent = text; message.dataset.tone = tone; }
+}
+function bindEvaluationDraftBanner() {
+  document.getElementById('avaliacaoResumeDraft')?.addEventListener('click', () => {
+    const draft = evaluationDraft(); if (!draft || evaluationSaving) return;
+    const select = document.getElementById('avaliacaoColabSelect');
+    if (select && ![...select.options].some(option => option.value === draft.colaborador)) select.add(new Option(draft.colaborador, draft.colaborador));
+    if (select) select.value = draft.colaborador;
+    renderAvaliacaoForm(draft.colaborador, draft.ciclo, draft, true);
+  });
+  document.getElementById('avaliacaoDiscardDraft')?.addEventListener('click', () => {
+    if (evaluationSaving || !confirm('Descartar o rascunho local da avaliação? Nenhum registro do servidor será excluído.')) return;
+    discardEvaluationDraft(); renderAvaliacao();
+  });
 }
 
 function isGuidance(c) { return c.type === 'guidance'; }
@@ -245,7 +196,10 @@ function renderAvaliacao() {
     </div>
   `;
 
-  container.innerHTML = html;
+  const draft = evaluationDraft();
+  const draftHtml = draft && evaluationCanEdit() ? `<div class="ui-message" data-tone="info"><p>Rascunho neste navegador: <strong>${escapeHtml(draft.colaborador)}</strong> · ${escapeHtml(draft.ciclo || 'Período não definido')}. Ainda não confirmado no servidor.</p><button id="avaliacaoResumeDraft" class="btn-small" type="button">Retomar rascunho</button> <button id="avaliacaoDiscardDraft" class="btn-small" type="button">Descartar rascunho</button></div>` : '';
+  container.innerHTML = draftHtml + html;
+  bindEvaluationDraftBanner();
 
   const allMonths = [...new Set((rawRecords || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
   const mesInicio = document.getElementById('avaliacaoMesInicio');
@@ -321,19 +275,30 @@ function renderAvaliacao() {
   if (exportAllBtn) exportAllBtn.addEventListener('click', exportarTodasAvaliacoesXLSX);
 
   renderHistoricoAvaliacoes();
+  if (!evaluationCanEdit()) {
+    for (const id of ['avaliacaoNovaBtn', 'avaliacaoSugerirNotasBtn']) { const button = document.getElementById(id); if (button) button.disabled = true; }
+    const text = document.getElementById('avaliacaoQualitativa'); if (text) text.readOnly = true;
+  }
 }
 
-function renderAvaliacaoForm(colaborador, ciclo, existing) {
+function renderAvaliacaoForm(colaborador, ciclo, existing, resume = false) {
   const container = document.getElementById('avaliacaoFormContainer');
-  if (!container) return;
+  if (!container || evaluationSaving || !evaluationCanEdit()) return false;
+  const draft = evaluationDraft();
+  if (draft && !resume) {
+    const same = draft.colaborador === colaborador && (existing ? existing.id === draft.id || existing.id === draft._localId : draft.ciclo === ciclo);
+    if (same) { existing = draft; ciclo = draft.ciclo; }
+    else { if (!confirm('Há um rascunho de outra avaliação. Deseja descartá-lo para abrir esta edição?')) return false; discardEvaluationDraft(); }
+  }
 
+  document.getElementById('avaliacaoContent').dataset.personDirty = String(Boolean(existing && draft?.id === existing.id));
   const scores = existing ? existing.scores : {};
   const obsGerais = existing ? (existing.observacoes_gerais || '') : '';
   const obsComp = existing ? (existing.observacoes_competencias || {}) : {};
   const comentariosIa = existing ? (existing.comentarios_ia || []) : [];
   const comentariosFinais = existing ? (existing.comentarios_finais || []) : [];
   const qualitativa = existing ? (existing.avaliacao_qualitativa || '') : '';
-  const isEdit = !!existing;
+  const isEdit = !!existing && !existing._draftNew;
 
   let html = `
     <div class="card avaliacao-form-card avaliacao-form-expanded">
@@ -350,7 +315,7 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
           ${isEdit ? `<span style="font-size:12px;color:var(--text-muted)">Última atualização: ${existing.updatedAt ? new Date(existing.updatedAt).toLocaleString('pt-BR') : '—'}</span>` : ''}
         </div>
       </div>
-      <form id="avaliacaoForm" class="avaliacao-form" data-colaborador="${escapeHtml(colaborador)}" data-id="${isEdit ? existing.id : ''}">
+      <form id="avaliacaoForm" class="avaliacao-form" data-colaborador="${escapeHtml(colaborador)}" data-id="${escapeHtml(_writeUuid(existing?.id))}">
         ${COMPETENCIAS.map(comp => {
           if (isGuidance(comp)) {
             return `
@@ -423,9 +388,10 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
         </div>
 
         <div class="avaliacao-form-actions">
+          <p id="avaliacaoSaveMessage" class="ui-message" role="status" aria-live="polite">Edição ainda não confirmada no servidor.</p>
           <button class="btn-primary" type="submit">💾 Salvar avaliação</button>
           <button class="btn-small" type="button" id="avaliacaoExportXlsxBtn">📊 Exportar para Excel</button>
-          <button class="btn-small" type="button" id="avaliacaoCancelarBtn">Cancelar</button>
+          <button class="btn-small" type="button" id="avaliacaoCancelarBtn">Fechar edição</button>
         </div>
       </form>
     </div>
@@ -433,8 +399,13 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
 
   container.innerHTML = html;
   const qualField = document.getElementById('avaliacaoQualitativa');
-  if (qualField && qualitativa) qualField.value = qualitativa;
+  if (qualField && existing) qualField.value = qualitativa;
+  const form = document.getElementById('avaliacaoForm');
+  form.dataset.createdAt = existing?.createdAt || new Date().toISOString(); form.dataset.status = existing?.status || 'pendente';
+  form.dataset.localId = existing?._localId || existing?.id || ''; form.dataset.draftNew = String(!existing || existing._draftNew === true);
+  if (existing?._pendingComment) document.getElementById('avaliacaoNovoComentarioInput').value = existing._pendingComment;
   bindAvaliacaoFormEvents(colaborador, ciclo, existing);
+  if (!existing && document.getElementById('avaliacaoQualitativa')?.value.trim()) { try { preserveEvaluationDraft(); } catch (_) {} }
 }
 
 function renderComentariosIa(comentariosIa, comentariosFinais) {
@@ -479,78 +450,46 @@ function getComentariosState() {
 }
 
 function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
-  const isEdit = !!existing;
   const container = document.getElementById('avaliacaoFormContainer');
 
   document.getElementById('avaliacaoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.target;
-    const colab = form.dataset.colaborador;
-    const cicloInput = document.getElementById('avaliacaoCicloInput');
-    const cicloForm = cicloInput ? cicloInput.value.trim() : form.dataset.ciclo;
-    const existingId = form.dataset.id;
-    const { comentarios_ia, comentarios_finais } = getComentariosState();
-
-    if (!comentarios_finais.length) {
-      showToast('Adicione pelo menos um comentário antes de salvar.', 'error');
-      return;
-    }
-
-    const scores = {};
-    const observacoes_competencias = {};
-    let hasScore = false;
-
-    getCompetencias().forEach(comp => {
-      const radio = form.querySelector(`input[name="score_${comp.id}"]:checked`);
-      if (radio) {
-        scores[comp.id] = parseInt(radio.value);
-        hasScore = true;
-      } else {
-        scores[comp.id] = null;
-      }
-      const obsInput = form.querySelector(`[name="obs_${comp.id}"]`);
-      if (obsInput && obsInput.value.trim()) {
-        observacoes_competencias[comp.id] = obsInput.value.trim();
-      }
-    });
-
-    if (!hasScore) {
-      showToast('Selecione pelo menos uma nota.', 'error');
-      return;
-    }
-
-    const observacoes_gerais = document.getElementById('avaliacaoObsGerais').value.trim();
-    const avaliacao_qualitativa = document.getElementById('avaliacaoQualitativa')?.value.trim() || '';
-
-    const avaliacaoData = {
-      id: existingId || 'new_' + Date.now(),
-      colaborador: colab,
-      ciclo: cicloForm,
-      scores,
-      observacoes_gerais,
-      observacoes_competencias,
-      comentarios_ia,
-      comentarios_finais,
-      avaliacao_qualitativa,
-      updatedAt: new Date().toISOString()
-    };
-
-    if (!existingId) {
-      avaliacaoData.createdAt = new Date().toISOString();
-    }
-
+    if (evaluationSaving || !evaluationCanEdit()) return;
+    const token = AppDataSession.token(), draft = captureEvaluation();
+    try {
+      preserveEvaluationDraft();
+      if (!draft.ciclo) { evaluationMessage('Informe o período da avaliação.'); return; }
+      if (!draft.comentarios_finais.length) { evaluationMessage('Adicione pelo menos um comentário antes de salvar.'); return; }
+      if (!Object.values(draft.scores).some(value => value !== null)) { evaluationMessage('Selecione pelo menos uma nota.'); return; }
+      if (draft._pendingComment.trim()) { evaluationMessage('Adicione o comentário digitado à lista antes de salvar.'); return; }
+    } catch (_) { evaluationMessage('Não foi possível guardar o rascunho neste navegador. Os campos continuam nesta tela.'); return; }
+    evaluationSaving = true; form.setAttribute('aria-busy', 'true');
+    const controls = [...document.querySelectorAll('#avaliacaoContent input, #avaliacaoContent textarea, #avaliacaoContent select, #avaliacaoContent button')].map(element => [element, element.disabled]);
+    controls.forEach(([element]) => element.disabled = true);
+    evaluationMessage('Aguardando confirmação do servidor…', 'info');
     if (typeof setLoading === 'function') setLoading(true, 'Salvando avaliação…');
     try {
-      await dbAvaliacaoSave(avaliacaoData);
-      showToast(`Avaliação de ${escapeHtml(colab)} salva com sucesso!`, 'success', 'Avaliação');
+      const result = await dbAvaliacaoSave(draft);
+      if (!AppDataSession.current(token)) return;
+      if (result?.status !== 'confirmed') throw new Error('Gravação não confirmada.');
+      discardEvaluationDraft(draft.id);
+      showToast(`Avaliação de ${draft.colaborador} salva com sucesso!`, 'success', 'Avaliação');
       renderAvaliacao();
+    } catch (_) {
+      if (AppDataSession.current(token)) evaluationMessage('Não foi possível confirmar o salvamento. Seu rascunho foi mantido; tente novamente.');
     } finally {
+      evaluationSaving = false; form.removeAttribute('aria-busy'); controls.forEach(([element, disabled]) => element.disabled = disabled);
       if (typeof setLoading === 'function') setLoading(false);
     }
   });
 
   document.getElementById('avaliacaoCancelarBtn').addEventListener('click', () => {
-    container.innerHTML = '';
+    if (evaluationSaving) return;
+    if (document.getElementById('avaliacaoContent').dataset.personDirty === 'true' || evaluationDraft()?.id === document.getElementById('avaliacaoForm')?.dataset.id) {
+      try { preserveEvaluationDraft(); } catch (_) { evaluationMessage('Não foi possível guardar o rascunho. Mantenha a edição aberta.'); return; }
+    }
+    renderAvaliacao();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
@@ -695,6 +634,7 @@ function handleEditar(e) {
 function handleExcluir(e) {
   const item = e.target.closest('.avaliacao-comentario-item');
   item.remove();
+  try { preserveEvaluationDraft(); } catch (_) { evaluationMessage('Não foi possível guardar o rascunho neste navegador. Os campos continuam nesta tela.'); }
   showToast('Comentário excluído.', 'success');
 }
 
@@ -1327,7 +1267,7 @@ function renderHistoricoAvaliacoes() {
         <div class="avaliacao-historico-header">
           <strong>${escapeHtml(av.colaborador)}</strong>
           <span class="avaliacao-historico-ciclo">${escapeHtml(av.ciclo)}</span>
-          <span class="avaliacao-status-tag" data-id="${av.id}" style="margin-left:auto;font-size:10px;font-weight:600;padding:1px 6px;border-radius:var(--r-sm);cursor:pointer;background:${statusCor}22;color:${statusCor};border:1px solid ${statusCor}55;white-space:nowrap">${statusLabel}</span>
+          <button type="button" class="btn-small avaliacao-status-tag" data-id="${av.id}" style="margin-left:auto;font-size:10px;font-weight:600;padding:1px 6px;border-radius:var(--r-sm);cursor:pointer;background:${status === 'revisado' ? 'var(--success-soft)' : 'var(--warning-soft)'};color:${statusCor};border:1px solid ${statusCor};white-space:nowrap">${statusLabel}</button>
         </div>
         <div class="avaliacao-historico-stats">
           <span>Notas: <strong>${scoresArray.length}/${comps.length}</strong></span>
@@ -1346,6 +1286,8 @@ function renderHistoricoAvaliacoes() {
   });
   html += '</div>';
   container.innerHTML = html;
+
+  if (!evaluationCanEdit()) container.querySelectorAll('.avaliacao-editar-btn, .avaliacao-excluir-btn, .avaliacao-status-tag').forEach(button => button.disabled = true);
 
   container.querySelectorAll('.avaliacao-ver-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1366,23 +1308,34 @@ function renderHistoricoAvaliacoes() {
 
   container.querySelectorAll('.avaliacao-excluir-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('Tem certeza que deseja excluir esta avaliação?')) return;
-      await dbAvaliacaoDelete(btn.dataset.id);
-      showToast('Avaliação excluída.', 'success');
-      renderAvaliacao();
+      if (!evaluationCanEdit() || evaluationSaving || !confirm('Tem certeza que deseja excluir esta avaliação?')) return;
+      const token = AppDataSession.token(); evaluationSaving = true; btn.disabled = true;
+      try {
+        const result = await dbAvaliacaoDelete(btn.dataset.id);
+        if (!AppDataSession.current(token)) return;
+        if (result?.status !== 'confirmed') throw new Error('Exclusão não confirmada.');
+        showToast('Avaliação excluída.', 'success');
+        renderHistoricoAvaliacoes();
+      } catch (_) { if (AppDataSession.current(token)) showToast('Exclusão não confirmada. A avaliação foi mantida na lista; tente novamente.', 'error'); }
+      finally { evaluationSaving = false; btn.disabled = false; }
     });
   });
 
   container.querySelectorAll('.avaliacao-status-tag').forEach(tag => {
     tag.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const id = tag.dataset.id;
-      const list = getAvaliacoesLocal();
-      const av = list.find(a => a.id === id);
-      if (!av) return;
-      av.status = av.status === 'revisado' ? 'pendente' : 'revisado';
-      await dbAvaliacaoSave(av);
-      renderHistoricoAvaliacoes();
+      if (!evaluationCanEdit() || evaluationSaving) return;
+      const token = AppDataSession.token(), id = tag.dataset.id;
+      const av = getAvaliacoesLocal().find(item => item.id === id); if (!av) return;
+      const nextStatus = av.status === 'revisado' ? 'pendente' : 'revisado';
+      evaluationSaving = true; tag.disabled = true; tag.setAttribute('aria-busy', 'true'); tag.setAttribute('aria-disabled', 'true');
+      try {
+        const result = await dbAvaliacaoStatus(id, nextStatus);
+        if (!AppDataSession.current(token)) return;
+        if (result?.status !== 'confirmed') throw new Error('Status não confirmado.');
+        renderHistoricoAvaliacoes();
+      } catch (_) { if (AppDataSession.current(token)) showToast('O servidor não confirmou a alteração de status. Tente novamente.', 'error'); }
+      finally { evaluationSaving = false; tag.disabled = false; tag.removeAttribute('aria-busy'); tag.removeAttribute('aria-disabled'); }
     });
   });
 
@@ -1632,10 +1585,12 @@ window.addEventListener('colab-active-state-changed', () => {
 
 // Entrada contextual: seleciona a pessoa, sem gerar uma avaliação nem escolher notas/ciclo.
 function openAvaliacaoPerson(name) {
+  if (evaluationSaving) return false;
   if (typeof name !== 'string' || !name || typeof requireAdmin !== 'function' || !requireAdmin()) return false;
   const host = document.getElementById('avaliacaoContent');
   if (host?.dataset.personDirty === 'true' && document.body.dataset.activeTab === 'avaliacao' && document.getElementById('avaliacaoColabSelect')?.value === name && (!document.getElementById('avaliacaoForm') || document.getElementById('avaliacaoForm').dataset.colaborador === name)) return true;
   if (host?.dataset.personDirty === 'true' && !confirm('Descartar alterações não salvas da avaliação para abrir esta pessoa?')) return false;
+  if (host?.dataset.personDirty === 'true') discardEvaluationDraft();
   if (host) host.dataset.personDirty = 'false';
   document.querySelector('[data-tab="avaliacao"]')?.click();
   if (document.body.dataset.activeTab !== 'avaliacao') return false;
@@ -1654,8 +1609,16 @@ document.addEventListener('change', event => {
 });
 document.getElementById('tabBar')?.addEventListener('click', event => {
   if (!event.target.closest('.tab-btn')) return;
+  if (evaluationSaving) { event.preventDefault(); event.stopImmediatePropagation(); return; }
   const host = document.getElementById('avaliacaoContent');
   if (document.body.dataset.activeTab !== 'avaliacao' || host?.dataset.personDirty !== 'true') return;
   if (!confirm('Há alterações não salvas na avaliação. Deseja sair e descartá-las?')) { event.preventDefault(); event.stopImmediatePropagation(); return; }
-  host.dataset.personDirty = 'false';
+  discardEvaluationDraft(); host.dataset.personDirty = 'false';
 }, true);
+
+for (const type of ['input', 'change', 'click']) document.addEventListener(type, event => {
+  if (!event.target.closest?.('#avaliacaoContent')) return;
+  if (type === 'click' && !event.target.closest('.avaliacao-nota-radio, .avaliacao-nota-label, #avaliacaoAddComentarioBtn, #avaliacaoGerarIaBtn, .av-usar-btn, .av-regenerar-btn, .av-editar-comentario-btn')) return;
+  if (type !== 'click' && !event.target.closest('#avaliacaoForm, #avaliacaoQualitativa, #avaliacaoCicloInput')) return;
+  queueMicrotask(() => { try { preserveEvaluationDraft(); } catch (_) { evaluationMessage('Não foi possível guardar o rascunho neste navegador. Os campos continuam nesta tela.'); } });
+});

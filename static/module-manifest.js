@@ -34,12 +34,16 @@ window.APP_MODULES = {
   },
   "data-development": {
     "scripts": [
-      "/static/repositories/development.js?v=2"
+      "/static/repositories/development.js?v=3"
     ],
     "exports": [
       "AppRepositories.development.dbFeedbacksLoad",
       "AppRepositories.development.dbFeedbacksSave",
-      "AppRepositories.development.dbFeedbacksDelete"
+      "AppRepositories.development.dbFeedbacksDelete",
+      "AppRepositories.development.dbAvaliacoesLoad",
+      "AppRepositories.development.dbAvaliacaoSave",
+      "AppRepositories.development.dbAvaliacaoStatus",
+      "AppRepositories.development.dbAvaliacaoDelete"
     ]
   },
   "data-legacy": {
