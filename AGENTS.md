@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.21.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.22.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -150,3 +150,7 @@ Leia docs/revisao-pos-roadmap.md. Panorama parcial foi retirado do HTML e dos re
 ## Continuação 1.21.0
 
 Leia docs/confirmacao-e-contexto.md. Feedbacks/metas exigem IDs confirmados, UUID estável do rascunho e sessão atual; não reintroduzir salvamento otimista nem DELETE da coleção de metas. dbMetasSave faz upsert somente dos itens enviados, dbMetasDelete exclui por ID. A serialização é local; não alegar trava entre dispositivos/fila automática. Relatório Setorial usa apenas globalFilters e os meses presentes no recorte, sem filtros locais nem truncamento silencioso. Rode npm test, workspace-ux.browser.html (também ?saves=1), lazy-modules e data-lifecycle em desktop/celular. O editor de metas ainda não tem destino no shell; não adicioná-lo silenciosamente como parte de correções de persistência.
+
+## Continuação 1.22.0 — Operação e Metas
+
+Leia docs/operacao-e-metas.md. Operação tem Visão geral, Análises e Metas; as três visualizações analíticas mantêm os data-tab antigos. shellPrimaryTabs e shellAnalysisTabs são grupos de teclado independentes dentro do contêiner tabBar; preserve delegação/rotas/atalhos e o proxy Análises. Metas agora tem destino real, admin edita e demais papéis permitidos consultam. Preserve rascunhos na troca de filtro, contratos confirmados e ausência de progresso quando não há dados. Rode npm test e shell/workspace-ux (também ?saves=1), design-system e lazy-modules em desktop/celular; sem testes de escrita em produção ou merge sem autorização.

@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.21.0';
+const APP_VERSION = '1.22.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -373,6 +373,7 @@ function _rerenderActiveNonDashboardTab() {
   if (tab === 'home' && typeof onHomeTabActivated === 'function') onHomeTabActivated();
   else if (tab === 'relatorio-setorial' && typeof onRelatorioSetorialTabActivated === 'function') onRelatorioSetorialTabActivated();
   else if (tab === 'saude-operacional' && typeof onSaudeOperacionalTabActivated === 'function') onSaudeOperacionalTabActivated();
+  else if (tab === 'metas' && typeof onMetasTabActivated === 'function') onMetasTabActivated();
   else if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') { onGamificationTabActivated(); if (typeof onMetasTabActivated === 'function') onMetasTabActivated(); }
   else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();
   else if (tab === 'insights' && typeof onInsightsTabActivated === 'function') onInsightsTabActivated();
@@ -1828,14 +1829,15 @@ if (!rawRecords || !rawRecords.length) {
     const pageContext = {
       home: ['Início', 'Visão geral da operação e acessos rápidos'],
       dashboard: ['Indicadores', 'Desempenho, qualidade e produtividade do suporte'],
-      'relatorio-setorial': ['Relatório Setorial', 'Resultados, evolução e destaques por setor'],
-      'saude-operacional': ['Saúde Operacional', 'Resultados consolidados dos setores e desempenho individual'],
+      'relatorio-setorial': ['Relatório por setor', 'Resultados, evolução e destaques por setor'],
+      'saude-operacional': ['Visão geral da operação', 'Resultados consolidados e pontos de atenção'],
+      metas: ['Metas da operação', 'Objetivos e progresso no recorte selecionado'],
       tarefas: ['Rotina', 'Agenda, tarefas e anotações diárias'],
       regras: ['Regras', 'Quadro de normas e orientações atuais'],
       colaboradores: ['Equipe', 'Cadastro e informações da equipe'],
       ponto: ['Auditoria de Ponto', 'Importação, jornadas e conferência dos cartões de ponto'],
       lider: ['Acompanhamento da equipe', 'Acompanhamento gerencial e alertas da operação'],
-      insights: ['Análises avançadas', 'Diagnósticos automáticos e oportunidades de melhoria'],
+      insights: ['Tendências e alertas', 'Diagnósticos automáticos e oportunidades de melhoria'],
       avaliacao: ['Avaliação de desempenho', 'Avaliações de desempenho e feedback estruturado'],
       'perfil-pdi': ['Análise de perfil e PDI', 'Evidências, objetivos e planos de desenvolvimento'],
       'mapeamento-time': ['Mapeamento de Time', 'Perfis, talentos e ações de desenvolvimento']
@@ -1901,6 +1903,7 @@ if (!rawRecords || !rawRecords.length) {
       if (tab === 'avaliacao' && typeof onAvaliacaoTabActivated === 'function') {
         onAvaliacaoTabActivated();
       }
+      if (tab === 'metas' && typeof onMetasTabActivated === 'function') onMetasTabActivated();
       if (tab === 'dashboard') {
         updateView();
       }
@@ -2147,6 +2150,7 @@ if (!rawRecords || !rawRecords.length) {
         const tab = activeTab.getAttribute('data-tab');
         if (tab === 'home' && typeof onHomeTabActivated === 'function') onHomeTabActivated();
         else if (tab === 'dashboard') { updateView(); const compSec = document.getElementById('comparativosDashboardSection'); if (compSec && compSec.style.display !== 'none' && typeof renderComparativos === 'function') renderComparativos(); }
+        else if (tab === 'metas' && typeof onMetasTabActivated === 'function') onMetasTabActivated();
         else if (tab === 'gamificacao' && typeof onGamificationTabActivated === 'function') { onGamificationTabActivated(); if (typeof onMetasTabActivated === 'function') onMetasTabActivated(); }
         else if (tab === 'colaboradores' && typeof renderColaboradores === 'function') renderColaboradores();
         else if (tab === 'lider' && typeof onLiderTabActivated === 'function') onLiderTabActivated();

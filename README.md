@@ -2,11 +2,15 @@
 
 App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer), gamificação, relatórios inteligentes, e deploy no Vercel.
 
-**Versão atual:** `1.21.0` (constante `APP_VERSION` em `static/app.js`)
+**Versão atual:** `1.22.0` (constante `APP_VERSION` em `static/app.js`)
 
 ## Diagnóstico gerencial
 
 A auditoria, metodologia, limitações e validação da nova seção estão em [docs/diagnostico-gerencial.md](docs/diagnostico-gerencial.md). A migração aditiva `migration_v49.sql` foi aplicada ao banco de produção em 22/10/2026, habilitando revisões privadas sincronizadas.
+
+## Operação e metas
+
+Operação reúne Visão geral, Análises e Metas. As visualizações analíticas existentes permanecem acessíveis dentro de Análises; metas têm tela própria com controles conforme o papel. [Mapa e validação](docs/operacao-e-metas.md).
 
 ## Salvamento e análises
 
@@ -48,6 +52,7 @@ Baseline e continuidade: [arquitetura](docs/architecture.md), [inventário atual
 
 | Versão | Data | Alterações |
 |--------|------|------------|
+| 1.22.0 | 29/10/2026 | Operação organizada em Visão geral, Análises e Metas; acesso próprio a metas e rascunhos preservados ao filtrar. |
 | 1.21.0 | 29/10/2026 | Confirmação de feedbacks/metas, rascunhos para retentativa, metas por item e contexto único no Relatório Setorial. |
 | 1.20.1 | 28/10/2026 | Retirada do Panorama parcial da tela setorial e revisão das pendências do roadmap e da interface. |
 | 1.20.0 | 28/10/2026 | Cockpit gerencial: período encerrado por padrão, evidências e ações vinculadas, notas ausentes explícitas e atualização somente leitura por conta. |

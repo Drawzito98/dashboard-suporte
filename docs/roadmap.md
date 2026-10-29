@@ -23,3 +23,7 @@ As entregas funcionais não encerram toda a consolidação original. Pendências
 ### Continuação 1.21.0
 
 Feedbacks/metas com confirmação, rascunhos e operações por item; Relatório Setorial com filtros globais como contexto único. Ver [confirmacao-e-contexto.md](confirmacao-e-contexto.md). Próximos escopos: demais escritas complementares e revisão das entradas de Operação/Pessoas, incluindo a localização das metas.
+
+### Continuação 1.22.0
+
+Organização de Operação e acesso às metas implementados: Visão geral, Análises com três visualizações e Metas. O editor deixa de depender de um container apenas de teste. Ver [operacao-e-metas.md](operacao-e-metas.md). Continuidade: caminhos de Pessoas/Equipe, demais escritas complementares, redução da carga inicial e consolidação de CSS.

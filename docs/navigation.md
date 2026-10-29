@@ -34,3 +34,7 @@ Clicar numa área abre sua última tela visitada nesta sessão ou a primeira tel
 Para repetir a fixture, sirva o repositório em localhost, abra `/tests/shell.browser.html` e aguarde PASS. Com Chrome de teste na porta 9228 e servidor na 8765: `node --experimental-websocket tests/ponto-browser-runner.js shell.browser.html`. Repetir com viewport de celular. Fixtures de navegador permanecem separadas de npm test.
 
 Não houve aplicação de migrations, alteração de regras de negócio, merge ou comando de deploy nesta fase. Publicação depende de autorização explícita.
+
+## Continuação 1.22.0 — Operação
+
+O mapa acima descreve a Fase 2. Operação agora tem Visão geral, Análises e Metas. Análises contém Indicadores, Relatório por setor e Tendências e alertas. IDs antigos preservados; 14 destinos com a nova tela de metas. Os dois grupos de tabs possuem teclado/rolagem próprios. Estado atual e verificações em [operacao-e-metas.md](operacao-e-metas.md).

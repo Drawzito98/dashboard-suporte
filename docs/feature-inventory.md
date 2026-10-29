@@ -27,3 +27,7 @@ As 13 telas acima permanecem, agora agrupadas em Início, Operação, Pessoas e 
 ## Organização na Fase 3
 
 O acesso principal de cada pessoa abre a Equipe 360º: visão geral, desempenho, desenvolvimento, presença/ponto e histórico/fontes. Edição de cadastro continua explícita. Os módulos e históricos anteriores permanecem; o perfil não cria uma cópia persistida. Consulte [Equipe 360º](equipe-360.md).
+
+## Continuação 1.22.0
+
+Operação passa a Visão geral, Análises e Metas. A nova tela de Metas usa o editor existente e os contratos de confirmação de 1.21.0. Os 13 destinos anteriores permanecem, com três visualizações dentro de Análises. Ver [operacao-e-metas.md](operacao-e-metas.md).

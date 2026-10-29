@@ -60,9 +60,10 @@
  const tab=async name=>{d().querySelector(`[data-tab="${name}"]`).click();await wait(()=>d().body.dataset.activeTab===name,'Aba '+name);await new Promise(r=>setTimeout(r,120))};
  const bounds=el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=frame.clientWidth+1};
  if(new URLSearchParams(location.search).has('saves')){
-  // Metas ainda não tem destino visível no shell; exercitar o editor legado sem criar navegação de produção.
-  const metas=d().createElement('section');metas.id='metasContent';d().getElementById('workspaceContent').append(metas);win().renderMetas();
-  d().getElementById('metaTitleInput').value='Meta de teste';d().getElementById('metaTargetInput').value='100';
+  await tab('metas');assert(d().querySelector('#tab-metas.active #metasContent'),'Metas acessíveis pela navegação real');click('newMetaBtn');assert(d().activeElement.id==='metaTitleInput','Nova meta leva ao formulário');
+  d().getElementById('metaTitleInput').value='Meta de teste';d().getElementById('metaTitleInput').dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  d().getElementById('gfSetor').value='Financeiro';d().getElementById('gfSetor').dispatchEvent(new (win().Event)('change',{bubbles:true}));
+  assert(d().getElementById('metaTitleInput').value==='Meta de teste','Troca de filtro preserva formulário');d().getElementById('metaTargetInput').value='100';
   win().__uxSaveError=true;click('saveMetaBtn');await wait(()=>!d().getElementById('saveMetaBtn').disabled,'Falha de meta concluída');
   assert(d().getElementById('metaTitleInput').value==='Meta de teste','Campos da meta mantidos');
   assert(!win().appStorage.getItem('sistema_metas_v1')||JSON.parse(win().appStorage.getItem('sistema_metas_v1')).length===0,'Falha não vira meta confirmada');
@@ -71,6 +72,11 @@
   win().__uxSaveError=false;win().__uxSaveDelay=true;const count=win().__uxWrites.length;click('saveMetaBtn');click('saveMetaBtn');
   await wait(()=>d().querySelector('.meta-title')?.textContent==='Meta de teste','Meta confirmada');
   assert(win().__uxWrites.length===count+1,'Duplo clique não duplica meta');assert(JSON.parse(win().appStorage.getItem('sistema_metas_v1'))[0].id===metaDraft.id,'Meta usa UUID do rascunho');
+  const query=d().getElementById('gfPesquisa');query.value='nenhuma pessoa com este termo';query.dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  await wait(()=>d().getElementById('metasContent').textContent.includes('Sem indicadores neste recorte'),'Recorte vazio nas metas');
+  assert(d().querySelector('.meta-title')?.textContent==='Meta de teste','Recorte vazio não esconde meta');
+  assert(!d().querySelector('.meta-progress')?.getClientRects().length,'Recorte vazio não afirma progresso zero');
+  query.value='';query.dispatchEvent(new (win().Event)('input',{bubbles:true}));await wait(()=>d().querySelector('.meta-progress')?.getClientRects().length,'Progresso reaparece com dados');
   win().appStorage.setItem('sistema_feedback_editando_v1',JSON.stringify({colaborador:'Pessoa de teste 1 com nome extenso para revisão de interface',mes:'2026-09',feedback_final:'Texto preservado',anotacoes:'Contexto',sugestao_automatica:'Sugestão'}));
   await win().openFeedbacksOverlay();await wait(()=>d().getElementById('fbSalvarBtn'),'Editor de feedback');win().__uxSaveError=true;
   click('fbSalvarBtn');await wait(()=>!d().getElementById('fbSalvarBtn').disabled,'Falha de feedback concluída');
@@ -79,6 +85,8 @@
   win().__uxSaveError=false;const before=win().__uxWrites.length;click('fbSalvarBtn');click('fbSalvarBtn');
   await wait(()=>!win().appStorage.getItem('sistema_feedback_editando_v1'),'Feedback confirmado');
   const saved=JSON.parse(win().appStorage.getItem('sistema_feedbacks_v1'));assert(saved.length===1&&saved[0].id===draft.id,'Mesmo ID confirmado sem duplicação');assert(win().__uxWrites.length===before+1,'Duplo clique não duplica feedback');
+  d().body.dataset.role='viewer';win().renderMetas();assert(!d().getElementById('saveMetaBtn')&&!d().querySelector('.remove-meta-btn'),'Metas somente leitura para viewer');
+  d().body.dataset.role='admin';win().renderMetas();
   assert(!win().__uxErrors.length,'Sem exceções: '+win().__uxErrors.join(';'));
   document.getElementById('testResult').textContent='PASS: formulários reais, falhas explícitas, rascunhos preservados/restaurados, UUID estável, sucesso confirmado e duplo clique bloqueado; somente servidor simulado';return;
  }
@@ -108,9 +116,17 @@
   }
   document.getElementById('testResult').textContent='PASS: cockpit, mês fechado/parcial, ausência de nota, evidências, perfil exato, tarefa focada, filtros, cache, vazio e atualização sem escrita';return;
  }
- for(const name of ['home','dashboard','relatorio-setorial','saude-operacional','tarefas','regras','ponto','colaboradores','lider','insights','avaliacao','perfil-pdi','mapeamento-time']){
+ for(const name of ['home','dashboard','relatorio-setorial','saude-operacional','metas','tarefas','regras','ponto','colaboradores','lider','insights','avaliacao','perfil-pdi','mapeamento-time']){
   await tab(name);if(name==='relatorio-setorial'){assert(!d().getElementById('panoramaSuporteRoot'),'Panorama fora da tela setorial');assert(!d().querySelector('script[src*="panorama-suporte"],link[href*="panorama-suporte"]'),'Relatório não carrega recursos do Panorama');}assert(d().documentElement.scrollWidth<=frame.clientWidth,'Overflow global: '+name);assert(bounds(d().getElementById('appPageTitle')),'Título dentro do cabeçalho: '+name);
  }
+ await tab('relatorio-setorial');
+ const entry=d().querySelector('.shell-analysis-entry');entry.focus();entry.dispatchEvent(new (win().KeyboardEvent)('keydown',{key:'ArrowRight',bubbles:true}));
+ assert(d().activeElement?.dataset.tab==='metas','Setas navegam no grupo principal');
+ d().activeElement.click();assert(d().querySelector('#tab-metas.active'),'Metas abre pela navegação principal');
+ assert(d().getElementById('shellAnalysisPanel').hidden,'Metas não mantém seletor analítico');
+ entry.click();assert(d().body.dataset.activeTab==='relatorio-setorial','Análises restaura visualização');
+ const firstView=d().querySelector('#shellAnalysisTabs [data-tab="dashboard"]');firstView.focus();firstView.dispatchEvent(new (win().KeyboardEvent)('keydown',{key:'ArrowRight',bubbles:true}));
+ assert(d().activeElement?.dataset.tab==='relatorio-setorial','Setas ficam nas visualizações analíticas');
  await tab('dashboard');const sector=d().getElementById('gfSetor');sector.value='Financeiro';sector.dispatchEvent(new (win().Event)('change',{bubbles:true}));
  await wait(()=>win().Chart?.getChart(d().getElementById('mainChart'))?.data.datasets.length,'Chart.js real e gráfico com dados');
  assert(d().querySelectorAll('#previewTable tbody tr').length>0,'Tabela preenchida');
@@ -151,6 +167,6 @@
  const current=d().querySelector('[data-tab="ponto"]');current.focus();current.dispatchEvent(new (win().KeyboardEvent)('keydown',{key:'ArrowLeft',bubbles:true,cancelable:true}));
  assert(d().activeElement.dataset.tab==='mapeamento-time','Setas navegam no submenu');assert(bounds(d().activeElement),'Opção focada revelada');
  assert(win().__uxErrors.length===0,'Erros: '+win().__uxErrors.join('; '));
- document.getElementById('testResult').textContent='PASS: 13 abas, dados extensos, Chart.js real, PNG, CSV, impressão, relatório, cadastro, editores, teclado e Ponto; sem escrita de produção';
+ document.getElementById('testResult').textContent='PASS: 14 destinos, dados extensos, Chart.js real, PNG, CSV, impressão, relatório, cadastro, editores, teclado e Ponto; sem escrita de produção';
 })().catch(error=>{document.getElementById('testResult').textContent='FAIL: '+error.message;console.error(error)});
 </script></html>

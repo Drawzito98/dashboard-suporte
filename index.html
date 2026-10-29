@@ -41,7 +41,7 @@
   <script src="static/icons.js"></script>
   <script src="static/chart-theme.js"></script>
 <link rel="stylesheet" href="static/diagnostico.css?v=1">
-<link rel="stylesheet" href="static/shell.css?v=3">
+<link rel="stylesheet" href="static/shell.css?v=4">
 <link rel="stylesheet" href="static/module-loader.css?v=1">
 <link rel="stylesheet" href="static/css/components.css?v=2">
 <link rel="stylesheet" href="static/cockpit.css?v=1">
@@ -246,6 +246,7 @@
       <button class="tab-btn" data-tab="insights" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg></span> Análises avançadas
       </button>
+      <button class="tab-btn" data-tab="metas" role="tab" aria-selected="false"><span class="tab-icon" aria-hidden="true">◎</span> Metas</button>
       <button class="tab-btn" data-tab="colaboradores" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Equipe
       </button>
@@ -542,6 +543,10 @@
           <div id="saudeOperacionalContent"></div>
         </div>
 
+        <div class="tab-content" id="tab-metas" role="tabpanel">
+          <section class="card"><h2>Metas da operação</h2><p class="text-muted">Acompanhe objetivos de volume, qualidade e produtividade. O progresso usa os filtros do topo.</p><div id="metasContent"></div></section>
+        </div>
+
         <!-- ===== TAB: RELATÓRIO SETORIAL ===== -->
         <div class="tab-content" id="tab-relatorio-setorial" role="tabpanel">
           <section class="card">
@@ -768,7 +773,7 @@
 <script defer src="static/globalFilters.js?v=129"></script>
 <script defer src="static/scoring.js?v=1"></script>
 <script defer src="static/gamificacao.js"></script>
-<script defer src="static/metas.js?v=3"></script>
+<script defer src="static/metas.js?v=7"></script>
 <script defer src="static/comparativos.js"></script>
 <script defer src="static/tempo-empresa.js?v=1"></script>
 <script defer src="static/colab-detail.js?v=82"></script>
@@ -813,13 +818,13 @@
 <script defer src="static/cockpit.js?v=1"></script>
 <script defer src="static/home.js?v=129"></script>
 <script defer src="static/preview-columns.js?v=2"></script>
-<script defer src="static/shell.js?v=2"></script>
+<script defer src="static/shell.js?v=4"></script>
 <script defer src="static/dashboard-charts.js?v=1"></script>
 <script defer src="static/dashboard-report.js?v=2"></script>
-<script defer src="static/app.js?v=142"></script>
+<script defer src="static/app.js?v=143"></script>
 <script defer src="static/app-admin.js?v=2"></script>
 <script defer src="static/ui-accessibility.js?v=2"></script>
-<script defer src="static/app-interface.js?v=2"></script>
+<script defer src="static/app-interface.js?v=3"></script>
 <script defer src="static/manage-colabs-v2.js?v=96"></script>
 <script defer src="static/features.js?v=1"></script>
 <script defer src="static/privacy-screen.js?v=85"></script>

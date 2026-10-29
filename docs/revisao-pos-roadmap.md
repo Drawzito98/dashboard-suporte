@@ -79,3 +79,7 @@ npm test aprovado (171 testes do runner e checks adicionais); release:check e gi
 ## Continuação em 29/10/2026 — 1.21.0
 
 Os dois primeiros itens foram implementados: confirmação explícita para feedbacks/metas, gravação de metas por item e contexto único do Relatório Setorial. As evidências acima descrevem a base 1.20.1. O estado posterior e seus limites estão em [confirmacao-e-contexto.md](confirmacao-e-contexto.md). Confirmar escritas dos demais complementares, reduzir carga inicial e consolidar navegação/CSS continuam pendentes. O editor legado de metas não possui destino visível no shell; sua localização é uma decisão para o próximo ciclo.
+
+## Continuação 1.22.0
+
+Operação foi organizada em Visão geral, Análises e Metas. Metas têm acesso próprio; os destinos analíticos anteriores permanecem dentro de Análises. A lacuna de localização do editor foi resolvida nesta entrega; ver [operacao-e-metas.md](operacao-e-metas.md). Permanecem as demais pendências de dados, Pessoas e consolidação técnica.

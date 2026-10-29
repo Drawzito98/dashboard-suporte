@@ -296,19 +296,16 @@ function initNotificacoesUI() {
         button.setAttribute("tabindex", button.classList.contains("active") ? "0" : "-1");
         if (panel) panel.setAttribute("aria-labelledby", button.id);
       });
-      tabBar.addEventListener("click", (event) => {
-        const selected = event.target.closest(".tab-btn[data-tab]");
-        if (!selected) return;
-        tabBar.querySelectorAll(".tab-btn[data-tab]").forEach((button) => button.setAttribute("tabindex", button === selected ? "0" : "-1"));
-      });
       tabBar.addEventListener("keydown", (event) => {
-        if (event.key !== "ArrowDown" && event.key !== "ArrowUp" && event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
-        const buttons = Array.from(tabBar.querySelectorAll(".tab-btn[data-tab]")).filter(button => button.getClientRects().length && !button.disabled);
+        if (!['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
+        const list = event.target.closest('[role="tablist"]') || tabBar;
+        const buttons = [...list.querySelectorAll('[role="tab"]')].filter(button => button.getClientRects().length && !button.disabled);
         const current = buttons.indexOf(document.activeElement);
         if (current < 0) return;
         event.preventDefault();
-        const forward = event.key === "ArrowDown" || event.key === "ArrowRight";
-        buttons[(current + (forward ? 1 : -1) + buttons.length) % buttons.length].focus();
+        const forward = event.key === 'ArrowDown' || event.key === 'ArrowRight';
+        const index = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (current + (forward ? 1 : -1) + buttons.length) % buttons.length;
+        buttons[index]?.focus();
       });
     }
 
