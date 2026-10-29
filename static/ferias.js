@@ -7,7 +7,7 @@ function formatarDataBr(d) {
 }
 
 function temFeriasSobrepostas(colaborador, inicio, fim, ignoreId) {
-  const saved = JSON.parse(appStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
+  const saved = getPresenceList('ferias');
   return saved.some(f => {
     if (ignoreId && String(f.id) === String(ignoreId)) return false;
     if (f.colaborador !== colaborador) return false;
@@ -26,7 +26,7 @@ function statusFerias(data_inicio, data_fim) {
 }
 
 let filtroStatus = 'todas';
-let feriasEditandoId = null;
+
 
 function statusLabel(data_inicio, data_fim) {
   return statusFerias(data_inicio, data_fim).label;
@@ -47,15 +47,9 @@ function acharIdsDuplicados(lista) {
   return duplicados;
 }
 
-async function resolverDuplicatas() {
-  const saved = JSON.parse(appStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
-  const idsDuplicados = acharIdsDuplicados(saved);
-  if (!idsDuplicados.size) return;
-
-  const dups = saved.filter(f => idsDuplicados.has(String(f.id)));
-  const ok = await feriasConfirmModalGeral(`Deletar duplicatas`, `Serão excluídos ${idsDuplicados.size} registro(s) sobrepostos, mantendo apenas o período mais longo de cada colaborador. Deseja continuar?`);
-  if (!ok) return;
-
+async function resolverDuplicatas(){
+  if(!requireAdmin()||PresenceEditor.busy('ferias'))return;
+  const saved=getPresenceList('ferias'),idsDuplicados=acharIdsDuplicados(saved);if(!idsDuplicados.size)return;
   const grupos = [];
   const visitados = new Set();
   for (const f of saved) {
@@ -73,42 +67,38 @@ async function resolverDuplicatas() {
     grupos.push(grupo);
   }
 
-  let deletados = 0;
-  for (const grupo of grupos) {
-    grupo.sort((a, b) => {
-      const diasA = (new Date(a.data_fim) - new Date(a.data_inicio));
-      const diasB = (new Date(b.data_fim) - new Date(b.data_inicio));
-      return diasB - diasA;
-    });
-    const manter = grupo[0];
-    for (const item of grupo) {
-      if (String(item.id) === String(manter.id)) continue;
-      await dbFeriasDelete(item.id);
-      deletados++;
-    }
-  }
-
-  showToast(`${deletados} duplicata(s) removida(s)!`, 'success', 'Férias');
-  renderFerias('feriasOverlayContent');
+  const remove=[];
+  for(const group of grupos){group.sort((a,b)=>(new Date(b.data_fim)-new Date(b.data_inicio))-(new Date(a.data_fim)-new Date(a.data_inicio)));remove.push(...group.slice(1));}
+  let count=0;
+  await PresenceEditor.run('ferias',async()=>{
+    const names=remove.map(item=>`${item.colaborador}: ${formatarDataBr(item.data_inicio)} a ${formatarDataBr(item.data_fim)}`).join('; ');
+    if(!await feriasConfirmModalGeral('Excluir períodos sobrepostos',`Excluir ${remove.length} registro(s), mantendo o período mais longo de cada grupo? ${names}`))return false;
+    try{for(const row of remove){await dbFeriasDelete(row.id);count++;}}
+    catch(error){throw Error(`${count} exclusão(ões) confirmada(s). As demais não foram confirmadas. ${error.message}`);}
+    return true;
+  },done=>{if(done)showToast(`${count} exclusão(ões) confirmada(s).`,'success','Férias');});
 }
 
 function feriasConfirmModalGeral(titulo, msg) {
   return new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.className = 'mt-modal-overlay';
+    overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label',titulo);
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px';
     overlay.innerHTML = `
-      <div style="width:100%;max-width:420px;background:var(--bg-surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:var(--r-xl,12px);box-shadow:var(--shadow-lg,0 12px 40px rgba(0,0,0,0.12));padding:24px;position:relative">
+      <div style="width:100%;max-width:420px;max-height:calc(100vh - 40px);overflow-y:auto;background:var(--bg-surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:var(--r-xl,12px);box-shadow:var(--shadow-lg,0 12px 40px rgba(0,0,0,0.12));padding:24px;position:relative">
         <h3 style="font-size:18px;font-weight:600;color:var(--text-strong);margin:0 0 12px">${escapeHtml(titulo)}</h3>
         <p style="color:var(--text-secondary);font-size:14px;line-height:1.5;margin:0 0 20px">${escapeHtml(msg)}</p>
         <div style="display:flex;justify-content:flex-end;gap:8px">
-          <button class="btn-small" id="fGenCancel" type="button">Cancelar</button>
+          <button class="btn-small" id="fGenCancel" type="button" data-close aria-label="Cancelar">Cancelar</button>
           <button class="btn-primary" id="fGenConfirm" type="button" style="background:var(--danger);border-color:var(--danger)">Confirmar</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.style.display = 'flex');
-    const close = (r) => { overlay.remove(); resolve(r); };
+    const token=AppDataSession.token();let unsubscribe=()=>{};
+    const close = r => { unsubscribe();overlay.remove();resolve(Boolean(r)&&AppDataSession.current(token)); };
+    if(typeof AppState!=='undefined')unsubscribe=AppState.subscribe(event=>{if(event.resource==='session'&&!AppDataSession.current(token))close(false);});
     overlay.querySelector('#fGenCancel').onclick = () => close(false);
     overlay.querySelector('#fGenConfirm').onclick = () => close(true);
     overlay.onclick = (e) => { if (e.target === overlay) close(false); };
@@ -140,19 +130,15 @@ function renderFerias(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const saved = JSON.parse(appStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
+  if(PresenceEditor.blocked('ferias'))return;
+  const saved=getPresenceList('ferias'),draft=PresenceEditor.draft('ferias');
   const colabs = [...new Set((rawRecords || [])
     .filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']))
-    .map(r => r['Atendente']))].sort();
+    .map(r => r['Atendente']).concat(draft?.colaborador?[draft.colaborador]:[]))].sort();
 
   let html = '';
 
-  let editando = feriasEditandoId !== null;
-  let editItem = editando ? saved.find(f => String(f.id) === feriasEditandoId) : null;
-  if (editando && !editItem) {
-    feriasEditandoId = null;
-    editando = false;
-  }
+  const editando=Boolean(draft?.id),editItem=draft;
 
   html += '<div class="card" style="margin-bottom:var(--s-4)">';
   html += '<div class="card-header">';
@@ -165,22 +151,22 @@ function renderFerias(containerId) {
 
   html += '<div class="ausencias-form">';
   html += '<div class="ausencias-field">';
-  html += '<label>Colaborador</label>';
+  html += '<label for="feriasColabInput">Colaborador</label>';
   html += `<select id="feriasColabInput" style="width:100%"><option value="">Selecione...</option>`;
   for (const c of colabs) {
-    html += `<option value="${escapeHtml(c)}"${editando && editItem.colaborador === c ? ' selected' : ''}>${escapeHtml(c)}</option>`;
+    html += `<option value="${escapeHtml(c)}"${editItem?.colaborador===c?' selected':''}>${escapeHtml(c)}</option>`;
   }
   html += '</select>';
   html += '</div>';
 
   html += '<div class="ausencias-field">';
-  html += '<label>Data de início</label>';
-  html += `<input type="date" id="feriasInicioInput" style="width:100%" value="${editando ? editItem.data_inicio : ''}">`;
+  html += '<label for="feriasInicioInput">Data de início</label>';
+  html += `<input type="date" id="feriasInicioInput" style="width:100%" value="${editItem?.data_inicio||''}">`;
   html += '</div>';
 
   html += '<div class="ausencias-field">';
-  html += '<label>Data de fim</label>';
-  html += `<input type="date" id="feriasFimInput" style="width:100%" value="${editando ? editItem.data_fim : ''}">`;
+  html += '<label for="feriasFimInput">Data de fim</label>';
+  html += `<input type="date" id="feriasFimInput" style="width:100%" value="${editItem?.data_fim||''}">`;
   html += '</div>';
 
   html += '<div class="ausencias-actions">';
@@ -196,9 +182,9 @@ function renderFerias(containerId) {
   html += '<div style="display:flex;gap:var(--s-2)">';
   if (saved.length > 0) {
     html += '<button class="btn-small" id="feriasExportBtn" type="button">Exportar CSV</button>';
-    html += '<button class="btn-small" id="feriasRefreshBtn" type="button">Atualizar</button>';
+
   }
-  html += '</div>';
+  html += '<button class="btn-small" id="feriasRefreshBtn" type="button">Atualizar lista</button></div>';
   html += '</div>';
 
   const idsDuplicados = acharIdsDuplicados(saved);
@@ -256,101 +242,34 @@ function renderFerias(containerId) {
   html += '</div>';
 
   container.innerHTML = html;
-  bindFeriasEvents(containerId, saved);
+  bindFeriasEvents(containerId,saved);
+  PresenceEditor.decorate('ferias');
 }
 
-function bindFeriasEvents(containerId, saved) {
-  document.getElementById('feriasSalvarBtn')?.addEventListener('click', async () => {
-    if (!requireAdmin()) return;
-    const colaborador = document.getElementById('feriasColabInput').value;
-    const data_inicio = document.getElementById('feriasInicioInput').value;
-    const data_fim = document.getElementById('feriasFimInput').value;
-    if (!colaborador || !data_inicio || !data_fim) {
-      showToast('Preencha colaborador, data de início e fim.', 'error', 'Férias');
-      return;
-    }
-    if (data_fim < data_inicio) {
-      showToast('Data de fim não pode ser anterior à data de início.', 'error', 'Férias');
-      return;
-    }
-    if (temFeriasSobrepostas(colaborador, data_inicio, data_fim, feriasEditandoId)) {
-      showToast(`${colaborador} já possui férias neste período!`, 'error', 'Férias');
-      return;
-    }
-    const editando = feriasEditandoId !== null;
-    const item = {
-      id: feriasEditandoId || (Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6)),
-      colaborador,
-      data_inicio,
-      data_fim
-    };
-    await dbFeriasSave(item);
-    feriasEditandoId = null;
-    showToast(editando ? `Férias atualizadas para ${colaborador}!` : `Férias registradas para ${colaborador}!`, 'success', 'Férias');
-    renderFerias(containerId);
+function bindFeriasEvents(containerId,saved){
+  document.getElementById('feriasSalvarBtn')?.addEventListener('click',()=>{
+    if(!requireAdmin()||PresenceEditor.busy('ferias')||!PresenceEditor.capture('ferias'))return;
+    const item=PresenceEditor.draft('ferias');
+    if(!item.colaborador||!item.data_inicio||!item.data_fim){PresenceEditor.message('ferias','Preencha colaborador, início e fim.');return;}
+    if(item.data_fim<item.data_inicio){PresenceEditor.message('ferias','Data de fim não pode ser anterior ao início.');return;}
+    if(temFeriasSobrepostas(item.colaborador,item.data_inicio,item.data_fim,item.id)){PresenceEditor.message('ferias','Já existem férias desta pessoa neste período. Confira a lista.');return;}
+    PresenceEditor.run('ferias',()=>dbFeriasSave(item),()=>PresenceEditor.finish('ferias'));
   });
-
-  document.getElementById('feriasExportBtn')?.addEventListener('click', () => {
-    exportFeriasCSV(saved);
-  });
-
-  document.getElementById('feriasResolveDupBtn')?.addEventListener('click', resolverDuplicatas);
-
-  const fContainer = document.getElementById(containerId);
-  if (fContainer) {
-    fContainer.querySelectorAll('.ferias-status-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        filtroStatus = btn.dataset.status;
-        renderFerias(containerId);
-      });
-    });
-    const editBtns = fContainer.querySelectorAll('.ferias-edit-btn');
-    editBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (!requireAdmin()) { showToast('Apenas administradores podem editar férias.', 'error', 'Férias'); return; }
-        feriasEditandoId = btn.dataset.id;
-        renderFerias(containerId);
-      });
-    });
-
-    const delBtns = fContainer.querySelectorAll('.ferias-del-btn');
-    delBtns.forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!requireAdmin()) { showToast('Apenas administradores podem excluir férias.', 'error', 'Férias'); return; }
-        const id = btn.dataset.id;
-        const f = saved.find(x => String(x.id) === id);
-        if (!f) return;
-        if (!confirm(`Excluir férias de ${f.colaborador} (${formatarDataBr(f.data_inicio)} → ${formatarDataBr(f.data_fim)})?`)) return;
-        await dbFeriasDelete(id);
-        renderFerias(containerId);
-      });
-    });
-
-    document.getElementById('feriasCancelEditBtn')?.addEventListener('click', () => {
-      feriasEditandoId = null;
-      renderFerias(containerId);
-    });
-  }
+  document.getElementById('feriasExportBtn')?.addEventListener('click',()=>exportFeriasCSV(saved));
+  document.getElementById('feriasResolveDupBtn')?.addEventListener('click',resolverDuplicatas);
+  const host=document.getElementById(containerId);
+  host?.querySelectorAll('.ferias-status-btn').forEach(button=>button.addEventListener('click',()=>{filtroStatus=button.dataset.status;PresenceEditor.render('ferias');}));
+  host?.querySelectorAll('.ferias-edit-btn').forEach(button=>button.addEventListener('click',()=>{const row=saved.find(item=>String(item.id)===button.dataset.id);if(row)PresenceEditor.edit('ferias',row);}));
+  host?.querySelectorAll('.ferias-del-btn').forEach(button=>button.addEventListener('click',()=>{
+    if(!requireAdmin()||PresenceEditor.busy('ferias'))return;const row=saved.find(item=>String(item.id)===button.dataset.id);
+    if(!row||!confirm(`Excluir férias de ${row.colaborador} (${formatarDataBr(row.data_inicio)} → ${formatarDataBr(row.data_fim)})?`))return;
+    PresenceEditor.run('ferias',()=>dbFeriasDelete(row.id),()=>showToast('Exclusão confirmada.','success','Férias'));
+  }));
+  document.getElementById('feriasCancelEditBtn')?.addEventListener('click',()=>PresenceEditor.discard('ferias'));
 }
-
-function openFeriasOverlay() {
-  const overlay = document.getElementById('feriasOverlay');
-  if (!overlay) return;
-  const content = document.getElementById('feriasOverlayContent');
-  if (!content) return;
-  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>';
-  overlay.classList.add('open');
-  setTimeout(() => renderFerias('feriasOverlayContent'), 50);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('feriasBtn')?.addEventListener('click', openFeriasOverlay);
-  document.getElementById('feriasOverlayClose')?.addEventListener('click', () => {
-    feriasEditandoId = null;
-    document.getElementById('feriasOverlay')?.classList.remove('open');
-  });
-  const overlay = document.getElementById('feriasOverlay');
-  overlay?.addEventListener('click', (e) => {
-    if (e.target === overlay) { feriasEditandoId = null; overlay.classList.remove('open'); }
-  });
+function openFeriasOverlay(){PresenceEditor.open('ferias');}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('feriasBtn')?.addEventListener('click',openFeriasOverlay);
+  document.getElementById('feriasOverlayClose')?.addEventListener('click',()=>PresenceEditor.close('ferias'));
+  const overlay=document.getElementById('feriasOverlay');overlay?.addEventListener('click',event=>{if(event.target===overlay)PresenceEditor.close('ferias');});
 });

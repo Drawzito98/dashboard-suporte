@@ -103,3 +103,7 @@ Cadastro de colaboradores, foto e reativação na criação exigem confirmação
 ## Continuação 1.27.0 — Bônus e penalidades
 
 Bônus/penalidades com confirmação, rascunho privado, UUID/sinal estáveis e mês preservado na recarga. Acesso disponível em Pessoas → Equipe, sem reintroduzir a tela de Gamificação. Ver [bonus-confirmados.md](bonus-confirmados.md). Os demais domínios, carga inicial/CSS e Panorama mantêm as pendências documentadas.
+
+## Continuação 1.28.0 — Férias e ausências
+
+Confirmação, rascunhos e conferência de criações incertas implementadas, respeitando IDs numéricos existentes. Exclusões sobrepostas informam confirmações parciais. Ver [presenca-confirmada.md](presenca-confirmada.md). Retomar pelas pendências e verificações visuais ali registradas; sem merge ou SQL.

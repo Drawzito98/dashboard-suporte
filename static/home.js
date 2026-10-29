@@ -23,7 +23,7 @@ function renderHome() {
   let colabInfo = {};
   let vacations = [];
   try { colabInfo = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (e) {}
-  try { vacations = JSON.parse(appStorage.getItem('sistema_ferias_v1') || '[]'); } catch (e) {}
+  try { vacations = (typeof getPresenceList==='function'?getPresenceList('ferias'):JSON.parse(appStorage.getItem('sistema_ferias_v1') || '[]')); } catch (e) {}
 
   if (!colabInfo || typeof colabInfo !== 'object' || Array.isArray(colabInfo)) colabInfo = {};
   if (!Array.isArray(vacations)) vacations = [];

@@ -3,7 +3,7 @@ function getFeriasPeriodo(colaborador, meses, lista) {
   const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toLowerCase();
   if (!normalize(colaborador)) return { periodos: [], dias: 0 };
   if (!Array.isArray(lista)) {
-    try { lista = JSON.parse(appStorage.getItem('sistema_ferias_v1') || '[]'); } catch { lista = []; }
+    try { lista = (typeof getPresenceList==='function'?getPresenceList('ferias'):JSON.parse(appStorage.getItem('sistema_ferias_v1') || '[]')); } catch { lista = []; }
   }
   if (!Array.isArray(lista)) lista = [];
   const selected = [...new Set(meses || [])].filter(m => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(m)));

@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.27.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.28.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -174,3 +174,7 @@ Leia docs/cadastro-confirmado.md. Cadastro usa confirmação por user_id,nome e 
 ## Continuação 1.27.0 — Bônus
 
 Leia docs/bonus-confirmados.md. Bônus usam UUID/conta confirmados e AppState.pontosExtras/getPontosExtrasLocal, incluindo mes após a leitura. Não reintroduzir cache otimista, geração de outro ID na retentativa ou exclusão de coleção. Rascunho privado em sistema_bonus_editando_v1; sinal reservado após tentativa nova, edição mantém pessoa/sinal. Acesso é Pessoas → Equipe, não reativar Gamificação como tela. Preservar fórmula/multiplicadores/filtros e cópia privada anterior. Rode npm test e workspace (?bonus=1, completo e ?people=1), Equipe360, data-lifecycle, lazy-modules e design-system em desktop/celular; sem SQL/testes de escrita em produção ou merge sem autorização.
+
+## Continuação 1.28.0 — Presença
+
+Leia docs/presenca-confirmada.md. Férias/ausências usam BIGINT identity; não enviar UUID como ID nem repetir INSERT incerto automaticamente. PresenceEditor preserva rascunhos; reservas e recibos são privados, sem fila automática. Nova tentativa incerta exige consulta confirmada e decisão explícita; vínculo ao registro é manual. Exclusões e eventos exigem confirmação; resolução de sobreposições é manual e informa resultado parcial. Preserve regras de datas/grupos e não aplique SQL. Rode npm test e workspace ?presence=1, cockpit/race, Equipe360, data-lifecycle, lazy-modules e design-system. Pendências visuais e demais domínios estão no documento; merge exige autorização explícita.
