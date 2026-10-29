@@ -51,3 +51,7 @@ A conclusão da Fase 6 (c4c782a) foi publicada e conferida por hash antes de ini
 ## Continuação 1.25.0 — Rotina
 
 Confirmação e rascunhos de tarefas/notas com servidor simulado. npm test, release:check e diff --check aprovados; formulários em 1440/320px e regressões de workspace, cockpit/race, sessão, lazy-modules, design-system e atividades. Evidências e limites em [rotina-confirmada.md](rotina-confirmada.md). Publicação autorizada; nenhum merge ou teste de escrita em produção.
+
+## Continuação 1.26.0 — Cadastro
+
+Cadastro de colaboradores, foto e reativação na criação exigem confirmação, com rascunho privado e falhas parciais explícitas. A cópia privada anterior é preservada separadamente. Ver [cadastro-confirmado.md](cadastro-confirmado.md). Bônus, regras, presença e gerenciadores de inativos ainda aguardam revisão; carga inicial/CSS e Panorama mantêm os limites documentados.

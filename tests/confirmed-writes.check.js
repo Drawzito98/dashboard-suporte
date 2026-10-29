@@ -3,23 +3,24 @@ const { webcrypto: crypto } = require('node:crypto');
 const { create } = require('../static/data-runtime.js');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function setup() {
-  const memory = new Map(), tables = { feedbacks: new Map(), metas: new Map(), avaliacoes: new Map(), tarefas: new Map(), anotacoes_diarias: new Map() }, calls = [];
+  const memory = new Map(), tables = { feedbacks: new Map(), metas: new Map(), avaliacoes: new Map(), tarefas: new Map(), anotacoes_diarias: new Map(), colaboradores_info: new Map(), colaborador_fotos: new Map(), colab_inativos: new Map() }, calls = [];
   const session = create({ storage: { getItem: k => memory.get(k) || null, setItem: (k,v) => { if(control.cacheFail) throw Error('quota'); memory.set(k,v); }, removeItem: k => memory.delete(k) } });
   session.bind({ id: 'owner', app_metadata: { role: 'admin' } });
   const control = { mode: 'ok', hold: null, release: null, admin: true };
   const client = { auth: { getUser: async () => ({ data: { user: { id: 'owner' } } }) }, from(table) {
     let mode = 'read', payload, single = false, range = null; const filters = [];
     const q = { range(a,b) { range=[a,b]; return q; }, select() { return q; }, order() { return q; }, eq(k,v) { filters.push([k,v]); return q; }, single() { single = true; return q; }, maybeSingle() { single=true;return q; }, not(k,op,v){filters.push([k,v,'notLike']);return q;},
-      update(p) { mode='update';payload=p;return q; }, upsert(p) { mode = 'write'; payload = p; return q; }, delete() { mode = 'delete'; return q; },
+      update(p) { mode='update';payload=p;return q; }, upsert(p,options) { mode = 'write'; payload = p; q.conflict=options?.onConflict;return q; }, delete() { mode = 'delete'; return q; },
       then(resolve,reject) { return Promise.resolve().then(async () => {
         calls.push({ table, mode, payload, filters, range });
         const snapshot = [...tables[table].values()].map(r => ({...r}));
         if (control.hold) { const held = control.hold; control.hold = null; await held; }
         if (control.mode === 'network') throw Error('offline');
         if (range && control.failPage === range[0]) return {error:{message:'later page'}};
+        if(control.missingSalary&&table==='colaboradores_info'&&Object.prototype.hasOwnProperty.call(payload||{},'salario'))return{error:{code:'PGRST204',message:'Missing salario column'}};
         if (control.mode === 'error') return { error: { message: 'RLS' } };
         let rows;
-        if (mode === 'write') { rows = (Array.isArray(payload) ? payload : [payload]).map(r => ({ ...r, created_at: r.created_at || '2026-10-29' })); rows.forEach(r => tables[table].set(r.id,r)); }
+        if (mode === 'write') { rows = (Array.isArray(payload) ? payload : [payload]).map(r => ({ ...r, created_at: r.created_at || '2026-10-29' })); rows=rows.map(r=>{const old=q.conflict==='user_id,nome'?[...tables[table].values()].find(row=>row.user_id===r.user_id&&row.nome===r.nome):tables[table].get(r.id);return {...old,...r,id:old?.id||r.id||crypto.randomUUID()};});rows.forEach(r => tables[table].set(r.id,r)); }
         else { rows = snapshot.filter(r => filters.every(([k,v,op]) => op==='notLike'?!String(r[k]||'').startsWith(v.slice(0,-1)):r[k]===v)); if (range) rows=rows.slice(range[0],range[1]+1); if (mode === 'delete') rows.forEach(r => tables[table].delete(r.id)); if (mode === 'update') {rows=rows.map(r=>({...r,...payload}));rows.forEach(r=>tables[table].set(r.id,r));} }
         if (control.mode === 'lost' && ['write','update'].includes(mode)) throw Error('response lost');
         if(control.foreign) rows=rows.map(row=>({...row,user_id:'other'}));
@@ -27,9 +28,9 @@ function setup() {
       }).then(resolve,reject); }
     }; return q;
   }};
-  const c = { console, crypto, AppState:session.state, AppDataSession: session, appStorage: session.cache, sbClient: client, requireAdmin: () => control.admin, FeatureLoader: { ensure: async () => {} }, AppRepositories: {} }; c.window = c;
+  const c = { console, crypto, AppState:session.state, AppDataSession: session, appStorage: session.cache, sbClient: client, requireAdmin: () => control.admin, FeatureLoader: { ensure: async () => {} }, AppRepositories: {}, CustomEvent:class{constructor(type){this.type=type;}},dispatchEvent(){} }; c.window = c;
   vm.createContext(c);
-  for (const name of ['db-extra','repositories/development','repositories/performance','repositories/routine']) vm.runInContext(fs.readFileSync('static/'+name+'.js','utf8'),c);
+  for (const name of ['db-extra','repositories/development','repositories/performance','repositories/routine','repositories/people']) vm.runInContext(fs.readFileSync('static/'+name+'.js','utf8'),c);
   return { c, session, calls, control, tables, memory };
 }
 (async () => {
@@ -126,6 +127,25 @@ function setup() {
     const concurrent=setup();await concurrent.c[save](item);concurrent.control.hold=new Promise(r=>concurrent.control.release=r);const reading=concurrent.c[load]();await tick();await concurrent.c[save]({...item,[field]:value});concurrent.control.release();await reading;assert.equal(concurrent.c.AppState.get(resource)[0][field],value,'Leitura antiga não desfaz gravação confirmada');
   }
   rt.control.admin=false;await assert.rejects(rt.c.dbTarefasSave(task));await assert.rejects(rt.c.dbTarefaStatus(task.id,{status:'concluida'}));await assert.rejects(rt.c.dbTarefasDelete(task.id));await rt.c.dbAnotacoesSave(note);rt.control.admin=true;
+  const people=setup(),person='Pessoa exata',profile={setor_atual:'Suporte',nivel:'N2',salario:2000,observacoes:'Contexto privado'};
+  for(const mode of ['error','network','missing']){people.control.mode=mode;await assert.rejects(people.c.dbColabInfoSave(person,profile));assert.equal(people.c.AppState.get('colaboradores'),null);}
+  people.control.mode='ok';people.control.foreign=true;await assert.rejects(people.c.dbColabInfoSave(person,profile));people.control.foreign=false;
+  people.control.mode='lost';await assert.rejects(people.c.dbColabInfoSave(person,profile));people.control.mode='ok';await people.c.dbColabInfoSave(person,profile);assert.equal(people.tables.colaboradores_info.size,1,'Chave conta/nome evita duplicação');
+  const profileId=people.c.getColabInfoLocal()[person].id;await people.c.dbColabInfoSave(person,{setor_atual:'Financeiro'});assert.equal(people.c.getColabInfoLocal()[person].salario,2000,'Patch parcial não apaga outros campos');assert.equal(people.c.getColabInfoLocal()[person].id,profileId);
+  people.control.missingSalary=true;const salaryCalls=people.calls.length;await assert.rejects(people.c.dbColabInfoSave(person,{salario:3000}));assert.equal(people.calls.length,salaryCalls+1,'Não reenvia omitindo salário');assert.equal(people.c.getColabInfoLocal()[person].salario,2000);people.control.missingSalary=false;
+  people.control.mode='error';await assert.rejects(people.c.dbColabInfoSave(person,{observacoes:''}));assert.equal(people.c.getColabInfoLocal()[person].observacoes,profile.observacoes);people.control.mode='ok';
+  people.control.cacheFail=true;people.c.console={...console,warn(){}};await people.c.dbColabInfoSave(person,{nivel:'N3'});assert.equal(people.c.getColabInfoLocal()[person].nivel,'N3');people.control.cacheFail=false;
+  people.control.hold=new Promise(r=>people.control.release=r);const oldProfile=people.c.dbColabInfoLoad();await tick();await people.c.dbColabInfoSave(person,{observacoes:'Última edição'});people.control.release();await oldProfile;assert.equal(people.c.getColabInfoLocal()[person].observacoes,'Última edição');
+  const photoId=crypto.randomUUID();people.control.mode='lost';await assert.rejects(people.c.dbFotoSave(person,'data:image/webp;base64,AAA',photoId));assert.equal(people.c.AppState.get('fotos'),null);people.control.mode='ok';await people.c.dbFotoSave(person,'data:image/webp;base64,AAA',photoId);assert.equal(people.tables.colaborador_fotos.size,1);
+  people.control.mode='error';await assert.rejects(people.c.dbFotoSave(person,''));assert.ok(people.c.AppState.get('fotos')[person]);people.control.mode='ok';await people.c.dbFotoSave(person,'');assert.equal(people.c.AppState.get('fotos')[person],undefined);
+  const inactive={id:crypto.randomUUID(),user_id:'owner',nome:person},otherInactive={id:crypto.randomUUID(),user_id:'owner',nome:'Outra pessoa'},foreignInactive={id:crypto.randomUUID(),user_id:'other',nome:person};for(const r of [inactive,otherInactive,foreignInactive])people.tables.colab_inativos.set(r.id,r);
+  people.control.mode='error';await assert.rejects(people.c.dbColabActivate(person));assert.ok(people.tables.colab_inativos.has(inactive.id));people.control.mode='ok';await people.c.dbColabActivate(person);assert.ok(!people.tables.colab_inativos.has(inactive.id));assert.ok(people.tables.colab_inativos.has(otherInactive.id));assert.ok(people.tables.colab_inativos.has(foreignInactive.id));
+  for(const [method,args]of [['dbColabInfoSave',[person,profile]],['dbFotoSave',[person,'photo',photoId]],['dbColabActivate',[person]]]){const late=setup();late.control.hold=new Promise(r=>late.control.release=r);const pending=late.c[method](...args);await tick();const before=[...late.memory.entries()];late.session.invalidate();late.control.release();await assert.rejects(pending,/Sessão alterada/);assert.deepEqual([...late.memory.entries()],before);}
+  for(const [table,load,resource]of [['colaboradores_info','dbColabInfoLoad','colaboradores'],['colaborador_fotos','dbFotosLoad','fotos']]){const page=setup();for(let i=0;i<1101;i++){const id=crypto.randomUUID();page.tables[table].set(id,{id,user_id:'owner',nome:'Pessoa '+i});}page.control.failPage=500;assert.equal(Object.keys(await page.c[load]()).length,0);page.control.failPage=null;assert.equal(Object.keys(await page.c[load]()).length,1101);page.tables[table].clear();assert.equal(Object.keys(await page.c[load]()).length,0);}
+  const preserved=setup();preserved.session.cache.setItem('sistema_colaboradores_info_v1',JSON.stringify({Legado:{observacoes:'Edição local antiga',updatedAt:'2099-01-01'}}));await preserved.c.dbColabInfoLoad();assert.equal(Object.keys(preserved.c.getColabInfoLocal()).length,0,'Servidor vazio prevalece sobre timestamp local');assert.equal(JSON.parse(preserved.session.cache.getItem('sistema_colaboradores_backup_v1')).Legado.observacoes,'Edição local antiga','Cópia privada anterior preservada separadamente');assert.equal(preserved.calls.filter(call=>call.mode!=='read').length,0,'Preservação não escreve no servidor');
+  for(const method of ['dbColabInfoLoad','dbFotosLoad']){const late=setup();late.tables.colaboradores_info.set('test',{id:'test',user_id:'owner',nome:person});late.tables.colaborador_fotos.set('test',{id:'test',nome:person,foto_url:'photo'});late.control.hold=new Promise(r=>late.control.release=r);const pending=late.c[method]();await tick();const before=[...late.memory.entries()];late.session.invalidate();late.control.release();assert.equal(Object.keys(await pending).length,0);assert.deepEqual([...late.memory.entries()],before);}
+  people.control.admin=false;for(const [method,args]of [['dbColabInfoSave',[person,profile]],['dbFotoSave',[person,'photo']],['dbColabActivate',[person]]])await assert.rejects(people.c[method](...args));
+  console.log('Cadastro: confirmação/conta/nome, patch parcial, salário sem fallback otimista, cache indisponível, foto confirmada, paginação, sessão e reativação por pessoa.');
   console.log('Rotina: confirmação/UUID/dono, paginação, exclusão, sessão, cache indisponível, status e favorito isolados, recorrência idempotente, notas privadas e atividades protegidas.');
   console.log('Avaliações: confirmação/ID/dono, erro/rede/retentativa, paginação, status isolado, cache indisponível, rascunho separado, permissões, leituras antigas, fila local e sessão encerrada.');
   console.log('Escritas confirmadas: erros/RLS/rede, retorno sem ID, retentativa idempotente, serialização, metas por item, exclusão, papel, leitura concorrente e sessão encerrada.');

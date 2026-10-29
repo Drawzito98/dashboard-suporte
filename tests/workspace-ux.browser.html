@@ -7,8 +7,9 @@
  const assert=(v,m)=>{if(!v)throw Error(m)},wait=async(fn,message)=>{const end=Date.now()+25000;while(Date.now()<end){if(fn())return;await new Promise(r=>setTimeout(r,60))}throw Error(message)};
  const html=await(await fetch('../index.html',{cache:'no-store'})).text(),doc=new DOMParser().parseFromString(html,'text/html');
  const seed=()=>{
-  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(window.__uxDraftQuota&&['sistema_avaliacao_rascunho_v1','sistema_tarefa_rascunho_v1','sistema_anotacao_editando_v1','sistema_tarefa_transicao_v1'].some(suffix=>k.endsWith(suffix)))throw Error('Quota simulada');memory.set(k,String(v))},removeItem:k=>memory.delete(k)}});
+  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(window.__uxDraftQuota&&['sistema_avaliacao_rascunho_v1','sistema_tarefa_rascunho_v1','sistema_anotacao_editando_v1','sistema_tarefa_transicao_v1','sistema_colaborador_rascunho_v1'].some(suffix=>k.endsWith(suffix)))throw Error('Quota simulada');memory.set(k,String(v))},removeItem:k=>memory.delete(k)}});
   const theme=new URLSearchParams(parent.location.search).get('theme')||'light';localStorage.setItem('theme',theme);
+  const cadastroMode=new URLSearchParams(parent.location.search).has('cadastro');
   const routineMode=new URLSearchParams(parent.location.search).has('routine');
   const evaluationsMode=new URLSearchParams(parent.location.search).has('evaluations');
   const savesMode=new URLSearchParams(parent.location.search).has('saves');
@@ -28,16 +29,16 @@
     tables.tarefas=[{id:'late',user_id:user.id,titulo:'Conferir amostra <script> não executar',data:'2026-10-27',status:'pendente'},{id:'today',user_id:user.id,titulo:'Feedback de hoje',data:'2026-10-28',status:'andamento'},{id:'done',user_id:user.id,titulo:'Concluída',data:'2026-10-01',status:'concluida'}];
   }
   window.__uxResetRecords=()=>{tables.registros=records};window.__uxEmptyRecords=()=>{tables.registros=[]};window.__uxEvaluationRows=()=>tables.avaliacoes.map(row=>({...row}));window.__uxRoutineRows=table=>(tables[table]||[]).map(row=>({...row}));
-  function query(table){let single=false,range=null,filters=[],mode='read',payload;const q=new Proxy({}, {get(_,key){
-   if(['insert','upsert','update','delete'].includes(key))return p=>{if(!((savesMode&&['feedbacks','metas'].includes(table))||(evaluationsMode&&table==='avaliacoes')||(routineMode&&['tarefas','anotacoes_diarias'].includes(table))))throw Error('Teste permite somente leitura: '+table);mode=key;payload=p;return q};
+  function query(table){let single=false,range=null,filters=[],mode='read',payload,conflict;const q=new Proxy({}, {get(_,key){
+   if(['insert','upsert','update','delete'].includes(key))return(p,options)=>{conflict=options?.onConflict;if(!((savesMode&&['feedbacks','metas'].includes(table))||(evaluationsMode&&table==='avaliacoes')||(routineMode&&['tarefas','anotacoes_diarias'].includes(table))||(cadastroMode&&['colaboradores_info','colaborador_fotos','colab_inativos'].includes(table))))throw Error('Teste permite somente leitura: '+table);mode=key;payload=p;return q};
    if(key==='then')return(resolve,reject)=>Promise.resolve().then(async()=>{window.__uxReads.push(table);if(mode!=='read'){
      window.__uxWrites.push(table+':'+mode);
      if(window.__uxSaveDelay)await new Promise(r=>setTimeout(r,120));
-     if(window.__uxSaveError)return{error:{message:'Falha simulada'}};
+     if(window.__uxSaveError&&(!window.__uxErrorTable||window.__uxErrorTable===table))return{error:{message:'Falha simulada'}};
      let rows;
      if(mode==='delete'){rows=(tables[table]||[]).filter(r=>filters.every(([k,v])=>r[k]===v));tables[table]=(tables[table]||[]).filter(r=>!rows.includes(r));}
      else if(mode==='update'){rows=(tables[table]||[]).filter(r=>filters.every(([k,v])=>r[k]===v)).map(r=>({...r,...payload}));for(const row of rows){const at=tables[table].findIndex(r=>r.id===row.id);tables[table][at]=row;}}
-     else{rows=(Array.isArray(payload)?payload:[payload]).map(r=>({...r,created_at:r.created_at||'2026-10-29'}));tables[table]||=[];for(const row of rows){const at=tables[table].findIndex(r=>r.id===row.id);if(at<0)tables[table].push(row);else tables[table][at]=row;}}
+     else{rows=(Array.isArray(payload)?payload:[payload]).map(r=>{const old=conflict==='user_id,nome'?(tables[table]||[]).find(row=>row.user_id===r.user_id&&row.nome===r.nome):(tables[table]||[]).find(row=>row.id===r.id);return{...old,...r,id:old?.id||r.id||crypto.randomUUID(),created_at:r.created_at||old?.created_at||'2026-10-29'}});tables[table]||=[];for(const row of rows){const at=tables[table].findIndex(r=>r.id===row.id);if(at<0)tables[table].push(row);else tables[table][at]=row;}}
      if(window.__uxSaveLost)throw Error('Resposta perdida após aplicar');
      return{data:single?rows[0]:rows,error:null};
     }if(table==='registros'&&window.__uxHoldRecords){window.__uxBlocked=true;await new Promise(r=>window.__uxReleaseRecords=r)}if(table==='registros'&&window.__uxOffline)return{error:{message:'Offline simulado'}};let data=[...(tables[table]||[])];for(const[k,v]of filters)data=data.filter(r=>r[k]===v);if(range)data=data.slice(range[0],range[1]+1);return{data:single?data[0]||null:data,error:null,count:data.length}}).then(resolve,reject);
@@ -63,6 +64,28 @@
  const click=id=>{const el=d().getElementById(id);assert(el,'Controle ausente: '+id);el.click()};
  const tab=async name=>{d().querySelector(`[data-tab="${name}"]`).click();await wait(()=>d().body.dataset.activeTab===name,'Aba '+name);await new Promise(r=>setTimeout(r,120))};
  const bounds=el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=frame.clientWidth+1};
+ if(new URLSearchParams(location.search).has('cadastro')){
+  const person='Pessoa de teste 1 com nome extenso para revisão de interface';win().confirm=()=>true;
+  const draft=()=>JSON.parse(win().appStorage.getItem('sistema_colaborador_rascunho_v1')||'null'),map=()=>win().getColabInfoLocal();
+  const enter=(id,value)=>{d().getElementById(id).value=value;d().getElementById(id).dispatchEvent(new(win().Event)('input',{bubbles:true}));};
+  const photo=async id=>{const canvas=d().createElement('canvas');canvas.width=canvas.height=2;const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));const file=new(win().File)([blob],'foto-teste.png',{type:'image/png'}),transfer=new(win().DataTransfer)();transfer.items.add(file);d().getElementById(id).files=transfer.files;d().getElementById(id).dispatchEvent(new(win().Event)('change',{bubbles:true}));await wait(()=>draft()?.photo,'Foto preparada');};
+  await tab('colaboradores');const originalProfile=map()[person];win().openColabDetailOverlay(person);enter('ciObservacoes','Contexto em rascunho');enter('ciSalario','2345.67');enter('ciNivel','N2');
+  win().__uxDraftQuota=true;let before=win().__uxWrites.length;click('ciSalvarBtn');assert(win().__uxWrites.length===before&&d().querySelector('.colab-save-message').textContent.includes('rascunho'),'Quota impede envio');win().__uxDraftQuota=false;
+  win().__uxSaveError=true;win().__uxSaveDelay=true;click('ciSalvarBtn');click('ciSalvarBtn');await wait(()=>!d().getElementById('ciSalvarBtn').disabled,'Falha cadastro');assert(win().__uxWrites.length===before+1&&map()[person].observacoes===originalProfile.observacoes,'Sem publicação otimista/duplo clique');
+  click('colabDetailClose');win().openColabDetailOverlay(person);assert(d().getElementById('ciObservacoes').value==='Contexto em rascunho'&&d().getElementById('ciSalario').value==='2345.67','Reabre com rascunho');
+  win().confirm=()=>false;win().openColabDetailOverlay('Outra pessoa');assert(draft().name===person,'Não descarta outro rascunho sem confirmação');win().confirm=()=>true;
+  click('ciLimparBtn');await wait(()=>!d().getElementById('ciLimparBtn').disabled,'Limpeza falha');assert(d().getElementById('ciObservacoes').value==='Contexto em rascunho','Limpeza falha preserva campos');
+  win().__uxSaveError=false;win().__uxSaveLost=true;click('ciSalvarBtn');await wait(()=>!d().getElementById('ciSalvarBtn').disabled,'Resposta perdida');assert(draft()&&d().getElementById('colabDetailOverlay').classList.contains('open'),'Resposta perdida mantém editor');
+  win().__uxSaveLost=false;click('ciSalvarBtn');await wait(()=>!draft(),'Cadastro confirmado');assert(map()[person].salario===2345.67&&map()[person].observacoes==='Contexto em rascunho','Projeção confirmada');assert(win().__uxRoutineRows('colaboradores_info').filter(r=>r.nome===person).length===1,'Cadastro não duplica');
+  win().openColabDetailOverlay(person);await photo('ciFoto');enter('ciEmail','teste@local.invalid');win().__uxSaveError=true;win().__uxErrorTable='colaborador_fotos';click('ciSalvarBtn');await wait(()=>!d().getElementById('ciSalvarBtn').disabled,'Foto falha');assert(map()[person].email==='teste@local.invalid'&&draft().photo&&d().querySelector('.colab-save-message').textContent.includes('Cadastro confirmado'),'Confirmação parcial explícita');assert(!win().getColabFoto(person),'Foto não otimista');
+  click('colabDetailClose');win().openColabDetailOverlay(person);assert(draft().photo&&d().getElementById('ciFotoPreview').querySelector('img'),'Foto em rascunho retomada');win().__uxSaveError=false;win().__uxErrorTable=null;click('ciSalvarBtn');await wait(()=>!draft(),'Foto confirmada');assert(win().getColabFoto(person),'Foto confirmada visível');
+  win().openColabDetailOverlay(person);click('ciFotoRemover');win().__uxSaveError=true;win().__uxErrorTable='colaborador_fotos';click('ciSalvarBtn');await wait(()=>!d().getElementById('ciSalvarBtn').disabled,'Remoção de foto falha');assert(win().getColabFoto(person)&&draft().photo==='','Foto confirmada preservada em falha');win().__uxSaveError=false;click('ciSalvarBtn');await wait(()=>!draft(),'Remoção confirmada');assert(!win().getColabFoto(person),'Foto removida após confirmação');
+  click('novoColaboradorBtn');enter('novoColaboradorNome','Nova pessoa de teste');enter('novoColaboradorSetor','Financeiro');win().__uxErrorTable=null;win().__uxSaveError=true;d().getElementById('novoColaboradorForm').requestSubmit();await wait(()=>!d().querySelector('#novoColaboradorForm [type=submit]').disabled,'Criação falha');assert(!map()['Nova pessoa de teste']&&draft().mode==='new','Criação falha preserva edição');
+  click('novoColaboradorFechar');click('novoColaboradorBtn');assert(d().getElementById('novoColaboradorNome').value==='Nova pessoa de teste','Novo cadastro retoma');win().__uxSaveError=false;d().getElementById('novoColaboradorForm').requestSubmit();await wait(()=>map()['Nova pessoa de teste']&&!draft(),'Criação confirmada');assert(!win().__uxWrites.some(write=>write==='colab_inativos:delete'),'Novo cadastro não exclui coleção');
+  enter('ciObservacoes','Texto para preservar na limpeza');click('ciSalvarBtn');await wait(()=>!draft(),'Salva antes de limpar');win().openColabDetailOverlay('Nova pessoa de teste');click('ciLimparBtn');await wait(()=>map()['Nova pessoa de teste'].observacoes==='','Limpeza confirmada');assert(draft().data.observacoes==='Texto para preservar na limpeza','Limpeza preserva edição');
+  assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: cadastro real com servidor simulado, falhas/quota, rascunho e foto retomados, resposta perdida, patch parcial, duplo clique, confirmação parcial explícita, criação e limpeza confirmadas';return;
+ }
  if(new URLSearchParams(location.search).has('routine')){
   win().confirm=()=>true;
   const enter=(id,value)=>{d().getElementById(id).value=value;d().getElementById(id).dispatchEvent(new(win().Event)('input',{bubbles:true}))};

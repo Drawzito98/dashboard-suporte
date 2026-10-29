@@ -90,11 +90,11 @@
       const name = model.name, owner = model.owner, id = button.dataset.e360Action;
       if (id === 'cadastro') {
         editing = { name, owner }; dialog.close();
-        openColabDetailOverlay(name);
+        if(openColabDetailOverlay(name)===false){editing=null;open(name);return;}
         const form = document.getElementById('colabInfoForm'); let dirty = false;
         form?.addEventListener('input', () => dirty = true);
         const back = document.createElement('button');back.type='button';back.className='btn-small';back.textContent='Voltar ao perfil 360º';
-        back.onclick=()=>{if(dirty && !confirm('Descartar alterações não salvas e voltar ao perfil?'))return;editing=null;closeColabDetail();open(name);};
+        back.onclick=()=>{if(dirty && !confirm('Voltar ao perfil 360º? Sua edição ficará como rascunho.'))return;if(closeColabDetail()===false)return;editing=null;open(name);};
         document.getElementById('colabDetailContent')?.prepend(back);
         return;
       }

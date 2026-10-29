@@ -95,3 +95,7 @@ Avaliações deixam de usar o salvamento otimista citado no limite da entrega 1.
 ## Continuação 1.25.0
 
 Tarefas/anotações passam a ter confirmação, rascunhos privados e retentativa estável de recorrência; atividades compartilhadas são protegidas. Ver [rotina-confirmada.md](rotina-confirmada.md). Demais cadastros, carga inicial/globais e CSS continuam em consolidação; Panorama permanece desativado.
+
+## Continuação 1.26.0 — Cadastro
+
+Cadastro de colaboradores, foto e reativação na criação exigem confirmação, com rascunho privado e falhas parciais explícitas. A cópia privada anterior é preservada separadamente. Ver [cadastro-confirmado.md](cadastro-confirmado.md). Bônus, regras, presença e gerenciadores de inativos ainda aguardam revisão; carga inicial/CSS e Panorama mantêm os limites documentados.

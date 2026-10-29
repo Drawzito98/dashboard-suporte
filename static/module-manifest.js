@@ -56,7 +56,7 @@ window.APP_MODULES = {
   },
   "data-people": {
     "scripts": [
-      "/static/repositories/people.js?v=1"
+      "/static/repositories/people.js?v=2"
     ],
     "exports": [
       "AppRepositories.people.dbFotosLoad",
@@ -66,7 +66,8 @@ window.APP_MODULES = {
       "AppRepositories.people.dbSetorInativosLoad",
       "AppRepositories.people.dbSetorInativosSave",
       "AppRepositories.people.dbColabInfoLoad",
-      "AppRepositories.people.dbColabInfoSave"
+      "AppRepositories.people.dbColabInfoSave",
+      "AppRepositories.people.dbColabActivate"
     ]
   },
   "data-performance": {
@@ -107,7 +108,7 @@ window.APP_MODULES = {
   "ponto": {
     "scripts": [
       "/static/ponto-engine.js?v=4",
-      "/static/ponto.js?v=10"
+      "/static/ponto.js?v=11"
     ],
     "styles": [
       "/static/ponto.css?v=3"
@@ -135,7 +136,7 @@ window.APP_MODULES = {
   "equipe360": {
     "scripts": [
       "/static/equipe360-data.js?v=1",
-      "/static/equipe360.js?v=6"
+      "/static/equipe360.js?v=7"
     ],
     "styles": [
       "/static/equipe360.css?v=2"

@@ -8,7 +8,7 @@ const {create:runtime}=require('../static/data-runtime.js');const {create:loader
  range(){return this},select(){return this},eq(){return this},order(){return this},limit(){return this},not(){return this},maybeSingle(){single=true;return this},single(){single=true;return this},
  upsert(payload){mode='write';payloadRow=payload;calls.push({table,payload});return this},
  insert(payload){mode='write';calls.push({table,payload});return this},update(payload){mode='write';calls.push({table,payload});return this},
- then(resolve,reject){return Promise.resolve({data:mode==='write'?(payloadRow?{...payloadRow}:{id:'saved'}):single?null:[]}).then(resolve,reject)}
+ then(resolve,reject){return Promise.resolve({data:mode==='write'?(payloadRow?{id:'saved',...payloadRow}:{id:'saved'}):single?null:[]}).then(resolve,reject)}
  }}};
  vm.createContext(context);
  const read=file=>fs.readFileSync(path.join(__dirname,'../static',file),'utf8');
@@ -18,7 +18,7 @@ const {create:runtime}=require('../static/data-runtime.js');const {create:loader
  await context.initDbExtra();assert.equal(calls.length,0);assert.equal(loaded.length,6);assert.ok(!loaded.some(x=>x.includes('legacy')));
  await context.dbFeedbacksSave({id:'fb',colaborador:'Pessoa',mes:'2026-10',feedback_final:'Texto original'});
  const fb=calls.find(c=>c.table==='feedbacks');assert.equal(fb.payload.user_id,'owner');assert.equal(fb.payload.colaborador,'Pessoa');assert.equal(fb.payload.feedback_final,'Texto original');
- const saved=await context.dbColabInfoSave('Pessoa',{nivel:'N1',salario:1000});assert.equal(saved,true);const info=calls.find(c=>c.table==='colaboradores_info');assert.equal(info.payload.nome,'Pessoa');assert.equal(info.payload.user_id,'owner');
+ const saved=await context.dbColabInfoSave('Pessoa',{nivel:'N1',salario:1000});assert.equal(saved.status,'confirmed');const info=calls.find(c=>c.table==='colaboradores_info');assert.equal(info.payload.nome,'Pessoa');assert.equal(info.payload.user_id,'owner');
  await context.dbFeriasSave({id:1,colaborador:'Pessoa',data_inicio:'2026-11-01',data_fim:'2026-11-10'});const leave=calls.find(c=>c.table==='ferias');assert.equal(leave.payload.data_inicio,'2026-11-01');assert.equal(leave.payload.user_id,'owner');
  assert.equal(loaded.length,6);
  let release;context.FeatureLoader={ensure:()=>new Promise(resolve=>{release=resolve})};

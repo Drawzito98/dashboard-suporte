@@ -13,6 +13,7 @@ function openColabDetail(name) {
 }
 
 function closeColabDetail() {
+  if(document.getElementById('colabInfoForm')&&typeof canCloseColabEditor==='function'&&!canCloseColabEditor())return false;
   const overlay = document.getElementById("colabDetailOverlay");
   if (overlay) {
     overlay.classList.remove("open");
@@ -20,6 +21,7 @@ function closeColabDetail() {
     overlay.setAttribute("aria-hidden", "true");
   }
   currentColabDetail = null;
+  return true;
 }
 
 function renderColabDetail(name) {
@@ -45,7 +47,7 @@ function renderColabDetail(name) {
   // Get setor
   const setores = [...new Set(records.map(r => r['Setor']))].filter(Boolean);
   const perfilLink = getPerfilDocsLink(name);
-  const cadastro = JSON.parse(appStorage.getItem("sistema_colaboradores_info_v1") || "{}")[name] || {};
+  const cadastro = (typeof getColabInfoLocal==='function'?getColabInfoLocal():JSON.parse(appStorage.getItem("sistema_colaboradores_info_v1") || "{}"))[name] || {};
 
   // Month-over-month evolution
   const monthlyData = meses.map(m => {

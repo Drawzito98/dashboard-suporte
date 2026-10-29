@@ -339,15 +339,17 @@ function renderGamification() {
 
   // Bind foto buttons
   container.querySelectorAll('.foto-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!requireAdmin()) return;
+    btn.addEventListener('click', async () => {
+      if (!requireAdmin() || btn.disabled) return;
       const name = btn.getAttribute('data-name');
       if (!name) return;
       const current = typeof getColabFoto === 'function' ? getColabFoto(name) : '';
       const url = prompt(`URL da foto para ${name}${current ? '\n(Deixe vazio para remover)' : ''}`, current);
       if (url === null) return;
-      if (typeof setColabFoto === 'function') setColabFoto(name, url.trim());
-      renderGamification();
+      const token=AppDataSession.token();btn.disabled=true;
+      try{await setColabFoto(name,url.trim());if(AppDataSession.current(token))renderGamification();}
+      catch(error){if(AppDataSession.current(token))showToast(error.message,'error','Foto de perfil');}
+      finally{btn.disabled=false;}
     });
   });
 

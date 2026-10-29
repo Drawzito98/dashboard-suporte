@@ -18,7 +18,7 @@
     const active=source.filter(r=>r&&(typeof isColabActive!=='function'||isColabActive(r.Atendente))&&(typeof isSetorActive!=='function'||isSetorActive(r.Setor)));
     const scope=typeof filters.aplicar==='function'?filters.aplicar.call({...filters,periodo:'all'},active):active;
     const taskState=typeof AppState!=='undefined'?AppState.get('tarefas'):null;
-    const taskData=Array.isArray(taskState)?{value:taskState,available:true}:read('sistema_tarefas_v1',[]), info=read('sistema_colaboradores_info_v1',{}).value;
+    const taskData=Array.isArray(taskState)?{value:taskState,available:true}:read('sistema_tarefas_v1',[]), info=typeof getColabInfoLocal==='function'?getColabInfoLocal():read('sistema_colaboradores_info_v1',{}).value;
     return CockpitEngine.build({records:scope,tasks:taskData.value,taskAvailable:taskData.available&&Array.isArray(taskData.value),registry:info&&typeof info==='object'?info:{},goals:read('sistema_metas_v1',[]).value,filters,today:today(),state});
   }
   function html(m,part='all'){
