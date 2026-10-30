@@ -382,6 +382,7 @@
  await tab('ponto');await wait(()=>d().querySelector('.ponto-card'),'Ponto sob demanda');assert(bounds(d().querySelector('.ponto-card')),'Card Ponto contido');
  const current=d().querySelector('[data-tab="ponto"]');current.focus();current.dispatchEvent(new (win().KeyboardEvent)('keydown',{key:'ArrowLeft',bubbles:true,cancelable:true}));
  assert(d().activeElement.dataset.tab==='mapeamento-time','Setas navegam no submenu');assert(bounds(d().activeElement),'Opção focada revelada');
+ click('menuBtn');const historyPanel=d().querySelector('[data-toggle="dataContent"]');if(historyPanel.closest('.panel').classList.contains('collapsed'))historyPanel.click();click('historicoBtn');await wait(()=>d().getElementById('historicoOverlay').classList.contains('open'),'Histórico abre pelo botão real');assert(!d().getElementById('toolsDialog').open,'Ferramentas fecha antes de abrir histórico');assert(d().getElementById('historicoContent').textContent.includes('Envios não confirmados'),'Histórico mostra pendências');click('historicoClose');await wait(()=>!d().getElementById('historicoOverlay').classList.contains('open'),'Histórico fecha pelo botão real');
  assert(win().__uxErrors.length===0,'Erros: '+win().__uxErrors.join('; '));
  document.getElementById('testResult').textContent='PASS: 14 destinos, dados extensos, Chart.js real, PNG, CSV, impressão, relatório, cadastro, editores, teclado e Ponto; sem escrita de produção';
 })().catch(error=>{document.getElementById('testResult').textContent='FAIL: '+error.message;console.error(error)});

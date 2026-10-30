@@ -37,5 +37,5 @@ function renderHistorico(){
   container.querySelector('#historicoRefresh').addEventListener('click',e=>run(e.currentTarget,()=>dbHistoricoLoad()));
   container.querySelectorAll('[data-history-retry]').forEach(button=>button.addEventListener('click',()=>run(button,()=>dbHistoricoAdd(pending[Number(button.dataset.historyRetry)]))));
 }
-document.addEventListener('click',e=>{if(e.target===document.getElementById('historicoOverlay')||e.target.closest('#historicoClose'))closeHistorico();});
+document.addEventListener('click',e=>{if(e.target.closest('#historicoBtn')){openHistorico();return;}if(e.target===document.getElementById('historicoOverlay')||e.target.closest('#historicoClose'))closeHistorico();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeHistorico();});

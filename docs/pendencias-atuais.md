@@ -1,4 +1,4 @@
-# Estado atual — 1.35.0
+# Estado atual — 1.35.1
 
 Revisão de 30/10/2026. Este documento reúne as pendências atuais; entradas antigas do roadmap registram o estado de cada entrega na época.
 

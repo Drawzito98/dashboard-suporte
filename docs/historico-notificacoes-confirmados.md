@@ -23,3 +23,7 @@ O autor não-admin pode inserir mas não selecionar notificações pela polític
 ## Validação
 
 `npm test` inclui audit-notifications.check.js: resposta perdida, reconciliação, quota antes de INSERT, zero, cache legado preservado, vazio, falha, confirmação parcial, RLS de leitura do autor e sessão invalidada. Fixtures audit-notifications.browser.html e audit-notifications-mobile.browser.html validam a UI com servidor simulado em desktop/320px, incluindo falhas, teclado, fechamento e ausência de duplicação. Regressões: workspace geral desktop/mobile, comentários, data-lifecycle, lazy-modules e design-system. Nenhuma escrita de testes em produção, migration ou validação das políticas efetivamente publicadas.
+
+## Complemento 1.35.1
+
+Botão Histórico em Ferramentas conectado ao editor e incluído na regressão do workspace desktop/mobile: fechar o dialog de ferramentas, abrir histórico e fechar pelo botão. A checagem integrada encontrou o acesso desconectado, não coberto pela fixture isolada.
