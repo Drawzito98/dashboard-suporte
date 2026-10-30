@@ -392,7 +392,8 @@
     return colaboradores.filter(c => isMappedColabActive(c.nome)).filter(c => filtroAtivo === "todos" || c.categoria === filtroAtivo).slice().sort((a, b) => prioridade(a.categoria) - prioridade(b.categoria) || String(a.nome).localeCompare(String(b.nome), "pt-BR", { sensitivity: "base" }));
   }
 
-  function exportarMapeamentoPdf() {
+  async function exportarMapeamentoPdf() {
+    if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('pdf'))return;
     const jsPDF = getPdfApi();
     if (!jsPDF) return;
     const lista = colaboradoresVisiveis();
@@ -427,7 +428,8 @@
     if (typeof showToast === "function") showToast("PDF do mapeamento exportado.", "success");
   }
 
-  function exportarColaboradorPdf(colab) {
+  async function exportarColaboradorPdf(colab) {
+    if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('pdf'))return;
     const jsPDF = getPdfApi(); if (!jsPDF) return;
     const doc = new jsPDF("p", "mm", "a4"); const margem = 18; const cor = CATEGORIA_PDF_CORES[colab.categoria] || [100, 116, 139];
     doc.setFillColor(...cor); doc.rect(0, 0, 210, 8, "F");

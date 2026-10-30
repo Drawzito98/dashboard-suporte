@@ -91,3 +91,7 @@ Home distingue volume, linhas de indicadores e cobertura de notas. Fixture cockp
 ## Continuação 1.35.0 — Histórico e notificações
 
 Histórico sem cópia otimista duplicada, com confirmação e retentativa manual estável. Notificações só marcam IDs confirmados e mostram falha/parcial. Contratos, testes e limites em [historico-notificacoes-confirmados.md](historico-notificacoes-confirmados.md). Próxima prioridade: medir carga inicial antes de reduzir dependências.
+
+## Continuação 1.36.0 — Carga inicial
+
+PNG/PDF/Excel carregam somente ao exportar. Scripts externos iniciais: 7 → 4; redução líquida medida de 1.441.381 bytes de código descompactado, sem alegar ganho de tempo. Contratos, evidências, validação e limites em [carregamento-inicial.md](carregamento-inicial.md).

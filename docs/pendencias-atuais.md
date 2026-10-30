@@ -1,4 +1,4 @@
-# Estado atual — 1.35.1
+# Estado atual — 1.36.0
 
 Revisão de 30/10/2026. Este documento reúne as pendências atuais; entradas antigas do roadmap registram o estado de cada entrega na época.
 
@@ -11,7 +11,7 @@ Home mostra atendimentos finalizados, em vez de linhas de CSV, e quantas pessoas
 ## Próximos ajustes, em ordem
 
 1. Histórico/notificações receberam confirmação e mensagens de falha em 1.35.0; contratos e limites em [historico-notificacoes-confirmados.md](historico-notificacoes-confirmados.md). Seguem fora do escopo auditoria transacional do banco, entrega garantida de notificações e revisão integral de todos os fluxos automáticos.
-2. Carga inicial: medir dependências e tempos antes de reduzir scripts/globais. Inventário atual: 88 scripts externos ao HTML (81 locais e 7 remotos), app.js aproximadamente 106 KB, styles.css aproximadamente 184 KB. Nenhuma redução de tempo de carregamento foi medida nesta rodada.
+2. Carga inicial: PNG/PDF/Excel passaram para demanda em 1.36.0, reduzindo os scripts remotos iniciais de 7 para 4. Evidência e limites em [carregamento-inicial.md](carregamento-inicial.md). Ainda há cerca de 1,16 MB de scripts locais iniciais; próxima redução exige mapear dependências de áreas/gráficos, sem estimar ganhos de tempo ainda não medidos.
 3. CSS e componentes: continuar unificação gradual de modais/tabelas e conferir acessibilidade por fluxo. Testes amostrais não equivalem a certificação WCAG ou cobertura de todos os navegadores.
 
 ## Limites mantidos

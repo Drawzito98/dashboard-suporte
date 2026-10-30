@@ -446,6 +446,7 @@ function rfGerarPreview() {
 async function rfExportarPDF() {
   const colab = document.getElementById('rfColabSelect')?.value;
   if (!colab) { showToast('Gere o relatório antes de exportar.', 'warn'); return; }
+  if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('pdf','image'))return;
   if (typeof window.jspdf === 'undefined') { showToast('Biblioteca de PDF não carregada.', 'error'); return; }
 
   const opts = rfCollectOpts();

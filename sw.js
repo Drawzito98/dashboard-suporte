@@ -4,7 +4,7 @@
    - Estáticos (mesmo domínio + CDNs): stale-while-revalidate
    - /api/* e métodos não-GET: sempre pela rede (nunca cacheia)
 */
-const CACHE = 'painel-suporte-a4dadf98ec866b7c';
+const CACHE = 'painel-suporte-f548eba0b01619b7';
 const SHELL = [
   '/',
   '/index.html',

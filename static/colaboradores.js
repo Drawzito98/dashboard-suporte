@@ -651,6 +651,7 @@ document.getElementById('colabReportPrint')?.addEventListener('click', async () 
   showToast('Capturando relatório…', 'ok');
   try {
     const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-surface').trim() || '#1e293b';
+    if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('image'))return;
     content.style.padding = 'var(--s-6)';
     const canvas = await html2canvas(content, { scale: 2, useCORS: true, backgroundColor: bg });
     content.style.padding = '';

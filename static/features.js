@@ -111,6 +111,7 @@
       btn.innerHTML = '<span class="export-spinner"></span> Gerando...';
 
       try {
+        if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('image'))return;
         // Use html2canvas if available, otherwise fallback to simple approach
         if (typeof html2canvas !== 'undefined') {
           const dashboardPanel = document.querySelector('[data-tab-content="dashboard"]') || document.querySelector('.main-content');

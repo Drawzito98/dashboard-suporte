@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.35.1. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.36.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -206,3 +206,7 @@ Leia docs/pendencias-atuais.md. Home destaca volume finalizado e cobertura de no
 ## Continuação 1.35.0 — Histórico e notificações
 
 Leia docs/historico-notificacoes-confirmados.md. Histórico usa UUID estável, confirmação por ID/conteúdo, cache novo e pendência privada antes de INSERT; não adotar cache legado nem reenviar automaticamente. A trilha é independente dos indicadores e não é auditoria transacional. Notificações administrativas só marcam IDs com lida:true retornados; parcial/erro deve permanecer visível. INSERT de autor não-admin não deve exigir SELECT proibido pela RLS. Preserve isolamento de sessão, recortes de 500/50 e semântica de compartilhamento. Rode npm test, audit-notifications.browser.html e audit-notifications-mobile.browser.html, comentários, workspace desktop/mobile, data-lifecycle, lazy-modules e design-system. Sem SQL ou testes de escrita em produção; merge exige autorização explícita.
+
+## Continuação 1.36.0 — Exportadores sob demanda
+
+Leia docs/carregamento-inicial.md. export-tools.js tem catálogo fechado das mesmas CDNs e não baixa nada antes de exportar; não reintroduzir html2canvas/jsPDF/XLSX no HTML inicial. Cada exportação aguarda ready dos formatos necessários e cancela quando a sessão é invalidada. Não condicionar vínculo do botão PNG à biblioteca já existir. Rode npm test, export-tools.browser.html, workspace geral e ?exports=1 (desktop/320px), lazy-modules e data-lifecycle. Medições são bytes descompactados/inventário, não tempo nem tráfego comprimido. Cache novo inclui o catálogo; não prometer primeira exportação offline. Sem SQL ou escrita de testes em produção; merge exige autorização explícita.

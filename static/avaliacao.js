@@ -888,7 +888,7 @@ function sugerirNotasInteligentes(colaborador) {
   showToast(`🎯 Notas e observações sugeridas${ext} Os textos podem ser editados.`, 'success');
 }
 
-function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
+async function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
   const scores = existing ? existing.scores : {};
   const obsComp = existing ? (existing.observacoes_competencias || {}) : {};
   const obsGerais = existing ? (existing.observacoes_gerais || '') : '';
@@ -933,6 +933,7 @@ function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
     rows.push([], ['Observações Gerais', obsGerais]);
   }
 
+  if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('excel'))return;
   if (typeof XLSX === 'undefined') {
     showToast('Biblioteca XLSX não carregada. Tente novamente.', 'error');
     return;
@@ -955,12 +956,13 @@ function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
   showToast('Planilha exportada com sucesso!', 'success');
 }
 
-function exportarTodasAvaliacoesXLSX() {
+async function exportarTodasAvaliacoesXLSX() {
   const avaliacoes = getAvaliacoesAtivas();
   if (!avaliacoes.length) {
     showToast('Nenhuma avaliação salva para exportar.', 'error');
     return;
   }
+  if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('excel'))return;
   if (typeof XLSX === 'undefined') {
     showToast('Biblioteca XLSX não carregada.', 'error');
     return;

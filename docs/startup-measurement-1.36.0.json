@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-30",
+  "method": "HTML script inventory, local file bytes and decoded CDN response bodies; not compressed transfer bytes or load timing",
+  "before": {
+    "baseline_commit": "cac09b1",
+    "initial_scripts": 88,
+    "local_scripts": 81,
+    "remote_scripts": 7,
+    "local_bytes": 1156992,
+    "deferred_libraries": [
+      {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+        "bytes": 198689
+      },
+      {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+        "bytes": 364463
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+        "bytes": 881727
+      }
+    ]
+  },
+  "after": {
+    "initial_scripts": 86,
+    "local_scripts": 82,
+    "remote_scripts": 4,
+    "local_bytes": 1160490,
+    "remote_urls": [
+      "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js",
+      "https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js",
+      "https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js",
+      "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"
+    ]
+  },
+  "deferred_decoded_bytes": 1444879,
+  "net_initial_decoded_bytes_removed": 1441381
+}

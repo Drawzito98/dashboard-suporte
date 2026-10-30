@@ -98,6 +98,7 @@ function exportReportToPDF() {
 async function exportPDFcomGrafico() {
   setLoading(true, 'Gerando PDF…');
   try {
+    if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('pdf','image'))return;
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
     const pageW = 190;
@@ -602,6 +603,7 @@ async function exportSlides() {
     `));
 
     // Render slides in hidden container, capture with html2canvas, build PDF
+    if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('pdf','image'))return;
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('l', 'mm', 'a4');
     const pageW = 297;

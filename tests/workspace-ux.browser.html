@@ -68,9 +68,20 @@
  const frame=document.getElementById('workspace');if(new URLSearchParams(location.search).has('mobile')){frame.style.width='320px';frame.style.maxWidth='100%';}frame.srcdoc='<!doctype html>'+doc.documentElement.outerHTML;
  const win=()=>frame.contentWindow,d=()=>frame.contentDocument;
  await wait(()=>d()?.body?.dataset.workspaceReady==='true'&&d().querySelectorAll('#gfSetor option').length>=3,'Inicialização autenticada');
+ assert(!win().html2canvas&&!win().jspdf&&!win().XLSX,'Exportadores não são carregados na abertura');
  const click=id=>{const el=d().getElementById(id);assert(el,'Controle ausente: '+id);el.click()};
  const tab=async name=>{d().querySelector(`[data-tab="${name}"]`).click();await wait(()=>d().body.dataset.activeTab===name,'Aba '+name);await new Promise(r=>setTimeout(r,120))};
  const bounds=el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=frame.clientWidth+1};
+ if(new URLSearchParams(location.search).has('exports')){
+  const saved=[],realReady=win().ExportTools.ready;
+  win().ExportTools.ready=async(...names)=>{const ready=await realReady(...names);if(ready&&win().XLSX)win().XLSX.writeFile=(book,name)=>saved.push({name,bytes:win().XLSX.write(book,{type:'array',bookType:'xlsx'}).byteLength,sheets:book.SheetNames});if(ready&&win().jspdf)win().jspdf.jsPDF.API.save=function(name){saved.push({name,bytes:this.output('arraybuffer').byteLength});return this;};return ready;};
+  const person='Pessoa de teste 1 com nome extenso para revisão de interface',sample={id:'export-only',colaborador:person,ciclo:'2026-09',scores:{},observacoes_gerais:'Somente teste local'};
+  await win().exportarAvaliacaoXLSX(person,sample.ciclo,sample);assert(saved.some(file=>file.name.endsWith('.xlsx')&&file.bytes>1000),'Excel individual real');assert(!win().jspdf&&!win().html2canvas,'Excel não carrega PDF ou PNG');
+  win().AppState.publish('avaliacoes',[sample]);await win().exportarTodasAvaliacoesXLSX();assert(saved.filter(file=>file.name.endsWith('.xlsx')).length===2,'Excel consolidado real');
+  await tab('mapeamento-time');click('mtExportPdfBtn');await wait(()=>saved.some(file=>file.name.startsWith('mapeamento-time-')),'PDF do mapeamento sob demanda');assert(!win().html2canvas,'PDF textual não carrega capturador PNG');d().querySelector('.mt-card').click();await wait(()=>d().querySelector('.mt-details-export'),'Detalhes do mapeamento');d().querySelector('.mt-details-export').click();await wait(()=>saved.filter(file=>file.name.endsWith('.pdf')).length===2,'PDF individual do mapeamento');
+  assert([...d().querySelectorAll('script[data-export-dependency]')].length===2,'Somente Excel e PDF solicitados uma vez');assert(win().__uxWrites.length===0,'Exportar não escreve no servidor');assert(win().__uxErrors.length===0,'Sem erros: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: início sem exportadores, Excel individual/consolidado reais e PDF coletivo/individual do mapeamento; somente bibliotecas necessárias, sem duplicação nem escrita.';return;
+ }
  if(new URLSearchParams(location.search).has('presence')){
   const person='Pessoa de teste 1 com nome extenso para revisão de interface';win().confirm=()=>true;
   const draft=resource=>win().PresenceEditor.draft(resource),rows=resource=>win().getPresenceList(resource),pending=resource=>win().getPresencePending(resource);
@@ -361,6 +372,7 @@
  assert(checks.length>=6,'Seleção de meses disponível');
  {await wait(()=>d().querySelector('.rs-context')?.textContent.includes('2026-04, 2026-09'),'Recorte não contíguo');assert(!d().querySelector('.rs-context').textContent.includes('2026-05'),'Sem meses implícitos');}
  period.value='2026-09';period.dispatchEvent(new (win().Event)('change',{bubbles:true}));await wait(()=>d().querySelector('.rs-context')?.textContent.includes('Meses com dados: 2026-09'),'Mês único');assert(!d().getElementById('reportText').value,'Texto de outro recorte não é restaurado');click('refreshReportBtn');await wait(()=>d().getElementById('reportText').value.includes('Meses com dados: 2026-09'),'Texto executivo no mesmo recorte');
+ assert(await win().ExportTools.ready('pdf'),'PDF sob demanda');
  win().jspdf.jsPDF.API.save=function(name){win().__uxDownloads.push({name,href:this.output('datauristring')});return this};
  click('rsPdfBtn');await wait(()=>win().__uxDownloads.some(r=>r.name.endsWith('.pdf')),'PDF setorial');assert(win().__uxDownloads.find(r=>r.name.endsWith('.pdf')).href.includes('application/pdf'),'PDF real gerado');
  click('rsPrintBtn');await wait(()=>win().__uxDownloads.some(r=>r.name.startsWith('relatorio-setorial-2026-09')),'PNG setorial segue mês');

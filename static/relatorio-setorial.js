@@ -771,8 +771,9 @@ function renderRelatorioSetorial() {
 
   // ── Exportar PNG ──
   const printBtn = document.getElementById('rsPrintBtn');
-  if (printBtn && typeof html2canvas !== 'undefined') {
-    printBtn.addEventListener('click', () => {
+  if (printBtn) {
+    printBtn.addEventListener('click', async () => {
+      if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('image'))return;
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       html2canvas(container, {
         scale: 3,
@@ -853,7 +854,8 @@ function onRelatorioSetorialTabActivated() {
 }
 
 // Exporta PDF em paisagem A4 com métricas agregadas por setor (sem nomes de colaboradores).
-function exportSetorPdf(setorMetrics, meses, opts) {
+async function exportSetorPdf(setorMetrics, meses, opts) {
+  if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('pdf'))return;
   if (typeof window.jspdf === 'undefined') {
     if (typeof showToast === 'function') showToast('Biblioteca de PDF não carregada.', 'error');
     return;

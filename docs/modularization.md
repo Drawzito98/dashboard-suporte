@@ -39,3 +39,7 @@ O bundle interno panorama conserva a chave por compatibilidade, mas carrega some
 ## Continuação 1.24.0
 
 A persistência de avaliações saiu do arquivo de UI para o repository development, preservando os nomes públicos pela fachada db-extra. Não há novo script inicial ou domínio adicional; o manifest valida também os quatro exports de avaliações. Ver [avaliacoes-confirmadas.md](avaliacoes-confirmadas.md).
+
+## Continuação 1.36.0 — Carga inicial
+
+PNG/PDF/Excel carregam somente ao exportar. Scripts externos iniciais: 7 → 4; redução líquida medida de 1.441.381 bytes de código descompactado, sem alegar ganho de tempo. Contratos, evidências, validação e limites em [carregamento-inicial.md](carregamento-inicial.md).
