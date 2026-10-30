@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.33.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.34.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -198,3 +198,7 @@ Leia docs/configuracoes-confirmadas.md. Pontuação/alertas usam snapshots confi
 ## Continuação 1.33.0 — Atendimentos
 
 Leia docs/atendimentos-confirmados.md. Avaliação de atendimentos e acompanhamento diário usam BIGINT identity e o contrato confirmado de attendance/PresenceEditor. Não fornecer UUID como ID nem repetir INSERT incerto automaticamente. Rascunhos privados preservam texto/imagem; vínculo é manual e liberar outra criação exige consulta confirmada. Preservar escalas de nota, filtros, rankings e CSV. Imagens novas: PNG/JPEG/WebP/GIF até 5 MB, preparação com sessão/versão verificadas; nunca gerar onclick com imagem do banco. Rode npm test e workspace ?atendimentos=1 e ?presence=1 em desktop/320px, workspace completo, Equipe360, data-lifecycle, lazy-modules e design-system. Sem SQL/testes de escrita em produção ou merge sem autorização.
+
+## Continuação 1.34.0 — Home e pendências atuais
+
+Leia docs/pendencias-atuais.md. Home destaca volume finalizado e cobertura de notas; linhas de indicadores ficam nas fontes. Equipes usa details nativo com expansão preservada durante atualização. Agenda consulta getColabInfoLocal. Não alterar média simples, ausência versus zero, filtros ou critérios dos alertas. Rode npm test e workspace ?cockpit=1 (também mobile/race), workspace completo, data-lifecycle, lazy-modules e design-system. As sete fases estão entregues nos limites documentados; histórico/notificações, carga inicial e CSS continuam em consolidação. Sem SQL, testes de escrita em produção ou merge sem autorização.

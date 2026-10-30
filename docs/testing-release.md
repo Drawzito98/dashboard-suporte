@@ -83,3 +83,7 @@ Pontuação e alertas com rascunhos separados, salvamento confirmado e nenhuma g
 ## Continuação 1.33.0 — Atendimentos
 
 Avaliação de atendimentos e acompanhamento diário com confirmação por identity, rascunho/imagem e proteção de envio incerto. Contratos, testes e limites em [atendimentos-confirmados.md](atendimentos-confirmados.md). Seguem pendentes a revisão dos fluxos legados restantes e a consolidação visual/arquitetural.
+
+## Continuação 1.34.0 — Home
+
+Home distingue volume, linhas de indicadores e cobertura de notas. Fixture cockpit cobre zero versus ausência, cadastro confirmado sem atualização de cache, expansão preservada e leitura sem gravação; executar também mobile/race e regressões gerais. Estado e limites em [pendencias-atuais.md](pendencias-atuais.md).

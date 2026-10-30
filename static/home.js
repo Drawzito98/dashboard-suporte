@@ -12,7 +12,7 @@ function renderHome() {
   const colabList = uniqueColabs.map(name => ({name, setores: [...new Set(records.filter(r => r.Atendente === name).map(r => r.Setor))].sort().join(', ')}));
   const meses = cockpit.months;
   const lastMonth = meses.at(-1) || '';
-  const totalRecords = records.length, activeCount = uniqueColabs.length;
+  const activeCount = uniqueColabs.length;
   const avgScore = cockpit.metrics.score === null ? '—' : cockpit.metrics.score.toFixed(2);
   const totalFinalizados = cockpit.metrics.finished;
   const scoreList = cockpit.scoreList;
@@ -22,7 +22,7 @@ function renderHome() {
 
   let colabInfo = {};
   let vacations = [];
-  try { colabInfo = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (e) {}
+  try { colabInfo = typeof getColabInfoLocal==='function'?getColabInfoLocal():JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (e) {}
   try { vacations = (typeof getPresenceList==='function'?getPresenceList('ferias'):JSON.parse(appStorage.getItem('sistema_ferias_v1') || '[]')); } catch (e) {}
 
   if (!colabInfo || typeof colabInfo !== 'object' || Array.isArray(colabInfo)) colabInfo = {};
@@ -88,24 +88,25 @@ function renderHome() {
       <div class="home-kpi-icon" style="background:var(--accent-soft);color:var(--accent)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div class="home-kpi-value">${activeCount}</div>
       <div class="home-kpi-label">Colaboradores no período</div>
-      <div class="home-kpi-hint">clique para ver</div>
+      <div class="home-kpi-hint">Abrir lista do período</div>
     </div>
-    <div class="home-kpi">
+    <div class="home-kpi" id="homeVolumeKpi">
       <div class="home-kpi-icon" style="background:var(--success-soft);color:var(--success)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-      <div class="home-kpi-value">${totalRecords.toLocaleString('pt-BR')}</div>
-      <div class="home-kpi-label">Registros no recorte</div>
+      <div class="home-kpi-value">${totalFinalizados==null?'—':totalFinalizados.toLocaleString('pt-BR')}</div>
+      <div class="home-kpi-label">Atendimentos finalizados</div>
+      <div class="home-kpi-hint">${totalFinalizados==null?'Volume não informado':'Volume informado no período'}</div>
     </div>
     <div class="home-kpi home-kpi-clickable" id="homeScoreKpi" role="button" tabindex="0" title="Clique para ver o score por colaborador">
       <div class="home-kpi-icon" style="background:var(--warning-soft);color:var(--warning)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-      <div class="home-kpi-value ${getClasseScore(avgScore)}">${avgScore}</div>
+      <div class="home-kpi-value ${getClasseScore(avgScore)}">${avgScore.replace('.',',')}</div>
       <div class="home-kpi-label">Score médio · ${cockpit.months.join(' · ') || '—'}</div>
-      <div class="home-kpi-hint">clique para ver</div>
+      <div class="home-kpi-hint" id="homeScoreCoverage">${cockpit.metrics.people?cockpit.metrics.scoredPeople+' de '+cockpit.metrics.people+(cockpit.metrics.people===1?' pessoa com nota':' pessoas com nota'):'Sem pessoas no recorte'}</div>
     </div>
     <div class="home-kpi home-kpi-clickable" id="homeTasksKpi" role="button" tabindex="0" title="Clique para ver as tarefas pendentes">
       <div class="home-kpi-icon" style="background:var(--info-soft);color:var(--info)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
       <div class="home-kpi-value">${pendingTasks}</div>
       <div class="home-kpi-label">Tarefas pendentes</div>
-      <div class="home-kpi-hint">clique para ver</div>
+      <div class="home-kpi-hint">Sua conta · todos os períodos</div>
     </div>
   </div>`;
   html += '<p class="score-legend">Score: excelente a partir de 4,70 · atenção de 4,50 a 4,69 · crítico abaixo de 4,50.</p>';

@@ -1,5 +1,7 @@
 # Roadmap de consolidação
 
+Estado consolidado atual: [pendencias-atuais.md](pendencias-atuais.md). As entradas abaixo também preservam o histórico.
+
 Cada fase deve ter branch própria, diffs revisáveis e validação proporcional. Merge e deploy dependem de autorização explícita; não são consequência automática do push.
 
 | Fase | Entrega e critério de saída | Estado |
@@ -71,3 +73,7 @@ Pontuação e alertas com rascunhos separados, salvamento confirmado e nenhuma g
 ## Continuação 1.33.0 — Atendimentos
 
 Avaliação de atendimentos e acompanhamento diário com confirmação por identity, rascunho/imagem e proteção de envio incerto. Contratos, testes e limites em [atendimentos-confirmados.md](atendimentos-confirmados.md). Seguem pendentes a revisão dos fluxos legados restantes e a consolidação visual/arquitetural.
+
+## Continuação 1.34.0 — Home
+
+Volume finalizado, cobertura de notas, tabela de equipes expansível e agenda baseada no cadastro confirmado. Pendências atuais reunidas em [pendencias-atuais.md](pendencias-atuais.md): histórico/notificações, carga inicial medida e consolidação visual.

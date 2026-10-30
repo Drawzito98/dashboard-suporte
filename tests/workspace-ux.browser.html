@@ -303,6 +303,13 @@
   await wait(()=>d().querySelector('.cockpit-context')?.textContent.includes('2026-09')&&d().querySelector('[data-cockpit-task="0"]'),'Cockpit com fontes carregadas');
   assert(!d().querySelector('.cockpit-context h3').textContent.includes('2026-10'),'Referência padrão evita mês em andamento');
   assert(d().querySelector('.cockpit-briefing').textContent.includes('1 sem Score'),'Nota ausente explícita');
+  let model=win().HomeCockpit.model();assert(d().querySelector('#homeVolumeKpi .home-kpi-value').textContent===model.metrics.finished.toLocaleString('pt-BR'),'KPI mostra atendimentos, não linhas de CSV');assert(d().getElementById('homeScoreCoverage').textContent==='11 de 12 pessoas com nota','Cobertura por pessoa explícita');assert(d().querySelector('.cockpit-base').textContent.includes('12 registro(s)'),'Linhas ficam no detalhe da fonte');
+  const teams=d().getElementById('cockpitTeams');assert(!teams.open,'Equipes recolhidas por padrão');teams.open=true;
+  const originalRecords=win().AppState.get('records'),originalRegistry=win().AppState.get('colaboradores'),sample={...model.rows[0],Finalizados:0,SCORE:0,Score:0};
+  win().AppState.publish('records',{...originalRecords,view:[sample]});win().renderHome();assert(d().querySelector('#homeVolumeKpi .home-kpi-value').textContent==='0'&&d().querySelector('#homeScoreKpi .home-kpi-value').textContent==='0,00','Zeros explícitos não viram ausência');assert(d().getElementById('homeScoreCoverage').textContent==='1 de 1 pessoa com nota','Zero conta como nota válida');
+  win().AppState.publish('records',{...originalRecords,view:[{...sample,Finalizados:'',SCORE:null,Score:null}]});win().renderHome();assert(d().querySelector('#homeVolumeKpi .home-kpi-value').textContent==='—'&&d().querySelector('#homeScoreKpi .home-kpi-value').textContent==='—','Ausência não vira zero');
+  win().AppState.publish('records',originalRecords);const birthdayName=model.rows[0].Atendente;win().AppState.publish('colaboradores',{...originalRegistry,[birthdayName]:{...originalRegistry[birthdayName],data_aniversario:'2000-10-28'}});win().renderHome();assert(d().querySelector('.home-operations-card [data-home-action="colaboradores"]')?.textContent.includes(birthdayName),'Agenda usa cadastro confirmado mesmo sem atualizar cache');win().AppState.publish('colaboradores',originalRegistry);win().renderHome();
+
   assert(d().querySelectorAll('[data-cockpit-person]').length===1,'Um vínculo com evidências');
   assert(!d().querySelector('.cockpit-item script'),'Título de tarefa escapado');
   d().querySelector('[data-cockpit-person]').click();await wait(()=>d().getElementById('e360Tab-desempenho')?.getAttribute('aria-selected')==='true','Perfil de desempenho');
@@ -314,7 +321,7 @@
   click('gfClearBtn');const period=d().getElementById('gfPeriodo');period.value='2026-10';period.dispatchEvent(new (win().Event)('change',{bubbles:true}));await wait(()=>d().querySelector('.cockpit-coverage')?.textContent.includes('Período em andamento'),'Período parcial explícito');
   click('gfClearBtn');
   const refresh=async()=>{const before=win().__uxReads.filter(t=>t==='registros').length;click('cockpitRefresh');await wait(()=>win().__uxReads.filter(t=>t==='registros').length>before&&!d().getElementById('cockpitRefresh')?.disabled,'Atualização somente leitura')};
-  win().__uxOffline=true;await refresh();await wait(()=>d().querySelector('.cockpit-source').textContent.includes('Cache'),'Cache identificado');
+  win().__uxOffline=true;await refresh();assert(d().getElementById('cockpitTeams').open,'Seção aberta é preservada na atualização');await wait(()=>d().querySelector('.cockpit-source').textContent.includes('Cache'),'Cache identificado');
   win().__uxOffline=false;win().__uxEmptyRecords();await refresh();await wait(()=>d().querySelector('.cockpit-context h3').textContent.includes('Sem período'),'Vazio do servidor respeitado');
   win().__uxResetRecords();await refresh();await wait(()=>d().querySelector('.cockpit-context h3').textContent.includes('2026-09'),'Referência restaurada da fonte');
   assert(win().__uxWrites.length===0,'Cockpit não grava: '+win().__uxWrites);assert(win().__uxErrors.length===0,'Erros: '+win().__uxErrors);
@@ -323,7 +330,7 @@
     win().__uxHoldRecords=true;click('cockpitRefresh');await wait(()=>win().__uxBlocked,'Consulta bloqueada');win().AppDataSession.invalidate();win().dispatchEvent(new (win().Event)('app-session-invalidated'));win().__uxReleaseRecords();
     await new Promise(r=>setTimeout(r,150));assert(d().getElementById('appScreen').style.display==='none'&&win().AppState.get('records')===null&&win().HomeCockpit.model().rows.length===0,'Sessão invalidada não reabre cockpit');
   }
-  document.getElementById('testResult').textContent='PASS: cockpit, mês fechado/parcial, ausência de nota, evidências, perfil exato, tarefa focada, filtros, cache, vazio e atualização sem escrita';return;
+  document.getElementById('testResult').textContent='PASS: Home com volume/cobertura, zero/ausência, agenda confirmada, seções expansíveis, cockpit, mês fechado/parcial, ausência de nota, evidências, perfil exato, tarefa focada, filtros, cache, vazio e atualização sem escrita';return;
  }
  for(const name of ['home','dashboard','relatorio-setorial','saude-operacional','metas','tarefas','regras','ponto','colaboradores','lider','insights','avaliacao','perfil-pdi','mapeamento-time']){
   await tab(name);if(name==='relatorio-setorial'){assert(!d().getElementById('panoramaSuporteRoot'),'Panorama fora da tela setorial');assert(!d().querySelector('script[src*="panorama-suporte"],link[href*="panorama-suporte"]'),'Relatório não carrega recursos do Panorama');}assert(d().documentElement.scrollWidth<=frame.clientWidth,'Overflow global: '+name);assert(bounds(d().getElementById('appPageTitle')),'Título dentro do cabeçalho: '+name);
