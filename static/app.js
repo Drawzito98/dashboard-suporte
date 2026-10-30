@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.31.0';
+const APP_VERSION = '1.32.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -2096,9 +2096,10 @@ if (!rawRecords || !rawRecords.length) {
   if (resetAlertasBtn && typeof resetAlertasConfig === 'function') {
     resetAlertasBtn.addEventListener('click', () => {
       if (!requireAdmin()) return;
+      if (SettingsDrafts.busy('alertas')) return;
       if (confirm('Resetar configuração de alertas para os valores padrão?')) {
         resetAlertasConfig();
-        showToast('Alertas resetados.', 'success');
+        showToast('Valores padrão preparados. Salve para aplicar.', 'info');
       }
     });
   }

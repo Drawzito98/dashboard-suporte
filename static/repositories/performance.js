@@ -68,77 +68,51 @@ async function dbMetasDelete(id) {
   });
 }
 
-// ─── SCORING RULES ───────────────────────────────────────────────
-
-
-
-async function dbScoringLoad() {
-  if (!sbClient) return null;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return null;
-    const { data, error } = await sbClient.from('scoring_config').select('rules').eq('user_id', uid).maybeSingle();
-    if (!error && data === null) appStorage.removeItem(SCORING_LOCAL_KEY);
-    if (!error && data?.rules && Array.isArray(data.rules)) {
-      appStorage.setItem(SCORING_LOCAL_KEY, JSON.stringify(data.rules));
-      return data.rules;
-    }
-    return null;
-  } catch { return null; }
+// Configurações por conta: nenhuma escrita durante leitura/renderização.
+const settingsConfigs={scoring:{table:'scoring_config',field:'rules',key:'sistema_scoring_confirmado_v1'},alertas:{table:'alertas_config',field:'config',key:'sistema_alertas_confirmado_v1'}};
+function settingsSnapshot(kind){return getSettingsConfirmed(kind);}
+function publishSettings(kind,snapshot){
+  _confirmedCache(settingsConfigs[kind].key,snapshot);
+  if(typeof AppState!=='undefined')AppState.publish('settings:'+kind,snapshot);
+  if(kind==='scoring'&&typeof loadScoringRules==='function')loadScoringRules();
+  if(kind==='alertas'&&typeof loadAlertasConfig==='function')loadAlertasConfig();
+  if(typeof invalidateGamificationCache==='function')invalidateGamificationCache();
+  if(typeof window.dispatchEvent==='function')window.dispatchEvent(new CustomEvent('settings-confirmed',{detail:{kind}}));
 }
-
-async function dbScoringSave(rules) {
-  if (!requireAdmin()) return;
-  appStorage.setItem(SCORING_LOCAL_KEY, JSON.stringify(rules));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('scoring_config').select('id').eq('user_id', uid).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('scoring_config').update({ rules, updated_at: new Date().toISOString() }).eq('user_id', uid);
-    } else {
-      await sbClient.from('scoring_config').insert({ user_id: uid, rules });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
+function settingsModel(kind,row,uid){
+  if(row===null)return{id:null,value:null};
+  if(!row?.id||row.user_id!==uid||!Array.isArray(row[settingsConfigs[kind].field])||row[settingsConfigs[kind].field].some(rule=>!rule||typeof rule!=='object'||typeof rule.id!=='string'))throw Error('Configuração não confirmada.');
+  return{id:row.id,value:row[settingsConfigs[kind].field]};
 }
-
-
-// ─── ALERTAS CONFIG ──────────────────────────────────────────────
-
-
-
-async function dbAlertasLoad() {
-  if (!sbClient) return null;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return null;
-    const { data, error } = await sbClient.from('alertas_config').select('config').eq('user_id', uid).maybeSingle();
-    if (!error && data === null) appStorage.removeItem(ALERTAS_LOCAL_KEY);
-    if (!error && data?.config && Array.isArray(data.config)) {
-      appStorage.setItem(ALERTAS_LOCAL_KEY, JSON.stringify(data.config));
-      return data.config;
-    }
-    return null;
-  } catch { return null; }
+function sameSettings(value){if(Array.isArray(value))return value.map(sameSettings);if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(k=>[k,sameSettings(value[k])]));return value;}
+async function loadSettings(kind){
+  const token=AppDataSession.token(),revision=_confirmedRevisions.get('settings:'+kind);
+  if(!sbClient||!AppDataSession.current(token))return settingsSnapshot(kind)?.value??null;
+  try{const uid=await _getUserId();if(!uid||!AppDataSession.current(token))return settingsSnapshot(kind)?.value??null;
+    const {data,error}=await sbClient.from(settingsConfigs[kind].table).select('*').eq('user_id',uid).maybeSingle();
+    if(!AppDataSession.current(token)||revision!==_confirmedRevisions.get('settings:'+kind)||error)return settingsSnapshot(kind)?.value??null;
+    const snapshot=settingsModel(kind,data,uid);publishSettings(kind,snapshot);return snapshot.value;
+  }catch(_){return settingsSnapshot(kind)?.value??null;}
 }
-
-async function dbAlertasSave(config) {
-  if (!requireAdmin()) return;
-  appStorage.setItem(ALERTAS_LOCAL_KEY, JSON.stringify(config));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('alertas_config').select('id').eq('user_id', uid).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('alertas_config').update({ config, updated_at: new Date().toISOString() }).eq('user_id', uid);
-    } else {
-      await sbClient.from('alertas_config').insert({ user_id: uid, config });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
+async function saveSettings(kind,value,draftId){
+  if(!requireAdmin())throw Error('Apenas administradores podem alterar configurações.');
+  if(!Array.isArray(value)||value.some(rule=>!rule||typeof rule!=='object'||typeof rule.id!=='string')||_writeUuid(draftId)!==draftId)throw Error('Guarde o rascunho antes de salvar.');
+  const draft=JSON.parse(JSON.stringify(value)),cfg=settingsConfigs[kind];
+  return _confirmedWrite('settings:'+kind,async({uid,request})=>{
+    const existing=await request(()=>sbClient.from(cfg.table).select('*').eq('user_id',uid).maybeSingle());
+    if(existing===undefined)throw Error('A consulta não confirmou se a configuração existe. Tente novamente.');
+    if(existing)settingsModel(kind,existing,uid);
+    const id=existing?.id||draftId,fields={[cfg.field]:draft,updated_at:new Date().toISOString()};
+    const row=await request(()=>existing?sbClient.from(cfg.table).update(fields).eq('id',id).eq('user_id',uid).select('*').single():sbClient.from(cfg.table).insert({...fields,id,user_id:uid}).select('*').single());
+    const snapshot=settingsModel(kind,row,uid);
+    if(snapshot.id!==id||JSON.stringify(sameSettings(snapshot.value))!==JSON.stringify(sameSettings(draft)))throw Error('O servidor não confirmou os valores enviados. O rascunho foi mantido.');
+    publishSettings(kind,snapshot);return{status:'confirmed',data:snapshot};
+  });
 }
-
+async function dbScoringLoad(){return loadSettings('scoring');}
+async function dbScoringSave(value,id){return saveSettings('scoring',value,id);}
+async function dbAlertasLoad(){return loadSettings('alertas');}
+async function dbAlertasSave(value,id){return saveSettings('alertas',value,id);}
 
 // ─── PONTOS EXTRAS (Bônus Manuais) ──────────────────────────────
 

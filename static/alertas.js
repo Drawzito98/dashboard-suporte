@@ -14,40 +14,13 @@ const DEFAULT_ALERTAS = [
 
 let alertasConfig = [];
 
-function loadAlertasConfig() {
-  try {
-    const raw = appStorage.getItem(ALERTAS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length) {
-        alertasConfig = parsed;
-        return;
-      }
-    }
-  } catch (e) { console.warn('[Alertas] Erro ao ler config:', e); }
-  alertasConfig = JSON.parse(JSON.stringify(DEFAULT_ALERTAS));
-  if (typeof dbAlertasLoad === 'function') {
-    dbAlertasLoad().then(loaded => {
-      if (loaded && Array.isArray(loaded)) {
-        alertasConfig = loaded;
-        saveAlertasConfig();
-      }
-    }).catch(() => {});
-  }
+function loadAlertasConfig(){
+  const value=typeof getSettingsConfirmed==='function'?getSettingsConfirmed('alertas')?.value:null;
+  alertasConfig=JSON.parse(JSON.stringify(Array.isArray(value)&&value.length?value:DEFAULT_ALERTAS));
 }
-
-function saveAlertasConfig() {
-  try { appStorage.setItem(ALERTAS_STORAGE_KEY, JSON.stringify(alertasConfig)); } catch (e) { console.warn('[Alertas] Erro ao salvar config:', e); }
-  if (typeof dbAlertasSave === 'function') {
-    dbAlertasSave(alertasConfig);
-  }
-}
-
-function resetAlertasConfig() {
-  alertasConfig = JSON.parse(JSON.stringify(DEFAULT_ALERTAS));
-  saveAlertasConfig();
-  renderAlertas();
-}
+function getAlertasConfirmedRules(){return JSON.parse(JSON.stringify(alertasConfig));}
+async function saveAlertasConfig(value,id){return dbAlertasSave(value,id);}
+function resetAlertasConfig(){if(!requireAdmin()||SettingsDrafts.busy('alertas'))return;SettingsDrafts.store('alertas',DEFAULT_ALERTAS);renderAlertas();}
 
 function verificarAlertas() {
   const data = _gfData();
@@ -212,70 +185,8 @@ function verificarAlertas() {
   return alertasDisparados;
 }
 
-function renderAlertas() {
-  const container = document.getElementById('alertasContent');
-  if (!container) return;
-
-  if (!alertasConfig.length) loadAlertasConfig();
-
-  // Configuração
-  let html = `<div style="margin-bottom:var(--s-4)">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">⚙️ Configurar Alertas</h3>
-    <div style="display:flex;flex-direction:column;gap:var(--s-2)">`;
-
-  alertasConfig.forEach(alerta => {
-    html += `<label style="display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:background var(--t-fast);background:${alerta.ativo ? 'var(--bg-surface)' : 'var(--bg-subtle)'}">
-      <input type="checkbox" class="alerta-toggle" data-id="${escapeHtml(alerta.id)}" ${alerta.ativo ? 'checked' : ''} style="accent-color:var(--accent)"/>
-      <span style="font-size:16px">${alerta.icone}</span>
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:13px;color:var(--text-strong)">${escapeHtml(alerta.name)}</div>
-        <div style="font-size:12px;color:var(--text-muted)">${escapeHtml(alerta.desc)}</div>
-      </div>
-    </label>`;
-  });
-
-  html += `</div></div>`;
-
-  // Alertas ativos
-  const disparados = verificarAlertas();
-  html += `<h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">🚨 Alertas Ativos (${disparados.length})</h3>`;
-
-  if (disparados.length) {
-    html += `<div style="display:flex;flex-direction:column;gap:var(--s-2)">`;
-    disparados.forEach(alerta => {
-      const bg = alerta.gravidade === 'alta' ? 'var(--danger-soft)' : 'var(--warning-soft)';
-      html += `<div style="display:flex;align-items:flex-start;gap:var(--s-3);padding:var(--s-3);border:1px solid var(--border);border-radius:var(--r-md);background:${bg}">
-        <span style="font-size:18px">${alerta.config.icone}</span>
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:13px;color:var(--text-strong)">${escapeHtml(alerta.config.name)}</div>
-          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${escapeHtml(alerta.mensagem)}</div>
-        </div>
-        <span class="badge" style="background:${alerta.gravidade === 'alta' ? 'var(--danger-soft)' : 'var(--warning-soft)'};color:${alerta.gravidade === 'alta' ? 'var(--danger)' : 'var(--warning)'}">${alerta.gravidade === 'alta' ? 'Crítico' : 'Atenção'}</span>
-      </div>`;
-    });
-    html += `</div>`;
-  } else if (rawRecords && rawRecords.length) {
-    html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-md);background:var(--success-soft);color:var(--success);font-weight:600;font-size:13px;text-align:center">✅ Nenhum alerta disparado.</div>`;
-  } else {
-    html += `<div class="empty-state"><div class="empty-title">Sem dados</div><div class="empty-sub">Importe um CSV para verificar alertas.</div></div>`;
-  }
-
-  container.innerHTML = html;
-
-  // Bind toggles
-  container.querySelectorAll('.alerta-toggle').forEach(chk => {
-    chk.addEventListener('change', (e) => {
-      if (!requireAdmin()) return;
-      const id = e.target.getAttribute('data-id');
-      const alerta = alertasConfig.find(a => a.id === id);
-      if (alerta) {
-        alerta.ativo = e.target.checked;
-        saveAlertasConfig();
-        renderAlertas();
-      }
-    });
-  });
-}
+// O editor visual compartilhado assume a renderização; o motor acima usa só confirmados.
+function renderAlertas() {}
 
 function onAlertasTabActivated() {
   renderAlertas();

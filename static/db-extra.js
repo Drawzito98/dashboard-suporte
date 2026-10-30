@@ -117,6 +117,11 @@ async function dbMetasDelete(...args) {
   await _loadDataDomain("data-performance");
   return AppRepositories.performance.dbMetasDelete(...args);
 }
+function getSettingsConfirmed(kind){
+  const value=typeof AppState!=='undefined'?AppState.get('settings:'+kind):null;
+  if(value)return value;
+  return _fallbackLoad(kind==='scoring'?'sistema_scoring_confirmado_v1':'sistema_alertas_confirmado_v1',null);
+}
 async function dbScoringLoad(...args) {
   await _loadDataDomain("data-performance");
   return AppRepositories.performance.dbScoringLoad(...args);

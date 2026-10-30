@@ -75,3 +75,7 @@ Comentários por período com confirmação, UUID estável e rascunho privado; c
 ## Continuação 1.31.0 — Ativos/inativos
 
 Gerenciadores com confirmação individual, escolhas privadas e publicação de filtros após confirmação; sem substituição de coleção. Contratos, testes e limites em [inativos-confirmados.md](inativos-confirmados.md). Próximos: configurações e demais gravações legadas.
+
+## Continuação 1.32.0 — Configurações
+
+Pontuação e alertas com rascunhos separados, salvamento confirmado e nenhuma gravação durante leitura/renderização. Contratos, validação e limites em [configuracoes-confirmadas.md](configuracoes-confirmadas.md). Próximos: demais gravações legadas de atendimento/acompanhamento.

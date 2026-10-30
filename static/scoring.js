@@ -12,45 +12,13 @@ const DEFAULT_SCORING_RULES = [
 
 let scoringRules = [];
 
-function loadScoringRules() {
-  try {
-    const raw = appStorage.getItem(SCORING_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length) {
-        // Merge saved rules with defaults to refresh labels/descriptions
-        const defaultMap = {};
-        DEFAULT_SCORING_RULES.forEach(d => { defaultMap[d.id] = d; });
-        scoringRules = parsed.map(r => {
-          if (defaultMap[r.id]) {
-            const merged = { ...defaultMap[r.id], defaultValue: r.defaultValue };
-            if (r.id === 'transferido') merged.defaultValue = 0;
-            return merged;
-          }
-          return r;
-        });
-        saveScoringRules();
-        return;
-      }
-    }
-  } catch (e) { console.error('[Scoring] Erro:', e); }
-  scoringRules = JSON.parse(JSON.stringify(DEFAULT_SCORING_RULES));
+function loadScoringRules(){
+  const parsed=typeof getSettingsConfirmed==='function'?getSettingsConfirmed('scoring')?.value:null;
+  const defaults=Object.fromEntries(DEFAULT_SCORING_RULES.map(r=>[r.id,r]));
+  scoringRules=Array.isArray(parsed)&&parsed.length?parsed.map(r=>defaults[r.id]?{...defaults[r.id],defaultValue:r.id==='transferido'?0:r.defaultValue}:{...r}):JSON.parse(JSON.stringify(DEFAULT_SCORING_RULES));
 }
-
-function saveScoringRules() {
-  try {
-    appStorage.setItem(SCORING_STORAGE_KEY, JSON.stringify(scoringRules));
-  } catch (e) { console.error('[Scoring] Erro:', e); }
-  if (typeof dbScoringSave === 'function') {
-    dbScoringSave(scoringRules);
-  }
-}
-
-function resetScoringRules() {
-  scoringRules = JSON.parse(JSON.stringify(DEFAULT_SCORING_RULES));
-  saveScoringRules();
-  renderScoringRules();
-}
+async function saveScoringRules(value,id){return dbScoringSave(value,id);}
+function resetScoringRules(){if(!requireAdmin()||SettingsDrafts.busy('scoring'))return;SettingsDrafts.store('scoring',DEFAULT_SCORING_RULES);renderScoringRules();}
 
 function computeScoreForCollaborator(name, records) {
   const rows = (records || []).filter(r => r && String(r['Atendente']) === name);
@@ -114,37 +82,18 @@ function getOverallRanking(records) {
   return scores;
 }
 
-function renderScoringRules() {
-  const container = document.getElementById('scoringRulesContainer');
-  if (!container) return;
-  if (!scoringRules.length) loadScoringRules();
-
-  container.innerHTML = scoringRules.map(rule => `
-    <div class="config-rule">
-      <div class="config-rule-icon">${rule.icon}</div>
-      <div class="config-rule-info">
-        <div class="config-rule-name">${escapeHtml(rule.name)}</div>
-        <div class="config-rule-desc">${escapeHtml(rule.desc)}</div>
-      </div>
-      <input type="number" class="config-rule-input" data-rule-id="${escapeHtml(rule.id)}" value="${rule.defaultValue}" step="0.5"/>
-    </div>
-  `).join('');
-
-  container.querySelectorAll('.config-rule-input').forEach(input => {
-    input.addEventListener('change', (e) => {
-      if (!requireAdmin()) return;
-      const id = e.target.getAttribute('data-rule-id');
-      const val = parseFloat(e.target.value) || 0;
-      const rule = scoringRules.find(r => r.id === id);
-      if (rule) {
-        rule.defaultValue = val;
-        saveScoringRules();
-        // Refresh gamification if visible
-        if (typeof renderGamification === 'function') renderGamification();
-      }
-    });
+function renderScoringRules(){
+  const host=document.getElementById('scoringRulesContainer');if(!host||SettingsDrafts.busy('scoring'))return;
+  const draft=SettingsDrafts.working('scoring',scoringRules),admin=document.body.dataset.role==='admin';
+  host.innerHTML=`<p>Edite os pesos e salve para aplicar. Os indicadores usam a última configuração confirmada.</p><p id="settingsMessage-scoring" role="status" aria-live="polite"></p>`+draft.map(rule=>`<label class="config-rule"><span class="config-rule-icon">${escapeHtml(rule.icon||'')}</span><span class="config-rule-info"><span class="config-rule-name" style="display:block">${escapeHtml(rule.name)}</span><span class="config-rule-desc" style="display:block">${escapeHtml(rule.desc)}</span></span><input type="number" class="config-rule-input" aria-label="Peso de ${escapeHtml(rule.name)}" data-rule-id="${escapeHtml(rule.id)}" value="${rule.id==='transferido'?0:rule.defaultValue}" step="0.5"${!admin||rule.id==='transferido'?' disabled':''}></label>`).join('')+`<button class="btn-primary" id="scoringSave" type="button"${!admin?' disabled':''}>Salvar pontuação</button> <button class="btn-small" id="scoringDiscard" type="button">Descartar edição</button>`;
+  SettingsDrafts.restore('scoring',host);
+  host.querySelectorAll('input').forEach(el=>el.addEventListener('input',()=>SettingsDrafts.capture('scoring',draft,host)));
+  document.getElementById('scoringDiscard')?.addEventListener('click',()=>{if(SettingsDrafts.discard('scoring'))renderScoringRules();});
+  document.getElementById('scoringSave')?.addEventListener('click',()=>{
+    if(!SettingsDrafts.capture('scoring',draft,host))return;
+    let valid=true;host.querySelectorAll('input').forEach(el=>{const value=Number(el.value),row=draft.find(r=>r.id===el.dataset.ruleId);if(el.value===''||!Number.isFinite(value)){el.setAttribute('aria-invalid','true');valid=false;}else if(row)row.defaultValue=row.id==='transferido'?0:value;});
+    if(!valid){SettingsDrafts.message('scoring','Informe pesos numéricos válidos.');return;}
+    SettingsDrafts.save('scoring',draft,host,saveScoringRules,renderScoringRules);
   });
 }
-
-// Initialize on load
 loadScoringRules();

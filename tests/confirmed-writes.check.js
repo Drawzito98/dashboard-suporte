@@ -3,7 +3,7 @@ const { webcrypto: crypto } = require('node:crypto');
 const { create } = require('../static/data-runtime.js');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function setup() {
-  const memory = new Map(), tables = { feedbacks: new Map(), metas: new Map(), avaliacoes: new Map(), tarefas: new Map(), anotacoes_diarias: new Map(), colaboradores_info: new Map(), colaborador_fotos: new Map(), colab_inativos: new Map(), setor_inativos:new Map(), pontos_extras: new Map(), ferias:new Map(), ausencias:new Map(), regras:new Map(), comentarios:new Map() }, calls = [];
+  const memory = new Map(), tables = { feedbacks: new Map(), metas: new Map(), avaliacoes: new Map(), tarefas: new Map(), anotacoes_diarias: new Map(), colaboradores_info: new Map(), colaborador_fotos: new Map(), colab_inativos: new Map(), setor_inativos:new Map(), pontos_extras: new Map(), ferias:new Map(), ausencias:new Map(), regras:new Map(), comentarios:new Map(), scoring_config:new Map(), alertas_config:new Map() }, calls = [];
   const session = create({ storage: { getItem: k => memory.get(k) || null, setItem: (k,v) => { if(control.cacheFail) throw Error('quota'); memory.set(k,v); }, removeItem: k => memory.delete(k) } });
   session.bind({ id: 'owner', app_metadata: { role: 'admin' } });
   const control = { mode: 'ok', hold: null, release: null, admin: true };
@@ -26,7 +26,7 @@ function setup() {
         else { rows = snapshot.filter(r => filters.every(([k,v,op]) => op==='notLike'?!String(r[k]||'').startsWith(v.slice(0,-1)):(k==='id'?String(r[k])===String(v):r[k]===v))); if (range) rows=rows.slice(range[0],range[1]+1); if (mode === 'delete') rows.forEach(r => tables[table].delete(r.id)); if (mode === 'update') {rows=rows.map(r=>({...r,...payload}));rows.forEach(r=>tables[table].set(r.id,r));} }
         if (control.mode === 'lost' && ['write','update','insert','delete'].includes(mode)) throw Error('response lost');
         if(control.foreign) rows=rows.map(row=>({...row,user_id:'other'}));
-        return { data: control.mode === 'missing' ? null : single ? rows[0] : rows, error: null };
+        return { data: control.mode === 'missing' ? null : single ? (rows[0]??null) : rows, error: null };
       }).then(resolve,reject); }
     }; return q;
   }};
@@ -117,6 +117,20 @@ function setup() {
   }
   const partialInactive=setup(),variants=['José','JOSE'];for(const nome of variants){const id=crypto.randomUUID();partialInactive.tables.colab_inativos.set(id,{id,user_id:'owner',nome});}partialInactive.control.failDeleteAt=2;await assert.rejects(partialInactive.c.dbColabActivate('José'),/1 remoção/);assert.equal(partialInactive.c.AppState.get('inativos').length,1,'Publicar apenas exclusões confirmadas');partialInactive.control.failDeleteAt=null;await partialInactive.c.dbColabActivate('José');assert.equal(partialInactive.tables.colab_inativos.size,0);
   console.log('Inativos: operações individuais por ID/conta, UUID, resposta perdida, paginação/vazio, cache, sessão e reativação parcial.');
+  for(const [kind,table,field,save,load]of [['scoring','scoring_config','rules','dbScoringSave','dbScoringLoad'],['alertas','alertas_config','config','dbAlertasSave','dbAlertasLoad']]){
+    const st=setup(),id=crypto.randomUUID(),value=[{id:'regra',valor:4,ativo:true}];
+    for(const mode of ['error','network','missing']){st.control.mode=mode;await assert.rejects(st.c[save](value,id));assert.equal(st.c.getSettingsConfirmed(kind),null);}
+    st.tables[table].clear();st.control.mode='lost';await assert.rejects(st.c[save](value,id));st.control.mode='ok';await st.c[save](value,id);assert.equal(st.tables[table].size,1,'Retentativa mantém UUID da configuração');
+    st.control.foreign=true;await assert.rejects(st.c[save](value,id));st.control.foreign=false;
+    const updated=[{id:'regra',valor:3,ativo:false}];st.control.hold=new Promise(r=>st.control.release=r);const stale=st.c[load]();await tick();await st.c[save](updated,id);st.control.release();await stale;assert.equal(st.c.getSettingsConfirmed(kind).value[0].valor,3,'Leitura antiga não restaura configuração');
+    st.control.cacheFail=true;st.c.console={...console,warn(){}};await st.c[save](value,id);assert.equal(st.c.getSettingsConfirmed(kind).value[0].valor,4);st.control.cacheFail=false;
+    await st.c[save]([],id);assert.equal(st.c.getSettingsConfirmed(kind).value.length,0,'Array vazio confirmado é oficial');st.tables[table].clear();await st.c[load]();assert.equal(st.c.getSettingsConfirmed(kind).value,null,'Ausência no servidor substitui configuração');
+    assert.ok(st.calls.filter(r=>r.table===table&&r.mode==='update').every(r=>r.filters.some(([k])=>k==='id')&&r.filters.some(([k])=>k==='user_id')),'Update por ID e conta');
+    st.control.admin=false;await assert.rejects(st.c[save](value,id));
+    const late=setup();late.control.hold=new Promise(r=>late.control.release=r);const pending=late.c[save](value,id);await tick();late.session.invalidate();late.control.release();await assert.rejects(pending,/Sessão alterada/);assert.equal(late.c.getSettingsConfirmed(kind),null);
+  }
+  const noAuto=setup();let autoWrites=0;noAuto.c.dbScoringSave=async()=>{autoWrites++;};noAuto.c.dbAlertasSave=async()=>{autoWrites++;};for(const module of ['scoring','alertas'])vm.runInContext(fs.readFileSync('static/'+module+'.js','utf8'),noAuto.c);vm.runInContext('loadScoringRules();loadAlertasConfig();',noAuto.c);assert.equal(autoWrites,0,'Inicialização/leitura não grava configurações');
+  console.log('Configurações: confirmação/conta/ID/valores, UUID, falhas, vazio, cache, leitura antiga, sessão e inicialização sem gravação.');
   const ev = setup(), evaluation = {id:crypto.randomUUID(),colaborador:'Pessoa exata',ciclo:'Set-Dez 2026',scores:{1:3},comentarios_finais:['Evidência original'],observacoes_gerais:'Texto',status:'pendente',createdAt:'2026-01-01T12:00:00.000Z'};
   for(const mode of ['error','network','missing']){ev.control.mode=mode;await assert.rejects(ev.c.dbAvaliacaoSave(evaluation));assert.equal(ev.session.cache.getItem('sistema_avaliacoes_v1'),null,'Falha não publica avaliação');assert.equal(ev.c.AppState.get('avaliacoes'),null);}
   ev.control.mode='ok';ev.control.foreign=true;await assert.rejects(ev.c.dbAvaliacaoSave(evaluation));assert.equal(ev.c.AppState.get('avaliacoes'),null,'Dono incorreto não confirma');ev.control.foreign=false;
