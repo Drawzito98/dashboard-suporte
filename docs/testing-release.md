@@ -87,3 +87,7 @@ Avaliação de atendimentos e acompanhamento diário com confirmação por ident
 ## Continuação 1.34.0 — Home
 
 Home distingue volume, linhas de indicadores e cobertura de notas. Fixture cockpit cobre zero versus ausência, cadastro confirmado sem atualização de cache, expansão preservada e leitura sem gravação; executar também mobile/race e regressões gerais. Estado e limites em [pendencias-atuais.md](pendencias-atuais.md).
+
+## Continuação 1.35.0 — Histórico e notificações
+
+Histórico sem cópia otimista duplicada, com confirmação e retentativa manual estável. Notificações só marcam IDs confirmados e mostram falha/parcial. Contratos, testes e limites em [historico-notificacoes-confirmados.md](historico-notificacoes-confirmados.md). Próxima prioridade: medir carga inicial antes de reduzir dependências.

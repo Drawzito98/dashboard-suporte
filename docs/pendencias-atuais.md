@@ -1,4 +1,4 @@
-# Estado atual — 1.34.0
+# Estado atual — 1.35.0
 
 Revisão de 30/10/2026. Este documento reúne as pendências atuais; entradas antigas do roadmap registram o estado de cada entrega na época.
 
@@ -10,7 +10,7 @@ Home mostra atendimentos finalizados, em vez de linhas de CSV, e quantas pessoas
 
 ## Próximos ajustes, em ordem
 
-1. Histórico e notificações: revisar confirmação de escrita, sessão e publicação local. `repositories/audit.js` ainda publica histórico antes da confirmação; `app-admin.js` também adiciona localmente. Marcação de notificações lidas não confere o erro retornado antes de atualizar cache. Exige rodada própria com testes de falha; não corrigido nesta versão.
+1. Histórico/notificações receberam confirmação e mensagens de falha em 1.35.0; contratos e limites em [historico-notificacoes-confirmados.md](historico-notificacoes-confirmados.md). Seguem fora do escopo auditoria transacional do banco, entrega garantida de notificações e revisão integral de todos os fluxos automáticos.
 2. Carga inicial: medir dependências e tempos antes de reduzir scripts/globais. Inventário atual: 88 scripts externos ao HTML (81 locais e 7 remotos), app.js aproximadamente 106 KB, styles.css aproximadamente 184 KB. Nenhuma redução de tempo de carregamento foi medida nesta rodada.
 3. CSS e componentes: continuar unificação gradual de modais/tabelas e conferir acessibilidade por fluxo. Testes amostrais não equivalem a certificação WCAG ou cobertura de todos os navegadores.
 

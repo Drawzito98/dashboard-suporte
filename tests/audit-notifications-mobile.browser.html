@@ -1,0 +1,3 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Histórico e notificações — 320px</title><body style="margin:0"><p id="testResult">RUNNING</p><iframe id="mobile" title="Teste em 320px" style="width:320px;height:1200px;border:0" src="audit-notifications.browser.html"></iframe><script>
+const check=setInterval(()=>{const frame=document.getElementById('mobile'),doc=frame.contentDocument,result=doc?.getElementById('testResult')?.textContent;if(!result||result==='RUNNING')return;document.getElementById('testResult').textContent=doc.documentElement.scrollWidth>frame.clientWidth?'FAIL: overflow em 320px':result;clearInterval(check);},100);
+</script></body></html>

@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.34.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.35.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -202,3 +202,7 @@ Leia docs/atendimentos-confirmados.md. Avaliação de atendimentos e acompanhame
 ## Continuação 1.34.0 — Home e pendências atuais
 
 Leia docs/pendencias-atuais.md. Home destaca volume finalizado e cobertura de notas; linhas de indicadores ficam nas fontes. Equipes usa details nativo com expansão preservada durante atualização. Agenda consulta getColabInfoLocal. Não alterar média simples, ausência versus zero, filtros ou critérios dos alertas. Rode npm test e workspace ?cockpit=1 (também mobile/race), workspace completo, data-lifecycle, lazy-modules e design-system. As sete fases estão entregues nos limites documentados; histórico/notificações, carga inicial e CSS continuam em consolidação. Sem SQL, testes de escrita em produção ou merge sem autorização.
+
+## Continuação 1.35.0 — Histórico e notificações
+
+Leia docs/historico-notificacoes-confirmados.md. Histórico usa UUID estável, confirmação por ID/conteúdo, cache novo e pendência privada antes de INSERT; não adotar cache legado nem reenviar automaticamente. A trilha é independente dos indicadores e não é auditoria transacional. Notificações administrativas só marcam IDs com lida:true retornados; parcial/erro deve permanecer visível. INSERT de autor não-admin não deve exigir SELECT proibido pela RLS. Preserve isolamento de sessão, recortes de 500/50 e semântica de compartilhamento. Rode npm test, audit-notifications.browser.html e audit-notifications-mobile.browser.html, comentários, workspace desktop/mobile, data-lifecycle, lazy-modules e design-system. Sem SQL ou testes de escrita em produção; merge exige autorização explícita.

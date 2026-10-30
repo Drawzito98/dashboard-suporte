@@ -77,3 +77,7 @@ Avaliação de atendimentos e acompanhamento diário com confirmação por ident
 ## Continuação 1.34.0 — Home
 
 Volume finalizado, cobertura de notas, tabela de equipes expansível e agenda baseada no cadastro confirmado. Pendências atuais reunidas em [pendencias-atuais.md](pendencias-atuais.md): histórico/notificações, carga inicial medida e consolidação visual.
+
+## Continuação 1.35.0 — Histórico e notificações
+
+Histórico sem cópia otimista duplicada, com confirmação e retentativa manual estável. Notificações só marcam IDs confirmados e mostram falha/parcial. Contratos, testes e limites em [historico-notificacoes-confirmados.md](historico-notificacoes-confirmados.md). Próxima prioridade: medir carga inicial antes de reduzir dependências.

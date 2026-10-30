@@ -50,66 +50,46 @@ async function dbComentarioDel(mes,id){
   });
 }
 
-// ─── HISTÓRICO ───────────────────────────────────────────────────
-
-
-
-async function dbHistoricoLoad() {
-  if (!sbClient) return _fallbackLoad(HISTORICO_LOCAL_KEY, []);
-  try {
-    const { data, error } = await sbClient.from('historico').select('*').order('created_at', { ascending: false }).limit(500);
-    if (!error && Array.isArray(data)) {
-      const log = data.map(r => ({
-        ts: r.created_at,
-        user: r.user_email || '',
-        action: r.action,
-        colaborador: r.colaborador,
-        mes: r.mes,
-        campo: r.campo,
-        before: r.before_value,
-        after: r.after_value,
-        detalhes: r.detalhes
-      }));
-      appStorage.setItem(HISTORICO_LOCAL_KEY, JSON.stringify(log));
-      return log;
-    }
-    return _fallbackLoad(HISTORICO_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(HISTORICO_LOCAL_KEY, []);
-  }
+// Histórico compartilhado: confirmados e envios pendentes são coleções distintas.
+const historyKey='sistema_historico_confirmado_v1',historyPendingKey='sistema_historico_pendente_v1';
+function historyList(){const rows=typeof AppState!=='undefined'?AppState.get('historico'):null;return Array.isArray(rows)?rows:_confirmedList(historyKey);}
+function historyPending(){return _confirmedList(historyPendingKey);}
+function historyPublish(rows){rows=rows.slice().sort((a,b)=>String(a.ts).localeCompare(String(b.ts))).slice(-500);_confirmedCache(historyKey,rows);if(typeof AppState!=='undefined')AppState.publish('historico',rows);}
+function historyModel(r){return{id:r.id,ts:r.created_at,user:r.user_email||'',action:r.action,colaborador:r.colaborador,mes:r.mes,campo:r.campo,before:r.before_value,after:r.after_value,detalhes:r.detalhes};}
+function historyPayload(entry,email){return{id:entry.id,action:String(entry.action??''),colaborador:String(entry.colaborador??''),mes:String(entry.mes??''),campo:String(entry.campo??''),before_value:String(entry.before??''),after_value:String(entry.after??''),detalhes:String(entry.detalhes??''),user_email:email};}
+function historyMatches(row,payload){return row&&Object.keys(payload).every(key=>row[key]===payload[key]);}
+function historyForget(ids){const rows=historyPending().filter(e=>!ids.includes(e.id));_confirmedCache(historyPendingKey,rows);}
+async function dbHistoricoLoad(){
+  const token=AppDataSession.token(),revision=_confirmedRevisions.get('historico');
+  if(!sbClient||!AppDataSession.current(token))return historyList();
+  try{
+    const uid=await _getUserId();if(!uid||!AppDataSession.current(token))return historyList();
+    const {data,error}=await sbClient.from('historico').select('*').order('created_at',{ascending:false}).order('id',{ascending:false}).limit(500);
+    if(!AppDataSession.current(token)||revision!==_confirmedRevisions.get('historico'))return historyList();
+    if(error||!Array.isArray(data))throw Error('Consulta não confirmada.');
+    if(typeof AppState!=='undefined')AppState.publish('historicoStatus','confirmed');
+    historyPublish(data.map(historyModel));
+    historyForget(historyPending().filter(entry=>data.some(row=>historyMatches(row,entry.payload))).map(e=>e.id));
+    return historyList();
+  }catch(_){if(AppDataSession.current(token)&&typeof AppState!=='undefined')AppState.publish('historicoStatus','error');return historyList();}
 }
-
-async function dbHistoricoAdd(entry) {
-  const log = JSON.parse(appStorage.getItem(HISTORICO_LOCAL_KEY) || '[]');
-  const email = await _getUserEmail();
-  const enriched = {
-    ts: entry.ts || new Date().toISOString(),
-    user: entry.user || email || '',
-    action: entry.action || '',
-    colaborador: entry.colaborador || '',
-    mes: entry.mes || '',
-    campo: entry.campo || '',
-    before: entry.before || '',
-    after: entry.after || '',
-    detalhes: entry.detalhes || ''
-  };
-  log.push(enriched);
-  if (log.length > 500) log.splice(0, log.length - 500);
-  appStorage.setItem(HISTORICO_LOCAL_KEY, JSON.stringify(log));
-  if (sbClient) {
-    try {
-      await sbClient.from('historico').insert({
-        action: enriched.action,
-        colaborador: enriched.colaborador,
-        mes: enriched.mes,
-        campo: enriched.campo,
-        before_value: enriched.before,
-        after_value: enriched.after,
-        detalhes: enriched.detalhes,
-        user_email: email || ''
-      });
-    } catch (e) { console.error('[db-extra]', e); }
-  }
+async function dbHistoricoAdd(entry){
+  const id=_writeUuid(entry.id);if(entry.id&&entry.id!==id)throw Error('Identificador de histórico inválido.');
+  return _confirmedWrite('historico',async({uid,request,check})=>{
+    const auth=await sbClient.auth.getUser();check();
+    if(auth.error||auth.data?.user?.id!==uid)throw Error('Confirme sua sessão antes de registrar o histórico.');
+    const email=auth.data.user.email||'',payload=historyPayload({...entry,id},email),pending=historyPending(),existingPending=pending.find(e=>e.id===id);
+    if(existingPending&&JSON.stringify(existingPending.payload)!==JSON.stringify(payload))throw Error('O envio pendente possui outro conteúdo.');
+    if(!existingPending){
+      // Se não for possível preservar o envio, não iniciar a escrita de rede.
+      appStorage.setItem(historyPendingKey,JSON.stringify([...pending,{...entry,id,user:email,payload}]));
+    }
+    let row=await request(()=>sbClient.from('historico').select('*').eq('id',id).maybeSingle());
+    if(!row)row=await request(()=>sbClient.from('historico').insert(payload).select('*').single());
+    if(!historyMatches(row,payload)||!row.created_at)throw Error('Histórico não confirmado. Consulte a lista antes de tentar novamente.');
+    historyPublish([...historyList().filter(e=>e.id!==id),historyModel(row)]);historyForget([id]);
+    return{status:'confirmed',data:historyModel(row)};
+  });
 }
 
 

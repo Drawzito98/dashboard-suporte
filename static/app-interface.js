@@ -72,6 +72,8 @@ function initNotificacoesUI() {
   if (!wrapper || !btn || !badge || !panel || !body) return;
 
   if (!isAdmin()) { wrapper.style.display = 'none'; return; }
+  if(wrapper.dataset.notificationsBound==='true')return;
+  wrapper.dataset.notificationsBound='true';
   wrapper.style.display = '';
 
   function atualizarUI() {
@@ -86,23 +88,32 @@ function initNotificacoesUI() {
   }
 
   function renderPainel() {
-    const lista = _notificacoesCache || [];
+    const lista = _currentNotificacoes();
+    const status=_notificacoesStatus==='error'?'Consulta indisponível. A lista anterior foi mantida.':_notificacoesStatus==='confirmed'?'Últimas 50 notificações consultadas.':'Notificações ainda não consultadas.';
+    const header='<p role="status" class="notif-empty">'+status+'</p><button class="btn-small" type="button" id="notifRefreshBtn">Atualizar lista</button>';
+    function bindRefresh(){body.querySelector('#notifRefreshBtn')?.addEventListener('click',async()=>{await dbNotificacoesLoad();atualizarUI();});}
     if (!lista.length) {
-      body.innerHTML = '<div class="notif-empty">Nenhuma notificação</div>';
-      return;
+      body.innerHTML = header+'<div class="notif-empty">'+(_notificacoesStatus==='confirmed'?'Nenhuma notificação':'Não foi possível confirmar se há notificações.')+'</div>';
+      bindRefresh();return;
     }
-    body.innerHTML = lista.map(n => {
-      const tempo = n.created_at ? new Date(n.created_at + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-      return `<div class="notif-item${n.lida ? ' lida' : ''}" data-id="${n.id}">
+    body.innerHTML = header+lista.map(n => {
+      const tempo = n.created_at ? new Date(/(?:Z|[+-]\d{2}:?\d{2})$/.test(n.created_at)?n.created_at:n.created_at+'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+      return `<div class="notif-item${n.lida ? ' lida' : ''}" data-id="${escapeHtml(n.id)}" role="button" tabindex="0" aria-label="Marcar notificação como lida">
         <span class="notif-dot"></span>
         <div class="notif-text">${escapeHtml(n.descricao)}<br><small style="color:var(--text-muted)">${escapeHtml(n.actor_email || '')} · ${tempo}</small></div>
       </div>`;
     }).join('');
-    body.querySelectorAll('.notif-item').forEach(el => {
-      el.addEventListener('click', () => {
-        const id = el.dataset.id;
-        marcarNotificacaoLida(id).then(atualizarUI).catch(() => {});
-      });
+    bindRefresh();
+    body.querySelectorAll('.notif-item').forEach(el=>{
+      const mark=async()=>{
+        if(el.getAttribute('aria-busy')==='true')return;
+        const token=AppDataSession.token();el.setAttribute('aria-busy','true');
+        try{await marcarNotificacaoLida(el.dataset.id);}
+        catch(error){if(AppDataSession.current(token))showToast(error.message||'Não foi possível confirmar a leitura.','error');}
+        finally{if(AppDataSession.current(token))atualizarUI();}
+      };
+      el.addEventListener('click',mark);
+      el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();mark();}});
     });
   }
 
@@ -114,8 +125,11 @@ function initNotificacoesUI() {
   });
 
   if (marcarTodas) {
-    marcarTodas.addEventListener('click', () => {
-      marcarTodasNotificacoesLidas().then(atualizarUI).catch(() => {});
+    marcarTodas.addEventListener('click', async () => {
+      const token=AppDataSession.token();marcarTodas.disabled=true;
+      try{await marcarTodasNotificacoesLidas();}
+      catch(error){if(AppDataSession.current(token))showToast(error.message||'Não foi possível confirmar a leitura.','error');}
+      finally{if(AppDataSession.current(token)){marcarTodas.disabled=false;atualizarUI();}}
     });
   }
 

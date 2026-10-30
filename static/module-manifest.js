@@ -22,7 +22,7 @@ window.APP_MODULES = {
   },
   "data-audit": {
     "scripts": [
-      "/static/repositories/audit.js?v=1"
+      "/static/repositories/audit.js?v=135"
     ],
     "exports": [
       "AppRepositories.audit.dbComentariosLoad",

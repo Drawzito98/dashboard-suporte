@@ -1,114 +1,41 @@
-// Histórico de Alterações
-function openHistorico() {
-  const overlay = document.getElementById('historicoOverlay');
-  if (!overlay) return;
-  overlay.classList.add('open');
-  renderHistorico();
+// Histórico: projeção confirmada e envios privados pendentes, sem reenvio automático.
+function loadHistoricoFromStorage(){
+  const rows=AppState.get('historico');
+  if(Array.isArray(rows))return rows;
+  try{const cache=JSON.parse(appStorage.getItem('sistema_historico_confirmado_v1')||'[]');return Array.isArray(cache)?cache:[];}catch(_){return[];}
 }
-
-function closeHistorico() {
-  const overlay = document.getElementById('historicoOverlay');
-  if (overlay) overlay.classList.remove('open');
+function loadHistoricoPending(){
+  try{const rows=JSON.parse(appStorage.getItem('sistema_historico_pendente_v1')||'[]');return Array.isArray(rows)?rows:[];}catch(_){return[];}
 }
-
-function loadHistoricoFromStorage() {
-  try {
-    const raw = appStorage.getItem('sistema_historico_v1');
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function renderHistorico() {
-  const container = document.getElementById('historicoContent');
-  if (!container) return;
-  try {
-    const log = loadHistoricoFromStorage();
-
-    if (!log.length) {
-      container.innerHTML = `<div style="padding:var(--s-5);text-align:center;color:var(--text-muted)">
-        <div style="font-size:40px;margin-bottom:var(--s-3)">📝</div>
-        <h3 style="font-weight:600;margin-bottom:var(--s-2)">Nenhuma alteração registrada</h3>
-        <p style="font-size:13px">Edite dados na tabela para gerar o histórico.</p>
-      </div>`;
-      return;
-    }
-
-    const reversed = [...log].reverse();
-    const actionIcons = { edit: '✏️', add: '➕', delete: '🗑️' };
-    const actionLabels = { edit: 'Edição', add: 'Adição', delete: 'Exclusão' };
-
-    let html = `
-      <div style="padding:var(--s-5)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-4)">
-          <div>
-            <h2 style="font-size:18px;font-weight:700">📝 Histórico de Alterações</h2>
-            <p style="font-size:13px;color:var(--text-secondary)">${log.length} registro(s) — últimas 500</p>
-          </div>
-          <button class="btn-small" id="clearHistoricoBtn" type="button" style="color:var(--danger)">🗑️ Limpar</button>
-        </div>
-        <div style="overflow-x:auto;max-height:60vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md)">
-          <table class="ranking-table" style="min-width:600px">
-            <thead>
-              <tr>
-                <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Data/Hora</th>
-                <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Usuário</th>
-                <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Ação</th>
-                <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Colaborador</th>
-                <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Mês</th>
-                <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Detalhes</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${reversed.map(e => {
-                const icone = actionIcons[e.action] || '❓';
-                const label = actionLabels[e.action] || e.action;
-                let detalhes = '';
-                if (e.action === 'edit' && e.campo) {
-                  detalhes = `<span style="font-size:12px"><code>${escapeHtml(e.campo)}</code>: ${escapeHtml(e.before || '—')} → ${escapeHtml(e.after || '—')}</span>`;
-                } else if (e.detalhes) {
-                  detalhes = escapeHtml(e.detalhes);
-                }
-                const ts = new Date(e.ts);
-                const dataStr = ts.toLocaleString('pt-BR');
-                return `<tr>
-                  <td style="font-size:11px;white-space:nowrap">${escapeHtml(dataStr)}</td>
-                  <td style="font-size:12px">${escapeHtml(e.user)}</td>
-                  <td>${icone} ${label}</td>
-                  <td>${escapeHtml(e.colaborador || '—')}</td>
-                  <td>${escapeHtml(e.mes || '—')}</td>
-                  <td style="font-size:12px">${detalhes || '—'}</td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-
-    container.innerHTML = html;
-
-    document.getElementById('historicoClose').addEventListener('click', closeHistorico);
-    const clearBtn = document.getElementById('clearHistoricoBtn');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        if (!requireAdmin()) return;
-        if (confirm('Tem certeza? Isso vai apagar todo o histórico.')) {
-          appStorage.removeItem('sistema_historico_v1');
-          renderHistorico();
-        }
-      });
-    }
-  } catch (e) {
-    container.innerHTML = '<div style="padding:20px;color:var(--danger)">Erro ao carregar histórico.</div>';
+function openHistorico(){const overlay=document.getElementById('historicoOverlay');if(overlay){overlay.classList.add('open');renderHistorico();}}
+function closeHistorico(){document.getElementById('historicoOverlay')?.classList.remove('open');}
+function renderHistorico(){
+  const container=document.getElementById('historicoContent');if(!container)return;
+  const log=loadHistoricoFromStorage(),pending=loadHistoricoPending(),esc=v=>escapeHtml(String(v??''));
+  const labels={edit:'Edição',add:'Adição',delete:'Exclusão'};
+  container.innerHTML=`<div style="padding:var(--s-5)">
+    <h2>Histórico de alterações</h2>
+    <p>Até 500 registros confirmados disponíveis nesta sessão ou no cache da conta. Atualizar consulta o servidor; se a consulta falhar, a lista anterior é mantida.</p>
+    ${AppState.get('historicoStatus')==='error'?'<p role="status">Consulta indisponível. A lista anterior foi mantida.</p>':''}
+    <p>Esta trilha é independente do salvamento dos indicadores e não substitui a auditoria do servidor.</p>
+    <button type="button" class="btn-small" id="historicoRefresh">Atualizar histórico</button>
+    <section aria-label="Envios de histórico pendentes"><h3>Envios não confirmados (${pending.length})</h3>
+      <p>Não são reenviados automaticamente. Consultar o histórico pode reconhecer um envio já recebido. Tentar novamente consulta o mesmo identificador antes de enviar.</p>
+      ${pending.map((e,i)=>`<div class="cockpit-item"><p>${esc(labels[e.action]||e.action)} · ${esc(e.colaborador)} · ${esc(e.mes)}</p><button type="button" class="btn-small" data-history-retry="${i}">Consultar e tentar novamente</button></div>`).join('')}
+    </section>
+    <h3>Registros confirmados (${log.length})</h3>
+    ${log.length?`<div class="table-wrap" tabindex="0" aria-label="Histórico confirmado"><table class="ranking-table"><caption>Últimas confirmações disponíveis · mais recentes primeiro</caption><thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Colaborador</th><th>Mês</th><th>Detalhes</th></tr></thead><tbody>
+      ${log.slice().reverse().map(e=>`<tr><td>${esc(new Date(e.ts).toLocaleString('pt-BR'))}</td><td>${esc(e.user)}</td><td>${esc(labels[e.action]||e.action)}</td><td>${esc(e.colaborador||'—')}</td><td>${esc(e.mes||'—')}</td><td>${e.action==='edit'&&e.campo?`${esc(e.campo)}: ${esc(e.before??'—')} → ${esc(e.after??'—')}`:esc(e.detalhes||'—')}</td></tr>`).join('')}
+    </tbody></table></div>`:'<p>Nenhum registro confirmado disponível. Atualize para consultar o servidor.</p>'}
+  </div>`;
+  async function run(button,action){
+    const token=AppDataSession.token();button.disabled=true;
+    try{await action();}
+    catch(error){if(AppDataSession.current(token))showToast(error.message||'Histórico não confirmado.','error');}
+    finally{if(AppDataSession.current(token))renderHistorico();}
   }
+  container.querySelector('#historicoRefresh').addEventListener('click',e=>run(e.currentTarget,()=>dbHistoricoLoad()));
+  container.querySelectorAll('[data-history-retry]').forEach(button=>button.addEventListener('click',()=>run(button,()=>dbHistoricoAdd(pending[Number(button.dataset.historyRetry)]))));
 }
-
-// Close on backdrop
-document.addEventListener('click', (e) => {
-  const overlay = document.getElementById('historicoOverlay');
-  if (overlay && overlay.classList.contains('open') && e.target === overlay) closeHistorico();
-});
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeHistorico();
-});
+document.addEventListener('click',e=>{if(e.target===document.getElementById('historicoOverlay')||e.target.closest('#historicoClose'))closeHistorico();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeHistorico();});

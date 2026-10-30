@@ -44,29 +44,18 @@ async function cleanDuplicates() {
   }
 }
 
-const HISTORICO_KEY = 'sistema_historico_v1';
-
 function logHistorico(action, rec, extra = {}) {
-  try {
-    const raw = appStorage.getItem(HISTORICO_KEY);
-    const log = raw ? JSON.parse(raw) : [];
-    const user = (window.__sbUser && window.__sbUser.email) ? window.__sbUser.email : 'desconhecido';
-    const entry = {
-      ts: new Date().toISOString(),
-      user,
-      action,
-      colaborador: rec ? rec['Atendente'] || '' : '',
-      mes: rec ? rec['Mês'] || '' : '',
-      ...extra
-    };
-    log.push(entry);
-    // Keep last 500 entries
-    if (log.length > 500) log.splice(0, log.length - 500);
-    appStorage.setItem(HISTORICO_KEY, JSON.stringify(log));
-    if (typeof dbHistoricoAdd === 'function') {
-      dbHistoricoAdd(entry);
+  const entry={...extra,id:crypto.randomUUID(),ts:new Date().toISOString(),action,
+    colaborador:rec?.Atendente||'',mes:rec?.['Mês']||''};
+  const token=AppDataSession.token();
+  // A ação principal tem seu próprio resultado; falha da trilha não a desfaz.
+  return Promise.resolve().then(()=>dbHistoricoAdd(entry)).catch(error=>{
+    if(AppDataSession.current(token)){
+      console.warn('[Historico] Registro não confirmado.',error);
+      showToast('Histórico não confirmado. Abra o histórico para conferir os envios pendentes.','error');
     }
-  } catch (e) { console.warn('[Historico] Erro ao salvar:', e); }
+    return{status:'unconfirmed',id:entry.id};
+  });
 }
 
 // Migrate old Google Drive URLs to direct format
