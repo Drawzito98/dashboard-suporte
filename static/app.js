@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.30.0';
+const APP_VERSION = '1.31.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -1651,7 +1651,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setLoading(true, 'Carregando dados...');
     initDbExtra().then(() => {
       if (typeof AppDataSession !== 'undefined' && !AppDataSession.owner()) return;
-      window.__inactiveColabs = null; window.__inactiveSetores = null;
       if (typeof loadScoringRules === 'function') loadScoringRules();
       if (typeof loadAlertasConfig === 'function') loadAlertasConfig();
       if (typeof globalFilters !== 'undefined') {

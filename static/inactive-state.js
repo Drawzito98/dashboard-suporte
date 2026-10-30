@@ -1,97 +1,25 @@
-// ─── Colaboradores Inativos ────────────────────────────────
-const INACTIVE_COLABS_KEY = 'sistema_inactive_colabs_v1';
+// Situação confirmada por conta. As chaves antigas ficam preservadas, sem reenvio.
 const DEFAULT_INACTIVE = ['Caio', 'Carina', 'Diogo', 'Gabriel', 'Jessé', 'Joyce', 'Maxsuel', 'Victor'];
-
-function getInactiveColabs() {
-  if (!window.__inactiveColabs) {
-    try {
-      const raw = appStorage.getItem(INACTIVE_COLABS_KEY);
-      if (raw) {
-        window.__inactiveColabs = new Set(JSON.parse(raw));
-      } else {
-        window.__inactiveColabs = new Set(DEFAULT_INACTIVE);
-        appStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify(DEFAULT_INACTIVE));
-      }
-    } catch (e) {
-      window.__inactiveColabs = new Set(DEFAULT_INACTIVE);
-    }
-  }
-  return window.__inactiveColabs;
+function inactiveSnapshot(resource,key,fallback){
+  const state=typeof AppState!=='undefined'?AppState.get(resource):null;
+  if(Array.isArray(state))return new Set(state.map(row=>row.nome));
+  try{const cached=JSON.parse(appStorage.getItem(key)||'null');if(Array.isArray(cached))return new Set(cached.map(row=>row.nome));}catch(_){}
+  return new Set(fallback);
 }
-
-function saveInactiveColabs() {
-  try {
-    appStorage.setItem(INACTIVE_COLABS_KEY, JSON.stringify([...getInactiveColabs()]));
-  } catch (e) { console.error('[Inactive] Erro ao carregar estado:', e); }
-  if (typeof dbInativosSave === 'function') {
-    dbInativosSave(getInactiveColabs());
-  }
+function getInactiveColabs(){return inactiveSnapshot('inativos','sistema_inativos_confirmados_v1',DEFAULT_INACTIVE);}
+function normalizeInactiveColabName(name){return typeof normalizeNameShared==='function'?normalizeNameShared(name):String(name||'').trim().normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();}
+async function setColabActive(name,active,id){return dbInativosSave({name,active,id});}
+function isColabActive(name){const normalized=normalizeInactiveColabName(name);return !normalized||![...getInactiveColabs()].some(inactive=>normalizeInactiveColabName(inactive)===normalized);}
+function getInactiveSetores(){return inactiveSnapshot('setorInativos','sistema_setores_inativos_confirmados_v1',[]);}
+async function setSetorActive(name,active,id){return dbSetorInativosSave({name,active,id});}
+function isSetorActive(name){return !getInactiveSetores().has(name);}
+function refreshActiveConsumers(){
+  if(typeof rawRecords==='undefined')return;
+  if(typeof invalidateGamificationCache==='function')invalidateGamificationCache();
+  if(typeof globalFilters!=='undefined'){globalFilters.popularOptions();globalFilters._notify();}
+  if(typeof updateFilterOptions==='function')updateFilterOptions();
+  if(typeof updateView==='function')updateView();
+  if(typeof renderColaboradores==='function')renderColaboradores();
 }
-
-function normalizeInactiveColabName(name) {
-  return typeof normalizeNameShared === 'function'
-    ? normalizeNameShared(name)
-    : String(name || '').trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
-}
-
-function setColabActive(name, active) {
-  if (!requireAdmin()) return;
-  const set = getInactiveColabs();
-  if (active) {
-    const normalizedName = normalizeInactiveColabName(name);
-    [...set].forEach(inactiveName => {
-      if (normalizeInactiveColabName(inactiveName) === normalizedName) set.delete(inactiveName);
-    });
-  } else set.add(String(name || '').trim());
-  saveInactiveColabs();
-  window.dispatchEvent(new CustomEvent('colab-active-state-changed', { detail: { name, active } }));
-}
-
-function isColabActive(name) {
-  const normalizedName = normalizeInactiveColabName(name);
-  if (!normalizedName) return true;
-  return ![...getInactiveColabs()].some(inactiveName =>
-    normalizeInactiveColabName(inactiveName) === normalizedName
-  );
-}
-
-// ─── Setores Inativos ──────────────────────────────────────
-const INACTIVE_SETORES_KEY = 'sistema_inactive_setores_v1';
-
-function getInactiveSetores() {
-  if (!window.__inactiveSetores) {
-    try {
-      const raw = appStorage.getItem(INACTIVE_SETORES_KEY);
-      if (raw) {
-        window.__inactiveSetores = new Set(JSON.parse(raw));
-      } else {
-        window.__inactiveSetores = new Set();
-        appStorage.setItem(INACTIVE_SETORES_KEY, JSON.stringify([]));
-      }
-    } catch (e) {
-      window.__inactiveSetores = new Set();
-    }
-  }
-  return window.__inactiveSetores;
-}
-
-function saveInactiveSetores() {
-  try {
-    appStorage.setItem(INACTIVE_SETORES_KEY, JSON.stringify([...getInactiveSetores()]));
-  } catch (e) { console.error('[Inactive] Erro ao salvar estado:', e); }
-  if (typeof dbSetorInativosSave === 'function') {
-    dbSetorInativosSave(getInactiveSetores());
-  }
-}
-
-function setSetorActive(name, active) {
-  if (!requireAdmin()) return;
-  const set = getInactiveSetores();
-  if (active) set.delete(name);
-  else set.add(name);
-  saveInactiveSetores();
-}
-
-function isSetorActive(name) {
-  return !getInactiveSetores().has(name);
-}
+window.addEventListener('colab-active-state-changed',refreshActiveConsumers);
+window.addEventListener('setor-active-state-changed',refreshActiveConsumers);

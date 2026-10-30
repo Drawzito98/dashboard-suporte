@@ -7,8 +7,9 @@
  const assert=(v,m)=>{if(!v)throw Error(m)},wait=async(fn,message)=>{const end=Date.now()+25000;while(Date.now()<end){if(fn())return;await new Promise(r=>setTimeout(r,60))}throw Error(message)};
  const html=await(await fetch('../index.html',{cache:'no-store'})).text(),doc=new DOMParser().parseFromString(html,'text/html');
  const seed=()=>{
-  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(window.__uxDraftQuota&&['sistema_avaliacao_rascunho_v1','sistema_tarefa_rascunho_v1','sistema_anotacao_editando_v1','sistema_tarefa_transicao_v1','sistema_colaborador_rascunho_v1','sistema_bonus_editando_v1','sistema_ferias_rascunho_v1','sistema_ausencia_rascunho_v1'].some(suffix=>k.endsWith(suffix)))throw Error('Quota simulada');memory.set(k,String(v))},removeItem:k=>memory.delete(k)}});
+  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(window.__uxDraftQuota&&['sistema_avaliacao_rascunho_v1','sistema_tarefa_rascunho_v1','sistema_anotacao_editando_v1','sistema_tarefa_transicao_v1','sistema_colaborador_rascunho_v1','sistema_bonus_editando_v1','sistema_ferias_rascunho_v1','sistema_ausencia_rascunho_v1','sistema_colab_situacao_pendente_v1','sistema_setor_situacao_pendente_v1'].some(suffix=>k.endsWith(suffix)))throw Error('Quota simulada');memory.set(k,String(v))},removeItem:k=>memory.delete(k)}});
   const theme=new URLSearchParams(parent.location.search).get('theme')||'light';localStorage.setItem('theme',theme);
+  const inactiveMode=new URLSearchParams(parent.location.search).has('inativos');
   const presenceMode=new URLSearchParams(parent.location.search).has('presence');
   const bonusMode=new URLSearchParams(parent.location.search).has('bonus');
   const cadastroMode=new URLSearchParams(parent.location.search).has('cadastro');
@@ -32,7 +33,7 @@
   }
   window.__uxResetRecords=()=>{tables.registros=records};window.__uxEmptyRecords=()=>{tables.registros=[]};window.__uxEvaluationRows=()=>tables.avaliacoes.map(row=>({...row}));window.__uxRoutineRows=table=>(tables[table]||[]).map(row=>({...row}));window.__uxSeedOverlap=()=>{tables.ferias=[{id:'701',user_id:user.id,colaborador:people[0].nome,data_inicio:'2026-12-01',data_fim:'2026-12-30'},{id:'702',user_id:user.id,colaborador:people[0].nome,data_inicio:'2026-12-01',data_fim:'2026-12-10'},{id:'703',user_id:user.id,colaborador:people[0].nome,data_inicio:'2026-12-01',data_fim:'2026-12-20'}]};
   function query(table){let single=false,range=null,filters=[],mode='read',payload,conflict;const q=new Proxy({}, {get(_,key){
-   if(['insert','upsert','update','delete'].includes(key))return(p,options)=>{conflict=options?.onConflict;if(!((savesMode&&['feedbacks','metas'].includes(table))||(evaluationsMode&&table==='avaliacoes')||(routineMode&&['tarefas','anotacoes_diarias'].includes(table))||(cadastroMode&&['colaboradores_info','colaborador_fotos','colab_inativos'].includes(table))||(bonusMode&&table==='pontos_extras')||(presenceMode&&['ferias','ausencias'].includes(table))))throw Error('Teste permite somente leitura: '+table);mode=key;payload=p;return q};
+   if(['insert','upsert','update','delete'].includes(key))return(p,options)=>{conflict=options?.onConflict;if(!((inactiveMode&&['colab_inativos','setor_inativos'].includes(table))||(savesMode&&['feedbacks','metas'].includes(table))||(evaluationsMode&&table==='avaliacoes')||(routineMode&&['tarefas','anotacoes_diarias'].includes(table))||(cadastroMode&&['colaboradores_info','colaborador_fotos','colab_inativos'].includes(table))||(bonusMode&&table==='pontos_extras')||(presenceMode&&['ferias','ausencias'].includes(table))))throw Error('Teste permite somente leitura: '+table);mode=key;payload=p;return q};
    if(key==='then')return(resolve,reject)=>Promise.resolve().then(async()=>{window.__uxReads.push(table);if(mode!=='read'){
      window.__uxWrites.push(table+':'+mode);
      if(window.__uxSaveDelay)await new Promise(r=>setTimeout(r,120));
@@ -110,6 +111,20 @@
   before=win().__uxWrites.length;d().querySelector('.bonus-excluir-btn').click();d().querySelector('.bonus-excluir-btn').click();await wait(()=>list().length===0,'Exclusão confirmada');assert(win().__uxWrites.length===before+1&&draft(),'Duplo clique bloqueado e rascunho separado');
   assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));
   document.getElementById('testResult').textContent='PASS: acesso real, bônus/penalidades confirmados, mês/fórmula, quota, falhas, rascunho retomado, UUID e sinal estáveis, duplo clique, edição e exclusão após resposta perdida; servidor simulado';return;
+ }
+ if(new URLSearchParams(location.search).has('inativos')){
+  win().confirm=()=>true;const person='Pessoa de teste 1 com nome extenso para revisão de interface';
+  await tab('colaboradores');click('manageColabsBtn');await wait(()=>d().getElementById('manageColabsContent').getAttribute('aria-busy')==='false','Lista de colaboradores');
+  const colabOption=()=>[...d().querySelectorAll('#gfColabList option')].some(o=>o.value===person);
+  assert(colabOption(),'Colaborador ativo nos filtros');win().__uxSaveLost=true;
+  let input=d().querySelector('.colab-active-toggle[data-name="'+person+'"]');input.click();await wait(()=>d().querySelector('#manageColabsContent [data-retry]')&&!d().querySelector('#manageColabsContent [data-retry]').disabled,'Resposta perdida');
+  assert(win().isColabActive(person)&&colabOption(),'Sem alteração otimista nos filtros');win().__uxSaveLost=false;d().querySelector('#manageColabsContent [data-retry]').click();await wait(()=>!win().isColabActive(person)&&!d().querySelector('#manageColabsContent [data-retry]'),'Inativação confirmada');assert(!colabOption(),'Filtro remove apenas após confirmação');
+  input=d().querySelector('.colab-active-toggle[data-name="'+person+'"]');input.click();await wait(()=>win().isColabActive(person)&&!d().querySelector('#manageColabsContent [data-retry]'),'Reativação confirmada');assert(colabOption(),'Filtro restaura colaborador');click('manageColabsDoneBtn');
+  win().openManageSetores();await wait(()=>d().getElementById('manageSetoresContent').getAttribute('aria-busy')==='false','Lista setores');const sectorOption=()=>[...d().querySelectorAll('#gfSetor option')].some(o=>o.value==='Financeiro');assert(sectorOption(),'Setor ativo no filtro');
+  win().__uxSaveError=true;d().querySelector('.setor-active-toggle[data-name="Financeiro"]').click();await wait(()=>d().querySelector('#manageSetoresContent [data-retry]')&&!d().querySelector('#manageSetoresContent [data-retry]').disabled,'Falha setor');assert(sectorOption(),'Falha preserva filtro de setor');win().__uxSaveError=false;d().querySelector('#manageSetoresContent [data-retry]').click();await wait(()=>!win().isSetorActive('Financeiro'),'Setor inativo');assert(!sectorOption(),'Setor confirmado removido do filtro');
+  d().querySelector('.setor-active-toggle[data-name="Financeiro"]').click();await wait(()=>win().isSetorActive('Financeiro')&&!d().querySelector('#manageSetoresContent [data-retry]'),'Setor reativado');assert(sectorOption(),'Setor reativado retorna ao filtro');
+  assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: gerenciadores reais, filtros globais após confirmação, resposta perdida, falha, reativação de pessoas/setores e ausência de erros; servidor simulado';return;
  }
  if(new URLSearchParams(location.search).has('cadastro')){
   const person='Pessoa de teste 1 com nome extenso para revisão de interface';win().confirm=()=>true;

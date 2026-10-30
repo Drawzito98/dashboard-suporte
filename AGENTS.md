@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.30.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.31.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -186,3 +186,7 @@ Leia docs/regras-confirmadas.md. O quadro é compartilhado pela política existe
 ## Continuação 1.30.0 — Comentários
 
 Leia docs/comentarios-confirmados.md. Comentários mantêm compartilhamento autenticado existente; não adicionar user_id/filtro de proprietário ou depender de UPDATE. INSERT usa UUID estável do rascunho, consulta o mesmo ID antes de retentar e exige conteúdo/período/autor retornados. Não sobrescrever o texto de um envio incerto. AppState/getComentariosConfirmados e cache novo contêm confirmações; cache antigo permanece preservado sem adoção. Rode npm test, comentarios.browser.html em desktop/320px, workspace, data-lifecycle e lazy-modules. Gerenciadores de inativos e demais gravações legadas continuam pendentes; sem SQL/teste de escrita em produção ou merge sem autorização.
+
+## Continuação 1.31.0 — Ativos/inativos
+
+Leia docs/inativos-confirmados.md. Gerenciadores enviam alteração individual {name,active,id} à fachada/repository people; nunca DELETE da coleção. Colaboradores mantêm equivalência histórica de nomes; setores usam igualdade exata. UUID estável para inativação; reativação confirma cada ID/proprietário e informa parcial. AppState e novos caches confirmados alimentam filtros; vazio do servidor substitui a lista. Escolhas pendentes são privadas e não têm envio automático. Rode npm test, inativos.browser.html e workspace ?inativos=1 em desktop/320px, cadastro, data-lifecycle e lazy-modules. Configurações e demais gravações legadas continuam pendentes; sem SQL/teste de escrita em produção ou merge sem autorização.

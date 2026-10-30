@@ -56,7 +56,7 @@ window.APP_MODULES = {
   },
   "data-people": {
     "scripts": [
-      "/static/repositories/people.js?v=2"
+      "/static/repositories/people.js?v=131"
     ],
     "exports": [
       "AppRepositories.people.dbFotosLoad",

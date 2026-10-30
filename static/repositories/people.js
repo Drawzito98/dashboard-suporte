@@ -31,84 +31,68 @@ async function dbFotoSave(nome,url,draftId){
   });
 }
 
-// ─── COLABORADORES INATIVOS ──────────────────────────────────────
-
-
-
-async function dbInativosLoad() {
-  const token=AppDataSession.token(),revision=_confirmedRevisions.get('inativos');
-  if (!sbClient) return null;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return null;
-    const { data, error } = await sbClient.from('colab_inativos').select('nome').eq('user_id', uid);
-    if(!AppDataSession.current(token)||revision!==_confirmedRevisions.get('inativos'))return null;
-    if (!error && Array.isArray(data)) {
-      const names = data.map(r => r.nome);
-      appStorage.setItem(INATIVOS_LOCAL_KEY, JSON.stringify(names));
-      if (typeof window.__inactiveColabs !== 'undefined') {
-        window.__inactiveColabs = new Set(names);
+// Situação por conta: mutações individuais, nunca substituição da coleção.
+const inactiveConfigs={
+  inativos:{table:'colab_inativos',key:'sistema_inativos_confirmados_v1',event:'colab-active-state-changed'},
+  setorInativos:{table:'setor_inativos',key:'sistema_setores_inativos_confirmados_v1',event:'setor-active-state-changed'}
+};
+function inactiveRows(resource){const state=typeof AppState!=='undefined'?AppState.get(resource):null;return Array.isArray(state)?state:_confirmedList(inactiveConfigs[resource].key);}
+function publishInactive(resource,rows){
+  _confirmedCache(inactiveConfigs[resource].key,rows);
+  if(typeof AppState!=='undefined')AppState.publish(resource,rows);
+  window[resource==='inativos'?'__inactiveColabs':'__inactiveSetores']=new Set(rows.map(r=>r.nome));
+  window.dispatchEvent(new CustomEvent(inactiveConfigs[resource].event));
+}
+async function fetchInactive(resource,uid,request){
+  const rows=[];
+  for(let start=0;;start+=500){
+    const page=await request(()=>sbClient.from(inactiveConfigs[resource].table).select('*').eq('user_id',uid).order('id',{ascending:true}).range(start,start+499));
+    if(!Array.isArray(page)||page.some(r=>!r.id||r.user_id!==uid||typeof r.nome!=='string'))throw Error('Não foi possível confirmar a lista de inativos.');
+    rows.push(...page);if(page.length<500)break;
+  }
+  return rows;
+}
+async function loadInactive(resource){
+  const token=AppDataSession.token(),revision=_confirmedRevisions.get(resource);
+  if(!sbClient||!AppDataSession.current(token))return new Set(inactiveRows(resource).map(r=>r.nome));
+  try{
+    const uid=await _getUserId();if(!uid||!AppDataSession.current(token))return new Set(inactiveRows(resource).map(r=>r.nome));
+    const rows=await fetchInactive(resource,uid,async build=>{const result=await build();if(!AppDataSession.current(token)||revision!==_confirmedRevisions.get(resource))throw Error('Leitura desatualizada.');if(result.error)throw result.error;return result.data;});
+    if(!AppDataSession.current(token)||revision!==_confirmedRevisions.get(resource))return new Set(inactiveRows(resource).map(r=>r.nome));
+    publishInactive(resource,rows);return new Set(rows.map(r=>r.nome));
+  }catch(_){return new Set(inactiveRows(resource).map(r=>r.nome));}
+}
+function inactiveEquivalent(resource,a,b){return resource==='inativos'?
+  (typeof normalizeInactiveColabName==='function'?normalizeInactiveColabName(a)===normalizeInactiveColabName(b):String(a).trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()===String(b).trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()):a===b;}
+async function setInactive(resource,change){
+  if(!requireAdmin())throw Error('Apenas administradores podem alterar a situação.');
+  if(!change||typeof change.name!=='string'||!change.name.trim()||typeof change.active!=='boolean')throw Error('Informe uma alteração individual de situação.');
+  const {active,id}=change,name=resource==='inativos'?change.name.trim():change.name;
+  if(!active&&_writeUuid(id)!==id)throw Error('Guarde o identificador da alteração antes de enviar.');
+  return _confirmedWrite(resource,async({uid,request})=>{
+    let rows=await fetchInactive(resource,uid,request);publishInactive(resource,rows);
+    const matches=rows.filter(r=>inactiveEquivalent(resource,r.nome,name));
+    if(active){
+      let removed=0;
+      for(const row of matches){
+        try{
+          const result=await request(()=>sbClient.from(inactiveConfigs[resource].table).delete().eq('id',row.id).eq('user_id',uid).select('id'));
+          if(!Array.isArray(result)||!result.some(r=>r.id===row.id))throw Error('Exclusão não confirmada.');
+          rows=rows.filter(r=>r.id!==row.id);publishInactive(resource,rows);removed++;
+        }catch(error){throw Error(removed+' remoção(ões) confirmada(s). A reativação ainda precisa de conferência. '+error.message);}
       }
-      window.dispatchEvent(new CustomEvent('colab-active-state-changed'));
-      return new Set(names);
+    }else if(!matches.length){
+      const row=await request(()=>sbClient.from(inactiveConfigs[resource].table).insert({id,user_id:uid,nome:name}).select('*').single());
+      if(!row||row.id!==id||row.user_id!==uid||row.nome!==name)throw Error('Inativação não confirmada. Sua escolha foi mantida.');
+      rows.push(row);publishInactive(resource,rows);
     }
-    return null;
-  } catch { return null; }
+    return{status:'confirmed',name,active};
+  });
 }
-
-async function dbInativosSave(names) {
-  if (!requireAdmin()) return;
-  const arr = [...names];
-  appStorage.setItem(INATIVOS_LOCAL_KEY, JSON.stringify(arr));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    await sbClient.from('colab_inativos').delete().eq('user_id', uid);
-    if (arr.length) {
-      await sbClient.from('colab_inativos').insert(arr.map(nome => ({ user_id: uid, nome })));
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-
-// ─── SETORES INATIVOS ─────────────────────────────────────────
-
-
-
-async function dbSetorInativosLoad() {
-  if (!sbClient) return null;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return null;
-    const { data, error } = await sbClient.from('setor_inativos').select('nome').eq('user_id', uid);
-    if (!error && Array.isArray(data)) {
-      const names = data.map(r => r.nome);
-      appStorage.setItem(INATIVOS_SETORES_LOCAL_KEY, JSON.stringify(names));
-      if (typeof window.__inactiveSetores !== 'undefined') {
-        names.forEach(n => window.__inactiveSetores.add(n));
-      }
-      return new Set(names);
-    }
-    return null;
-  } catch { return null; }
-}
-
-async function dbSetorInativosSave(names) {
-  if (!requireAdmin()) return;
-  const arr = [...names];
-  appStorage.setItem(INATIVOS_SETORES_LOCAL_KEY, JSON.stringify(arr));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    await sbClient.from('setor_inativos').delete().eq('user_id', uid);
-    if (arr.length) {
-      await sbClient.from('setor_inativos').insert(arr.map(nome => ({ user_id: uid, nome })));
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
+async function dbInativosLoad(){return loadInactive('inativos');}
+async function dbSetorInativosLoad(){return loadInactive('setorInativos');}
+async function dbInativosSave(change){return setInactive('inativos',change);}
+async function dbSetorInativosSave(change){return setInactive('setorInativos',change);}
 
 // ─── COLABORADORES INFO (Cadastro) ─────────────────────────────
 
@@ -165,23 +149,7 @@ async function dbColabInfoSave(nome,data){
 }
 
 // Reativação usada ao cadastrar: somente os registros desta pessoa, nunca a coleção.
-async function dbColabActivate(nome){
-  if(!requireAdmin())throw Error('Apenas administradores podem reativar colaboradores.');
-  const normalize=value=>typeof normalizeInactiveColabName==='function'?normalizeInactiveColabName(value):String(value||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  return _confirmedWrite('inativos',async({uid,request})=>{
-    const rows=[];
-    for(let start=0;;start+=500){const page=await request(()=>sbClient.from('colab_inativos').select('*').eq('user_id',uid).order('id',{ascending:true}).range(start,start+499));
-      if(!Array.isArray(page)||page.some(r=>r.user_id!==uid))throw Error('Não foi possível confirmar a situação do colaborador.');rows.push(...page);if(page.length<500)break;}
-    const matches=rows.filter(r=>normalize(r.nome)===normalize(nome));
-    for(const row of matches){const removed=await request(()=>sbClient.from('colab_inativos').delete().eq('id',row.id).eq('user_id',uid).select('id'));
-      if(!Array.isArray(removed)||!removed.some(r=>r.id===row.id))throw Error('Reativação não confirmada. Tente novamente.');}
-    const names=rows.filter(r=>!matches.includes(r)).map(r=>r.nome);
-    _confirmedCache(INATIVOS_LOCAL_KEY,names);_confirmedCache('sistema_inactive_colabs_v1',names);
-    window.__inactiveColabs=new Set(names);window.dispatchEvent(new CustomEvent('colab-active-state-changed'));
-    return {status:'confirmed'};
-  });
-}
-
+async function dbColabActivate(nome){return setInactive('inativos',{name:nome,active:true});}
 
   root.AppRepositories = root.AppRepositories || {};
   root.AppRepositories.people = { dbFotosLoad, dbFotoSave, dbInativosLoad, dbInativosSave, dbSetorInativosLoad, dbSetorInativosSave, dbColabInfoLoad, dbColabInfoSave, dbColabActivate };

@@ -59,3 +59,7 @@ Quadro com gravações confirmadas e rascunho privado; compartilhamento/autoria 
 ## Continuação 1.30.0 — Comentários
 
 Comentários por período com confirmação, UUID estável e rascunho privado; compartilhamento existente preservado. Contratos, validação e limites em [comentarios-confirmados.md](comentarios-confirmados.md). Próximos: gerenciadores de inativos e demais gravações legadas.
+
+## Continuação 1.31.0 — Ativos/inativos
+
+Gerenciadores com confirmação individual, escolhas privadas e publicação de filtros após confirmação; sem substituição de coleção. Contratos, testes e limites em [inativos-confirmados.md](inativos-confirmados.md). Próximos: configurações e demais gravações legadas.

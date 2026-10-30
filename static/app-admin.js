@@ -101,132 +101,27 @@ function openManageColabs() {
   if (!overlay) return;
   overlay.classList.add('open');
   renderManageColabs();
+  window.ActiveManagers?.refresh('colabs');
 }
 
 function closeManageColabs() {
+  if(window.ActiveManagers&&!ActiveManagers.canClose('colabs'))return;
   const overlay = document.getElementById('manageColabsOverlay');
   if (overlay) overlay.classList.remove('open');
 }
-
-function renderManageColabs() {
-  const container = document.getElementById('manageColabsContent');
-  if (!container) return;
-  const allNames = [...new Set((rawRecords || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente'])).map(r => r['Atendente']))].sort();
-
-  let html = `
-    <div style="padding:var(--s-5)">
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--s-1)">👥 Gerenciar Colaboradores</h2>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">Marque como inativos colaboradores que não fazem mais parte da equipe. Eles serão ocultados dos filtros, ranking e projeções.</p>
-      <div style="overflow-x:auto;max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md)">
-        <table class="ranking-table">
-          <thead><tr><th>Colaborador</th><th style="text-align:center">Ativo</th></tr></thead>
-          <tbody>
-            ${allNames.map(n => {
-              const ativo = isColabActive(n);
-              return `<tr>
-                <td style="font-weight:500">${escapeHtml(n)}</td>
-                <td style="text-align:center">
-                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
-                    <input type="checkbox" class="colab-active-toggle" data-name="${escapeHtml(n)}" ${ativo ? 'checked' : ''} style="width:18px;height:18px"/>
-                    <span style="font-size:12px;color:${ativo ? 'var(--success)' : 'var(--text-muted)'}">${ativo ? 'Ativo' : 'Inativo'}</span>
-                  </label>
-                </td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-      <div style="display:flex;gap:var(--s-3);margin-top:var(--s-4);justify-content:flex-end">
-        <button class="btn-primary" id="manageColabsDoneBtn" type="button">✅ Concluído</button>
-      </div>
-    </div>
-  `;
-
-  container.innerHTML = html;
-
-  document.getElementById('manageColabsClose').addEventListener('click', closeManageColabs);
-  document.getElementById('manageColabsDoneBtn').addEventListener('click', closeManageColabs);
-
-  container.querySelectorAll('.colab-active-toggle').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const name = cb.dataset.name;
-      const active = cb.checked;
-      setColabActive(name, active);
-      const label = cb.nextElementSibling;
-      if (label) {
-        label.textContent = active ? 'Ativo' : 'Inativo';
-        label.style.color = active ? 'var(--success)' : 'var(--text-muted)';
-      }
-    });
-  });
-}
-
-// ─── GERENCIAR SETORES INATIVOS ────────────────────────────────
 
 function openManageSetores() {
   const overlay = document.getElementById('manageSetoresOverlay');
   if (!overlay) return;
   overlay.classList.add('open');
   renderManageSetores();
+  window.ActiveManagers?.refresh('setores');
 }
 
 function closeManageSetores() {
+  if(window.ActiveManagers&&!ActiveManagers.canClose('setores'))return;
   const overlay = document.getElementById('manageSetoresOverlay');
   if (overlay) overlay.classList.remove('open');
-}
-
-function renderManageSetores() {
-  const container = document.getElementById('manageSetoresContent');
-  if (!container) return;
-  const inactive = getInactiveSetores();
-  const allSetores = [...new Set((rawRecords || []).filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
-
-  let html = `
-    <div style="padding:var(--s-5)">
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--s-1)">🏢 Gerenciar Setores</h2>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">Marque como inativos setores que não são mais relevantes. Eles serão ocultados dos filtros, relatórios e análises.</p>
-      <div style="overflow-x:auto;max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md)">
-        <table class="ranking-table">
-          <thead><tr><th>Setor</th><th style="text-align:center">Ativo</th></tr></thead>
-          <tbody>
-            ${allSetores.map(s => {
-              const ativo = !inactive.has(s);
-              return `<tr>
-                <td style="font-weight:500">${escapeHtml(s)}</td>
-                <td style="text-align:center">
-                  <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
-                    <input type="checkbox" class="setor-active-toggle" data-name="${escapeHtml(s)}" ${ativo ? 'checked' : ''} style="width:18px;height:18px"/>
-                    <span style="font-size:12px;color:${ativo ? 'var(--success)' : 'var(--text-muted)'}">${ativo ? 'Ativo' : 'Inativo'}</span>
-                  </label>
-                </td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-      <div style="display:flex;gap:var(--s-3);margin-top:var(--s-4);justify-content:flex-end">
-        <button class="btn-primary" id="manageSetoresDoneBtn" type="button">✅ Concluído</button>
-      </div>
-    </div>
-  `;
-
-  container.innerHTML = html;
-
-  document.getElementById('manageSetoresClose').addEventListener('click', closeManageSetores);
-  document.getElementById('manageSetoresDoneBtn').addEventListener('click', closeManageSetores);
-
-  container.querySelectorAll('.setor-active-toggle').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const name = cb.dataset.name;
-      const active = cb.checked;
-      setSetorActive(name, active);
-      const label = cb.nextElementSibling;
-      if (label) {
-        label.textContent = active ? 'Ativo' : 'Inativo';
-        label.style.color = active ? 'var(--success)' : 'var(--text-muted)';
-      }
-    });
-  });
 }
 
 // Close on backdrop click
