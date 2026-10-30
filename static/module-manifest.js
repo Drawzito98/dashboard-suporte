@@ -102,7 +102,8 @@ window.APP_MODULES = {
       "AppRepositories.routine.dbTarefaStatus",
       "AppRepositories.routine.dbRegrasLoad",
       "AppRepositories.routine.dbRegrasSave",
-      "AppRepositories.routine.dbRegrasDelete"
+      "AppRepositories.routine.dbRegrasDelete",
+      "AppRepositories.routine.dbRegraMove"
     ]
   },
   "ponto": {

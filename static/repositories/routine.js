@@ -95,46 +95,78 @@ async function remove(resource,id){
 async function dbAnotacoesDelete(id){return remove('anotacoes',id);}
 async function dbTarefasDelete(id){taskAdmin();return remove('tarefas',id);}
 
-// ─── REGRAS ────────────────────────────────────────────────────
-
-
-
+// Regras são compartilhadas: RLS permite que administradores editem qualquer autor.
+const rulesKey = 'sistema_regras_confirmadas_v1';
+function rulesList() {
+  const rows = typeof AppState !== 'undefined' ? AppState.get('regras') : null;
+  return Array.isArray(rows) ? rows : _confirmedList(rulesKey);
+}
+function publishRules(rows) {
+  _confirmedCache(rulesKey, rows);
+  if (typeof AppState !== 'undefined') AppState.publish('regras', rows);
+}
+function ruleModel(r) {
+  return {id:r.id,titulo:r.titulo,descricao:r.descricao||'',categoria:r.categoria||'Geral',status:r.status||'vigente',posicao:Number(r.posicao||0),createdAt:r.created_at,updatedAt:r.updated_at};
+}
+function ruleId(id) {
+  if (_writeUuid(id) !== id) throw Error('Identificador inválido. Atualize a lista e selecione a regra novamente.');
+  return id;
+}
+function rulesAdmin() { if (!requireAdmin()) throw Error('Apenas administradores podem alterar regras.'); }
+function confirmRule(row,id) {
+  if (!row || row.id !== id) throw Error('O servidor não confirmou a regra. Seu rascunho foi mantido.');
+  const confirmed=ruleModel(row),rows=rulesList(),index=rows.findIndex(r=>r.id===id);
+  if(index<0)rows.push(confirmed);else rows[index]=confirmed;
+  publishRules(rows);return {status:'confirmed',data:confirmed};
+}
 async function dbRegrasLoad() {
-  if (!sbClient) return _fallbackLoad(REGRAS_LOCAL_KEY, []);
+  const token=AppDataSession.token(),revision=_confirmedRevisions.get('regras');
+  if (!sbClient || !AppDataSession.current(token)) return rulesList();
   try {
-    const { data, error } = await sbClient.from('regras').select('*').order('posicao', { ascending: true });
-    if (error) throw error;
-    if (Array.isArray(data)) {
-      const list = data.map(r => ({ id: r.id, titulo: r.titulo, descricao: r.descricao || '', categoria: r.categoria || 'Geral', status: r.status || 'vigente', posicao: Number(r.posicao || 0), createdAt: r.created_at, updatedAt: r.updated_at }));
-      appStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(list));
-      return list;
+    const uid=await _getUserId();
+    if(!uid || !AppDataSession.current(token))return rulesList();
+    const rows=[];
+    for(let start=0;;start+=500){
+      const {data,error}=await sbClient.from('regras').select('*').order('posicao',{ascending:true}).order('id',{ascending:true}).range(start,start+499);
+      if(!AppDataSession.current(token)||revision!==_confirmedRevisions.get('regras'))return rulesList();
+      if(error||!Array.isArray(data))return rulesList();
+      rows.push(...data.map(ruleModel));if(data.length<500)break;
     }
-  } catch (e) { console.warn('[db-extra] Regras usando armazenamento local:', e.message || e); }
-  return _fallbackLoad(REGRAS_LOCAL_KEY, []);
+    publishRules(rows);return rows;
+  }catch(_){return rulesList();}
 }
-
 async function dbRegrasSave(regra) {
-  const list = _fallbackLoad(REGRAS_LOCAL_KEY, []);
-  const index = list.findIndex(r => r.id === regra.id);
-  if (index >= 0) list[index] = regra; else list.push(regra);
-  appStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(list));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    const { error } = await sbClient.from('regras').upsert({ id: regra.id, titulo: regra.titulo, descricao: regra.descricao || '', categoria: regra.categoria || 'Geral', status: regra.status || 'vigente', posicao: Number(regra.posicao || 0), created_at: regra.createdAt || new Date().toISOString(), updated_at: regra.updatedAt || new Date().toISOString(), user_id: uid });
-    if (error) throw error;
-  } catch (e) { console.warn('[db-extra] Regra salva apenas localmente:', e.message || e); }
+  rulesAdmin();const draft={...regra,id:ruleId(regra.id)};
+  if(!String(draft.titulo||'').trim())throw Error('Informe o título da regra.');
+  if(!['vigente','revisao','arquivada'].includes(draft.status))throw Error('Coluna inválida.');
+  return _confirmedWrite('regras',async({uid,request})=>{
+    // Consulta por ID evita atribuir a autoria de outro administrador ao editor atual.
+    const existing=await request(()=>sbClient.from('regras').select('*').eq('id',draft.id).maybeSingle());
+    if(draft._editing&&!existing)throw Error('A regra não está mais disponível. Atualize a lista antes de continuar.');
+    const fields={titulo:draft.titulo,descricao:draft.descricao||'',categoria:draft.categoria||'Geral',updated_at:new Date().toISOString()};
+    const row=await request(()=>existing
+      ? sbClient.from('regras').update(fields).eq('id',draft.id).select('*').single()
+      : sbClient.from('regras').upsert({...fields,id:draft.id,user_id:uid,status:draft.status,posicao:Number(draft.posicao||0),created_at:draft.createdAt||new Date().toISOString()},{onConflict:'id'}).select('*').single());
+    return confirmRule(row,draft.id);
+  });
 }
-
+async function dbRegraMove(id,status,posicao) {
+  rulesAdmin();ruleId(id);
+  if(!['vigente','revisao','arquivada'].includes(status))throw Error('Coluna inválida.');
+  return _confirmedWrite('regras',async({request})=>{
+    const row=await request(()=>sbClient.from('regras').update({status,posicao:Number(posicao),updated_at:new Date().toISOString()}).eq('id',id).select('*').single());
+    return confirmRule(row,id);
+  });
+}
 async function dbRegrasDelete(id) {
-  appStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(_fallbackLoad(REGRAS_LOCAL_KEY, []).filter(r => r.id !== id)));
-  if (!sbClient) return;
-  try {
-    const { error } = await sbClient.from('regras').delete().eq('id', id);
-    if (error) throw error;
-  } catch (e) { console.warn('[db-extra] Regra removida apenas localmente:', e.message || e); }
+  rulesAdmin();ruleId(id);
+  return _confirmedWrite('regras',async({request})=>{
+    const rows=await request(()=>sbClient.from('regras').delete().eq('id',id).select('id'));
+    if(!Array.isArray(rows)||!rows.some(r=>r.id===id))throw Error('Exclusão não confirmada. Atualize a lista antes de tentar novamente.');
+    publishRules(rulesList().filter(r=>r.id!==id));return {status:'confirmed',id};
+  });
 }
 
   root.AppRepositories = root.AppRepositories || {};
-  root.AppRepositories.routine = { dbAnotacoesLoad, dbAnotacoesSave, dbAnotacoesDelete, dbAnotacaoFavorito, dbTarefasLoad, dbTarefasSave, dbTarefasDelete, dbTarefaStatus, dbRegrasLoad, dbRegrasSave, dbRegrasDelete };
+  root.AppRepositories.routine = { dbAnotacoesLoad, dbAnotacoesSave, dbAnotacoesDelete, dbAnotacaoFavorito, dbTarefasLoad, dbTarefasSave, dbTarefasDelete, dbTarefaStatus, dbRegrasLoad, dbRegrasSave, dbRegrasDelete, dbRegraMove };
 })(window);

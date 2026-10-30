@@ -3,7 +3,7 @@ const { webcrypto: crypto } = require('node:crypto');
 const { create } = require('../static/data-runtime.js');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function setup() {
-  const memory = new Map(), tables = { feedbacks: new Map(), metas: new Map(), avaliacoes: new Map(), tarefas: new Map(), anotacoes_diarias: new Map(), colaboradores_info: new Map(), colaborador_fotos: new Map(), colab_inativos: new Map(), pontos_extras: new Map(), ferias:new Map(), ausencias:new Map() }, calls = [];
+  const memory = new Map(), tables = { feedbacks: new Map(), metas: new Map(), avaliacoes: new Map(), tarefas: new Map(), anotacoes_diarias: new Map(), colaboradores_info: new Map(), colaborador_fotos: new Map(), colab_inativos: new Map(), pontos_extras: new Map(), ferias:new Map(), ausencias:new Map(), regras:new Map() }, calls = [];
   const session = create({ storage: { getItem: k => memory.get(k) || null, setItem: (k,v) => { if(control.cacheFail) throw Error('quota'); memory.set(k,v); }, removeItem: k => memory.delete(k) } });
   session.bind({ id: 'owner', app_metadata: { role: 'admin' } });
   const control = { mode: 'ok', hold: null, release: null, admin: true };
@@ -67,6 +67,25 @@ function setup() {
     const before = [...y.memory.entries()]; y.session.invalidate(); y.control.release();
     await assert.rejects(pending,/Sessão alterada/); assert.deepEqual([...y.memory.entries()],before,'resposta tardia não grava cache');
   }
+  // Quadro compartilhado: não filtrar autores nem sobrescrever texto ao mover.
+  const rr=setup(),rule={id:crypto.randomUUID(),titulo:'Regra',descricao:'Texto original',status:'vigente',categoria:'Geral',posicao:1};
+  for(const mode of ['error','network','missing']){rr.control.mode=mode;await assert.rejects(rr.c.dbRegrasSave(rule));assert.equal(rr.c.AppState.get('regras'),null);}
+  rr.control.mode='lost';await assert.rejects(rr.c.dbRegrasSave(rule));rr.control.mode='ok';await rr.c.dbRegrasSave(rule);assert.equal(rr.tables.regras.size,1,'Retry de criação usa o mesmo UUID');
+  rr.tables.regras.set(rule.id,{...rr.tables.regras.get(rule.id),user_id:'outro-admin',descricao:'Texto de outro administrador'});
+  await rr.c.dbRegrasLoad();assert.equal(rr.c.getRegrasConfirmadas()[0].descricao,'Texto de outro administrador','Quadro continua compartilhado');
+  await rr.c.dbRegraMove(rule.id,'revisao',2);
+  const moveCall=rr.calls.filter(r=>r.table==='regras'&&r.mode==='update').at(-1);
+  assert.deepEqual(Object.keys(moveCall.payload).sort(),['posicao','status','updated_at']);assert.equal(rr.tables.regras.get(rule.id).descricao,'Texto de outro administrador');assert.equal(rr.tables.regras.get(rule.id).user_id,'outro-admin');
+  await rr.c.dbRegrasSave({...rule,_editing:true,titulo:'Editada'});assert.equal(rr.tables.regras.get(rule.id).status,'revisao','Editar texto preserva coluna atual');assert.equal(rr.tables.regras.get(rule.id).user_id,'outro-admin','Editar preserva autoria');
+  for(const method of ['dbRegrasDelete','dbRegraMove']){rr.control.mode='error';await assert.rejects(rr.c[method](rule.id,'arquivada',3));assert.equal(rr.c.getRegrasConfirmadas().length,1);}
+  rr.control.mode='ok';rr.control.admin=false;await assert.rejects(rr.c.dbRegrasSave(rule));await assert.rejects(rr.c.dbRegraMove(rule.id,'vigente',4));await assert.rejects(rr.c.dbRegrasDelete(rule.id));rr.control.admin=true;
+  rr.control.hold=new Promise(r=>rr.control.release=r);const oldRules=rr.c.dbRegrasLoad();await tick();await rr.c.dbRegraMove(rule.id,'arquivada',3);rr.control.release();await oldRules;assert.equal(rr.c.getRegrasConfirmadas()[0].status,'arquivada','Leitura antiga não desfaz movimento');
+  rr.control.cacheFail=true;rr.c.console={...console,warn(){}};await rr.c.dbRegraMove(rule.id,'vigente',4);assert.equal(rr.c.getRegrasConfirmadas()[0].status,'vigente');rr.control.cacheFail=false;
+  await rr.c.dbRegrasDelete(rule.id);await assert.rejects(rr.c.dbRegrasSave({...rule,_editing:true}),'Não recriar regra excluída durante edição');
+  rr.session.cache.setItem('sistema_regras_v1',JSON.stringify([rule]));assert.equal((await rr.c.dbRegrasLoad()).length,0);assert.ok(rr.session.cache.getItem('sistema_regras_v1'),'Cache antigo preservado sem adoção automática');
+  for(let i=0;i<1001;i++){const id=crypto.randomUUID();rr.tables.regras.set(id,{...rule,id});}
+  rr.control.failPage=500;assert.equal((await rr.c.dbRegrasLoad()).length,0);rr.control.failPage=null;assert.equal((await rr.c.dbRegrasLoad()).length,1001);
+  const lateRules=setup();lateRules.control.hold=new Promise(r=>lateRules.control.release=r);const pendingRule=lateRules.c.dbRegrasSave(rule);await tick();lateRules.session.invalidate();lateRules.control.release();await assert.rejects(pendingRule,/Sessão alterada/);assert.equal(lateRules.c.AppState.get('regras'),null);
   const ev = setup(), evaluation = {id:crypto.randomUUID(),colaborador:'Pessoa exata',ciclo:'Set-Dez 2026',scores:{1:3},comentarios_finais:['Evidência original'],observacoes_gerais:'Texto',status:'pendente',createdAt:'2026-01-01T12:00:00.000Z'};
   for(const mode of ['error','network','missing']){ev.control.mode=mode;await assert.rejects(ev.c.dbAvaliacaoSave(evaluation));assert.equal(ev.session.cache.getItem('sistema_avaliacoes_v1'),null,'Falha não publica avaliação');assert.equal(ev.c.AppState.get('avaliacoes'),null);}
   ev.control.mode='ok';ev.control.foreign=true;await assert.rejects(ev.c.dbAvaliacaoSave(evaluation));assert.equal(ev.c.AppState.get('avaliacoes'),null,'Dono incorreto não confirma');ev.control.foreign=false;

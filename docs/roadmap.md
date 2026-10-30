@@ -51,3 +51,7 @@ Bônus/penalidades com confirmação, rascunho privado, UUID/sinal estáveis e m
 ## Continuação 1.28.0 — Férias e ausências
 
 Confirmação, rascunhos e conferência de criações incertas implementadas, respeitando IDs numéricos existentes. Exclusões sobrepostas informam confirmações parciais. Ver [presenca-confirmada.md](presenca-confirmada.md). Retomar pelas pendências e verificações visuais ali registradas; sem merge ou SQL.
+
+## Continuação 1.29.0 — Regras
+
+Quadro com gravações confirmadas e rascunho privado; compartilhamento/autoria preservados, movimento separado de texto. Contratos, validação e limites em [regras-confirmadas.md](regras-confirmadas.md). Comentários e demais domínios continuam pendentes.

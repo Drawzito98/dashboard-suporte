@@ -237,6 +237,14 @@ async function dbRegrasSave(...args) {
   await _loadDataDomain("data-routine");
   return AppRepositories.routine.dbRegrasSave(...args);
 }
+async function dbRegraMove(...args) {
+  await _loadDataDomain("data-routine");
+  return AppRepositories.routine.dbRegraMove(...args);
+}
+function getRegrasConfirmadas() {
+  const rows = typeof AppState !== 'undefined' ? AppState.get('regras') : null;
+  return Array.isArray(rows) ? rows : _confirmedList('sistema_regras_confirmadas_v1');
+}
 async function dbRegrasDelete(...args) {
   await _loadDataDomain("data-routine");
   return AppRepositories.routine.dbRegrasDelete(...args);

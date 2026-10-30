@@ -1,0 +1,33 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Teste local de regras</title>
+<link rel="stylesheet" href="/static/styles.css"><link rel="stylesheet" href="/static/css/tokens.css"><link rel="stylesheet" href="/static/css/components.css">
+<body data-role="admin"><p id="testResult" role="status">Executando…</p><main id="regrasContent"></main>
+<script src="/static/data-runtime.js"></script>
+<script>
+const memory=new Map();let quota=false,mode='ok',saved=null,saves=0,moves=0;const rows=[];
+const rt=DataRuntime.create({storage:{getItem:k=>memory.get(k)||null,setItem:(k,v)=>{if(quota)throw Error('quota');memory.set(k,v);},removeItem:k=>memory.delete(k)}});
+rt.bind({id:'local-admin',app_metadata:{role:'admin'}});
+window.AppDataSession=rt;window.appStorage=rt.cache;window.AppState=rt.state;
+window.escapeHtml=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));window.requireAdmin=()=>document.body.dataset.role==='admin';
+window.getRegrasConfirmadas=()=>rows.map(r=>({...r}));
+window.dbRegrasLoad=async()=>rows;
+window.dbRegrasSave=async draft=>{saves++;saved={...draft};await new Promise(r=>setTimeout(r,15));if(mode==='error')throw Error('Sem confirmação. Rascunho mantido.');const at=rows.findIndex(r=>r.id===draft.id);if(at<0)rows.push({...draft});else rows[at]={...rows[at],titulo:draft.titulo,descricao:draft.descricao,categoria:draft.categoria};return{status:'confirmed'};};
+window.dbRegraMove=async(id,status)=>{moves++;if(mode==='error')throw Error('Movimento não confirmado.');rows.find(r=>r.id===id).status=status;};
+window.dbRegrasDelete=async id=>{if(mode==='error')throw Error('Exclusão não confirmada.');rows.splice(rows.findIndex(r=>r.id===id),1);};
+window.confirm=()=>true;
+</script><script src="/static/regras.js"></script><script>
+(async()=>{
+ const assert=(ok,msg)=>{if(!ok)throw Error(msg);},$=id=>document.getElementById(id),settle=()=>new Promise(r=>setTimeout(r,40));
+ const fill=(id,value)=>{$(id).value=value;$(id).dispatchEvent(new Event('input',{bubbles:true}));};
+ onRegrasTabActivated();$('regraNovaBtn').click();fill('regraTitulo','Regra de teste');fill('regraDescricao','Texto preservado');const first=JSON.parse(appStorage.getItem('sistema_regra_rascunho_v1')).id;
+ onRegrasTabActivated();await settle();assert($('regraTitulo').value==='Regra de teste','Reabrir preserva edição');
+ mode='error';$('regraSalvarBtn').click();$('regraSalvarBtn').click();await settle();assert(saves===1,'Clique duplo bloqueado');assert(rows.length===0,'Falha não publica regra');assert($('regraDescricao').value==='Texto preservado','Falha preserva campos');assert($('regrasMessage').textContent.includes('Rascunho'),'Erro visível');
+ quota=true;fill('regraTitulo','Texto durante quota');$('regraSalvarBtn').click();await settle();assert(saves===1,'Sem rascunho durável não envia');assert($('regraTitulo').value==='Texto durante quota','Quota mantém tela');quota=false;fill('regraTitulo','Regra de teste');
+ mode='ok';$('regraSalvarBtn').click();await settle();assert(saved.id===first,'Mesmo UUID na retentativa');assert(rows.length===1&&!$('regraTitulo'),'Sucesso limpa edição');
+ document.querySelector('.regra-editar').click();fill('regraDescricao','Edição ainda não salva');const select=document.querySelector('.regra-mover');mode='error';select.value='revisao';select.dispatchEvent(new Event('change'));await settle();assert(rows[0].status==='vigente'&&select.value==='vigente','Movimento falho restaura coluna');assert($('regraDescricao').value==='Edição ainda não salva','Mover não apaga edição');
+ mode='ok';select.value='revisao';select.dispatchEvent(new Event('change'));await settle();assert(rows[0].status==='revisao','Movimento confirmado');assert($('regraDescricao').value==='Edição ainda não salva','Movimento preserva rascunho');
+ $('regraSalvarBtn').click();await settle();assert(rows[0].status==='revisao','Salvar texto preserva coluna');
+ mode='error';document.querySelector('.regra-excluir').click();await settle();assert(rows.length===1,'Exclusão falha mantém lista');mode='ok';document.querySelector('.regra-excluir').click();await settle();assert(rows.length===0,'Exclusão confirmada');
+ document.body.dataset.role='viewer';renderRegras();assert(!$('regraNovaBtn'),'Consulta sem controles admin');document.body.dataset.role='admin';rows.push({id:first,titulo:'Regra compartilhada',descricao:'Normas de atendimento',categoria:'Geral',status:'vigente'});renderRegras();
+ $('testResult').textContent='PASS: rascunho, retomada, quota, falha, UUID, clique duplo, mover sem perder texto, exclusão e consulta.';
+})().catch(e=>{document.getElementById('testResult').textContent='FAIL: '+e.message;console.error(e);});
+</script></body></html>
