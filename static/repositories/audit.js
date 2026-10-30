@@ -1,75 +1,54 @@
 // Persistência de audit; contratos preservados pelo facade db-extra.js.
 (function (root) {
-// ─── COMENTÁRIOS ─────────────────────────────────────────────────
-
-
-
-async function dbComentariosLoad() {
-  if (!sbClient) return _fallbackLoad(COMENTARIOS_LOCAL_KEY, {});
-  try {
-    const { data, error } = await sbClient.from('comentarios').select('*').order('created_at', { ascending: true });
-    if (!error && Array.isArray(data)) {
-      const map = {};
-      data.forEach(c => {
-        if (!map[c.mes]) map[c.mes] = [];
-        map[c.mes].push({
-          id: c.id,
-          texto: c.texto,
-          user: c.user_email || 'desconhecido',
-          ts: c.created_at
-        });
-      });
-      appStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
-      return map;
+// Comentários são compartilhados e não possuem user_id nem política UPDATE.
+const commentsKey='sistema_comentarios_confirmados_v1';
+function commentsList(){const rows=typeof AppState!=='undefined'?AppState.get('comentarios'):null;return Array.isArray(rows)?rows:_confirmedList(commentsKey);}
+function publishComments(rows){_confirmedCache(commentsKey,rows);if(typeof AppState!=='undefined')AppState.publish('comentarios',rows);}
+function commentModel(row){return{id:row.id,mes:row.mes,texto:row.texto,user:row.user_email||'desconhecido',ts:row.created_at};}
+function commentMap(rows){const map=Object.create(null);for(const row of rows){if(!map[row.mes])map[row.mes]=[];map[row.mes].push(row);}return map;}
+function commentId(id){if(_writeUuid(id)!==id)throw Error('Identificador inválido. Atualize a lista antes de continuar.');return id;}
+function confirmComment(row,id,mes,texto,email){
+  if(!row||row.id!==id||row.mes!==mes||row.texto!==texto||(row.user_email||'')!==email)throw Error('Comentário não confirmado. Consulte a lista e preserve o rascunho.');
+  const entry=commentModel(row),rows=commentsList(),at=rows.findIndex(r=>r.id===id);if(at<0)rows.push(entry);else rows[at]=entry;
+  publishComments(rows);return{status:'confirmed',data:entry};
+}
+async function dbComentariosLoad(){
+  const token=AppDataSession.token(),revision=_confirmedRevisions.get('comentarios');
+  if(!sbClient||!AppDataSession.current(token))return commentMap(commentsList());
+  try{
+    const uid=await _getUserId();if(!uid||!AppDataSession.current(token))return commentMap(commentsList());
+    const rows=[];
+    for(let start=0;;start+=500){
+      const {data,error}=await sbClient.from('comentarios').select('*').order('created_at',{ascending:true}).order('id',{ascending:true}).range(start,start+499);
+      if(!AppDataSession.current(token)||revision!==_confirmedRevisions.get('comentarios'))return commentMap(commentsList());
+      if(error||!Array.isArray(data))return commentMap(commentsList());
+      rows.push(...data.map(commentModel));if(data.length<500)break;
     }
-    return _fallbackLoad(COMENTARIOS_LOCAL_KEY, {});
-  } catch {
-    return _fallbackLoad(COMENTARIOS_LOCAL_KEY, {});
-  }
+    publishComments(rows);return commentMap(rows);
+  }catch(_){return commentMap(commentsList());}
 }
-
-async function dbComentarioAdd(mes, texto) {
-  const map = JSON.parse(appStorage.getItem(COMENTARIOS_LOCAL_KEY) || '{}');
-  const email = await _getUserEmail();
-  const entry = {
-    id: Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    texto: texto.trim(),
-    user: email || 'desconhecido',
-    ts: new Date().toISOString()
-  };
-  if (!map[mes]) map[mes] = [];
-  map[mes].push(entry);
-  appStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
-  if (sbClient) {
-    try {
-      await sbClient.from('comentarios').insert({
-        mes,
-        texto: texto.trim(),
-        user_email: email || ''
-      });
-    } catch (e) { console.error('[db-extra]', e); }
-  }
-  return entry;
+async function dbComentarioAdd(mes,texto,id){
+  commentId(id);texto=String(texto||'').trim();mes=String(mes||'').trim();
+  if(!mes||!texto)throw Error('Informe o período e o comentário.');
+  return _confirmedWrite('comentarios',async({uid,request,check})=>{
+    const auth=await sbClient.auth.getUser();check();
+    if(auth.error||auth.data?.user?.id!==uid)throw Error('Confirme sua sessão antes de enviar.');
+    const email=auth.data.user.email||'';
+    // INSERT com UUID estável; retentativa consulta o mesmo ID, sem UPDATE/upsert.
+    const existing=await request(()=>sbClient.from('comentarios').select('*').eq('id',id).maybeSingle());
+    if(existing)return confirmComment(existing,id,mes,texto,email);
+    const row=await request(()=>sbClient.from('comentarios').insert({id,mes,texto,user_email:email}).select('*').single());
+    return confirmComment(row,id,mes,texto,email);
+  });
 }
-
-async function dbComentarioDel(mes, id) {
-  const map = JSON.parse(appStorage.getItem(COMENTARIOS_LOCAL_KEY) || '{}');
-  if (map[mes]) {
-    map[mes] = map[mes].filter(c => c.id !== id);
-    if (!map[mes].length) delete map[mes];
-    appStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
-  }
-  if (sbClient) {
-    try {
-      await sbClient.from('comentarios').delete().eq('id', id);
-    } catch {
-      try {
-        await sbClient.from('comentarios').delete().filter('id', 'eq', id);
-      } catch (e) { console.error('[db-extra]', e); }
-    }
-  }
+async function dbComentarioDel(mes,id){
+  commentId(id);
+  return _confirmedWrite('comentarios',async({request})=>{
+    const rows=await request(()=>sbClient.from('comentarios').delete().eq('id',id).eq('mes',mes).select('id'));
+    if(!Array.isArray(rows)||!rows.some(row=>row.id===id))throw Error('Exclusão não confirmada. Atualize a lista para conferir.');
+    publishComments(commentsList().filter(row=>row.id!==id));return{status:'confirmed',id};
+  });
 }
-
 
 // ─── HISTÓRICO ───────────────────────────────────────────────────
 

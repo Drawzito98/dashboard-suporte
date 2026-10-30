@@ -3,7 +3,7 @@ const { webcrypto: crypto } = require('node:crypto');
 const { create } = require('../static/data-runtime.js');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function setup() {
-  const memory = new Map(), tables = { feedbacks: new Map(), metas: new Map(), avaliacoes: new Map(), tarefas: new Map(), anotacoes_diarias: new Map(), colaboradores_info: new Map(), colaborador_fotos: new Map(), colab_inativos: new Map(), pontos_extras: new Map(), ferias:new Map(), ausencias:new Map(), regras:new Map() }, calls = [];
+  const memory = new Map(), tables = { feedbacks: new Map(), metas: new Map(), avaliacoes: new Map(), tarefas: new Map(), anotacoes_diarias: new Map(), colaboradores_info: new Map(), colaborador_fotos: new Map(), colab_inativos: new Map(), pontos_extras: new Map(), ferias:new Map(), ausencias:new Map(), regras:new Map(), comentarios:new Map() }, calls = [];
   const session = create({ storage: { getItem: k => memory.get(k) || null, setItem: (k,v) => { if(control.cacheFail) throw Error('quota'); memory.set(k,v); }, removeItem: k => memory.delete(k) } });
   session.bind({ id: 'owner', app_metadata: { role: 'admin' } });
   const control = { mode: 'ok', hold: null, release: null, admin: true };
@@ -20,7 +20,7 @@ function setup() {
         if(control.missingSalary&&table==='colaboradores_info'&&Object.prototype.hasOwnProperty.call(payload||{},'salario'))return{error:{code:'PGRST204',message:'Missing salario column'}};
         if (control.mode === 'error') return { error: { message: 'RLS' } };
         let rows;
-        if(mode==='insert'){if(Object.prototype.hasOwnProperty.call(payload,'id'))throw Error('IDENTITY ALWAYS');rows=[{...payload,id:String(tables[table].size+1),created_at:'2026-10-29'}];rows.forEach(r=>tables[table].set(r.id,r));}
+        if(mode==='insert'){if(table!=='comentarios'&&Object.prototype.hasOwnProperty.call(payload,'id'))throw Error('IDENTITY ALWAYS');if(table==='comentarios'&&tables[table].has(payload.id))return{error:{message:'duplicate UUID'}};rows=[{...payload,id:table==='comentarios'?payload.id:String(tables[table].size+1),created_at:'2026-10-29'}];rows.forEach(r=>tables[table].set(r.id,r));}
         else if (mode === 'write') { rows = (Array.isArray(payload) ? payload : [payload]).map(r => ({ ...r, created_at: r.created_at || '2026-10-29' })); rows=rows.map(r=>{const old=q.conflict==='user_id,nome'?[...tables[table].values()].find(row=>row.user_id===r.user_id&&row.nome===r.nome):tables[table].get(r.id);return {...old,...r,id:old?.id||r.id||crypto.randomUUID()};});rows.forEach(r => tables[table].set(r.id,r)); }
         else { rows = snapshot.filter(r => filters.every(([k,v,op]) => op==='notLike'?!String(r[k]||'').startsWith(v.slice(0,-1)):(k==='id'?String(r[k])===String(v):r[k]===v))); if (range) rows=rows.slice(range[0],range[1]+1); if (mode === 'delete') rows.forEach(r => tables[table].delete(r.id)); if (mode === 'update') {rows=rows.map(r=>({...r,...payload}));rows.forEach(r=>tables[table].set(r.id,r));} }
         if (control.mode === 'lost' && ['write','update','insert','delete'].includes(mode)) throw Error('response lost');
@@ -31,7 +31,7 @@ function setup() {
   }};
   const c = { console, crypto, AppState:session.state, AppDataSession: session, appStorage: session.cache, sbClient: client, requireAdmin: () => control.admin, FeatureLoader: { ensure: async () => {} }, AppRepositories: {}, Event:class{constructor(type){this.type=type;}},document:{addEventListener(){}},CustomEvent:class{constructor(type){this.type=type;}},dispatchEvent(){} }; c.window = c;
   vm.createContext(c);
-  for (const name of ['db-extra','repositories/development','repositories/performance','repositories/routine','repositories/people','repositories/attendance']) vm.runInContext(fs.readFileSync('static/'+name+'.js','utf8'),c);
+  for (const name of ['db-extra','repositories/development','repositories/performance','repositories/routine','repositories/people','repositories/attendance','repositories/audit']) vm.runInContext(fs.readFileSync('static/'+name+'.js','utf8'),c);
   return { c, session, calls, control, tables, memory };
 }
 (async () => {
@@ -86,6 +86,21 @@ function setup() {
   for(let i=0;i<1001;i++){const id=crypto.randomUUID();rr.tables.regras.set(id,{...rule,id});}
   rr.control.failPage=500;assert.equal((await rr.c.dbRegrasLoad()).length,0);rr.control.failPage=null;assert.equal((await rr.c.dbRegrasLoad()).length,1001);
   const lateRules=setup();lateRules.control.hold=new Promise(r=>lateRules.control.release=r);const pendingRule=lateRules.c.dbRegrasSave(rule);await tick();lateRules.session.invalidate();lateRules.control.release();await assert.rejects(pendingRule,/Sessão alterada/);assert.equal(lateRules.c.AppState.get('regras'),null);
+  const cc=setup(),cid=crypto.randomUUID(),cm='2026-10';
+  for(const mode of ['error','network','missing']){cc.control.mode=mode;await assert.rejects(cc.c.dbComentarioAdd(cm,'Texto',cid));assert.equal(cc.c.AppState.get('comentarios'),null);}
+  cc.tables.comentarios.clear();cc.control.mode='lost';await assert.rejects(cc.c.dbComentarioAdd(cm,'Texto',cid));cc.control.mode='ok';assert.equal((await cc.c.dbComentarioAdd(cm,'Texto',cid)).status,'confirmed');assert.equal(cc.tables.comentarios.size,1,'Resposta perdida não cria outro UUID');
+  await assert.rejects(cc.c.dbComentarioAdd(cm,'Texto diferente',cid));assert.equal(cc.tables.comentarios.get(cid).texto,'Texto','Comentário confirmado não é sobrescrito');
+  assert.ok(!cc.calls.some(r=>r.table==='comentarios'&&['write','update'].includes(r.mode)),'Não depende de política UPDATE');
+  cc.tables.comentarios.get(cid).user_email='outro@example.test';await assert.rejects(cc.c.dbComentarioAdd(cm,'Texto',cid));cc.tables.comentarios.get(cid).user_email='';
+  const concurrentId=crypto.randomUUID();await Promise.all([cc.c.dbComentarioAdd(cm,'Mesmo pedido',concurrentId),cc.c.dbComentarioAdd(cm,'Mesmo pedido',concurrentId)]);assert.equal(cc.calls.filter(r=>r.table==='comentarios'&&r.mode==='insert'&&r.payload.id===concurrentId).length,1,'Pedido simultâneo consulta UUID já criado');await cc.c.dbComentarioDel(cm,concurrentId);
+  const otherComment={id:crypto.randomUUID(),mes:cm,texto:'Outro autor',user_email:'outro@example.test'};cc.tables.comentarios.set(otherComment.id,otherComment);await cc.c.dbComentariosLoad();assert.equal(cc.c.getComentariosConfirmados().length,2,'Lista compartilhada preservada');
+  cc.control.mode='error';await assert.rejects(cc.c.dbComentarioDel(cm,cid));assert.equal(cc.c.getComentariosConfirmados().length,2);
+  cc.control.mode='ok';cc.control.hold=new Promise(r=>cc.control.release=r);const staleComments=cc.c.dbComentariosLoad();await tick();await cc.c.dbComentarioDel(cm,cid);cc.control.release();await staleComments;assert.equal(cc.c.getComentariosConfirmados().length,1,'Leitura antiga não restaura excluído');
+  cc.control.cacheFail=true;cc.c.console={...console,warn(){}};await cc.c.dbComentarioAdd(cm,'Confirmado sem cache',crypto.randomUUID());assert.equal(cc.c.getComentariosConfirmados().length,2);cc.control.cacheFail=false;
+  cc.tables.comentarios.clear();cc.session.cache.setItem('sistema_comentarios_v1','{"antigo":[]}');assert.equal(Object.keys(await cc.c.dbComentariosLoad()).length,0);assert.ok(cc.session.cache.getItem('sistema_comentarios_v1'),'Legado preservado sem adoção');
+  for(let i=0;i<1001;i++){const id=crypto.randomUUID();cc.tables.comentarios.set(id,{...otherComment,id});}cc.control.failPage=500;await cc.c.dbComentariosLoad();assert.equal(cc.c.getComentariosConfirmados().length,0,'Página incompleta não publicada');cc.control.failPage=null;await cc.c.dbComentariosLoad();assert.equal(cc.c.getComentariosConfirmados().length,1001);
+  const lateComment=setup();lateComment.control.hold=new Promise(r=>lateComment.control.release=r);const commentPending=lateComment.c.dbComentarioAdd(cm,'Tardio',crypto.randomUUID());await tick();lateComment.session.invalidate();lateComment.control.release();await assert.rejects(commentPending,/Sessão alterada/);assert.equal(lateComment.c.AppState.get('comentarios'),null);
+  console.log('Comentários: confirmação, UUID estável, resposta perdida, conteúdo imutável, compartilhamento, exclusão, paginação, cache e sessão.');
   const ev = setup(), evaluation = {id:crypto.randomUUID(),colaborador:'Pessoa exata',ciclo:'Set-Dez 2026',scores:{1:3},comentarios_finais:['Evidência original'],observacoes_gerais:'Texto',status:'pendente',createdAt:'2026-01-01T12:00:00.000Z'};
   for(const mode of ['error','network','missing']){ev.control.mode=mode;await assert.rejects(ev.c.dbAvaliacaoSave(evaluation));assert.equal(ev.session.cache.getItem('sistema_avaliacoes_v1'),null,'Falha não publica avaliação');assert.equal(ev.c.AppState.get('avaliacoes'),null);}
   ev.control.mode='ok';ev.control.foreign=true;await assert.rejects(ev.c.dbAvaliacaoSave(evaluation));assert.equal(ev.c.AppState.get('avaliacoes'),null,'Dono incorreto não confirma');ev.control.foreign=false;

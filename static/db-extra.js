@@ -297,6 +297,10 @@ async function dbAcompDiarioDelete(...args) {
   await _loadDataDomain("data-attendance");
   return AppRepositories.attendance.dbAcompDiarioDelete(...args);
 }
+function getComentariosConfirmados() {
+  const rows=typeof AppState!=='undefined'?AppState.get('comentarios'):null;
+  return Array.isArray(rows)?rows:_confirmedList('sistema_comentarios_confirmados_v1');
+}
 async function dbComentariosLoad(...args) {
   await _loadDataDomain("data-audit");
   return AppRepositories.audit.dbComentariosLoad(...args);

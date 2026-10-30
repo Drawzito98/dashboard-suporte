@@ -67,3 +67,7 @@ Confirmação, rascunhos e conferência de criações incertas implementadas, re
 ## Continuação 1.29.0 — Regras
 
 Quadro com gravações confirmadas e rascunho privado; compartilhamento/autoria preservados, movimento separado de texto. Contratos, validação e limites em [regras-confirmadas.md](regras-confirmadas.md). Comentários e demais domínios continuam pendentes.
+
+## Continuação 1.30.0 — Comentários
+
+Comentários por período com confirmação, UUID estável e rascunho privado; compartilhamento existente preservado. Contratos, validação e limites em [comentarios-confirmados.md](comentarios-confirmados.md). Próximos: gerenciadores de inativos e demais gravações legadas.

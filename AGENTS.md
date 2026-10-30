@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.29.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.30.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -182,3 +182,7 @@ Leia docs/presenca-confirmada.md. Férias/ausências usam BIGINT identity; não 
 ## Continuação 1.29.0 — Regras
 
 Leia docs/regras-confirmadas.md. O quadro é compartilhado pela política existente: não filtrar por user_id nem transferir autoria ao editar. Regras usam UUID estável no rascunho; mover envia apenas status/posição, editar texto preserva coluna/autoria, exclusão exige ID retornado. AppState/getRegrasConfirmadas e cache novo sistema_regras_confirmadas_v1 contêm confirmações; cache antigo permanece sem adoção automática. Rode npm test, regras.browser.html em desktop/320px, workspace completo, data-lifecycle e lazy-modules. Comentários e gerenciadores de inativos continuam pendentes; sem SQL, testes de escrita em produção ou merge sem autorização.
+
+## Continuação 1.30.0 — Comentários
+
+Leia docs/comentarios-confirmados.md. Comentários mantêm compartilhamento autenticado existente; não adicionar user_id/filtro de proprietário ou depender de UPDATE. INSERT usa UUID estável do rascunho, consulta o mesmo ID antes de retentar e exige conteúdo/período/autor retornados. Não sobrescrever o texto de um envio incerto. AppState/getComentariosConfirmados e cache novo contêm confirmações; cache antigo permanece preservado sem adoção. Rode npm test, comentarios.browser.html em desktop/320px, workspace, data-lifecycle e lazy-modules. Gerenciadores de inativos e demais gravações legadas continuam pendentes; sem SQL/teste de escrita em produção ou merge sem autorização.
