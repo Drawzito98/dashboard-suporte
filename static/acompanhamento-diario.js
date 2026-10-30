@@ -1,24 +1,24 @@
 // acompanhamento-diario.js — Acompanhamento Diário de Atendimentos (sidebar overlay)
 
 function getNivelColaborador(nome) {
-  const colabInfo = JSON.parse(appStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
+  const colabInfo = getColabInfoLocal();
   return colabInfo[nome]?.nivel || '';
 }
 
 function renderAcompDiario(containerId) {
   const container = document.getElementById(containerId);
-  if (!container) return;
-
-  const saved = JSON.parse(appStorage.getItem(ACOMP_DIARIO_LOCAL_KEY) || '[]');
-  const colabInfo = JSON.parse(appStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
+  if (!container||PresenceEditor.blocked('acompanhamento_diario')) return;
+  const draft=PresenceEditor.draft('acompanhamento_diario');
+  const saved=getPresenceList('acompanhamento_diario');
+  const colabInfo = getColabInfoLocal();
 
   const colabs = [...new Set((rawRecords || [])
     .filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']))
-    .map(r => r['Atendente']))].sort();
+    .map(r => r['Atendente']).concat(draft?.colaborador?[draft.colaborador]:[]))].sort();
 
   const setores = [...new Set((rawRecords || [])
     .filter(r => r && r['Setor'])
-    .map(r => String(r['Setor']).trim()))].sort();
+    .map(r => String(r['Setor']).trim()).concat(draft?.setor?[draft.setor]:[]))].sort();
 
   // Rankings
   const rankingFinalizacoes = [...saved]
@@ -53,7 +53,7 @@ function renderAcompDiario(containerId) {
 
   html += '<div class="ausencias-field">';
   html += '<label>Data</label>';
-  html += `<input type="date" id="acdDataInput" value="${new Date().toISOString().slice(0, 10)}" style="width:100%">`;
+  html += `<input type="date" id="acdDataInput" value="${todayISO()}" style="width:100%">`;
   html += '</div>';
 
   html += '<div class="ausencias-field">';
@@ -142,8 +142,8 @@ function renderAcompDiario(containerId) {
   html += '<div style="display:flex;gap:var(--s-2)">';
   if (saved.length > 0) {
     html += '<button class="btn-small" id="acdExportBtn" type="button">Exportar CSV</button>';
-    html += '<button class="btn-small" id="acdRefreshBtn" type="button">Atualizar</button>';
   }
+  html += '<button class="btn-small" id="acdRefreshBtn" type="button">Atualizar</button>';
   html += '</div>';
   html += '</div>';
 
@@ -159,7 +159,8 @@ function renderAcompDiario(containerId) {
       html += `<span style="font-size:12px;color:var(--text-muted)">${r.data}${r.setor ? ' · ' + escapeHtml(r.setor) : ''} · Assumidos: ${r.assumidos} · Transferidos: ${r.transferidos} · Finalizados: ${r.finalizados}${r.nota > 0 ? ' · Nota: ' + r.nota : ''}</span>`;
       html += '</div>';
       html += '<div class="ausencias-item-actions">';
-      html += `<button class="btn-small acd-del-btn" data-id="${r.id}" type="button" style="color:var(--danger)">Excluir</button>`;
+      html += `<button class="btn-small acd-edit-btn" data-id="${escapeHtml(r.id)}" type="button">Editar</button>`;
+      html += `<button class="btn-small acd-del-btn" data-id="${escapeHtml(r.id)}" type="button" style="color:var(--danger)">Excluir</button>`;
       html += '</div></div>';
     }
     html += '</div>';
@@ -167,7 +168,12 @@ function renderAcompDiario(containerId) {
   html += '</div>';
 
   container.innerHTML = html;
-  bindAcompDiarioEvents(containerId, saved);
+  const ids={colaborador:'acdColabInput',data:'acdDataInput',setor:'acdSetorInput',assumidos:'acdAssumidosInput',transferidos:'acdTransferidosInput',finalizados:'acdFinalizadosInput',nota:'acdNotaInput'};
+  if(draft)for(const [key,id]of Object.entries(ids))document.getElementById(id).value=draft[key]??'';
+  if(draft?.id)document.getElementById('acdSalvarBtn').textContent='Atualizar registro';
+  container.querySelectorAll('.ausencias-field').forEach(field=>{const input=field.querySelector('input,select'),label=field.querySelector('label');if(input&&label)label.htmlFor=input.id;});
+  bindAcompDiarioEvents(containerId,saved);PresenceEditor.decorate('acompanhamento_diario');
+  if(document.body.dataset.role!=='admin')document.getElementById('acdSalvarBtn').disabled=true;
 }
 
 function exportAcompDiarioCSV(saved) {
@@ -185,73 +191,24 @@ function exportAcompDiarioCSV(saved) {
   URL.revokeObjectURL(url);
 }
 
-function bindAcompDiarioEvents(containerId, saved) {
-  document.getElementById('acdSalvarBtn')?.addEventListener('click', async () => {
-    if (!requireAdmin()) return;
-    const colaborador = document.getElementById('acdColabInput').value;
-    const data = document.getElementById('acdDataInput').value;
-    const setor = document.getElementById('acdSetorInput').value;
-    const assumidos = parseInt(document.getElementById('acdAssumidosInput').value) || 0;
-    const transferidos = parseInt(document.getElementById('acdTransferidosInput').value) || 0;
-    const finalizados = parseInt(document.getElementById('acdFinalizadosInput').value) || 0;
-    const nota = parseFloat(document.getElementById('acdNotaInput').value) || 0;
-    if (!colaborador || !data) {
-      showToast('Selecione o colaborador e a data.', 'error', 'Acompanhamento');
-      return;
-    }
-    const item = {
-      id: Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-      colaborador,
-      data,
-      setor,
-      assumidos,
-      transferidos,
-      finalizados,
-      nota
-    };
-    await dbAcompDiarioSave(item);
-    document.getElementById('acdAssumidosInput').value = '0';
-    document.getElementById('acdTransferidosInput').value = '0';
-    document.getElementById('acdFinalizadosInput').value = '0';
-    document.getElementById('acdNotaInput').value = '0';
-    showToast(`Registro salvo para ${colaborador}!`, 'success', 'Acompanhamento');
-    renderAcompDiario(containerId);
+function bindAcompDiarioEvents(containerId,saved){
+  const resource='acompanhamento_diario';
+  document.getElementById('acdSalvarBtn')?.addEventListener('click',()=>{
+    if(!requireAdmin()||PresenceEditor.busy(resource)||!PresenceEditor.capture(resource))return;
+    const draft={...PresenceEditor.draft(resource)};for(const key of ['assumidos','transferidos','finalizados','nota'])draft[key]=draft[key]===''?'':Number(draft[key]);
+    if(!PresenceEditor.store(resource,draft))return;PresenceEditor.run(resource,()=>dbAcompDiarioSave(draft),()=>PresenceEditor.finish(resource));
   });
-
-  document.getElementById('acdExportBtn')?.addEventListener('click', () => {
-    exportAcompDiarioCSV(saved);
-  });
-
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.querySelectorAll('.acd-del-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!requireAdmin()) return;
-      const r = saved.find(x => x.id === btn.dataset.id);
-      if (!r || !confirm(`Excluir registro de ${r.colaborador} em ${r.data}?`)) return;
-      await dbAcompDiarioDelete(r.id);
-      renderAcompDiario(containerId);
-    });
-  });
+  document.getElementById('acdExportBtn')?.addEventListener('click',()=>exportAcompDiarioCSV(saved));
+  document.getElementById(containerId)?.querySelectorAll('.acd-edit-btn').forEach(button=>button.addEventListener('click',()=>{const row=saved.find(item=>String(item.id)===button.dataset.id);if(row)PresenceEditor.edit(resource,row);}));
+  document.getElementById(containerId)?.querySelectorAll('.acd-del-btn').forEach(button=>button.addEventListener('click',()=>{
+    if(!requireAdmin())return;const row=saved.find(item=>String(item.id)===button.dataset.id);if(!row||!confirm(`Excluir registro de ${row.colaborador} em ${row.data}?`))return;
+    PresenceEditor.run(resource,()=>dbAcompDiarioDelete(row.id));
+  }));
 }
-
-function openAcompDiarioOverlay() {
-  const overlay = document.getElementById('acompDiarioOverlay');
-  if (!overlay) return;
-  const content = document.getElementById('acompDiarioOverlayContent');
-  if (!content) return;
-  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>';
-  overlay.classList.add('open');
-  setTimeout(() => renderAcompDiario('acompDiarioOverlayContent'), 50);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('acompDiarioBtn')?.addEventListener('click', openAcompDiarioOverlay);
-  document.getElementById('acompDiarioOverlayClose')?.addEventListener('click', () => {
-    document.getElementById('acompDiarioOverlay')?.classList.remove('open');
-  });
-  const overlay = document.getElementById('acompDiarioOverlay');
-  overlay?.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.classList.remove('open');
-  });
+function openAcompDiarioOverlay(){PresenceEditor.open('acompanhamento_diario');}
+function closeAcompDiarioOverlay(){PresenceEditor.close('acompanhamento_diario');}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('acompDiarioBtn')?.addEventListener('click',openAcompDiarioOverlay);
+  document.getElementById('acompDiarioOverlayClose')?.addEventListener('click',closeAcompDiarioOverlay);
+  const overlay=document.getElementById('acompDiarioOverlay');overlay?.addEventListener('click',event=>{if(event.target===overlay)closeAcompDiarioOverlay();});
 });

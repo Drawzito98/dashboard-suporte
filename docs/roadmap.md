@@ -67,3 +67,7 @@ Gerenciadores com confirmação individual, escolhas privadas e publicação de 
 ## Continuação 1.32.0 — Configurações
 
 Pontuação e alertas com rascunhos separados, salvamento confirmado e nenhuma gravação durante leitura/renderização. Contratos, validação e limites em [configuracoes-confirmadas.md](configuracoes-confirmadas.md). Próximos: demais gravações legadas de atendimento/acompanhamento.
+
+## Continuação 1.33.0 — Atendimentos
+
+Avaliação de atendimentos e acompanhamento diário com confirmação por identity, rascunho/imagem e proteção de envio incerto. Contratos, testes e limites em [atendimentos-confirmados.md](atendimentos-confirmados.md). Seguem pendentes a revisão dos fluxos legados restantes e a consolidação visual/arquitetural.

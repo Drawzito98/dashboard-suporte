@@ -50,20 +50,18 @@ function normalizeAvalAtend(a) {
   };
 }
 
-function getAvalAtendSaved() {
-  try {
-    return JSON.parse(appStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY) || '[]').map(normalizeAvalAtend);
-  } catch { return []; }
-}
+function getAvalAtendSaved(){return getPresenceList('avaliacao_atendimentos').map(normalizeAvalAtend);}
+function safeAttendanceImage(value){const source=String(value||'');if(/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=\r\n]+$/.test(source)||/^https:\/\//i.test(source))return source;return '';}
+let attendanceImageVersion=0,attendanceImageBusy=false;
 
 function renderAvaliacaoAtendimento(containerId) {
   const container = document.getElementById(containerId);
-  if (!container) return;
-
+  if (!container||PresenceEditor.blocked('avaliacao_atendimentos')) return;
+  const draft=PresenceEditor.draft('avaliacao_atendimentos');
   const saved = getAvalAtendSaved();
   const colabs = [...new Set((rawRecords || [])
     .filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']))
-    .map(r => r['Atendente']))].sort();
+    .map(r => r['Atendente']).concat(draft?.colaborador?[draft.colaborador]:[]))].sort();
   const filtroColab = appStorage.getItem(AVAL_ATEND_FILTRO_COLAB_KEY) || '';
   const filtroNota = appStorage.getItem(AVAL_ATEND_FILTRO_NOTA_KEY) || '';
 
@@ -164,8 +162,14 @@ function renderAvaliacaoAtendimento(containerId) {
   html += '</div>';
 
   container.innerHTML = html;
+  const ids={protocolo:'avalProtocoloInput',colaborador:'avalColaboradorInput',data_atendimento:'avalDataInput',teve_nota:'avalTeveNotaInput',nota:'avalNotaInput',justa:'avalJustaInput',orientacao:'avalOrientacaoInput',resumo:'avalResumoInput'};
+  if(draft)for(const [key,id]of Object.entries(ids)){const el=document.getElementById(id);if(el.type==='checkbox')el.checked=Boolean(draft[key]);else el.value=draft[key]??'';}
+  if(draft?.id)document.getElementById('avalSalvarBtn').textContent='Atualizar avaliação';
+  container.querySelectorAll('.ausencias-field').forEach(field=>{const input=field.querySelector('input,select,textarea'),label=field.querySelector('label');if(input&&label&&!label.contains(input))label.htmlFor=input.id;});
   renderAvalAtendLista(containerId);
   bindAvaliacaoAtendEvents(containerId);
+  PresenceEditor.decorate('avaliacao_atendimentos');
+  if(document.body.dataset.role!=='admin')container.querySelectorAll('#avalSalvarBtn,#avalImagemInput').forEach(el=>el.disabled=true);
 }
 
 function renderAvalAtendLista(containerId) {
@@ -197,7 +201,7 @@ function renderAvalAtendLista(containerId) {
     html += `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">`;
     html += `<strong style="font-size:14px">${escapeHtml(a.protocolo)}</strong>`;
     html += `<span style="font-size:12px;color:var(--text-muted)">${escapeHtml(a.colaborador)}</span>`;
-    html += `<span style="font-size:12px;color:var(--text-muted)">${formatDataAtend(a.data_atendimento)}</span>`;
+    html += `<span style="font-size:12px;color:var(--text-muted)">${escapeHtml(formatDataAtend(a.data_atendimento))}</span>`;
     html += notaBadgeHtml(a);
     html += `<span style="font-size:11px;color:var(--text-muted)">${a.justa ? 'Justa' : 'Injusta'}</span>`;
     html += '</div>';
@@ -207,12 +211,13 @@ function renderAvalAtendLista(containerId) {
     if (a.resumo) {
       html += `<div style="font-size:12.5px;color:var(--text-secondary);margin-top:2px">${escapeHtml(a.resumo)}</div>`;
     }
-    if (a.imagem) {
-      html += `<div style="margin-top:6px"><img src="${a.imagem}" style="max-width:180px;max-height:120px;border-radius:var(--r-sm);cursor:pointer" onclick="window.open('${a.imagem}','_blank')" title="Clique para ampliar"></div>`;
+    if (safeAttendanceImage(a.imagem)) {
+      html += `<button class="aval-image-open" data-id="${escapeHtml(a.id)}" type="button" aria-label="Ampliar print do protocolo ${escapeHtml(a.protocolo)}" style="padding:0;border:0;background:transparent"><img src="${escapeHtml(safeAttendanceImage(a.imagem))}" alt="Print do atendimento ${escapeHtml(a.protocolo)}" style="max-width:180px;max-height:120px;border-radius:var(--r-sm)"></button>`;
     }
     html += '</div>';
     html += '<div class="ausencias-item-actions">';
-    html += `<button class="btn-small aval-del-btn" data-id="${a.id}" type="button" style="color:var(--danger)">Excluir</button>`;
+    html += `<button class="btn-small aval-edit-btn" data-id="${escapeHtml(a.id)}" type="button">Editar</button>`;
+    html += `<button class="btn-small aval-del-btn" data-id="${escapeHtml(a.id)}" type="button" style="color:var(--danger)">Excluir</button>`;
     html += '</div></div>';
   }
   html += '</div>';
@@ -220,131 +225,44 @@ function renderAvalAtendLista(containerId) {
   lista.innerHTML = html;
 
   if (container) {
+    container.querySelectorAll('.aval-image-open').forEach(button=>button.addEventListener('click',()=>{const row=all.find(item=>String(item.id)===button.dataset.id);const source=safeAttendanceImage(row?.imagem);if(!source)return;const dialog=document.createElement('dialog');dialog.id='atendimentoImagemDialog';dialog.setAttribute('aria-label','Print do atendimento');dialog.style.cssText='max-width:90vw;padding:16px';const close=document.createElement('button');close.type='button';close.className='btn-small';close.textContent='Fechar imagem';close.onclick=()=>dialog.close();const image=document.createElement('img');image.src=source;image.alt='Print do atendimento';image.style.cssText='display:block;max-width:100%;max-height:75vh;margin-top:12px';dialog.append(close,image);dialog.addEventListener('close',()=>dialog.remove());document.body.append(dialog);dialog.showModal();}));
+    container.querySelectorAll('.aval-edit-btn').forEach(button=>button.addEventListener('click',()=>{const row=all.find(item=>String(item.id)===button.dataset.id);if(row)PresenceEditor.edit('avaliacao_atendimentos',row);}));
     container.querySelectorAll('.aval-del-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!requireAdmin()) return;
         const a = all.find(x => String(x.id) === String(btn.dataset.id));
         if (!a || !confirm(`Excluir avaliação do protocolo ${a.protocolo}?`)) return;
-        await dbAvaliacaoAtendDelete(a.id);
-        renderAvalAtendLista(containerId);
+        PresenceEditor.run('avaliacao_atendimentos',()=>dbAvaliacaoAtendDelete(a.id));
       });
     });
   }
 }
 
-function bindAvaliacaoAtendEvents(containerId) {
-  let imagemData = '';
-
-  document.getElementById('avalImagemInput')?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      imagemData = ev.target.result;
-      const preview = document.getElementById('avalImagemPreview');
-      const img = document.getElementById('avalImagemPreviewImg');
-      if (preview && img) {
-        img.src = imagemData;
-        preview.style.display = 'block';
-      }
-    };
-    reader.readAsDataURL(file);
+function bindAvaliacaoAtendEvents(containerId){
+  const resource='avaliacao_atendimentos',message=text=>PresenceEditor.message(resource,text);
+  const preview=()=>{const value=PresenceEditor.draft(resource)?.imagem||'',image=document.getElementById('avalImagemPreviewImg');if(image)image.src=safeAttendanceImage(value);const box=document.getElementById('avalImagemPreview');if(box)box.style.display=value?'block':'none';};preview();
+  document.getElementById('avalImagemInput')?.addEventListener('change',event=>{
+    const file=event.target.files[0];if(!file)return;
+    if(!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type)||file.size>5*1024*1024){message('Selecione PNG, JPEG, WebP ou GIF de até 5 MB. A imagem anterior foi mantida.');event.target.value='';return;}
+    if(!PresenceEditor.capture(resource)){event.target.value='';return;}
+    const requestId=PresenceEditor.draft(resource)._requestId,version=++attendanceImageVersion,token=AppDataSession.token();attendanceImageBusy=true;
+    const reader=new FileReader();reader.onload=()=>{if(version!==attendanceImageVersion||!AppDataSession.current(token))return;attendanceImageBusy=false;if(PresenceEditor.draft(resource)?._requestId!==requestId)return;PresenceEditor.store(resource,{...PresenceEditor.draft(resource),imagem:String(reader.result)});preview();};
+    reader.onerror=()=>{if(version===attendanceImageVersion){attendanceImageBusy=false;event.target.value='';message('Não foi possível preparar a imagem. A imagem anterior foi mantida.');}};reader.readAsDataURL(file);
   });
-
-  document.getElementById('avalImagemRemoveBtn')?.addEventListener('click', () => {
-    imagemData = '';
-    document.getElementById('avalImagemInput').value = '';
-    const preview = document.getElementById('avalImagemPreview');
-    if (preview) preview.style.display = 'none';
+  document.getElementById('avalImagemRemoveBtn')?.addEventListener('click',()=>{attendanceImageVersion++;attendanceImageBusy=false;if(!PresenceEditor.capture(resource))return;PresenceEditor.store(resource,{...PresenceEditor.draft(resource),imagem:''});document.getElementById('avalImagemInput').value='';preview();});
+  const sync=()=>{document.getElementById('avalNotaInput').disabled=!document.getElementById('avalTeveNotaInput').checked;};document.getElementById('avalTeveNotaInput')?.addEventListener('change',sync);sync();
+  document.getElementById('avalSalvarBtn')?.addEventListener('click',()=>{
+    if(!requireAdmin()||PresenceEditor.busy(resource))return;if(attendanceImageBusy){message('Aguarde a preparação da imagem.');return;}if(!PresenceEditor.capture(resource))return;
+    const raw=PresenceEditor.draft(resource),draft={...raw,protocolo:raw.protocolo.trim(),nota:raw.teve_nota?(raw.nota===''?'':Number(raw.nota)):null,imagem:raw.imagem||''};
+    if(!PresenceEditor.store(resource,draft))return;PresenceEditor.run(resource,()=>dbAvaliacaoAtendSave(draft),()=>PresenceEditor.finish(resource));
   });
-
-  const teveNotaInput = document.getElementById('avalTeveNotaInput');
-  const notaInput = document.getElementById('avalNotaInput');
-  const syncNotaDisabled = () => { if (notaInput) notaInput.disabled = !teveNotaInput.checked; };
-  teveNotaInput?.addEventListener('change', syncNotaDisabled);
-  syncNotaDisabled();
-
-  document.getElementById('avalSalvarBtn')?.addEventListener('click', async () => {
-    if (!requireAdmin()) return;
-    const protocolo = document.getElementById('avalProtocoloInput').value.trim();
-    const colaborador = document.getElementById('avalColaboradorInput').value;
-    const data_atendimento = document.getElementById('avalDataInput').value.trim();
-    const teve_nota = document.getElementById('avalTeveNotaInput').checked;
-    const nota = parseFloat(document.getElementById('avalNotaInput').value);
-    const justa = document.getElementById('avalJustaInput').checked;
-    const orientacao = document.getElementById('avalOrientacaoInput').value.trim();
-    const resumo = document.getElementById('avalResumoInput').value.trim();
-
-    if (!protocolo || !colaborador) {
-      showToast('Preencha protocolo e colaborador.', 'error', 'Avaliação');
-      return;
-    }
-    if (teve_nota && (isNaN(nota) || nota < 1 || nota > 5)) {
-      showToast('Informe a nota do cliente (1 a 5).', 'error', 'Avaliação');
-      return;
-    }
-
-    const item = {
-      id: Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-      protocolo,
-      colaborador,
-      data_atendimento,
-      teve_nota,
-      nota: teve_nota ? nota : null,
-      justa,
-      orientacao,
-      resumo,
-      imagem: imagemData
-    };
-    await dbAvaliacaoAtendSave(item);
-    document.getElementById('avalProtocoloInput').value = '';
-    document.getElementById('avalResumoInput').value = '';
-    document.getElementById('avalOrientacaoInput').value = '';
-    document.getElementById('avalNotaInput').value = '';
-    document.getElementById('avalImagemInput').value = '';
-    imagemData = '';
-    const preview = document.getElementById('avalImagemPreview');
-    if (preview) preview.style.display = 'none';
-    showToast(`Avaliação registrada para ${colaborador}!`, 'success', 'Avaliação');
-    renderAvalAtendLista(containerId);
-  });
-
-  document.getElementById('avalRefreshBtn')?.addEventListener('click', async () => {
-    await dbAvaliacaoAtendLoad();
-    renderAvalAtendLista(containerId);
-    showToast('Lista atualizada.', 'success', 'Avaliação');
-  });
-
-  document.getElementById('avalFiltroColabInput')?.addEventListener('change', (e) => {
-    if (e.target.value) appStorage.setItem(AVAL_ATEND_FILTRO_COLAB_KEY, e.target.value);
-    else appStorage.removeItem(AVAL_ATEND_FILTRO_COLAB_KEY);
-    renderAvalAtendLista(containerId);
-  });
-
-  document.getElementById('avalFiltroNotaInput')?.addEventListener('change', (e) => {
-    if (e.target.value) appStorage.setItem(AVAL_ATEND_FILTRO_NOTA_KEY, e.target.value);
-    else appStorage.removeItem(AVAL_ATEND_FILTRO_NOTA_KEY);
-    renderAvalAtendLista(containerId);
-  });
+  for(const [id,key]of [['avalFiltroColabInput',AVAL_ATEND_FILTRO_COLAB_KEY],['avalFiltroNotaInput',AVAL_ATEND_FILTRO_NOTA_KEY]])document.getElementById(id)?.addEventListener('change',event=>{try{if(event.target.value)appStorage.setItem(key,event.target.value);else appStorage.removeItem(key);PresenceEditor.render(resource);}catch(_){message('Não foi possível guardar o filtro. Sua edição foi mantida.');}});
 }
-
-function openAvaliacaoAtendimentoOverlay() {
-  const overlay = document.getElementById('avaliarAtendimentoOverlay');
-  if (!overlay) return;
-  const content = document.getElementById('avaliarAtendimentoOverlayContent');
-  if (!content) return;
-  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>';
-  overlay.classList.add('open');
-  setTimeout(() => renderAvaliacaoAtendimento('avaliarAtendimentoOverlayContent'), 50);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('avaliarAtendimentoBtn')?.addEventListener('click', openAvaliacaoAtendimentoOverlay);
-  document.getElementById('avaliarAtendimentoOverlayClose')?.addEventListener('click', () => {
-    document.getElementById('avaliarAtendimentoOverlay')?.classList.remove('open');
-  });
-  const overlay = document.getElementById('avaliarAtendimentoOverlay');
-  overlay?.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.classList.remove('open');
-  });
+function openAvaliacaoAtendimentoOverlay(){PresenceEditor.open('avaliacao_atendimentos');}
+function closeAvaliacaoAtendimentoOverlay(){if(attendanceImageBusy){PresenceEditor.message('avaliacao_atendimentos','Aguarde a preparação da imagem.');return;}PresenceEditor.close('avaliacao_atendimentos');}
+window.addEventListener('beforeunload',event=>{if(attendanceImageBusy){event.preventDefault();event.returnValue='';}});
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('avaliarAtendimentoBtn')?.addEventListener('click',openAvaliacaoAtendimentoOverlay);
+  document.getElementById('avaliarAtendimentoOverlayClose')?.addEventListener('click',closeAvaliacaoAtendimentoOverlay);
+  const overlay=document.getElementById('avaliarAtendimentoOverlay');overlay?.addEventListener('click',event=>{if(event.target===overlay)closeAvaliacaoAtendimentoOverlay();});
 });

@@ -372,7 +372,7 @@ async function dbColabActivate(...args){await _loadDataDomain('data-people');ret
 
 function getPontosExtrasLocal(){const state=typeof AppState!=='undefined'?AppState.get('pontosExtras'):null;return Array.isArray(state)?state:_confirmedList(PONTOS_EXTRAS_LOCAL_KEY);}
 
-const PRESENCE_KEYS={ferias:'sistema_ferias_v1',ausencias:'sistema_ausencias_v1'};
+const PRESENCE_KEYS={ferias:'sistema_ferias_v1',ausencias:'sistema_ausencias_v1',avaliacao_atendimentos:'sistema_avaliacao_atendimentos_confirmados_v1',acompanhamento_diario:'sistema_acompanhamento_diario_confirmado_v1'};
 function getPresenceList(resource){if(!PRESENCE_KEYS[resource])throw Error('Recurso inválido.');const state=typeof AppState!=='undefined'?AppState.get(resource):null;return Array.isArray(state)?state:_confirmedList(PRESENCE_KEYS[resource]);}
 function getPresencePending(resource){if(!PRESENCE_KEYS[resource])throw Error('Recurso inválido.');return _fallbackLoad('sistema_presenca_pendente_'+resource+'_v1',null);}
 function clearPresencePending(resource){if(!PRESENCE_KEYS[resource]||!requireAdmin()||!AppDataSession.current(AppDataSession.token()))throw Error('Confirme sua sessão.');appStorage.removeItem('sistema_presenca_pendente_'+resource+'_v1');}

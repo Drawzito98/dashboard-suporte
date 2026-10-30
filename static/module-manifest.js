@@ -2,7 +2,7 @@
 window.APP_MODULES = {
   "data-attendance": {
     "scripts": [
-      "/static/repositories/attendance.js?v=2"
+      "/static/repositories/attendance.js?v=133"
     ],
     "exports": [
       "AppRepositories.attendance.dbAusenciasLoad",

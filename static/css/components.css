@@ -186,18 +186,18 @@
 @keyframes visual-tab-in { from { opacity: .65; } to { opacity: 1; } }
 
 @media screen {
-  :is(#feriasOverlay,#ausenciasOverlay) .ausencias-item { flex-wrap: wrap; }
-  :is(#feriasOverlay,#ausenciasOverlay) .ausencias-item-actions { flex-wrap: wrap; max-width: 100%; }
-  :is(#feriasOverlay,#ausenciasOverlay) .ausencias-item-info { overflow-wrap: anywhere; }
+  :is(#feriasOverlay,#ausenciasOverlay,#avaliarAtendimentoOverlay,#acompDiarioOverlay) .ausencias-item { flex-wrap: wrap; }
+  :is(#feriasOverlay,#ausenciasOverlay,#avaliarAtendimentoOverlay,#acompDiarioOverlay) .ausencias-item-actions { flex-wrap: wrap; max-width: 100%; }
+  :is(#feriasOverlay,#ausenciasOverlay,#avaliarAtendimentoOverlay,#acompDiarioOverlay) .ausencias-item-info { overflow-wrap: anywhere; }
 }
 
 @media screen {
-  :is(#feriasOverlay,#ausenciasOverlay) .ausencias-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
-  :is(#feriasOverlay,#ausenciasOverlay) .ausencias-field { min-width: 0; }
-  :is(#feriasOverlay,#ausenciasOverlay) .ausencias-field :is(input,select) { min-width: 0; max-width: 100%; }
-  :is(#feriasOverlay,#ausenciasOverlay) .card-header > div { max-width: 100%; flex-wrap: wrap; }
-  :is(#feriasOverlay,#ausenciasOverlay) button { max-width: 100%; white-space: normal; }
+  :is(#feriasOverlay,#ausenciasOverlay,#avaliarAtendimentoOverlay,#acompDiarioOverlay) .ausencias-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  :is(#feriasOverlay,#ausenciasOverlay,#avaliarAtendimentoOverlay,#acompDiarioOverlay) .ausencias-field { min-width: 0; }
+  :is(#feriasOverlay,#ausenciasOverlay,#avaliarAtendimentoOverlay,#acompDiarioOverlay) .ausencias-field :is(input,select) { min-width: 0; max-width: 100%; }
+  :is(#feriasOverlay,#ausenciasOverlay,#avaliarAtendimentoOverlay,#acompDiarioOverlay) .card-header > div { max-width: 100%; flex-wrap: wrap; }
+  :is(#feriasOverlay,#ausenciasOverlay,#avaliarAtendimentoOverlay,#acompDiarioOverlay) button { max-width: 100%; white-space: normal; }
 }
 @media screen and (max-width:600px) {
-  :is(#feriasOverlay,#ausenciasOverlay) .ausencias-form { grid-template-columns: minmax(0,1fr); }
+  :is(#feriasOverlay,#ausenciasOverlay,#avaliarAtendimentoOverlay,#acompDiarioOverlay) .ausencias-form { grid-template-columns: minmax(0,1fr); }
 }

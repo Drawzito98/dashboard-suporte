@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.32.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.33.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -194,3 +194,7 @@ Leia docs/inativos-confirmados.md. Gerenciadores enviam alteração individual {
 ## Continuação 1.32.0 — Configurações
 
 Leia docs/configuracoes-confirmadas.md. Pontuação/alertas usam snapshots confirmados settings:scoring/settings:alertas e rascunhos privados separados por SettingsDrafts. Não salvar durante load/render/reset; presets e reset preparam edição, Salvar confirma. INSERT usa UUID estável e UPDATE exige ID/conta/valores retornados; erro ao consultar não pode virar INSERT. Preservar fórmulas e neutralidade de transferências; não reintroduzir Gamificação como destino. Configs múltiplas por conta exigem revisão, não limpeza automática. Rode npm test, settings.browser.html e workspace ?settings=1 em desktop/320px, workspace completo, data-lifecycle, lazy-modules e design-system. Demais gravações legadas continuam pendentes; sem SQL/teste de escrita em produção ou merge sem autorização.
+
+## Continuação 1.33.0 — Atendimentos
+
+Leia docs/atendimentos-confirmados.md. Avaliação de atendimentos e acompanhamento diário usam BIGINT identity e o contrato confirmado de attendance/PresenceEditor. Não fornecer UUID como ID nem repetir INSERT incerto automaticamente. Rascunhos privados preservam texto/imagem; vínculo é manual e liberar outra criação exige consulta confirmada. Preservar escalas de nota, filtros, rankings e CSV. Imagens novas: PNG/JPEG/WebP/GIF até 5 MB, preparação com sessão/versão verificadas; nunca gerar onclick com imagem do banco. Rode npm test e workspace ?atendimentos=1 e ?presence=1 em desktop/320px, workspace completo, Equipe360, data-lifecycle, lazy-modules e design-system. Sem SQL/testes de escrita em produção ou merge sem autorização.
