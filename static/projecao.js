@@ -115,7 +115,7 @@ function renderProjecao() {
         <table class="ranking-table" style="min-width:1320px">
           <thead>
             <tr>
-              <th style="position:sticky;top:0;left:0;background:var(--bg-elevated);z-index:4">Colaborador</th>
+              <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Colaborador</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Setor</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Assumidos</th>
               <th style="position:sticky;top:0;background:var(--bg-elevated);z-index:1">Finalizados</th>
@@ -226,21 +226,21 @@ function renderProjecao() {
       const marker = ` <span class="projecao-row-status ${draft || isPending ? 'is-draft' : existing.has(n) ? 'is-saved' : 'is-empty'}">${draft ? 'Não salvo' : isPending ? 'Pendente' : existing.has(n) ? 'Salvo no banco' : 'Não preenchido'}</span>`;
 
       return `<tr data-name="${escapeHtml(n)}">
-        <td style="position:sticky;left:0;z-index:2;background:${rowBg};font-weight:500;white-space:nowrap">${escapeHtml(n)}${marker}</td>
+        <td style="background:${rowBg};font-weight:500;white-space:normal;min-width:180px;max-width:240px">${escapeHtml(n)}${marker}</td>
         <td><select class="proj-setor" style="width:100%;padding:3px 6px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-size:12px">
           ${setores.map(s => `<option value="${escapeHtml(s)}" ${sectorIndex.equal(s, setorVal) ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
         </select></td>
-        <td><input type="number" class="proj-input" data-field="Assumidos" value="${value('Assumidos', 0)}" min="0" style="width:55px"/></td>
-        <td><input type="number" class="proj-input" data-field="Finalizados" value="${value('Finalizados', 0)}" min="0" style="width:55px"/></td>
-        <td><input type="number" class="proj-input" data-field="Transferidos" value="${value('Transferidos', 0)}" min="0" style="width:55px"/></td>
-        <td><input type="text" class="proj-input" data-field="TMA" value="${escapeHtml(value('TMA', ''))}" placeholder="1d 2h 18m 20s" style="width:110px;font-size:11px"/></td>
-        <td><input type="text" class="proj-input" data-field="TMR" value="${escapeHtml(value('TMR', ''))}" placeholder="1d 2h 18m 20s" style="width:110px;font-size:11px"/></td>
-        <td><input type="number" class="proj-input" data-field="SCORE" value="${value('SCORE', '')}" min="0" max="5" step="0.1" style="width:55px"/></td>
-        <td><input type="number" class="proj-input" data-field="Nota1" value="${value('Nota1', 0)}" min="0" max="5" step="0.1" style="width:55px"/></td>
-        <td><input type="number" class="proj-input" data-field="Nota2" value="${value('Nota2', 0)}" min="0" max="5" step="0.1" style="width:55px"/></td>
-        <td><input type="number" class="proj-input" data-field="Nota3" value="${value('Nota3', 0)}" min="0" max="5" step="0.1" style="width:55px"/></td>
-        <td><input type="number" class="proj-input" data-field="Total" value="${value('Total', 0)}" min="0" style="width:55px"/></td>
-        <td><input type="text" class="proj-input" data-field="Observações" value="${escapeHtml(obs)}" placeholder="Férias/ausente..." style="width:100px;font-size:11px"/></td>
+        <td><input type="number" class="proj-input" data-field="Assumidos" value="${value('Assumidos', 0)}" min="0"/></td>
+        <td><input type="number" class="proj-input" data-field="Finalizados" value="${value('Finalizados', 0)}" min="0"/></td>
+        <td><input type="number" class="proj-input" data-field="Transferidos" value="${value('Transferidos', 0)}" min="0"/></td>
+        <td><input type="text" class="proj-input" data-field="TMA" value="${escapeHtml(value('TMA', ''))}" placeholder="1d 2h 18m 20s"/></td>
+        <td><input type="text" class="proj-input" data-field="TMR" value="${escapeHtml(value('TMR', ''))}" placeholder="1d 2h 18m 20s"/></td>
+        <td><input type="number" class="proj-input" data-field="SCORE" value="${value('SCORE', '')}" min="0" max="5" step="0.1"/></td>
+        <td><input type="number" class="proj-input" data-field="Nota1" value="${value('Nota1', 0)}" min="0" max="5" step="0.1"/></td>
+        <td><input type="number" class="proj-input" data-field="Nota2" value="${value('Nota2', 0)}" min="0" max="5" step="0.1"/></td>
+        <td><input type="number" class="proj-input" data-field="Nota3" value="${value('Nota3', 0)}" min="0" max="5" step="0.1"/></td>
+        <td><input type="number" class="proj-input" data-field="Total" value="${value('Total', 0)}" min="0"/></td>
+        <td><input type="text" class="proj-input" data-field="Observações" value="${escapeHtml(obs)}" placeholder="Férias/ausente..."/></td>
       </tr>`;
     }).join('');
 

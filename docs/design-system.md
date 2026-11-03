@@ -59,3 +59,7 @@ O próximo ciclo é a Fase 7 — Cockpit gerencial. Começar pelo roadmap e pelo
 ## Publicação posterior
 
 A conclusão 1.19.1 (c4c782a) foi publicada em 28/10/2026, após autorização explícita, antes de iniciar a Fase 7. HTML, app, shell, Home e service worker foram conferidos por hash na URL de produção. Registro do cockpit em [cockpit.md](cockpit.md).
+
+## Ajuste 1.36.1 — Campos do registro mensal
+
+Campos numéricos de Novo registro ampliados para 8rem, tempos para 13rem e observações para 15rem, com fonte de 16px e algarismos tabulares. Nome do colaborador quebra linha; a primeira coluna acompanha a rolagem para não cobrir os campos. Sem alteração de valores, validações ou salvamento. Verificação visual com números de oito dígitos, notas decimais e tempos extensos em desktop e 320px; npm test e regressão workspace/design-system.

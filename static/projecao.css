@@ -29,3 +29,9 @@
   .projecao-actions { gap:8px; padding-bottom:env(safe-area-inset-bottom,0px); }
   .projecao-actions .btn-primary { min-width:0; flex:1; }
 }
+
+/* Espaço para conferir o valor completo antes de salvar. */
+#projecaoOverlay .proj-input { box-sizing:border-box; font-size:16px; font-variant-numeric:tabular-nums; padding:8px; }
+#projecaoOverlay .proj-input[type="number"] { width:8rem; min-width:8rem; }
+#projecaoOverlay .proj-input[type="text"] { width:13rem; min-width:13rem; }
+#projecaoOverlay .proj-input[data-field="Observações"] { width:15rem; min-width:15rem; }
