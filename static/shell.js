@@ -145,8 +145,22 @@
   dialog?.addEventListener('close', () => returnFocus?.focus());
   // Close before existing action handlers open their own overlays.
   dialog?.addEventListener('click', event => {
-    if (event.target.closest('.sidebar button') && !event.target.closest('#legacySidebarFilters')) dialog.close();
+    if (event.target.closest('.sidebar button') && !event.target.closest('#legacySidebarFilters, #lookerOpen')) dialog.close();
   }, true);
+  const looker = document.getElementById('lookerOpen');
+  looker?.addEventListener('click', async () => {
+    const session = window.AppDataSession?.token();
+    const current = () => !session || window.AppDataSession.current(session);
+    looker.disabled = true;
+    try {
+      await window.FeatureLoader.ensure('looker-report');
+      if (current() && dialog.open) window.openLookerReport();
+    } catch (error) {
+      if (current()) window.showToast(error.message, 'error');
+    } finally {
+      looker.disabled = false;
+    }
+  });
   window.appShell = { sync, refresh, openTools };
   document.addEventListener('app-role-ready', () => { dialog?.close(); refresh(); });
   refresh();

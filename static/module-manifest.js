@@ -146,6 +146,11 @@ window.APP_MODULES = {
       "openEquipe360"
     ]
   },
+  "looker-report": {
+    "scripts": ["/static/looker-report.js?v=1370"],
+    "styles": ["/static/looker-report.css?v=1370"],
+    "exports": ["openLookerReport"]
+  },
   "panorama": {
     "scripts": [
       "/static/relatorio-setorial.js?v=1360"

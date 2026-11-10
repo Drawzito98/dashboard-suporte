@@ -283,6 +283,7 @@
           </div>
           <div class="form-stack" id="dataContent">
             <div class="btn-row">
+              <button class="btn-small" id="lookerOpen" type="button" aria-haspopup="dialog" aria-controls="lookerDialog">Relatório semanal (Looker)</button>
               <button class="btn-small" id="addRowTopBtn" type="button" title="Adicionar um novo registro mensal manualmente"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo registro</button>
               <button class="btn-small btn-danger-subtle" id="cleanDupBtn" type="button" title="Remove registros duplicados da base"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l6-6"/><path d="M9 9l6 6"/><path d="M12 6l6 6"/><path d="M15 3l6 6"/><line x1="3" y1="21" x2="21" y2="3"/></svg> Limpar duplicatas</button>
               <button class="btn-small" id="historicoBtn" type="button" title="Histórico de alterações feitas nos dados"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Histórico</button>
@@ -350,6 +351,32 @@
 
         <div id="appVersion" class="app-version"></div>
       </aside>
+      </dialog>
+      <dialog id="lookerDialog" aria-labelledby="lookerTitle">
+        <header class="tools-heading">
+          <div><h2 id="lookerTitle">Relatório semanal do Looker</h2><p>Importe Performance por colaborador para preparar o relatório da gestão.</p></div>
+          <form method="dialog"><button class="btn-small">Fechar</button></form>
+        </header>
+        <div class="looker-controls">
+          <label class="field"><span>CSV do Looker</span><input id="lookerFile" type="file" accept=".csv,text/csv"></label>
+          <label class="field"><span>Período do relatório</span><input id="lookerPeriod" type="text" maxlength="60" placeholder="Ex.: 02 a 08/11/2026"></label>
+          <label class="field"><span>Mínimo de finalizados</span><input id="lookerMinimum" type="number" min="0" step="1" value="0"></label>
+          <label class="field"><span>Filtrar setor</span><select id="lookerSector"><option value="">Todos os setores</option></select></label>
+          <button class="btn-small" id="lookerExport" type="button" disabled>Exportar Excel</button>
+        </div>
+        <p id="lookerStatus" role="status"></p>
+        <div id="lookerReport" hidden>
+          <div class="looker-totals" id="lookerTotals" aria-live="polite"></div>
+          <h3>Resumo por setor</h3>
+          <p>Os filtros valem para as duas tabelas. A nota é a média simples dos atendentes com nota. Setores podem ser ajustados abaixo só para este relatório.</p>
+          <div class="looker-table" tabindex="0" role="region" aria-label="Resumo por setor">
+            <table><thead><tr><th>Setor</th><th>Atendentes</th><th>Total finalizados</th><th>Média finalizados</th><th>Nota média</th><th>Com nota</th></tr></thead><tbody id="lookerSectors"></tbody></table>
+          </div>
+          <h3>Atendentes no recorte</h3>
+          <div class="looker-table" tabindex="0" role="region" aria-label="Atendentes no recorte">
+            <table><thead><tr><th>Atendente</th><th>Setor</th><th>Finalizados</th><th>Nota</th></tr></thead><tbody id="lookerPeople"></tbody></table><datalist id="lookerSectorChoices"></datalist>
+          </div>
+        </div>
       </dialog>
 
       <!-- Content Area -->
@@ -756,7 +783,7 @@
 <script defer src="static/inactive-state.js?v=131"></script>
 <script defer src="static/data-runtime.js?v=1"></script>
 <script defer src="static/export-tools.js?v=1360"></script>
-<script defer src="static/module-manifest.js?v=1360"></script>
+<script defer src="static/module-manifest.js?v=1370"></script>
 <script defer src="static/module-loader.js?v=1"></script>
 <script defer src="static/records-repository.js?v=1"></script>
 <script defer src="static/auth-policy.js?v=1"></script>
@@ -818,10 +845,10 @@
 <script defer src="static/cockpit.js?v=134"></script>
 <script defer src="static/home.js?v=134"></script>
 <script defer src="static/preview-columns.js?v=2"></script>
-<script defer src="static/shell.js?v=6"></script>
+<script defer src="static/shell.js?v=1370"></script>
 <script defer src="static/dashboard-charts.js?v=1"></script>
 <script defer src="static/dashboard-report.js?v=2"></script>
-<script defer src="static/app.js?v=1361"></script>
+<script defer src="static/app.js?v=1370"></script>
 <script defer src="static/app-admin.js?v=135"></script>
 <script defer src="static/ui-accessibility.js?v=2"></script>
 <script defer src="static/app-interface.js?v=135"></script>
