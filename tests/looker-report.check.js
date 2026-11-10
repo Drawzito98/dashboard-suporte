@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { readRows, summarize, registryLookup } = require('../static/looker-report');
+const { readRows, summarize, registryLookup, parseRoster, rosterSectors } = require('../static/looker-report');
 
 const csv = {
   meta: { fields: ['Atendente', 'Finalizados', 'Média aval.', 'Assumidos', 'TMA', 'TMI', 'TMR'] },
@@ -59,3 +59,11 @@ assert.throws(() => parse({ ...csv, data: [csv.data[0], csv.data[0]] }), /repeti
 assert.throws(() => parse({ ...csv, errors: [{}] }), /inválido/);
 assert.throws(() => parse({ ...csv, meta: {} }), /colunas/);
 console.log('Looker: cadastro, homônimos, total, filtros, notas, durações e CSV inválido verificados.');
+
+const roster = parseRoster('Ána Lima — Fiscal\nBruno Souza — Financeiro\nBruno Lima — Estoque e OS');
+assert.deepEqual(rosterSectors(roster, [
+  { name: 'Ana' }, { name: 'Bruno' }, { name: 'Bruno Souza' }, { name: 'Pessoa externa' }
+]), ['Fiscal', '', 'Financeiro', '']);
+assert.deepEqual(rosterSectors(roster, [{ name: 'Ana Lima' }, { name: 'Ana Santos' }]), ['Fiscal', '']);
+assert.throws(() => parseRoster('Ana Lima — Fiscal\nÁna Lima — Financeiro'), /repetido/);
+assert.throws(() => parseRoster('Ana Lima'), /Nome — Setor/);

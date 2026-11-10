@@ -364,11 +364,18 @@
           <label class="field"><span>Filtrar setor</span><select id="lookerSector"><option value="">Todos os setores</option></select></label>
           <button class="btn-small" id="lookerExport" type="button" disabled>Exportar Excel</button>
         </div>
+        <details>
+          <summary>Equipe por setor</summary>
+          <p>Cole um nome por linha no formato Nome — Setor. A lista prevalece no relatório. Nomes sem correspondência ficam sem setor. Para voltar ao cadastro do painel, apague a lista e salve.</p>
+          <label class="field"><span>Lista de nomes e setores</span><textarea id="lookerRosterText" rows="5"></textarea></label>
+          <button class="btn-small" type="button" id="lookerRosterSave">Salvar lista de setores</button>
+          <p id="lookerRosterStatus" role="status"></p>
+        </details>
         <p id="lookerStatus" role="status"></p>
         <div id="lookerReport" hidden>
           <div class="looker-totals" id="lookerTotals" aria-live="polite"></div>
           <h3>Resumo por setor</h3>
-          <p>O mínimo de finalizados define quem entra nas tabelas e nas médias. CSAT, TMA, TMI e TMR usam a média simples dos valores disponíveis por atendente. Clique no setor para ver os atendentes usados no cálculo. Correções feitas na lista ficam guardadas neste navegador para os próximos CSVs com o mesmo nome.</p>
+          <p>O mínimo de finalizados define quem entra nas tabelas e nas médias. CSAT, TMA, TMI e TMR usam a média simples dos valores disponíveis por atendente. Clique no setor para ver os atendentes usados no cálculo. A lista de equipe e as correções individuais são guardadas neste navegador.</p>
           <div class="looker-table" tabindex="0" role="region" aria-label="Resumo por setor">
             <table><thead><tr><th>Setor</th><th>Atendentes</th><th>Total finalizados</th><th>Média por pessoa</th><th>CSAT médio</th><th>TMA médio</th><th>TMI médio</th><th>TMR médio</th><th>Com nota</th></tr></thead><tbody id="lookerSectors"></tbody><tfoot id="lookerOverall"></tfoot></table>
           </div>
@@ -784,7 +791,7 @@
 <script defer src="static/inactive-state.js?v=131"></script>
 <script defer src="static/data-runtime.js?v=1"></script>
 <script defer src="static/export-tools.js?v=1360"></script>
-<script defer src="static/module-manifest.js?v=1373"></script>
+<script defer src="static/module-manifest.js?v=1374"></script>
 <script defer src="static/module-loader.js?v=1"></script>
 <script defer src="static/records-repository.js?v=1"></script>
 <script defer src="static/auth-policy.js?v=1"></script>
@@ -849,7 +856,7 @@
 <script defer src="static/shell.js?v=1370"></script>
 <script defer src="static/dashboard-charts.js?v=1"></script>
 <script defer src="static/dashboard-report.js?v=2"></script>
-<script defer src="static/app.js?v=1373"></script>
+<script defer src="static/app.js?v=1374"></script>
 <script defer src="static/app-admin.js?v=135"></script>
 <script defer src="static/ui-accessibility.js?v=2"></script>
 <script defer src="static/app-interface.js?v=135"></script>

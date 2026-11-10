@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.37.3';
+const APP_VERSION = '1.37.4';
 
 // Foto do colaborador → static/colab-fotos.js
 

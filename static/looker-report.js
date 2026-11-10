@@ -46,6 +46,36 @@
     };
   }
 
+  function parseRoster(source) {
+    const entries = new Map();
+    for (const [index, line] of source.split(/\r?\n/).entries()) {
+      if (!line.trim()) continue;
+      const parts = line.split(/\s+[—–-]\s+/).map(clean);
+      if (parts.length !== 2 || parts.some(part => !part)) {
+        throw Error('Linha ' + (index + 1) + ': use Nome — Setor.');
+      }
+      const [name, sector] = parts;
+      const normalized = nameKey(name);
+      if (entries.has(normalized)) throw Error('Nome repetido na linha ' + (index + 1) + '.');
+      entries.set(normalized, [name, { setor_atual: sector }]);
+    }
+    return [...entries.values()];
+  }
+
+  function rosterSectors(entries, rows) {
+    const exact = new Map(entries.map(([name, profile]) => [nameKey(name), profile.setor_atual]));
+    const lookup = registryLookup(entries);
+    const counts = new Map();
+    for (const row of rows) {
+      const first = nameKey(row.name).split(' ')[0];
+      counts.set(first, (counts.get(first) || 0) + 1);
+    }
+    return rows.map(row => {
+      const full = nameKey(row.name);
+      return exact.get(full) || (counts.get(full.split(' ')[0]) === 1 ? lookup(row.name)?.setor_atual : '') || '';
+    });
+  }
+
   function readRows(result, lookup, isAggregate, parseDuration) {
     if (!columns.every(column => result.meta.fields?.includes(column))) {
       throw Error('Selecione um CSV com as colunas Atendente, Finalizados e Média aval.');
@@ -109,9 +139,10 @@
     return { people, sectors, overall, sourceTotal: sum(rows), belowMinimum: sectorPeople.filter(row => row.finished < minimum).length };
   }
 
-  if (typeof module !== 'undefined') module.exports = { readRows, summarize, registryLookup };
+  if (typeof module !== 'undefined') module.exports = { readRows, summarize, registryLookup, parseRoster, rosterSectors };
   if (typeof document === 'undefined') return;
 
+  const rosterStorageKey = 'looker_equipe_por_setor_v1';
   const sectorStorageKey = 'looker_setores_confirmados_v1';
   const get = id => document.getElementById('looker' + id);
   const dialog = get('Dialog');
@@ -131,6 +162,7 @@
   let rows = [];
   let availableSectors = [];
   let revision = 0;
+  let roster = [];
 
   function record(values) {
     const tr = document.createElement('tr');
@@ -159,6 +191,17 @@
     }
   }
 
+  function applySectors() {
+    const corrections = savedSectors();
+    const assigned = roster.length ? rosterSectors(roster, rows) : null;
+    rows.forEach((row, index) => {
+      const correction = corrections.get(nameKey(row.name));
+      row.sector = assigned ? assigned[index] : (typeof correction === 'string' && correction) || row.suggestedSector;
+    });
+    refreshSectorOptions();
+    render();
+  }
+
   function saveSector(row) {
     const corrections = savedSectors();
     const name = nameKey(row.name);
@@ -173,6 +216,7 @@
   }
 
   function selectSector(row) {
+    if (roster.length) return row.sector || missingSector;
     const input = document.createElement('input');
     input.setAttribute('aria-label', 'Setor de ' + row.name);
     input.setAttribute('list', 'lookerSectorChoices');
@@ -251,8 +295,32 @@
   window.openLookerReport = () => {
     if (document.body.dataset.role === 'colaborador') return;
     document.getElementById('toolsDialog').close();
-    if (!dialog.open) dialog.showModal();
+    if (dialog.open) return;
+    try {
+      get('RosterText').value = appStorage.getItem(rosterStorageKey) || '';
+      roster = parseRoster(get('RosterText').value);
+    } catch {
+      roster = [];
+    }
+    get('RosterStatus').textContent = roster.length ? roster.length + ' nomes na lista salva.' : '';
+    applySectors();
+    dialog.showModal();
   };
+
+  get('RosterSave').addEventListener('click', () => {
+    const source = get('RosterText').value.trim();
+    try {
+      const entries = parseRoster(source);
+      appStorage.setItem(rosterStorageKey, source);
+      roster = entries;
+      applySectors();
+      get('RosterStatus').textContent = entries.length
+        ? entries.length + ' nomes salvos nesta conta e neste navegador.'
+        : 'Lista removida. O relatório voltou a usar o cadastro do painel.';
+    } catch (error) {
+      get('RosterStatus').textContent = error.message;
+    }
+  });
 
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
@@ -271,19 +339,13 @@
       rows = readRows(Papa.parse(source, { header: true, skipEmptyLines: 'greedy', transformHeader: clean }),
         registryLookup(info, rawRecords.filter(row => row && !isAggregateName(row.Atendente))),
         isAggregateName, parseDurationToSeconds);
-      const corrections = savedSectors();
-      for (const row of rows) {
-        row.suggestedSector = row.sector;
-        const saved = corrections.get(nameKey(row.name));
-        if (typeof saved === 'string' && saved) row.sector = saved;
-      }
+      for (const row of rows) row.suggestedSector = row.sector;
       availableSectors = [...new Set([
         ...rawRecords.map(row => clean(row?.Setor)),
         ...info.map(([, details]) => clean(details?.setor_atual)),
         ...rows.map(row => row.sector)
       ].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
-      refreshSectorOptions();
-      render();
+      applySectors();
     } catch (error) {
       get('Status').textContent = error.message;
     } finally {
@@ -351,6 +413,8 @@
   window.addEventListener('app-session-invalidated', () => {
     revision++;
     rows = [];
+    roster = [];
+    get('RosterText').value = get('RosterStatus').textContent = '';
     availableSectors = [];
     refreshSectorOptions();
     fileInput.value = get('Period').value = get('Status').textContent = '';
