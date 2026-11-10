@@ -3,11 +3,31 @@
 
   const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
   const key = value => clean(value).toLocaleLowerCase('pt-BR');
+  const nameKey = value => key(value).normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const times = ['TMA', 'TMI', 'TMR'];
   const missingSector = 'Sem setor definido';
   const sum = rows => rows.reduce((total, row) => total + row.finished, 0);
   const columns = ['Atendente', 'Finalizados', 'Média aval.'];
 
-  function readRows(result, sectorByName, isAggregate) {
+  function registryLookup(entries) {
+    const names = new Map(), firstNames = new Map();
+    for (const [name, details] of entries) {
+      const full = nameKey(name);
+      if (!full) continue;
+      const first = full.split(' ')[0];
+      names.set(full, names.has(full) ? null : details);
+      if (!firstNames.has(first)) firstNames.set(first, new Set());
+      firstNames.get(first).add(full);
+    }
+    return name => {
+      const full = nameKey(name);
+      if (names.has(full)) return names.get(full);
+      const candidates = firstNames.get(full.split(' ')[0]);
+      return candidates?.size === 1 ? names.get([...candidates][0]) : null;
+    };
+  }
+
+  function readRows(result, lookup, isAggregate, parseDuration) {
     if (!columns.every(column => result.meta.fields?.includes(column))) {
       throw Error('Selecione um CSV com as colunas Atendente, Finalizados e Média aval.');
     }
@@ -27,7 +47,14 @@
       }
       if (seen.has(key(name))) throw Error('Há atendentes repetidos. Exporte uma linha por atendente no Looker.');
       seen.add(key(name));
-      rows.push({ name, finished, score, sector: clean(row.Setor) || sectorByName.get(key(name)) || '' });
+      const profile = lookup(name);
+      const durations = times.map(metric => {
+        const value = clean(row[metric]);
+        if (!/^(?:\d+:[0-5]\d(?::(?:[0-5]\d|60))?|(?=\d)(?:\d+\s*d\s*)?(?:\d+\s*h\s*)?(?:\d+\s*m\s*)?(?:\d+\s*s)?)$/i.test(value)) return null;
+        const seconds = parseDuration(value);
+        return Number.isFinite(seconds) ? seconds : null;
+      });
+      rows.push({ name, finished, score, sector: clean(profile?.setor_atual), level: clean(profile?.nivel), durations });
     });
     if (!rows.length) throw Error('O CSV não tem registros de atendentes.');
     return rows;
@@ -43,19 +70,27 @@
       if (!groups.has(sector)) groups.set(sector, []);
       groups.get(sector).push(row);
     }
-    const sectors = [...groups].map(([sector, members]) => {
-      const scores = members.flatMap(row => row.score === null ? [] : [row.score]);
+    function metrics(members) {
+      const averageOf = values => {
+        const known = values.filter(value => value !== null);
+        return known.length ? known.reduce((total, value) => total + value, 0) / known.length : null;
+      };
+      const scores = members.map(row => row.score);
       const finished = sum(members);
       return {
-        sector, people: members.length, finished, average: finished / members.length,
-        score: scores.length ? scores.reduce((total, score) => total + score, 0) / scores.length : null,
-        rated: scores.length
+        people: members.length, finished, average: members.length ? finished / members.length : null,
+        score: averageOf(scores), rated: scores.filter(score => score !== null).length,
+        durations: times.map((_, index) => averageOf(members.map(row => row.durations[index])))
       };
-    }).sort((a, b) => b.finished - a.finished || a.sector.localeCompare(b.sector, 'pt-BR'));
-    return { people, sectors, total: sum(people), sourceTotal: sum(rows), belowMinimum: rows.length - eligible.length };
+    }
+    const sectors = [...groups].map(([sector, members]) => ({ sector, ...metrics(members) }))
+      .sort((a, b) => b.finished - a.finished || a.sector.localeCompare(b.sector, 'pt-BR'));
+    const overall = { sector: 'Total geral', ...metrics(people) };
+    const sectorPeople = sectorFilter ? rows.filter(row => (row.sector || missingSector) === sectorFilter) : rows;
+    return { people, sectors, overall, sourceTotal: sum(rows), belowMinimum: sectorPeople.filter(row => row.finished < minimum).length };
   }
 
-  if (typeof module !== 'undefined') module.exports = { readRows, summarize };
+  if (typeof module !== 'undefined') module.exports = { readRows, summarize, registryLookup };
   if (typeof document === 'undefined') return;
 
   const get = id => document.getElementById('looker' + id);
@@ -67,6 +102,12 @@
   const number = new Intl.NumberFormat('pt-BR');
   const decimal = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const showDecimal = value => value === null ? '—' : decimal.format(value);
+  const showDuration = value => {
+    if (value === null) return '—';
+    const seconds = Math.round(value);
+    return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60]
+      .map(part => String(part).padStart(2, '0')).join(':');
+  };
   let rows = [];
   let availableSectors = [];
   let revision = 0;
@@ -113,10 +154,10 @@
   }
 
   function renderSummary(report) {
-    const { people, sectors, total, sourceTotal, belowMinimum } = report;
+    const { people, sectors, overall, sourceTotal, belowMinimum } = report;
     const metrics = [
-      ['Finalizados no CSV', sourceTotal], ['Finalizados no recorte', total],
-      ['Atendentes no recorte', people.length], ['Abaixo do mínimo', belowMinimum]
+      ['Finalizados no arquivo', sourceTotal], ['Finalizados após os filtros', overall.finished],
+      ['Atendentes na lista', people.length], ['Atendentes abaixo do mínimo', belowMinimum]
     ];
     get('Totals').replaceChildren(...metrics.map(([label, value]) => {
       const card = document.createElement('div');
@@ -125,10 +166,12 @@
       card.append(amount, label);
       return card;
     }));
-    get('Sectors').replaceChildren(...sectors.map(row => record([
+    const sectorRow = row => record([
       row.sector, number.format(row.people), number.format(row.finished),
-      showDecimal(row.average), showDecimal(row.score), number.format(row.rated)
-    ])));
+      showDecimal(row.average), showDecimal(row.score), ...row.durations.map(showDuration), number.format(row.rated)
+    ]);
+    get('Sectors').replaceChildren(...sectors.map(sectorRow));
+    get('Overall').replaceChildren(sectorRow(overall));
   }
 
   function render() {
@@ -139,10 +182,10 @@
     const report = currentReport();
     renderSummary(report);
     get('People').replaceChildren(...report.people.map(row => record([
-      row.name, selectSector(row), number.format(row.finished), showDecimal(row.score)
+      row.name, selectSector(row), row.level || '—', number.format(row.finished), showDecimal(row.score), ...row.durations.map(showDuration)
     ])));
     get('Status').textContent = report.people.length
-      ? rows.length + ' atendentes importados. ' + report.people.filter(row => !row.sector).length + ' sem setor no recorte.'
+      ? rows.length + ' atendentes importados. ' + report.people.filter(row => !row.sector).length + ' sem setor na lista.'
       : 'Nenhum atendente corresponde aos filtros.';
   }
 
@@ -166,15 +209,8 @@
       if (request !== revision) return;
       if (typeof Papa === 'undefined') throw Error('O leitor de CSV está indisponível. Recarregue o painel.');
       const info = Object.entries(getColabInfoLocal() || {});
-      const sectorByName = new Map();
-      for (const [name, details] of info) {
-        const nameKey = key(name);
-        const sector = clean(details?.setor_atual);
-        if (sectorByName.has(nameKey) && sectorByName.get(nameKey) !== sector) sectorByName.set(nameKey, '');
-        else sectorByName.set(nameKey, sector);
-      }
       rows = readRows(Papa.parse(source, { header: true, skipEmptyLines: 'greedy', transformHeader: clean }),
-        sectorByName, isAggregateName);
+        registryLookup(info), isAggregateName, parseDurationToSeconds);
       availableSectors = [...new Set([
         ...rawRecords.map(row => clean(row?.Setor)),
         ...info.map(([, details]) => clean(details?.setor_atual)),
@@ -201,26 +237,39 @@
   exportButton.addEventListener('click', async () => {
     const request = revision;
     if (!(await ExportTools.ready('excel')) || request !== revision || exportButton.disabled || !dialog.open) return;
-    const { people, sectors, total, sourceTotal, belowMinimum } = currentReport();
+    const { people, sectors, overall, sourceTotal, belowMinimum } = currentReport();
     const workbook = XLSX.utils.book_new();
-    function append(name, values, widths) {
+    function append(name, values, widths, durationStart, durationRow) {
       const sheet = XLSX.utils.aoa_to_sheet(values);
       sheet['!cols'] = widths.map(wch => ({ wch }));
+      for (let row = durationRow; row < values.length; row++) {
+        times.forEach((_, offset) => {
+          const cell = sheet[XLSX.utils.encode_cell({ r: row, c: durationStart + offset })];
+          if (cell?.t === 'n') cell.z = '[h]:mm:ss';
+        });
+      }
       XLSX.utils.book_append_sheet(workbook, sheet, name);
     }
     const rounded = value => value === null ? null : Number(value.toFixed(2));
-    append('Resumo por setor', [
+    const excelDurations = durations => durations.map(value => value === null ? null : Math.round(value) / 86400);
+    const metadata = [
       ['Relatório semanal do Looker'], ['Período', clean(get('Period').value) || 'Não informado'],
       ['Mínimo de finalizados', minimum.valueAsNumber], ['Setor selecionado', sectorFilter.value || 'Todos'],
-      ['Finalizados no CSV', sourceTotal],
-      ['Finalizados no recorte', total], ['Atendentes no recorte', people.length],
-      ['Abaixo do mínimo', belowMinimum],
-      ['Nota média simples dos atendentes com nota'], [],
-      ['Setor', 'Atendentes', 'Total finalizados', 'Média finalizados', 'Nota média', 'Com nota'],
-      ...sectors.map(row => [row.sector, row.people, row.finished, rounded(row.average), rounded(row.score), row.rated])
-    ], [49, 25, 21, 22, 15, 13]);
-    append('Atendentes', [['Atendente', 'Setor', 'Finalizados', 'Nota'],
-      ...people.map(row => [row.name, row.sector || missingSector, row.finished, row.score])], [44, 30, 16, 12]);
+      ['Finalizados no arquivo', sourceTotal], ['Finalizados após os filtros', overall.finished],
+      ['Atendentes na lista', people.length], ['Atendentes abaixo do mínimo', belowMinimum],
+      ['CSAT e tempos: média simples dos valores disponíveis por pessoa.'], []
+    ];
+    append('Resumo por setor', [
+      ...metadata,
+      ['Setor', 'Atendentes', 'Total finalizados', 'Média por pessoa', 'CSAT médio', ...times, 'Atendentes com nota'],
+      ...[...sectors, overall].map(row => [
+        row.sector, row.people, row.finished, rounded(row.average), rounded(row.score),
+        ...excelDurations(row.durations), row.rated
+      ])
+    ], [61, 25, 18, 19, 14, 13, 13, 13, 23], 5, metadata.length + 1);
+    append('Atendentes', [['Atendente', 'Setor', 'Nível', 'Finalizados', 'CSAT', ...times],
+      ...people.map(row => [row.name, row.sector || missingSector, row.level || null, row.finished,
+        row.score, ...excelDurations(row.durations)])], [44, 30, 10, 16, 12, 13, 13, 13], 5, 1);
     try {
       XLSX.writeFile(workbook, 'relatorio-semanal-looker.xlsx');
     } catch {
@@ -237,6 +286,7 @@
     minimum.value = '0';
     get('People').replaceChildren();
     get('Sectors').replaceChildren();
+    get('Overall').replaceChildren();
     get('Totals').replaceChildren();
     render();
     if (dialog.open) dialog.close();

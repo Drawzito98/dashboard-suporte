@@ -37,3 +37,4 @@
   font-variant-numeric: tabular-nums;
 }
 #lookerDialog :is(select, .looker-table input) { min-width: 10rem; max-width: 17rem; }
+#lookerDialog tfoot { background: var(--bg-subtle); font-weight: 700; }

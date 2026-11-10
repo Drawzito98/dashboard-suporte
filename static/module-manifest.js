@@ -147,8 +147,8 @@ window.APP_MODULES = {
     ]
   },
   "looker-report": {
-    "scripts": ["/static/looker-report.js?v=1370"],
-    "styles": ["/static/looker-report.css?v=1370"],
+    "scripts": ["/static/looker-report.js?v=1371"],
+    "styles": ["/static/looker-report.css?v=1371"],
     "exports": ["openLookerReport"]
   },
   "panorama": {
