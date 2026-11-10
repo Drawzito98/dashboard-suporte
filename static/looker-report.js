@@ -112,6 +112,7 @@
   if (typeof module !== 'undefined') module.exports = { readRows, summarize, registryLookup };
   if (typeof document === 'undefined') return;
 
+  const sectorStorageKey = 'looker_setores_confirmados_v1';
   const get = id => document.getElementById('looker' + id);
   const dialog = get('Dialog');
   const fileInput = get('File');
@@ -150,6 +151,27 @@
     get('SectorChoices').replaceChildren(...choices.map(sector => new Option(sector, sector)));
   }
 
+  function savedSectors() {
+    try {
+      return new Map(JSON.parse(appStorage.getItem(sectorStorageKey) || '[]'));
+    } catch {
+      return new Map();
+    }
+  }
+
+  function saveSector(row) {
+    const corrections = savedSectors();
+    const name = nameKey(row.name);
+    if (!row.sector || row.sector === row.suggestedSector) corrections.delete(name);
+    else corrections.set(name, row.sector);
+    try {
+      appStorage.setItem(sectorStorageKey, JSON.stringify([...corrections]));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function selectSector(row) {
     const input = document.createElement('input');
     input.setAttribute('aria-label', 'Setor de ' + row.name);
@@ -160,10 +182,11 @@
       const value = clean(input.value);
       row.sector = [...availableSectors, ...rows.map(item => item.sector)].find(sector => key(sector) === key(value)) ?? value;
       input.value = row.sector;
+      const saved = saveSector(row);
       const wasFiltered = Boolean(sectorFilter.value);
       refreshSectorOptions();
-      if (wasFiltered) render();
-      else renderSummary(currentReport());
+      render({ keepPeople: !wasFiltered });
+      if (!saved) get('Status').textContent += ' O setor foi ajustado nesta importação. O navegador não conseguiu guardar a correção.';
     });
     return input;
   }
@@ -185,22 +208,39 @@
       card.append(amount, label);
       return card;
     }));
-    const sectorRow = row => record([
-      row.sector, number.format(row.people), number.format(row.finished),
+    const sectorRow = (row, label) => record([
+      label, number.format(row.people), number.format(row.finished),
       showDecimal(row.average), showDecimal(row.score), ...row.durations.map(showDuration), number.format(row.rated)
     ]);
-    get('Sectors').replaceChildren(...sectors.map(sectorRow));
-    get('Overall').replaceChildren(sectorRow(overall));
+    get('Sectors').replaceChildren(...sectors.map(row => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn-small';
+      button.textContent = row.sector;
+      button.setAttribute('aria-label', 'Ver atendentes do setor ' + row.sector);
+      button.addEventListener('click', () => {
+        sectorFilter.value = row.sector;
+        render();
+        get('PeopleTitle').focus();
+        get('PeopleTitle').scrollIntoView({ block: 'nearest' });
+      });
+      return sectorRow(row, button);
+    }));
+    get('Overall').replaceChildren(sectorRow(overall, overall.sector));
   }
 
-  function render() {
+  function render({ keepPeople = false } = {}) {
     const valid = minimum.value !== '' && minimum.validity.valid;
     get('Report').hidden = !rows.length || !valid;
     exportButton.disabled = !rows.length || !valid;
     if (get('Report').hidden) return;
     const report = currentReport();
     renderSummary(report);
-    get('People').replaceChildren(...report.people.map(row => record([
+    get('PeopleTitle').textContent = sectorFilter.value
+      ? 'Atendentes no cálculo · ' + sectorFilter.value
+      : 'Atendentes no cálculo';
+    get('ClearSector').hidden = !sectorFilter.value;
+    if (!keepPeople) get('People').replaceChildren(...report.people.map(row => record([
       row.name, selectSector(row), row.level || '—', number.format(row.finished), showDecimal(row.score), ...row.durations.map(showDuration)
     ])));
     get('Status').textContent = report.people.length
@@ -231,6 +271,12 @@
       rows = readRows(Papa.parse(source, { header: true, skipEmptyLines: 'greedy', transformHeader: clean }),
         registryLookup(info, rawRecords.filter(row => row && !isAggregateName(row.Atendente))),
         isAggregateName, parseDurationToSeconds);
+      const corrections = savedSectors();
+      for (const row of rows) {
+        row.suggestedSector = row.sector;
+        const saved = corrections.get(nameKey(row.name));
+        if (typeof saved === 'string' && saved) row.sector = saved;
+      }
       availableSectors = [...new Set([
         ...rawRecords.map(row => clean(row?.Setor)),
         ...info.map(([, details]) => clean(details?.setor_atual)),
@@ -252,7 +298,12 @@
     render();
   });
 
-  sectorFilter.addEventListener('change', render);
+  sectorFilter.addEventListener('change', () => render());
+  get('ClearSector').addEventListener('click', () => {
+    sectorFilter.value = '';
+    render();
+    sectorFilter.focus();
+  });
 
   exportButton.addEventListener('click', async () => {
     const request = revision;

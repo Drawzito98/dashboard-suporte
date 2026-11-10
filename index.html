@@ -368,12 +368,13 @@
         <div id="lookerReport" hidden>
           <div class="looker-totals" id="lookerTotals" aria-live="polite"></div>
           <h3>Resumo por setor</h3>
-          <p>O mínimo de finalizados define quem entra nas tabelas e nas médias. CSAT, TMA, TMI e TMR usam a média simples dos valores disponíveis por atendente. Você pode corrigir o setor na lista abaixo.</p>
+          <p>O mínimo de finalizados define quem entra nas tabelas e nas médias. CSAT, TMA, TMI e TMR usam a média simples dos valores disponíveis por atendente. Clique no setor para ver os atendentes usados no cálculo. Correções feitas na lista ficam guardadas neste navegador para os próximos CSVs com o mesmo nome.</p>
           <div class="looker-table" tabindex="0" role="region" aria-label="Resumo por setor">
             <table><thead><tr><th>Setor</th><th>Atendentes</th><th>Total finalizados</th><th>Média por pessoa</th><th>CSAT médio</th><th>TMA médio</th><th>TMI médio</th><th>TMR médio</th><th>Com nota</th></tr></thead><tbody id="lookerSectors"></tbody><tfoot id="lookerOverall"></tfoot></table>
           </div>
-          <h3>Atendentes na lista</h3>
-          <div class="looker-table" tabindex="0" role="region" aria-label="Atendentes na lista">
+          <h3 id="lookerPeopleTitle" tabindex="-1">Atendentes no cálculo</h3>
+          <button class="btn-small" id="lookerClearSector" type="button" hidden>Mostrar todos os setores</button>
+          <div class="looker-table" tabindex="0" role="region" aria-labelledby="lookerPeopleTitle">
             <table><thead><tr><th>Atendente</th><th>Setor</th><th>Nível</th><th>Finalizados</th><th>CSAT</th><th>TMA</th><th>TMI</th><th>TMR</th></tr></thead><tbody id="lookerPeople"></tbody></table><datalist id="lookerSectorChoices"></datalist>
           </div>
         </div>
@@ -783,7 +784,7 @@
 <script defer src="static/inactive-state.js?v=131"></script>
 <script defer src="static/data-runtime.js?v=1"></script>
 <script defer src="static/export-tools.js?v=1360"></script>
-<script defer src="static/module-manifest.js?v=1372"></script>
+<script defer src="static/module-manifest.js?v=1373"></script>
 <script defer src="static/module-loader.js?v=1"></script>
 <script defer src="static/records-repository.js?v=1"></script>
 <script defer src="static/auth-policy.js?v=1"></script>
@@ -848,7 +849,7 @@
 <script defer src="static/shell.js?v=1370"></script>
 <script defer src="static/dashboard-charts.js?v=1"></script>
 <script defer src="static/dashboard-report.js?v=2"></script>
-<script defer src="static/app.js?v=1372"></script>
+<script defer src="static/app.js?v=1373"></script>
 <script defer src="static/app-admin.js?v=135"></script>
 <script defer src="static/ui-accessibility.js?v=2"></script>
 <script defer src="static/app-interface.js?v=135"></script>
