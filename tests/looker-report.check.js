@@ -19,6 +19,26 @@ const lookup = registryLookup([
   ['Bruno Melo', { setor_atual: 'Fiscal' }],
   ['Caio Nunes', { setor_atual: 'Integrações', nivel: 'N2' }]
 ]);
+const lookupWithRecords = registryLookup([
+  ['Ána Lima', { setor_atual: 'Financeiro', nivel: 'N1' }],
+  ['Carla Souza', { nivel: 'N2' }]
+], [
+  { Atendente: 'Ana Lima', Setor: 'Fiscal' },
+  { Atendente: 'Carla Souza', Setor: 'Fiscal' },
+  { Atendente: 'Diego Alves', Setor: 'Integrações' },
+  { Atendente: 'Diego Alves', Setor: 'integrações' },
+  { Atendente: 'Eduardo Sá', Setor: 'Fiscal' },
+  { Atendente: 'Eduardo Sá', Setor: 'Financeiro' },
+  { Atendente: 'Maria Lima', Setor: 'Fiscal' },
+  { Atendente: 'Maria Souza', Setor: 'Fiscal' }
+]);
+assert.equal(lookupWithRecords('Ana').setor_atual, 'Financeiro');
+assert.deepEqual(lookupWithRecords('Carla'), { setor_atual: 'Fiscal', nivel: 'N2' });
+assert.equal(lookupWithRecords('Diego').setor_atual, 'integrações');
+assert.equal(lookupWithRecords('Eduardo').setor_atual, '');
+assert.equal(lookupWithRecords('Maria'), null);
+assert.equal(lookupWithRecords('Maria Souza').setor_atual, 'Fiscal');
+assert.equal(lookupWithRecords('Pessoa externa'), null);
 const parsedTimes = { '25:00:00': 90000, '01:00:00': 3600, '7m8s': 428, '0:00:00': 0 };
 const parse = input => readRows(input, lookup, name => name === 'TOTAL', value => parsedTimes[value]);
 const rows = parse(csv);

@@ -9,21 +9,40 @@
   const sum = rows => rows.reduce((total, row) => total + row.finished, 0);
   const columns = ['Atendente', 'Finalizados', 'Média aval.'];
 
-  function registryLookup(entries) {
-    const names = new Map(), firstNames = new Map();
-    for (const [name, details] of entries) {
-      const full = nameKey(name);
-      if (!full) continue;
+  function registryLookup(entries, records = []) {
+    const names = new Map(), firstNames = new Map(), historicalSectors = new Map();
+    function remember(full) {
       const first = full.split(' ')[0];
-      names.set(full, names.has(full) ? null : details);
       if (!firstNames.has(first)) firstNames.set(first, new Set());
       firstNames.get(first).add(full);
     }
+    for (const [name, details] of entries) {
+      const full = nameKey(name);
+      if (!full) continue;
+      names.set(full, names.has(full) ? null : details);
+      remember(full);
+    }
+    for (const row of records) {
+      const full = nameKey(row?.Atendente);
+      const sector = clean(row?.Setor);
+      if (!full) continue;
+      remember(full);
+      if (!sector) continue;
+      if (!historicalSectors.has(full)) historicalSectors.set(full, new Map());
+      historicalSectors.get(full).set(key(sector), sector);
+    }
     return name => {
       const full = nameKey(name);
-      if (names.has(full)) return names.get(full);
       const candidates = firstNames.get(full.split(' ')[0]);
-      return candidates?.size === 1 ? names.get([...candidates][0]) : null;
+      const exact = candidates?.has(full);
+      const match = exact ? full : candidates?.size === 1 ? [...candidates][0] : null;
+      if (!match || (names.has(match) && !names.get(match))) return null;
+      const profile = names.get(match);
+      const sectors = historicalSectors.get(match);
+      return {
+        setor_atual: clean(profile?.setor_atual) || (sectors?.size === 1 ? [...sectors.values()][0] : ''),
+        nivel: profile?.nivel
+      };
     };
   }
 
@@ -210,7 +229,8 @@
       if (typeof Papa === 'undefined') throw Error('O leitor de CSV está indisponível. Recarregue o painel.');
       const info = Object.entries(getColabInfoLocal() || {});
       rows = readRows(Papa.parse(source, { header: true, skipEmptyLines: 'greedy', transformHeader: clean }),
-        registryLookup(info), isAggregateName, parseDurationToSeconds);
+        registryLookup(info, rawRecords.filter(row => row && !isAggregateName(row.Atendente))),
+        isAggregateName, parseDurationToSeconds);
       availableSectors = [...new Set([
         ...rawRecords.map(row => clean(row?.Setor)),
         ...info.map(([, details]) => clean(details?.setor_atual)),
