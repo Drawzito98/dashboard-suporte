@@ -8,6 +8,8 @@ A meta de nota média é 4,70 em escala de 1 a 5. O relatório confere o cartão
 
 A leitura começa pelo resumo, pela situação da meta e por três destaques. Abra as seções de volume, equipe, motivos, avaliações e plantão para consultar os detalhes. Os cartões do Looker ficam em **Todos os indicadores**. A conferência reúne diferenças de escopo, cobertura e validação em uma seção própria.
 
+O leitor aceita o período completo identificado no CSV de volume diário, inclusive recortes com mais de sete dias. A tabela de equipe usa a coluna **Média aval.** de **Performance por colaborador** e segue a ordem de assumidos. A média geral vem do cartão do cliente e é comparada com a média ponderada das estrelas.
+
 ## Catálogo dos relatórios
 
 O ZIP de referência contém 35 CSVs UTF-8 separados por vírgula, dentro de uma pasta. O leitor aceita pastas internas e valida pelo nome do arquivo. Os dois heatmaps aceitam um subconjunto dos sete dias em qualquer ordem. Os relatórios diário e mensal podem trazer uma linha adicional de rótulos do Looker.

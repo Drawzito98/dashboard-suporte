@@ -1,6 +1,6 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs?v=5';
-import { renderAnalysis, reportDetails } from './analysis.mjs?v=5';
+import { analyzeWeekly } from './weekly.mjs?v=6';
+import { renderAnalysis, reportDetails } from './analysis.mjs?v=6';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos', finalizados: 'Finalizados',
@@ -25,7 +25,7 @@ export function mountWeekly(root) {
   panel.className = 'panorama-weekly';
   panel.innerHTML = '<h3>Panorama semanal</h3>' +
     '<form class="panorama-upload-row"><label class="panorama-upload"><span>' +
-    '<strong>ZIP do Looker/Opa!</strong><small>Confira os indicadores e as validações da semana.</small>' +
+    '<strong>ZIP do Looker/Opa!</strong><small>Analise o período completo exportado no ZIP.</small>' +
     '<input type="file" accept=".zip,application/zip" required></span></label>' +
     '<button class="btn-primary panorama-generate" type="submit">Validar ZIP</button></form>' +
     '<p role="status" aria-live="polite"></p><div></div>';

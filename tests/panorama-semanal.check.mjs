@@ -27,7 +27,7 @@ export async function checkWeekly(zipPath) {
   assert.deepEqual(result.analysis.score, { target: 4.7, reported: 4.71, distributionMean: 4.49, ratingCount: 129, divergent: true });
   assert.ok(result.analysis.findings.some(line => line.includes('43 de 460 atendimentos (9,3%)')));
   assert.ok(result.analysis.tables.heatmap.rows.some(row => row.includes(null)));
-  assert.equal(result.analysis.tables.team.headers.at(-1), '% dos finalizados da semana');
+  assert.equal(result.analysis.tables.team.headers.at(-1), '% dos finalizados do período');
   assert.ok(result.analysis.findings.some(line => line.includes('10 de 129 avaliações')));
   assert.ok(result.analysis.findings.some(line => line.includes('354 de 460 atendimentos')));
   assert.equal(result.analysis.tables.reasons.rows.length, 12);
@@ -56,4 +56,23 @@ export async function checkWeekly(zipPath) {
   console.log('Panorama semanal: ZIP real, KPIs, avisos, duplicidade, schema, totais e arquivo ausente conferidos.');
 }
 
+export async function checkExtendedPeriod(zipPath) {
+  const result = await analyzeWeekly(readZip(new Blob([await readFile(zipPath)])));
+  assert.equal(result.valid, true, JSON.stringify(result.issues));
+  assert.deepEqual(result.period, { start: '2026-11-01', end: '2026-11-14' });
+  assert.deepEqual(result.files, { expected: 35, validated: 35 });
+  assert.equal(result.kpis.assumidos, 888);
+  assert.equal(result.kpis.finalizados, 897);
+  assert.deepEqual(result.analysis.score, {
+    target: 4.7, reported: 4.75, distributionMean: 4.57, ratingCount: 253, divergent: true
+  });
+  const team = result.analysis.tables.team;
+  assert.equal(team.headers[5], 'Média aval.');
+  assert.deepEqual(team.rows.slice(0, 3).map(row => [row[1], row[2], row[5]]), [
+    ['145', '146', '4,40'], ['143', '145', '4,71'], ['101', '100', '4,42']
+  ]);
+  console.log('ZIP de 14 dias: período, notas, volumes e divergência de fontes conferidos.');
+}
+
 if (globalThis.process?.argv[2]) await checkWeekly(process.argv[2]);
+if (globalThis.process?.argv[3]) await checkExtendedPeriod(process.argv[3]);

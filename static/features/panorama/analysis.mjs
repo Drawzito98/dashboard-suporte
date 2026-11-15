@@ -1,7 +1,6 @@
 const catalog = {
   departments: ['performance_por_departamento.csv', [0, 1, 2, 6, 7, 8, 9]],
-  team: ['performance_por_colaborador.csv', [0, 1, 2, 4, 5, 9]],
-  quality: ['avaliação_por_colaborador__ia_×_cliente.csv', [0, 1, 3]],
+  team: ['performance_por_colaborador.csv', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]],
   reasons: ['motivos_de_atendimento.csv', [0, 1, 2, 3]],
   stars: ['distribuição_de_notas_por_estrela.csv', [0, 1, 2, 3]],
   shifts: ['plantão__diurno_×_noturno.csv', [0, 1]],
@@ -28,17 +27,10 @@ export function buildAnalysis(reports, headers, days, kpis) {
       rows: rows.map(row => columns.map(column => row[column].trim()))
     };
   }
-  for (const [key, column] of [['departments', 2], ['team', 2], ['reasons', 1]]) {
+  for (const [key, column] of [['departments', 2], ['team', 1], ['reasons', 1]]) {
     tables[key]?.rows.sort((a, b) => quantity(b[column]) - quantity(a[column]));
   }
   if (tables.reasons) tables.reasons.rows = tables.reasons.rows.slice(0, 12);
-  if (tables.team && tables.quality) {
-    const keyFor = name => name.normalize('NFC').trim().toLocaleLowerCase('pt-BR');
-    const averages = new Map(tables.quality.rows.map(row => [keyFor(row[0]), row.slice(1)]));
-    tables.team.headers.push('Média IA', 'Média cliente');
-    for (const row of tables.team.rows) row.push(...(averages.get(keyFor(row[0])) ?? ['—', '—']));
-  }
-  delete tables.quality;
 
   const heatmap = reports.get(heatmapFile)?.filter(row => /^[0-9]/.test(row[0].trim()))
     .map(row => [row[0], ...row.slice(1).map(value => value.trim() ? quantity(value) : null)]) ?? [];
@@ -69,7 +61,7 @@ export function buildAnalysis(reports, headers, days, kpis) {
   if (peak?.finalizados && kpis.finalizados > 0) {
     const tiedDays = days.filter(day => day.finalizados === peak.finalizados).map(day => date(day.date));
     summarize('Maior volume diário', tiedDays.join(' e ') + ' · ' + format.format(peak.finalizados) +
-      ' de ' + format.format(kpis.finalizados) + ' finalizados na semana (' + percent(peak.finalizados, kpis.finalizados) +
+      ' de ' + format.format(kpis.finalizados) + ' finalizados no período (' + percent(peak.finalizados, kpis.finalizados) +
       (tiedDays.length > 1 ? ' em cada dia).' : ').'));
   }
   for (const day of days.filter(day => day.finalizados && !day.assumidos)) {
@@ -84,7 +76,7 @@ export function buildAnalysis(reports, headers, days, kpis) {
     }
   }
   if (tables.team && kpis.finalizados > 0) {
-    tables.team.headers.push('% dos finalizados da semana');
+    tables.team.headers.push('% dos finalizados do período');
     for (const row of tables.team.rows) {
       row.push(percent(quantity(row[2]), kpis.finalizados));
     }
@@ -134,7 +126,7 @@ function showScore(section, score) {
     score.reported === null ? 'Média do Looker indisponível' :
       score.reported >= score.target ? 'Meta atingida no cartão do Looker' : 'Abaixo da meta no cartão do Looker';
   card.append(node('h4', 'Meta de nota média do cliente · ' + scoreFormat.format(score.target)), node('strong', label));
-  for (const [name, value] of [['Cartão do Looker', score.reported], ['Média pelas ' + format.format(score.ratingCount) + ' notas por estrela', score.distributionMean]]) {
+  for (const [name, value] of [['Média geral do Looker (cartão de nota do cliente)', score.reported], ['Média pelas ' + format.format(score.ratingCount) + ' notas por estrela', score.distributionMean]]) {
     if (value === null) continue;
     const gap = Math.round((value - score.target) * 100) / 100;
     const delta = gap === 0 ? 'na meta' : scoreFormat.format(Math.abs(gap)) + (gap > 0 ? ' acima da meta' : ' abaixo da meta');
@@ -205,7 +197,7 @@ function showTable(target, title, data, { heatmap = false, toggleNames = false }
     row.forEach((value, column) => {
       const cell = node(column ? 'td' : 'th', value ?? '—');
       if (!column) cell.scope = 'row';
-      if (data.headers[column] === 'Média cliente' && /^[1-5](?:[.,]\d+)?$/.test(String(value))) {
+      if (data.headers[column] === 'Média aval.' && /^[1-5](?:[.,]\d+)?$/.test(String(value))) {
         const customerScore = Number(value.replace(',', '.'));
         cell.textContent = scoreFormat.format(customerScore);
         cell.className = customerScore < TARGET_SCORE ? 'panorama-score-low' : 'panorama-score-high';
@@ -245,7 +237,7 @@ function showFindings(target, findings) {
 export function renderAnalysis(output, { analysis, days, kpis }) {
   if (!analysis) return;
   const section = node('section');
-  section.append(node('h3', 'Resumo da semana'));
+  section.append(node('h3', 'Resumo do período'));
   const totals = [['assumidos', 'assumidos'], ['finalizados', 'finalizados'], ['clientes', 'clientes atendidos']]
     .filter(([key]) => kpis[key] !== undefined)
     .map(([key, label]) => format.format(kpis[key]) + ' ' + label);
@@ -255,7 +247,7 @@ export function renderAnalysis(output, { analysis, days, kpis }) {
   const byLabel = label => analysis.findings.find(finding => finding.startsWith(label + ': '));
   const leads = leadLabels.map(byLabel).filter(Boolean);
   if (leads.length) {
-    section.append(node('h4', 'Destaques da semana'));
+    section.append(node('h4', 'Destaques do período'));
     showFindings(section, leads);
   }
 
@@ -269,7 +261,7 @@ export function renderAnalysis(output, { analysis, days, kpis }) {
   showTable(volume, 'Assumidos por dia e faixa de horário', tables.heatmap, { heatmap: true });
 
   const team = reportDetails('Equipe e departamentos');
-  team.append(node('p', 'A meta de 4,70 se aplica à média do cliente. A nota da IA aparece em coluna própria.'));
+  team.append(node('p', 'Tabela ordenada por assumidos. Média aval. é a nota do cliente por atendente, extraída de Performance por colaborador. A meta é 4,70.'));
   showTable(team, 'Equipe', tables.team, { toggleNames: true });
   showTable(team, 'Departamentos', tables.departments);
 

@@ -1,6 +1,6 @@
 import { schemas } from './registry.mjs';
 import { parseCsv, normalize } from './csv.mjs';
-import { buildAnalysis } from './analysis.mjs?v=5';
+import { buildAnalysis } from './analysis.mjs?v=6';
 
 const sources = {
   assumidos: 'atendimentos_assumidos.csv',
@@ -142,9 +142,6 @@ export async function analyzeWeekly(entries) {
     for (const key of ['assumidos', 'finalizados']) {
       reconcile(dayFile, key, days.reduce((total, day) => total + day[key], 0), kpis[key]);
     }
-    if (Date.parse(period.end) - Date.parse(period.start) > 6 * 86400000) {
-      issue('error', 'period-length', dayFile, 'As datas abrangem mais de sete dias corridos.');
-    }
   }
   const readPerformance = file => read(file, rows => {
     const data = rows.filter(row => !subtotal.test(row[0].trim()));
@@ -177,7 +174,7 @@ export async function analyzeWeekly(entries) {
     return row ? count(row[1]) : undefined;
   }, 'warning');
   if (compared !== undefined && kpis.finalizados !== undefined && compared !== kpis.finalizados) {
-    issue('warning', 'comparison-scope', compareFile, 'O comparativo usa ' + compared + ' finalizados para ' + kpis.finalizados + ' no recorte semanal.');
+    issue('warning', 'comparison-scope', compareFile, 'O comparativo usa ' + compared + ' finalizados para ' + kpis.finalizados + ' no recorte importado.');
   }
   const monthsFile = 'volume__assumidos_vs._finalizados_(12_meses).csv';
   const months = reports.get(monthsFile)?.filter(row => /^\d{4}-\d{2}$/.test(row[0]));
