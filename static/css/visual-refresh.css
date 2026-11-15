@@ -302,6 +302,8 @@
     --dashboard-panel-padding: 0.85rem;
     --dashboard-block-gap: 0.75rem;
     --dashboard-caption: 0.78rem;
+    --dashboard-indicator-width: 11rem;
+    --dashboard-indicator-min: 9rem;
   }
 
   #appScreen #appPageTitle {
@@ -353,6 +355,30 @@
     font-size: 1rem;
     line-height: 1.35;
     margin-block-end: 0.55rem;
+  }
+
+  #appScreen :is(.kpi-grid, .home-kpi-grid, .so-kpis) {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--dashboard-indicator-min)), var(--dashboard-indicator-width)));
+    gap: var(--dashboard-block-gap);
+    align-items: start;
+  }
+
+  #appScreen .tab-content :is(.kpi, .home-kpi, .so-kpis > article) {
+    min-height: 0;
+    min-width: 0;
+    padding: 0.62rem 0.72rem;
+    border-radius: 10px;
+  }
+
+  #appScreen .tab-content :is(.kpi .label, .home-kpi-label, .so-kpis > article > span) {
+    line-height: 1.35;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  #appScreen .tab-content :is(.kpi .sub, .home-kpi-hint, .so-kpis small) {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
   }
 
   #appScreen .kpi .value {
@@ -421,6 +447,11 @@
     min-width: 0;
     max-width: 100%;
     overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  #appScreen :is(#previewTable, .so-table, .ranking-table) :is(th, td):is([data-key="Mês"], [data-key="Assumidos"], [data-key="Finalizados"], [data-key="Transferidos"], [data-key="SCORE"], [data-key="TMA"], [data-key="TMR"]) {
+    white-space: nowrap;
   }
 
   #appScreen .global-filter-row {
@@ -462,7 +493,7 @@
   }
 
   #tab-home .home-kpi-value {
-    font-size: 1.4rem;
+    font-size: 1.35rem;
     line-height: 1.2;
     font-variant-numeric: tabular-nums;
   }
@@ -718,6 +749,10 @@
     color: var(--text-secondary);
   }
 
+  .colab-card-data > div {
+    min-width: 0;
+  }
+
   .colab-card-data dd {
     margin: 0.1rem 0 0;
     font-size: 0.8rem;
@@ -759,7 +794,7 @@
   }
 
   #tab-relatorio-setorial .rs-report-kpis {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--dashboard-indicator-min)), var(--dashboard-indicator-width)));
     align-items: start;
     gap: 0.55rem;
     margin: 0 0 0.85rem;
@@ -784,5 +819,12 @@
   :is(#historicoContent, #usuariosOverlayContent) th {
     color: var(--text-secondary);
     background: var(--bg-inset);
+  }
+
+  @media (max-width: 640px) {
+    #appScreen :is(.kpi-grid, .home-kpi-grid, .so-kpis),
+    #tab-relatorio-setorial .rs-report-kpis {
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--dashboard-indicator-min)), 1fr));
+    }
   }
 }
