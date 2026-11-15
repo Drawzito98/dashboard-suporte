@@ -6,6 +6,7 @@ import { schemas } from '../static/features/panorama/registry.mjs';
 import { filterDepartmentRows, joinTeamNames, joinTeamLevels, n1PeriodTarget, n1FinalizedGap, sortTeamRows } from '../static/features/panorama/analysis.mjs';
 
 import { decodeTeamNote, validateTeamNote } from '../static/features/panorama/team-context.mjs';
+import { buildHistorySnapshot, historyMonths, summarizeHistoryMonth } from '../static/features/panorama/history.mjs';
 
 const goalRows = [['Bia', 'N1', '59'], ['Ana', 'N1', '41'], ['Caio', 'N1', '63'], ['Davi', 'N2', '20'], ['Eva', 'N1', '10']];
 assert.deepEqual(sortTeamRows(goalRows, 'n1-deficit', 59).map(row => row[0]), ['Eva', 'Ana', 'Bia', 'Caio', 'Davi']);
@@ -59,6 +60,13 @@ export async function checkWeekly(zipPath) {
     'comparison-scope', 'partial-month-history', 'detail-limit'
   ]);
 
+  const snapshot = buildHistorySnapshot(result);
+  assert.deepEqual(snapshot, result);
+  assert.equal(snapshot.days.reduce((total, date) => total + date.finalizados, 0), 460);
+  const unknown = buildHistorySnapshot({ ...result, csv: 'dados brutos', issues: [{ severity: 'warning', code: 'unknown-file', file: 'arquivo particular.csv', message: 'CSV fora do catálogo.' }] });
+  assert.equal(Object.hasOwn(unknown, 'csv'), false);
+  assert.equal(unknown.issues[0].file, 'Arquivo fora do catálogo');
+  assert.throws(() => buildHistorySnapshot({ ...result, valid: false }), /Valide o ZIP/);
   assert.equal(result.analysis.tables.team.rows.length, 13);
   assert.deepEqual(result.analysis.score, { target: 4.7, reported: 4.71, distributionMean: 4.49, ratingCount: 129, departmentMean: 4.49, confirmedMean: 4.49, divergent: true });
   assert.ok(result.analysis.findings.some(line => line.includes('43 de 460 atendimentos (9,3%)')));
@@ -120,6 +128,25 @@ export async function checkExtendedPeriod(zipPath) {
   ]);
   console.log('ZIP de 14 dias: período, notas, volumes e divergência de fontes conferidos.');
 }
+
+const historyEntries = [
+  { id: '1', updated_at: '2026-11-09T00:00:00Z', dias: [{ date: '2026-10-31', finalizados: 15 }, { date: '2026-11-01', finalizados: 2 }, { date: '2026-11-02', finalizados: 9 }] },
+  { id: '2', updated_at: '2026-11-10T00:00:00Z', dias: [{ date: '2026-11-02', finalizados: 12 }, { date: '2026-11-03', finalizados: 0 }, { date: '2026-11-09', finalizados: 6 }] }
+];
+assert.deepEqual(historyMonths(historyEntries), ['2026-11', '2026-10']);
+const monthly = summarizeHistoryMonth(historyEntries, '2026-11');
+assert.equal(monthly.total, 20);
+assert.equal(monthly.days, 4);
+assert.equal(monthly.overlapping, 1);
+assert.deepEqual(monthly.weeks.slice(0, 3), [
+  { start: '2026-11-01', end: '2026-11-01', days: 1, volume: 2, cumulative: 2 },
+  { start: '2026-11-02', end: '2026-11-08', days: 2, volume: 12, cumulative: 14 },
+  { start: '2026-11-09', end: '2026-11-15', days: 1, volume: 6, cumulative: 20 }
+]);
+assert.equal(summarizeHistoryMonth(historyEntries.slice(0, 1), '2026-11').total, 11);
+assert.equal(summarizeHistoryMonth(historyEntries, '2026-10').total, 15);
+assert.equal(monthly.weeks.at(-1).days, 0);
+console.log('Histórico mensal: sobreposição, virada do mês, lacunas e acumulado conferidos.');
 
 if (globalThis.process?.argv[2]) await checkWeekly(process.argv[2]);
 if (globalThis.process?.argv[3]) await checkExtendedPeriod(process.argv[3]);

@@ -1,6 +1,6 @@
 # Panorama semanal do suporte
 
-Na aba **Desempenho → Panorama semanal**, selecione o ZIP de exportação do Looker/Opa! e clique em **Analisar ZIP**. A prévia mostra o período observado no relatório diário, os indicadores do recorte e as divergências. A leitura ocorre no navegador e a prévia fica em memória. O Panorama usa o ZIP como única entrada. O formulário avulso de CSV por colaborador fica recolhido no Relatório Setorial.
+Na aba **Desempenho → Panorama semanal**, selecione o ZIP de exportação do Looker/Opa! e clique em **Analisar ZIP**. A prévia mostra o período observado no relatório diário, os indicadores do recorte e as divergências. A leitura ocorre no navegador. Depois da validação, um administrador pode escolher **Salvar dados**. O ZIP, protocolos e dados brutos ficam fora do histórico. O Panorama usa o ZIP como única entrada. O formulário avulso de CSV por colaborador fica recolhido no Relatório Setorial.
 
 A seção **Análise da semana** resume os destaques do recorte e mostra volume diário, mapa de horários, departamentos, equipe, motivos, avaliações e plantão. Os nomes da equipe aparecem por padrão no Panorama semanal e podem ser ocultados na própria tabela. Os destaques informam a base usada nos percentuais.
 
@@ -71,11 +71,15 @@ O ZIP de referência contém 35 CSVs UTF-8 separados por vírgula, dentro de uma
 - O comparativo aponta 1.308 finalizados, a série de 12 meses contém apenas novembro e a análise livre tem 200 linhas. Essas fontes geram avisos e seus valores não substituem os KPIs semanais.
 - Ausência ou falha de schema em um relatório necessário aos indicadores gera erro. Avisos registram arquivos não reconhecidos, falhas em relatórios auxiliares e os recortes divergentes conhecidos.
 
-## Contrato para a próxima etapa
+## Histórico mensal do Panorama
 
 `analyzeWeekly(entries)` recebe entradas `{ name, text }` e retorna `{ schemaVersion, period, kpis, days, analysis, files, issues, valid }`. O período usa datas ISO, as durações usam segundos e as taxas usam pontos percentuais na escala 0–100. Cada ocorrência tem `severity`, `code`, `file` e `message`. A análise da prévia usa agregados e linhas de relatórios resumidos. Ela pode conter nomes da equipe e fica somente em memória. Para persistência, definir uma projeção própria que exclua dados pessoais desnecessários.
 
-Próxima etapa do roadmap: confirmar o período e o escopo operacional, projetar uma chave de importação idempotente, definir autorização e RLS, salvar somente agregados de prévias válidas com confirmação do usuário e adicionar histórico e comparações de semanas. Definir previamente o comportamento em caso de reimportação corrigida.
+A migração v51 cria o histórico privado de prévias validadas no Supabase. O armazenamento inclui totais, datas do relatório diário e as tabelas agregadas usadas pelas visões do Panorama, inclusive nomes de atendentes. Observações e ausências continuam em seus próprios registros. As informações de nível e departamento cadastrado usam o cadastro atual ao reabrir um período.
+
+Em **Histórico mensal do Panorama**, selecione o mês para consultar finalizados por semana do calendário e o acumulado dos dias com dados. Semanas sem cobertura mostram **Sem dados**. Quando dois ZIPs cobrem a mesma data, vale o dado do salvamento mais recente para aquele dia. Salve ZIPs exportados com os mesmos filtros do Looker para séries comparáveis. As notas confirmadas são exibidas por ZIP e os recortes podem ser reabertos para conferir equipe e departamentos.
+
+**Salvar dados** substitui um recorte idêntico somente após confirmação. **Excluir** pede confirmação, remove apenas a importação selecionada e recalcula a evolução com os registros restantes. As ações do histórico não alteram a meta N1, ausências ou observações. Os registros ficam disponíveis apenas na conta que os salvou.
 
 ## Teste de regressão
 
