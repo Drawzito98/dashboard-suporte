@@ -1,11 +1,11 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs?v=3';
-import { renderAnalysis } from './analysis.mjs?v=3';
+import { analyzeWeekly } from './weekly.mjs?v=4';
+import { renderAnalysis } from './analysis.mjs?v=4';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos', finalizados: 'Finalizados',
   clientes: 'Clientes atendidos', tme: 'TME', tmi: 'TMI', tmr: 'TMR',
-  nota: 'Nota média do cliente', avaliados: 'Avaliados', inatividade: 'Encerrados por inatividade',
+  nota: 'Nota média do cliente · Looker', avaliados: 'Avaliados', inatividade: 'Encerrados por inatividade',
   recorrencia: 'Recorrência', sla: 'SLA do plantão (2h)', fila: 'Atendimentos com tempo de fila'
 };
 const formatNumber = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });

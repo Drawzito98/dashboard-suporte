@@ -24,6 +24,9 @@ export async function checkWeekly(zipPath) {
   ]);
 
   assert.equal(result.analysis.tables.team.rows.length, 13);
+  assert.deepEqual(result.analysis.score, { target: 4.7, reported: 4.71, distributionMean: 4.49, ratingCount: 129, divergent: true });
+  assert.ok(result.analysis.findings.some(line => line.includes('43 de 460 atendimentos (9,3%)')));
+  assert.ok(result.analysis.tables.heatmap.rows.some(row => row.includes(null)));
   assert.equal(result.analysis.tables.team.headers.at(-1), '% dos finalizados da semana');
   assert.ok(result.analysis.findings.some(line => line.includes('10 de 129 avaliações')));
   assert.ok(result.analysis.findings.some(line => line.includes('354 de 460 atendimentos')));

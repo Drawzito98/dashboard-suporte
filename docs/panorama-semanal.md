@@ -4,6 +4,8 @@ Na aba Panorama do Suporte, selecione o ZIP de exportação do Looker/Opa! e cli
 
 A seção **Análise da semana** resume os destaques do recorte e mostra volume diário, mapa de horários, departamentos, equipe, motivos, avaliações e plantão. Os nomes da equipe aparecem por padrão no Panorama semanal e podem ser ocultados na própria tabela. Os destaques informam a base usada nos percentuais.
 
+A meta de nota média é 4,70 em escala de 1 a 5. O relatório confere o cartão do Looker com a média ponderada das estrelas quando a distribuição reconcilia com o total de avaliados. No ZIP de referência, o cartão tem 4,71 e as 129 avaliações da distribuição produzem 4,49. O destaque sinaliza a divergência e mostra a distância de cada valor à meta.
+
 ## Catálogo dos relatórios
 
 O ZIP de referência contém 35 CSVs UTF-8 separados por vírgula, dentro de uma pasta. O leitor aceita pastas internas e valida pelo nome do arquivo. Os dois heatmaps aceitam um subconjunto dos sete dias em qualquer ordem. Os relatórios diário e mensal podem trazer uma linha adicional de rótulos do Looker.
