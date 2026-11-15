@@ -164,8 +164,8 @@ function renderAvaliacao() {
       <div class="avaliacao-form-card">
         <div class="card-header">
           <div>
-            <h2>📋 Avaliação de Desempenho</h2>
-            <p>Avalie um colaborador nas 11 competências C1</p>
+            <h2>Nova avaliação</h2>
+            <p>Selecione a pessoa e o período para abrir as 11 competências C1.</p>
           </div>
         </div>
         <div class="avaliacao-form-controls">
@@ -185,8 +185,8 @@ function renderAvaliacao() {
             </div>
           </label>
           <div style="display:flex;gap:var(--s-2);margin-top:var(--s-2);flex-wrap:wrap">
-            <button class="btn-small" id="avaliacaoNovaBtn" type="button">➕ Nova avaliação</button>
-            <button class="btn-primary" id="avaliacaoSugerirNotasBtn" type="button" style="background:#8B5CF6;font-size:12px;padding:6px 12px">🎯 Sugerir Notas Inteligentes</button>
+            <button class="btn-primary" id="avaliacaoNovaBtn" type="button">Abrir avaliação</button>
+            <button class="btn-small" id="avaliacaoSugerirNotasBtn" type="button">Sugerir notas</button>
           </div>
         </div>
         <div style="margin:var(--s-3) var(--s-4) var(--s-3)">
@@ -195,7 +195,6 @@ function renderAvaliacao() {
             <textarea id="avaliacaoQualitativa" rows="3" placeholder="Ex: Colaborador proativo, mas precisa melhorar organização e pontualidade..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px;resize:vertical;font-family:inherit;line-height:1.5"></textarea>
           </label>
         </div>
-        </div>
       </div>
 
       <div id="avaliacaoFormContainer"></div>
@@ -203,7 +202,7 @@ function renderAvaliacao() {
       <div class="avaliacao-historico-card">
         <div class="card-header">
           <div>
-            <h2>📊 Histórico de Avaliações</h2>
+            <h2>Histórico de avaliações</h2>
             <p>Visualize avaliações salvas por colaborador e ciclo</p>
           </div>
         </div>
@@ -1318,7 +1317,7 @@ function renderHistoricoAvaliacoes() {
     const corMedia = media !== '—' ? (media >= 3 ? 'var(--success)' : media >= 2 ? 'var(--warning)' : 'var(--danger)') : 'var(--text-muted)';
 
     const status = av.status || 'pendente';
-    const statusLabel = status === 'revisado' ? '✅ Revisado' : '⏳ Pendente';
+    const statusLabel = status === 'revisado' ? 'Revisado' : 'Pendente';
     const statusCor = status === 'revisado' ? 'var(--success)' : 'var(--warning)';
 
     html += `
@@ -1326,18 +1325,18 @@ function renderHistoricoAvaliacoes() {
         <div class="avaliacao-historico-header">
           <strong>${escapeHtml(av.colaborador)}</strong>
           <span class="avaliacao-historico-ciclo">${escapeHtml(av.ciclo)}</span>
-          <span class="avaliacao-status-tag" data-id="${av.id}" style="margin-left:auto;font-size:10px;font-weight:600;padding:1px 6px;border-radius:var(--r-sm);cursor:pointer;background:${statusCor}22;color:${statusCor};border:1px solid ${statusCor}55;white-space:nowrap">${statusLabel}</span>
+          <button class="avaliacao-status-tag" type="button" data-id="${av.id}" style="--avaliacao-status-color:${statusCor}" aria-label="Status: ${statusLabel}. Alternar revisão" title="Alternar status de revisão">${statusLabel}</button>
         </div>
         <div class="avaliacao-historico-stats">
+          <span class="avaliacao-media">Média <strong style="color:${corMedia}">${media}</strong></span>
           <span>Notas: <strong>${scoresArray.length}/${comps.length}</strong></span>
           <span>Total: <strong>${total}</strong></span>
-          <span>Média: <strong style="color:${corMedia}">${media}</strong></span>
           <span>Comentários: <strong>${(av.comentarios_finais || []).length}</strong></span>
         </div>
         <div class="avaliacao-historico-mini-radar" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}"></div>
         <div class="avaliacao-historico-actions">
-          <button class="btn-small avaliacao-ver-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button">👁️ Ver</button>
-          <button class="btn-small avaliacao-editar-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button">✏️ Editar</button>
+          <button class="btn-small avaliacao-ver-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button">Ver detalhes</button>
+          <button class="btn-small avaliacao-editar-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button">Editar</button>
           <button class="btn-small avaliacao-excluir-btn" data-id="${av.id}" type="button" style="color:var(--danger)">🗑️</button>
         </div>
       </div>

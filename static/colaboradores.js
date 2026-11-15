@@ -37,7 +37,7 @@ function renderColaboradores() {
 
   let html = '';
 
-  html += `<div class="colab-list-header"><div><h3>Equipe</h3><p>${colabs.length} colaborador(es) exibidos · ${Object.keys(colabInfo).length} com cadastro</p></div><button class="btn-primary" id="novoColaboradorBtn" type="button">+ Novo colaborador</button></div>`;
+  html += `<div class="colab-list-header"><div><h3>Cadastro da equipe</h3><p>${colabs.length} exibidos · ${Object.keys(colabInfo).length} com cadastro</p></div><button class="btn-primary" id="novoColaboradorBtn" type="button">+ Novo colaborador</button></div>`;
 
   if (!colabs.length) {
     const filtroAtivo = typeof globalFilters !== 'undefined' && (globalFilters.nivel !== 'all' || globalFilters.setor !== 'all' || globalFilters.colaborador !== 'all' || globalFilters.pesquisa);
@@ -68,7 +68,7 @@ function renderColaboradores() {
     ];
     html += `<article class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''}" data-nome="${escapeHtml(nome)}">
       <header class="colab-card-identity">
-        <div class="colab-card-photo">${photo}</div>
+        <div class="colab-card-photo" aria-hidden="true">${photo}</div>
         <div class="colab-card-title">
           <h4>${escapeHtml(nome)}</h4>
           ${meta ? '<p>' + meta + '</p>' : ''}

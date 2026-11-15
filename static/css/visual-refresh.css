@@ -1034,3 +1034,95 @@
     }
   }
 }
+
+@media screen {
+  .rs-report-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  #tab-relatorio-setorial .rs-report-kpis .rs-kpi-primary {
+    border-color: var(--border-strong);
+  }
+
+  #tab-colaboradores .colab-card-data > div:has(dd) {
+    padding-block: 0.12rem;
+  }
+
+  #tab-colaboradores .colab-card-note {
+    padding-block: 0.4rem;
+    overflow-wrap: anywhere;
+  }
+
+  #tab-avaliacao .avaliacao-layout {
+    gap: 0.75rem;
+  }
+
+  #tab-avaliacao #avaliacaoFormContainer:empty {
+    display: none;
+  }
+
+  #tab-avaliacao :is(.avaliacao-form-controls, .avaliacao-historico-controls) {
+    gap: 0.5rem 0.65rem;
+  }
+
+  #tab-avaliacao .avaliacao-historico-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 20rem));
+    align-items: stretch;
+    margin-top: 0.65rem;
+  }
+
+  #tab-avaliacao .avaliacao-historico-item {
+    padding: 0.65rem 0.75rem;
+    background: var(--bg-surface);
+    gap: 0.55rem;
+  }
+
+  #tab-avaliacao .avaliacao-historico-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    overflow: visible;
+    gap: 0.25rem 0.5rem;
+  }
+
+  #tab-avaliacao .avaliacao-historico-header > strong {
+    grid-column: 1 / -1;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  #tab-avaliacao .avaliacao-historico-ciclo {
+    justify-self: start;
+  }
+
+  #tab-avaliacao .avaliacao-status-tag {
+    justify-self: end;
+    border: 1px solid color-mix(in srgb, var(--avaliacao-status-color) 42%, transparent);
+    border-radius: 6px;
+    padding: 0.2rem 0.45rem;
+    color: var(--avaliacao-status-color);
+    background: color-mix(in srgb, var(--avaliacao-status-color) 9%, var(--bg-surface));
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  #tab-avaliacao .avaliacao-historico-stats {
+    align-items: baseline;
+    gap: 0.25rem 0.65rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #tab-avaliacao .avaliacao-media {
+    font-weight: 650;
+    color: var(--text-strong);
+  }
+
+  #tab-avaliacao .avaliacao-historico-actions {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+}

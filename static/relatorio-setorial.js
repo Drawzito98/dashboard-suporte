@@ -213,12 +213,14 @@ function renderRelatorioSetorial() {
   let html = filterBarHtml;
 
   // ── Header ──
+  const periodLabel = month => typeof formatMesLabel === 'function' ? formatMesLabel(month) : month;
+  const activeScope = [__rsFilterState.person, __rsFilterState.sector, __rsFilterState.level].filter(Boolean);
   html += `<div class="rs-report-heading">
     <div>
-      <h2>Relatório Setorial</h2>
-      <p>${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 Rankings, análise setorial, tendências e relatório executivo</p>
+      <h2>Resultados do período</h2>
+      <p>${escapeHtml(periodLabel(__rsFilterState.monthStart || meses[0]))} a ${escapeHtml(periodLabel(__rsFilterState.monthEnd || meses.at(-1)))} · ${escapeHtml(activeScope.join(' · ') || 'Todos os setores')} · ${totalAtendentes} pessoas</p>
     </div>
-    <div style="display:flex;gap:var(--s-2);align-items:center">
+    <div class="rs-report-actions">
       <span id="rsPresentationModeIndicator" style="font-size:12px;color:var(--text-muted);display:none">\uD83D\uDCF1 Modo apresentação</span>
       <button id="rsPresentationToggle" class="btn-small" type="button" title="Ocultar botões de ação para captura de tela">\uD83D\uDCF1 Apresentação</button>
       <button class="btn-primary" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
@@ -268,17 +270,17 @@ function renderRelatorioSetorial() {
     return `<span class="${cls}">${arrow} ${d > 0 ? '+' : ''}${Math.abs(d).toFixed(1).replace('.', ',')}%</span>`;
   };
   const kpiCards = [
-    { label: 'Assumidos', value: fmtNum(totalAss), sub: _deltaSpan(_calcDeltaPct(prevAss, totalAss)) },
-    { label: 'Transferidos', value: fmtNum(totalTra), sub: _deltaSpan(_calcDeltaPct(prevTra, totalTra), true) },
     { label: 'Finalizados', value: fmtNum(totalFin), sub: _deltaSpan(_calcDeltaPct(prevFin, totalFin)) },
     { label: 'Score médio', value: fmtScore(avgScore), sub: _deltaSpan(_calcDeltaPct(prevAvg, avgScore)) },
     { label: 'Produtividade', value: fmtPct(prodGeral), sub: _deltaSpan(_calcDeltaPct(prevProd, prodGeral)) },
+    { label: 'Assumidos', value: fmtNum(totalAss), sub: _deltaSpan(_calcDeltaPct(prevAss, totalAss)) },
+    { label: 'Transferidos', value: fmtNum(totalTra), sub: _deltaSpan(_calcDeltaPct(prevTra, totalTra), true) },
     { label: 'Taxa Transferência', value: fmtPct(traGeral), sub: _deltaSpan(_calcDeltaPct(prevTraG, traGeral), true) }
   ];
   if (hasTma) kpiCards.push({ label: 'TMA médio', value: _fmtDuration(tmaGeral), sub: '<span class="trend-neutral">Tempo médio de atendimento</span>' });
   if (hasTmr) kpiCards.push({ label: 'TMR médio', value: _fmtDuration(tmrGeral), sub: '<span class="trend-neutral">Tempo médio de resposta</span>' });
   html += `<div class="kpi-grid rs-report-kpis">
-    ${kpiCards.map(c => `<div class="kpi"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
+    ${kpiCards.map((c, index) => `<div class="kpi${index < 2 ? ' rs-kpi-primary' : ''}"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
   </div>`;
 
   // ── Top 3 Rankings ──
