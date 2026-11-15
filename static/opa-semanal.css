@@ -1,0 +1,50 @@
+/* Aba Operação semanal — usa os tokens do app (claro e escuro) */
+#opaSemanalContent { display: flex; flex-direction: column; gap: 16px; }
+.opa-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-md, 10px); padding: 16px; min-width: 0; }
+.opa-card h2 { margin: 0 0 2px; font-size: 16px; color: var(--text-strong); }
+.opa-card h3 { margin: 12px 0 6px; font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+.opa-note { margin: 2px 0 10px; color: var(--text-muted); font-size: 13px; }
+.opa-erro { color: var(--danger); background: var(--danger-soft); padding: 8px 12px; border-radius: 8px; font-size: 13px; }
+.opa-aviso { color: var(--warning); background: var(--warning-soft); padding: 8px 12px; border-radius: 8px; font-size: 13px; }
+.opa-head { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-start; }
+.opa-acoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.opa-head .opa-acoes { margin-top: 0; }
+.opa-sel { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text-secondary); }
+.opa-file { display: inline-flex; margin-top: 4px; }
+.opa-file input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.opa-file span { background: var(--accent); color: var(--text-on-accent); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+.opa-file input:focus-visible + span { outline: 3px solid var(--accent-ring); outline-offset: 2px; }
+.opa-file input:disabled + span { opacity: .5; cursor: not-allowed; }
+.opa-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.opa-kpi { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.opa-kpi .l { font-size: 12px; color: var(--text-secondary); }
+.opa-kpi .v { font-size: 24px; font-weight: 600; color: var(--text-strong); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.opa-kpi .d { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; min-height: 18px; }
+.bom { color: var(--variation-pos); } .ruim { color: var(--variation-neg); } .neutro { color: var(--text-muted); }
+.opa-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.opa-grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; }
+.opa-chart { position: relative; height: 260px; } .opa-chart.sm { height: 190px; }
+.opa-tw { overflow-x: auto; }
+.opa-card table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.opa-card th, .opa-card td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; font-size: 13px; }
+.opa-card th { color: var(--text-secondary); font-weight: 500; }
+.opa-card th:first-child, .opa-card td:first-child { text-align: left; white-space: normal; min-width: 150px; }
+.opa-heat { display: grid; gap: 3px; font-variant-numeric: tabular-nums; }
+.opa-heat div { text-align: center; padding: 7px 0; border-radius: 3px; font-size: 12px; }
+.opa-heat .h, .opa-heat .r { color: var(--text-secondary); } .opa-heat .r { text-align: right; padding-right: 8px; white-space: nowrap; }
+.opa-heat .vazio { color: var(--text-muted); }
+.opa-bars { display: flex; flex-direction: column; gap: 6px; }
+.opa-bar { display: grid; grid-template-columns: minmax(120px, 42%) 1fr 36px; gap: 10px; align-items: center; font-size: 12px; }
+.opa-bar > span:first-child { color: var(--text-secondary); overflow-wrap: anywhere; }
+.opa-bar .t { position: relative; height: 10px; background: var(--bg-subtle); border-radius: 0 5px 5px 0; }
+.opa-bar .t b { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 0 5px 5px 0; }
+.opa-bar em { font-style: normal; text-align: right; font-variant-numeric: tabular-nums; }
+.opa-mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.opa-mini > div { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.opa-mini .v { font-size: 20px; font-weight: 600; } .opa-mini .l { font-size: 12px; color: var(--text-secondary); }
+.opa-chk { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+.opa-chk li { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+.opa-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+.opa-tag.ok { color: var(--text-secondary); border: 1px solid var(--border); }
+.opa-tag.aviso { color: var(--warning); background: var(--warning-soft); }
+.opa-prev { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 4px; }
