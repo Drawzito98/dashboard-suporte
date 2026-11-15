@@ -180,22 +180,20 @@ function nameKey(value) {
     .replace(/\s+/g, ' ').trim().replace(/\s*[-(]?\s*multi[\s-]?setor\)?\s*$/i, '').trim();
 }
 
-export function joinTeamLevels(rows, registry) {
+function matchTeamProfiles(rows, registry) {
   const byName = new Map();
   for (const [name, profile] of Object.entries(registry ?? {})) {
     const key = nameKey(name);
-    const label = String(profile?.nivel ?? '').trim().toUpperCase();
-    const level = /^(?:N|NÍVEL\s+|NIVEL\s+)?[12]$/.test(label) ? 'N' + label.at(-1) : '';
-    if (!byName.has(key)) byName.set(key, new Set());
-    byName.get(key).add(level);
+    if (!byName.has(key)) byName.set(key, []);
+    byName.get(key).push(profile);
   }
   return rows.map(row => {
     const key = nameKey(row[0]);
     const exact = byName.get(key);
-    if (exact) return exact.size === 1 ? [...exact][0] || '—' : '—';
+    if (exact) return exact;
 
     const words = key.split(' ');
-    if (words.length < 2) return '—';
+    if (words.length < 2) return [];
     const matches = [...byName].filter(([name]) => {
       const full = name.split(' ');
       if (full.length <= words.length || full[0] !== words[0]) return false;
@@ -205,8 +203,27 @@ export function joinTeamLevels(rows, registry) {
       }
       return next === words.length;
     });
-    const levels = matches.length === 1 ? matches[0][1] : undefined;
-    return levels?.size === 1 ? [...levels][0] || '—' : '—';
+    return matches.length === 1 ? matches[0][1] : [];
+  });
+}
+
+function singleProfileValue(profiles, normalize) {
+  const values = new Set(profiles.map(normalize));
+  return values.size === 1 ? [...values][0] : '';
+}
+
+export function joinTeamLevels(rows, registry) {
+  return matchTeamProfiles(rows, registry).map(profiles => singleProfileValue(profiles, profile => {
+    const label = String(profile?.nivel ?? '').trim().toUpperCase();
+    return /^(?:N|NÍVEL\s+|NIVEL\s+)?[12]$/.test(label) ? 'N' + label.at(-1) : '';
+  }) || '—');
+}
+
+export function joinTeamDepartments(rows, registry) {
+  return matchTeamProfiles(rows, registry).map(profiles => {
+    const departments = profiles.map(profile => String(profile?.setor_atual ?? '').trim().replace(/\s+/g, ' '));
+    const keys = new Set(departments.map(department => department.toLocaleLowerCase('pt-BR')));
+    return keys.size === 1 ? departments[0] : '';
   });
 }
 
@@ -480,6 +497,14 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
   if (tables.team) {
     const source = projectTable(tables.team, ['Atendente', 'Finalizados', 'Média aval.', 'TMA', 'TMI', 'TMR']);
     const levels = joinTeamLevels(source.rows, registry);
+    const departments = joinTeamDepartments(source.rows, registry);
+    const knownDepartments = new Map();
+    for (const name of departments.filter(Boolean)) knownDepartments.set(name.toLocaleLowerCase('pt-BR'), name);
+    const department = choose('Departamento cadastrado', [
+      ['', 'Todos os departamentos'],
+      ...[...knownDepartments].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR')),
+      ...(departments.includes('') ? [['unknown', 'Sem departamento identificado']] : [])
+    ]);
     const level = choose('Nível', [['', 'Todos os níveis'], ['N1', 'Nível 1 (N1)'], ['N2', 'Nível 2 (N2)'], ['—', 'Sem nível identificado']]);
     const person = choose('Pessoa', [['', 'Todas as pessoas'], ...source.rows.map(row => [row[0], row[0]])]);
     const filters = node('div');
@@ -497,15 +522,17 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
     const timesLabel = node('label', ' Exibir tempos');
     timesLabel.className = 'panorama-times-toggle';
     timesLabel.prepend(showTimes);
-    filters.append(level.label, person.label, order.label, timesLabel);
+    filters.append(department.label, level.label, person.label, order.label, timesLabel);
     const status = node('p');
     status.setAttribute('role', 'status');
     const tableSpot = node('div');
-    team.append(filters, status, tableSpot);
+    team.append(filters, node('p', 'Departamento e nível vêm do cadastro. Finalizados, nota e tempos são os totais de cada pessoa no ZIP.'), status, tableSpot);
     const draw = () => {
-      const selected = source.rows.map((row, index) => [row[0], levels[index], ...row.slice(1)])
-        .filter(row => (!level.select.value || row[1] === level.select.value) &&
-          (!person.select.value || row[0] === person.select.value));
+      const selected = source.rows.map((row, index) => ({
+        values: [row[0], levels[index], ...row.slice(1)], department: departments[index].toLocaleLowerCase('pt-BR')
+      })).filter(({ values, department: key }) => (!level.select.value || values[1] === level.select.value) &&
+        (!person.select.value || values[0] === person.select.value) &&
+        (!department.select.value || department.select.value === (key || 'unknown'))).map(entry => entry.values);
       const rows = sortTeamRows(selected, order.select.value);
       exportTeam = rows;
       tableSpot.replaceChildren();
@@ -517,12 +544,12 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
         rows: rows.map(row => row.slice(0, columns))
       }, { nameVisibility });
     };
+    department.select.addEventListener('change', draw);
     level.select.addEventListener('change', draw);
     person.select.addEventListener('change', draw);
     showTimes.addEventListener('change', draw);
     order.select.addEventListener('change', draw);
     draw();
-    team.append(node('p', 'A nota e os volumes de cada pessoa vêm do CSV Performance por colaborador. Os níveis vêm do cadastro do app.'));
   }
 
   const departments = view('Departamentos');
