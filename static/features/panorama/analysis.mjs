@@ -143,7 +143,22 @@ export function joinTeamLevels(rows, registry) {
     byName.get(key).add(level);
   }
   return rows.map(row => {
-    const levels = byName.get(nameKey(row[0]));
+    const key = nameKey(row[0]);
+    const exact = byName.get(key);
+    if (exact) return exact.size === 1 ? [...exact][0] || '—' : '—';
+
+    const words = key.split(' ');
+    if (words.length < 2) return '—';
+    const matches = [...byName].filter(([name]) => {
+      const full = name.split(' ');
+      if (full.length <= words.length || full[0] !== words[0]) return false;
+      let next = 1;
+      for (const word of full.slice(1)) {
+        if (word === words[next]) next++;
+      }
+      return next === words.length;
+    });
+    const levels = matches.length === 1 ? matches[0][1] : undefined;
     return levels?.size === 1 ? [...levels][0] || '—' : '—';
   });
 }

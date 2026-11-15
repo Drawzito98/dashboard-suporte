@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { analyzeWeekly } from '../static/features/panorama/weekly.mjs';
 import { readZip } from '../static/features/panorama/zip.mjs';
 import { schemas } from '../static/features/panorama/registry.mjs';
+import { joinTeamLevels } from '../static/features/panorama/analysis.mjs';
 
 export async function checkWeekly(zipPath) {
   const archive = new Blob([await readFile(zipPath)]);
@@ -66,6 +67,10 @@ export async function checkExtendedPeriod(zipPath) {
   assert.deepEqual(result.analysis.score, {
     target: 4.7, reported: 4.75, distributionMean: 4.57, ratingCount: 253, departmentMean: 4.57, confirmedMean: 4.57, divergent: true
   });
+  assert.deepEqual(joinTeamLevels([['Ana Lima'], ['João Ribeiro'], ['João Ribeiro Souza'], ['Bruna']], {
+    'Ana Ferreira Lima': { nivel: 'N2' }, 'João Ribeiro Souza': { nivel: 'N1' },
+    'João Ribeiro Santos': { nivel: 'N2' }, 'Bruna Alves': { nivel: 'N2' }
+  }), ['N2', '—', 'N1', '—']);
   const team = result.analysis.tables.team;
   assert.equal(team.headers[5], 'Média aval.');
   assert.deepEqual(team.rows.slice(0, 3).map(row => [row[1], row[2], row[5]]), [
