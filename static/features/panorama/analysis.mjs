@@ -242,6 +242,31 @@ export function renderScoreSources(target, score) {
   if (sources.childElementCount) target.append(node('h4', 'Origem da nota geral'), sources);
 }
 
+function showFinalizadosChart(target, days) {
+  if (!days.length) return;
+  const figure = node('figure');
+  figure.className = 'panorama-finalizados-chart';
+  figure.append(node('figcaption', 'Finalizados por dia'));
+  const list = node('ul');
+  const max = days.reduce((largest, day) => Math.max(largest, day.finalizados), 1);
+  for (const day of days) {
+    const row = node('li');
+    const label = date(day.date);
+    const track = node('span');
+    track.className = 'panorama-finalizados-track';
+    track.setAttribute('aria-hidden', 'true');
+    const fill = node('span');
+    fill.style.width = (day.finalizados / max * 100) + '%';
+    track.append(fill);
+    const dateLabel = node('time', label.slice(0, 5));
+    dateLabel.dateTime = day.date;
+    row.append(dateLabel, track, node('strong', format.format(day.finalizados)));
+    list.append(row);
+  }
+  figure.append(list);
+  target.append(figure);
+}
+
 function showDailyChart(section, days) {
   if (!days.length) return;
   const chart = node('div');
@@ -266,7 +291,7 @@ function showDailyChart(section, days) {
   section.append(chart);
 }
 
-function showTable(target, title, data, { heatmap = false, toggleNames = false } = {}) {
+function showTable(target, title, data, { heatmap = false, nameVisibility } = {}) {
   if (!data?.rows.length) return;
   target.append(node('h4', title));
   const wrap = node('div');
@@ -292,21 +317,25 @@ function showTable(target, title, data, { heatmap = false, toggleNames = false }
   }
   const tbody = table.createTBody();
   const max = heatmap ? Math.max(1, ...data.rows.flatMap(row => row.slice(1)).filter(Number.isFinite)) : 1;
-  if (toggleNames) {
+  if (nameVisibility) {
     const label = node('label');
     const toggle = node('input');
     toggle.type = 'checkbox';
-    toggle.checked = true;
+    toggle.checked = nameVisibility.visible;
     label.append(toggle, ' Exibir nomes da equipe');
     target.append(label);
-    toggle.addEventListener('change', () => data.rows.forEach((row, i) => {
-      tbody.rows[i].cells[0].textContent = toggle.checked ? row[0] : 'Atendente ' + (i + 1);
-    }));
+    toggle.addEventListener('change', () => {
+      nameVisibility.visible = toggle.checked;
+      data.rows.forEach((row, i) => {
+        tbody.rows[i].cells[0].textContent = toggle.checked ? row[0] : 'Atendente ' + (i + 1);
+      });
+    });
   }
   data.rows.forEach((row, i) => {
     const tr = tbody.insertRow();
     row.forEach((value, column) => {
-      const cell = node(column ? 'td' : 'th', value ?? '—');
+      const display = column === 0 && nameVisibility && !nameVisibility.visible ? 'Atendente ' + (i + 1) : value;
+      const cell = node(column ? 'td' : 'th', display ?? '—');
       if (!column) cell.scope = 'row';
       const customerScore = ['Média aval.', 'Nota do cliente'].includes(data.headers[column]) ? parseScore(value) : null;
       if (customerScore !== null) {
@@ -388,10 +417,16 @@ export function renderAnalysis(output, { analysis, days, kpis, period }, { regis
 
   const byLabel = label => analysis.findings.find(finding => finding.startsWith(label + ': '));
   const leads = leadLabels.map(byLabel).filter(Boolean);
+  const overview = node('div');
+  overview.className = 'panorama-overview';
+  showFinalizadosChart(overview, days);
   if (leads.length) {
-    section.append(node('h4', 'Destaques do período'));
-    showFindings(section, leads);
+    const highlights = node('section');
+    highlights.append(node('h4', 'Destaques do período'));
+    showFindings(highlights, leads);
+    overview.append(highlights);
   }
+  section.append(overview);
 
   const { tables } = analysis;
   const volume = view('Operação no período');
@@ -405,12 +440,19 @@ export function renderAnalysis(output, { analysis, days, kpis, period }, { regis
   const team = view('Equipe');
   if (tables.team) {
     const source = projectTable(tables.team, ['Atendente', 'Finalizados', 'Média aval.', 'TMA', 'TMI', 'TMR']);
+    source.rows.sort((a, b) => quantity(b[1]) - quantity(a[1]));
     const levels = joinTeamLevels(source.rows, registry);
     const level = choose('Nível', [['', 'Todos os níveis'], ['N1', 'Nível 1 (N1)'], ['N2', 'Nível 2 (N2)'], ['—', 'Sem nível identificado']]);
     const person = choose('Pessoa', [['', 'Todas as pessoas'], ...source.rows.map(row => [row[0], row[0]])]);
     const filters = node('div');
     filters.className = 'panorama-report-filters';
-    filters.append(level.label, person.label);
+    const nameVisibility = { visible: true };
+    const showTimes = node('input');
+    showTimes.type = 'checkbox';
+    const timesLabel = node('label', ' Exibir tempos');
+    timesLabel.className = 'panorama-times-toggle';
+    timesLabel.prepend(showTimes);
+    filters.append(level.label, person.label, timesLabel);
     const status = node('p');
     status.setAttribute('role', 'status');
     const tableSpot = node('div');
@@ -422,12 +464,15 @@ export function renderAnalysis(output, { analysis, days, kpis, period }, { regis
       tableSpot.replaceChildren();
       status.textContent = rows.length ? format.format(rows.length) + ' de ' + format.format(source.rows.length) + ' pessoas no ZIP.'
         : 'Nenhuma pessoa corresponde aos filtros.';
+      const columns = showTimes.checked ? 7 : 4;
       showTable(tableSpot, 'Resultado por pessoa', {
-        headers: ['Atendente', 'Nível', ...source.headers.slice(1)], rows
-      }, { toggleNames: true });
+        headers: ['Atendente', 'Nível', 'Finalizados', 'Média aval.', 'TMA', 'TMI', 'TMR'].slice(0, columns),
+        rows: rows.map(row => row.slice(0, columns))
+      }, { nameVisibility });
     };
     level.select.addEventListener('change', draw);
     person.select.addEventListener('change', draw);
+    showTimes.addEventListener('change', draw);
     draw();
     team.append(node('p', 'A nota e os volumes de cada pessoa vêm do CSV Performance por colaborador. Os níveis vêm do cadastro do app.'));
   }

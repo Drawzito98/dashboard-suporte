@@ -405,3 +405,73 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
     gap: 0.1rem;
   }
 }
+
+.panorama-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.panorama-overview h4, .panorama-finalizados-chart figcaption {
+  margin: 0 0 0.55rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.panorama-finalizados-chart {
+  min-width: 0;
+  margin: 0;
+}
+
+.panorama-finalizados-chart ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.panorama-finalizados-chart li {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) 2.5rem;
+  align-items: center;
+  gap: 0.45rem;
+  padding-block: 0.17rem;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.panorama-finalizados-chart strong {
+  text-align: right;
+}
+
+.panorama-finalizados-track {
+  height: 0.55rem;
+  border-radius: 4px;
+  background: var(--bg-subtle);
+}
+
+.panorama-finalizados-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.panorama-overview .panorama-findings > div {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.15rem;
+}
+
+.panorama-report-filters .panorama-times-toggle {
+  display: flex;
+  align-items: center;
+  align-self: end;
+  min-height: 42px;
+}
+
+@container (max-width: 42rem) {
+  .panorama-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
