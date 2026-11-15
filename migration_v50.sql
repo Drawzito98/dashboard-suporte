@@ -6,7 +6,7 @@ ALTER TABLE public.ausencias
   ADD COLUMN IF NOT EXISTS tipo text,
   ADD COLUMN IF NOT EXISTS minutos_atraso integer;
 
-DO $
+DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1
@@ -21,7 +21,7 @@ BEGIN
         ELSE tipo IS NULL AND minutos_atraso IS NULL
       END);
   END IF;
-END $;
+END $$;
 
 NOTIFY pgrst, 'reload schema';
 COMMIT;
