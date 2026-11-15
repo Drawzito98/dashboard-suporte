@@ -23,6 +23,11 @@ export async function checkWeekly(zipPath) {
     'comparison-scope', 'partial-month-history', 'detail-limit'
   ]);
 
+  assert.equal(result.analysis.tables.team.rows.length, 13);
+  assert.equal(result.analysis.tables.reasons.rows.length, 12);
+  assert.ok(result.analysis.tables.heatmap.rows.length > 0);
+  assert.ok(result.analysis.findings.some(line => line.includes('14 finalizados e nenhum assumido')));
+
   const daily = entries.find(entry => entry.name.endsWith('/atendimentos_por_dia.csv'));
   const renamed = await analyzeWeekly([...entries, { ...daily, name: 'OUTRA/ATENDIMENTOS_POR_DIA.CSV' }]);
   assert.equal(renamed.valid, false);
@@ -36,6 +41,7 @@ export async function checkWeekly(zipPath) {
   const mismatch = await analyzeWeekly(entries.map(entry => entry === daily
     ? { ...entry, text: entry.text.replace('146,75', '146,76') } : entry));
   assert.equal(mismatch.valid, false);
+  assert.equal(mismatch.analysis, null);
   assert.ok(mismatch.issues.some(issue => issue.code === 'total-mismatch'));
 
   const missing = await analyzeWeekly(entries.filter(entry => entry !== daily));

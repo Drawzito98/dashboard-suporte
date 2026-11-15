@@ -2,6 +2,8 @@
 
 Na aba Panorama do Suporte, selecione o ZIP de exportação do Looker/Opa! e clique em **Validar ZIP**. A prévia mostra o período observado no relatório diário, os indicadores do recorte e as divergências. A leitura ocorre no navegador e a prévia fica em memória. O formulário de CSV por colaborador continua disponível abaixo.
 
+A seção **Análise da semana** resume os destaques do recorte e mostra volume diário, mapa de horários, departamentos, equipe, motivos, avaliações e plantão. Os nomes da equipe ficam ocultos até o usuário marcar a opção de exibição.
+
 ## Catálogo dos relatórios
 
 O ZIP de referência contém 35 CSVs UTF-8 separados por vírgula, dentro de uma pasta. O leitor aceita pastas internas e valida pelo nome do arquivo. Os dois heatmaps aceitam um subconjunto dos sete dias em qualquer ordem. Os relatórios diário e mensal podem trazer uma linha adicional de rótulos do Looker.
@@ -53,7 +55,7 @@ O ZIP de referência contém 35 CSVs UTF-8 separados por vírgula, dentro de uma
 
 ## Contrato para a próxima etapa
 
-`analyzeWeekly(entries)` recebe entradas `{ name, text }` e retorna `{ schemaVersion, period, kpis, days, files, issues, valid }`. O período usa datas ISO, as durações usam segundos e as taxas usam pontos percentuais na escala 0–100. Cada ocorrência tem `severity`, `code`, `file` e `message`. A prévia contém agregados, sem anexar os CSVs ou as linhas detalhadas.
+`analyzeWeekly(entries)` recebe entradas `{ name, text }` e retorna `{ schemaVersion, period, kpis, days, analysis, files, issues, valid }`. O período usa datas ISO, as durações usam segundos e as taxas usam pontos percentuais na escala 0–100. Cada ocorrência tem `severity`, `code`, `file` e `message`. A análise da prévia usa agregados e linhas de relatórios resumidos. Ela pode conter nomes da equipe e fica somente em memória. Para persistência, definir uma projeção própria que exclua dados pessoais desnecessários.
 
 Próxima etapa do roadmap: confirmar o período e o escopo operacional, projetar uma chave de importação idempotente, definir autorização e RLS, salvar somente agregados de prévias válidas com confirmação do usuário e adicionar histórico e comparações de semanas. Definir previamente o comportamento em caso de reimportação corrigida.
 

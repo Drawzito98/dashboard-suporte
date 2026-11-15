@@ -1,5 +1,6 @@
 import { schemas } from './registry.mjs';
 import { parseCsv, normalize } from './csv.mjs';
+import { buildAnalysis } from './analysis.mjs';
 
 const sources = {
   assumidos: 'atendimentos_assumidos.csv',
@@ -69,6 +70,7 @@ function matchesHeader(name, actual, expected) {
 
 export async function analyzeWeekly(entries) {
   const reports = new Map();
+  const headers = new Map();
   const seen = new Set();
   const issues = [];
   const issue = (severity, code, file, message) => issues.push({ severity, code, file, message });
@@ -89,6 +91,7 @@ export async function analyzeWeekly(entries) {
         throw new Error('Colunas diferentes do schema esperado.');
       }
       reports.set(name, rows);
+      headers.set(name, header);
     } catch (error) {
       issue(required.has(name) ? 'error' : 'warning', 'schema', name, error.message);
     }
@@ -191,6 +194,7 @@ export async function analyzeWeekly(entries) {
     period,
     kpis,
     days: days ?? [],
+    analysis: issues.some(item => item.severity === 'error') ? null : buildAnalysis(reports, headers, days ?? [], kpis),
     files: { expected: Object.keys(schemas).length, validated: reports.size },
     issues,
     valid: !issues.some(item => item.severity === 'error')

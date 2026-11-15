@@ -1,5 +1,6 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs';
+import { analyzeWeekly } from './weekly.mjs?v=2';
+import { renderAnalysis } from './analysis.mjs';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos', finalizados: 'Finalizados',
@@ -73,7 +74,11 @@ export function mountWeekly(root) {
         metrics.append(card);
       }
       output.append(metrics);
+      renderAnalysis(output, report);
       if (report.issues.length) {
+        const heading = document.createElement('h4');
+        heading.textContent = 'Conferência dos números';
+        output.append(heading);
         const list = document.createElement('ul');
         for (const { severity, file: name, message } of report.issues) {
           const item = document.createElement('li');
