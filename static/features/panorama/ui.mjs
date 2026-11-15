@@ -1,6 +1,6 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs?v=4';
-import { renderAnalysis } from './analysis.mjs?v=4';
+import { analyzeWeekly } from './weekly.mjs?v=5';
+import { renderAnalysis, reportDetails } from './analysis.mjs?v=5';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos', finalizados: 'Finalizados',
@@ -73,19 +73,27 @@ export function mountWeekly(root) {
         card.append(title, value);
         metrics.append(card);
       }
-      output.append(metrics);
       renderAnalysis(output, report);
-      if (report.issues.length) {
-        const heading = document.createElement('h4');
-        heading.textContent = 'Conferência dos números';
-        output.append(heading);
+      const indicators = reportDetails('Todos os indicadores');
+      indicators.append(metrics);
+      output.append(indicators);
+      if (report.issues.length || report.analysis?.checks.length) {
+        const audit = reportDetails(report.valid ? 'Conferência dos dados e avisos' : 'Erros na validação do ZIP');
+        audit.open = !report.valid;
         const list = document.createElement('ul');
         for (const { severity, file: name, message } of report.issues) {
           const item = document.createElement('li');
           item.textContent = (severity === 'error' ? 'Erro' : 'Aviso') + ' · ' + name + ' · ' + message;
           list.append(item);
         }
-        output.append(list);
+        const coverage = report.analysis?.findings.find(line => line.startsWith('Cobertura do tempo de fila: '));
+        for (const message of [coverage, ...(report.analysis?.checks ?? [])].filter(Boolean)) {
+          const item = document.createElement('li');
+          item.textContent = message;
+          list.append(item);
+        }
+        audit.append(list);
+        output.append(audit);
       }
     } catch (error) {
       if (current === revision) status.textContent = 'Não foi possível ler o ZIP. ' + error.message;

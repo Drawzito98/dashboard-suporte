@@ -187,3 +187,111 @@
   }
 }
 @keyframes visual-tab-in { from { opacity: .65; } to { opacity: 1; } }
+
+@media screen {
+  #appScreen {
+    --bg-app: #f4f6f8;
+    --bg-canvas: #fff;
+    --bg-surface: #fff;
+    --bg-subtle: #edf1f5;
+    --bg-inset: #f8fafc;
+    --text-strong: #172332;
+    --text-primary: #27374a;
+    --text-secondary: #45566b;
+    --text-muted: #526279;
+    --border: #dce3ea;
+    --border-strong: #b7c3d0;
+    --accent: #235a8d;
+    --accent-hover: #184971;
+    --accent-soft: #e7f0f8;
+    --accent-rgb: 35, 90, 141;
+    --accent-ring: rgba(35, 90, 141, .22);
+    --accent-selected: var(--accent);
+    --accent-selected-ring: var(--accent-ring);
+    --accent-selected-soft: var(--accent-soft);
+    --r-sm: 7px;
+    --r-md: 9px;
+    --r-lg: 12px;
+    --r-xl: 16px;
+    --shadow-xs: none;
+    --shadow-sm: none;
+    color: var(--text-primary);
+  }
+
+  html[data-theme="dark"] #appScreen {
+    --bg-app: #0d1520;
+    --bg-canvas: #16212e;
+    --bg-surface: #16212e;
+    --bg-subtle: #1b2a3a;
+    --bg-inset: #101a25;
+    --text-strong: #eff5fc;
+    --text-primary: #dfebf7;
+    --text-secondary: #b9c9da;
+    --text-muted: #a2b5ca;
+    --border: #2a3d51;
+    --border-strong: #435a72;
+    --accent: #89bcf3;
+    --accent-hover: #a3cefa;
+    --accent-soft: #203b54;
+    --accent-rgb: 137, 188, 243;
+    --accent-ring: rgba(137, 188, 243, .28);
+    --text-on-accent: #112235;
+  }
+
+  body[data-role="admin"] #appScreen .shell-navigation {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border-inline-end: 1px solid var(--border);
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  body[data-role="admin"] #appScreen .shell-navigation :is(.nav-section-label, .tab-btn .tab-icon, .sidebar .panel-header h2, .tool-group h3, .tool-group p, .sidebar-identity-copy small) {
+    color: var(--text-secondary);
+  }
+
+  body[data-role="admin"] #appScreen .shell-navigation :is(.tab-btn, .sidebar .btn-small, .sidebar .btn-primary) {
+    color: var(--text-primary);
+  }
+
+  body[data-role="admin"] #appScreen .shell-navigation :is(.tab-btn:hover, .sidebar .btn-small:hover, .sidebar .btn-primary:hover) {
+    color: var(--text-strong);
+    background: var(--bg-subtle);
+  }
+
+  body[data-role="admin"] #appScreen .shell-navigation :is(.tab-btn.active, .sidebar #addRowTopBtn) {
+    color: var(--accent);
+    background: var(--accent-soft);
+    box-shadow: none;
+  }
+
+  body[data-role="admin"] #appScreen .shell-navigation :is(.tab-btn.active .tab-icon, .sidebar #addRowTopBtn:hover) {
+    color: var(--accent);
+  }
+
+  body[data-role="admin"] #appScreen .shell-navigation :is(.sidebar-identity, .sidebar #cleanDupBtn) {
+    border-color: var(--border);
+  }
+
+  body[data-role="admin"] #appScreen .shell-navigation :is(button, a):focus-visible { outline-color: var(--accent); }
+
+  #appScreen :is(.home-highlight-card, .home-quick-access-card, .panorama-metric) {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    box-shadow: none;
+  }
+
+  #appScreen :is(.kpi strong, .panorama-metric strong, .panorama-table td) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  #appScreen .panorama-weekly-details {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+  }
+
+  #appScreen .panorama-weekly-details > summary {
+    min-height: 28px;
+    color: var(--text-strong);
+    padding-block: 0.25rem;
+  }
+}

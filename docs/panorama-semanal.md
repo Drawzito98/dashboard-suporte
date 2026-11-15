@@ -6,6 +6,8 @@ A seção **Análise da semana** resume os destaques do recorte e mostra volume 
 
 A meta de nota média é 4,70 em escala de 1 a 5. O relatório confere o cartão do Looker com a média ponderada das estrelas quando a distribuição reconcilia com o total de avaliados. No ZIP de referência, o cartão tem 4,71 e as 129 avaliações da distribuição produzem 4,49. O destaque sinaliza a divergência e mostra a distância de cada valor à meta.
 
+A leitura começa pelo resumo, pela situação da meta e por três destaques. Abra as seções de volume, equipe, motivos, avaliações e plantão para consultar os detalhes. Os cartões do Looker ficam em **Todos os indicadores**. A conferência reúne diferenças de escopo, cobertura e validação em uma seção própria.
+
 ## Catálogo dos relatórios
 
 O ZIP de referência contém 35 CSVs UTF-8 separados por vírgula, dentro de uma pasta. O leitor aceita pastas internas e valida pelo nome do arquivo. Os dois heatmaps aceitam um subconjunto dos sete dias em qualquer ordem. Os relatórios diário e mensal podem trazer uma linha adicional de rótulos do Looker.

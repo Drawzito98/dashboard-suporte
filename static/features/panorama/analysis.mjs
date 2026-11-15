@@ -130,7 +130,7 @@ function node(tag, text) {
 function showScore(section, score) {
   const card = node('article');
   card.className = 'card';
-  const label = score.divergent ? 'Conferir resultado da meta' :
+  const label = score.divergent ? 'Resultado da meta pendente de conferência' :
     score.reported === null ? 'Média do Looker indisponível' :
       score.reported >= score.target ? 'Meta atingida no cartão do Looker' : 'Abaixo da meta no cartão do Looker';
   card.append(node('h4', 'Meta de nota média do cliente · ' + scoreFormat.format(score.target)), node('strong', label));
@@ -221,36 +221,70 @@ function showTable(target, title, data, { heatmap = false, toggleNames = false }
   target.append(wrap);
 }
 
-export function renderAnalysis(output, { analysis, days }) {
+export function reportDetails(title) {
+  const details = node('details');
+  details.className = 'card panorama-weekly-details';
+  details.append(node('summary', title));
+  return details;
+}
+
+const leadLabels = ['Avaliação do cliente', 'Departamento com maior volume', 'Encerrados por inatividade'];
+
+function showFindings(target, findings) {
+  const summary = node('div');
+  summary.className = 'panorama-analysis';
+  for (const finding of findings) {
+    const separator = finding.indexOf(': ');
+    const card = node('article');
+    card.append(node('strong', finding.slice(0, separator)), node('p', finding.slice(separator + 2)));
+    summary.append(card);
+  }
+  target.append(summary);
+}
+
+export function renderAnalysis(output, { analysis, days, kpis }) {
   if (!analysis) return;
   const section = node('section');
-  section.append(node('h3', 'Análise da semana'));
+  section.append(node('h3', 'Resumo da semana'));
+  const totals = [['assumidos', 'assumidos'], ['finalizados', 'finalizados'], ['clientes', 'clientes atendidos']]
+    .filter(([key]) => kpis[key] !== undefined)
+    .map(([key, label]) => format.format(kpis[key]) + ' ' + label);
+  if (totals.length) section.append(node('p', totals.join(' · ')));
   showScore(section, analysis.score);
-  if (analysis.findings.length) {
+
+  const byLabel = label => analysis.findings.find(finding => finding.startsWith(label + ': '));
+  const leads = leadLabels.map(byLabel).filter(Boolean);
+  if (leads.length) {
     section.append(node('h4', 'Destaques da semana'));
-    const summary = node('div');
-    summary.className = 'panorama-analysis';
-    for (const finding of analysis.findings) {
-      const separator = finding.indexOf(': ');
-      const card = node('article');
-      card.append(node('strong', finding.slice(0, separator)), node('p', finding.slice(separator + 2)));
-      summary.append(card);
-    }
-    section.append(summary);
+    showFindings(section, leads);
   }
+
   const { tables } = analysis;
-  section.append(node('h4', 'Assumidos e finalizados por dia'));
-  showDailyChart(section, days);
-  showTable(section, 'Quando os atendimentos são assumidos', tables.heatmap, { heatmap: true });
-  showTable(section, 'Departamentos', tables.departments);
-  section.append(node('p', 'A meta de 4,70 é aplicada à média do cliente. A nota da IA é exibida em coluna própria.'));
-  showTable(section, 'Equipe', tables.team, { toggleNames: true });
-  showTable(section, 'Principais motivos', tables.reasons);
-  showTable(section, 'Notas dadas pelos clientes', tables.stars);
-  showTable(section, 'Plantão por turno', tables.shifts);
-  showTable(section, 'Desfecho do plantão', tables.outcomes);
-  const checks = node('ul');
-  for (const line of analysis.checks) checks.append(node('li', line));
-  section.append(node('h4', 'Como interpretar os indicadores'), checks);
+  const volume = reportDetails('Volume e horários');
+  const volumeHighlights = ['Maior volume diário', 'Pico de assumidos'].map(byLabel).filter(Boolean);
+  volumeHighlights.push(...analysis.findings.filter(finding => finding.startsWith('Volume diário: ')));
+  if (volumeHighlights.length) showFindings(volume, volumeHighlights);
+  volume.append(node('h4', 'Assumidos e finalizados por dia'));
+  showDailyChart(volume, days);
+  showTable(volume, 'Assumidos por dia e faixa de horário', tables.heatmap, { heatmap: true });
+
+  const team = reportDetails('Equipe e departamentos');
+  team.append(node('p', 'A meta de 4,70 se aplica à média do cliente. A nota da IA aparece em coluna própria.'));
+  showTable(team, 'Equipe', tables.team, { toggleNames: true });
+  showTable(team, 'Departamentos', tables.departments);
+
+  const reasons = reportDetails('Principais motivos');
+  const reasonHighlight = byLabel('Motivo com maior volume');
+  if (reasonHighlight) showFindings(reasons, [reasonHighlight]);
+  showTable(reasons, '12 motivos com mais finalizados', tables.reasons);
+
+  const quality = reportDetails('Avaliações e plantão');
+  showTable(quality, 'Notas dadas pelos clientes', tables.stars);
+  showTable(quality, 'Plantão por turno', tables.shifts);
+  showTable(quality, 'Desfecho do plantão', tables.outcomes);
+
+  section.append(volume, team);
+  if (tables.reasons) section.append(reasons);
+  if (tables.stars || tables.shifts || tables.outcomes) section.append(quality);
   output.append(section);
 }
