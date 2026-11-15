@@ -1,6 +1,6 @@
 import { schemas } from './registry.mjs';
 import { parseCsv, normalize } from './csv.mjs';
-import { buildAnalysis } from './analysis.mjs?v=13';
+import { buildAnalysis } from './analysis.mjs?v=14';
 
 const sources = {
   assumidos: 'atendimentos_assumidos.csv',

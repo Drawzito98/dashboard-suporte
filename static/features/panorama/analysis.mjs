@@ -1,3 +1,5 @@
+import { downloadPanoramaWorkbook } from './xlsx.mjs?v=1';
+
 const catalog = {
   departments: ['performance_por_departamento.csv', [0, 1, 2, 6, 7, 8, 9, 4]],
   team: ['performance_por_colaborador.csv', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]],
@@ -14,6 +16,8 @@ const format = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
 const percent = (part, whole) => format.format(part / whole * 100) + '%';
 const scoreFormat = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const date = value => value.split('-').reverse().join('/');
+const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+export const dayLabel = value => weekdays[new Date(value + 'T12:00:00Z').getUTCDay()] + ' ' + date(value).slice(0, 5);
 const peakBy = (rows, value) => rows.reduce((best, row) =>
   (!best || value(row) > value(best)) ? row : best, null);
 
@@ -141,6 +145,19 @@ export function filterDepartmentRows(rows, department) {
   return department === '' ? rows : rows.filter(row => row[0] === department);
 }
 
+export function sortTeamRows(rows, order) {
+  return [...rows].sort((first, second) => {
+    if (order === 'score-desc' || order === 'score-asc') {
+      const a = parseScore(first[3]);
+      const b = parseScore(second[3]);
+      if (a === null && b !== null) return 1;
+      if (a !== null && b === null) return -1;
+      if (a !== null && b !== null && a !== b) return order === 'score-asc' ? a - b : b - a;
+    }
+    return quantity(second[2]) - quantity(first[2]) || first[0].localeCompare(second[0], 'pt-BR');
+  });
+}
+
 function choose(labelText, choices) {
   const label = node('label', labelText);
   const select = node('select');
@@ -251,14 +268,13 @@ function showFinalizadosChart(target, days) {
   const max = days.reduce((largest, day) => Math.max(largest, day.finalizados), 1);
   for (const day of days) {
     const row = node('li');
-    const label = date(day.date);
     const track = node('span');
     track.className = 'panorama-finalizados-track';
     track.setAttribute('aria-hidden', 'true');
     const fill = node('span');
     fill.style.width = (day.finalizados / max * 100) + '%';
     track.append(fill);
-    const dateLabel = node('time', label.slice(0, 5));
+    const dateLabel = node('time', dayLabel(day.date));
     dateLabel.dateTime = day.date;
     row.append(dateLabel, track, node('strong', format.format(day.finalizados)));
     list.append(row);
@@ -383,7 +399,7 @@ function view(title) {
   return panel;
 }
 
-function renderViews(output, entries) {
+function renderViews(output, entries, exportReport) {
   const nav = node('nav');
   nav.className = 'panorama-view-nav';
   nav.setAttribute('aria-label', 'Visões do Panorama');
@@ -401,11 +417,29 @@ function renderViews(output, entries) {
   });
   views.forEach(({ button }, index) => button.addEventListener('click', () => activate(index)));
   activate(0);
-  output.append(nav, body);
+  const actions = node('div');
+  actions.className = 'panorama-view-actions';
+  const download = node('button', 'Exportar planilha');
+  download.type = 'button';
+  download.className = 'btn-small';
+  download.title = 'Baixa um .xlsx para Excel ou Google Planilhas com os filtros atuais.';
+  const status = node('p');
+  status.className = 'panorama-export-status';
+  status.setAttribute('role', 'status');
+  download.addEventListener('click', () => {
+    try { exportReport(); status.textContent = ''; }
+    catch (error) { status.textContent = error.message; }
+  });
+  actions.append(nav, download);
+  output.append(actions, status, body);
 }
 
-export function renderAnalysis(output, { analysis, days, kpis, period }, { registry = {}, indicators, audit } = {}) {
+export function renderAnalysis(output, report, { registry = {}, indicators, audit } = {}) {
+  const { analysis, days, kpis, period } = report;
   if (!analysis) return;
+  let exportTeam = [];
+  let exportDepartments = [];
+  let teamNamesVisible = () => true;
   const section = view('Resumo do período');
   section.classList.add('panorama-summary-view');
   if (period) {
@@ -440,27 +474,35 @@ export function renderAnalysis(output, { analysis, days, kpis, period }, { regis
   const team = view('Equipe');
   if (tables.team) {
     const source = projectTable(tables.team, ['Atendente', 'Finalizados', 'Média aval.', 'TMA', 'TMI', 'TMR']);
-    source.rows.sort((a, b) => quantity(b[1]) - quantity(a[1]));
     const levels = joinTeamLevels(source.rows, registry);
     const level = choose('Nível', [['', 'Todos os níveis'], ['N1', 'Nível 1 (N1)'], ['N2', 'Nível 2 (N2)'], ['—', 'Sem nível identificado']]);
     const person = choose('Pessoa', [['', 'Todas as pessoas'], ...source.rows.map(row => [row[0], row[0]])]);
     const filters = node('div');
     filters.className = 'panorama-report-filters';
+    const order = choose('Ordenar por', [
+      ['volume', 'Finalizados · maior volume'],
+      ['score-desc', 'Nota · acima da meta primeiro'],
+      ['score-asc', 'Nota · abaixo da meta primeiro']
+    ]);
     const nameVisibility = { visible: true };
+    teamNamesVisible = () => nameVisibility.visible;
     const showTimes = node('input');
     showTimes.type = 'checkbox';
+    showTimes.checked = true;
     const timesLabel = node('label', ' Exibir tempos');
     timesLabel.className = 'panorama-times-toggle';
     timesLabel.prepend(showTimes);
-    filters.append(level.label, person.label, timesLabel);
+    filters.append(level.label, person.label, order.label, timesLabel);
     const status = node('p');
     status.setAttribute('role', 'status');
     const tableSpot = node('div');
     team.append(filters, status, tableSpot);
     const draw = () => {
-      const rows = source.rows.map((row, index) => [row[0], levels[index], ...row.slice(1)])
+      const selected = source.rows.map((row, index) => [row[0], levels[index], ...row.slice(1)])
         .filter(row => (!level.select.value || row[1] === level.select.value) &&
           (!person.select.value || row[0] === person.select.value));
+      const rows = sortTeamRows(selected, order.select.value);
+      exportTeam = rows;
       tableSpot.replaceChildren();
       status.textContent = rows.length ? format.format(rows.length) + ' de ' + format.format(source.rows.length) + ' pessoas no ZIP.'
         : 'Nenhuma pessoa corresponde aos filtros.';
@@ -473,6 +515,7 @@ export function renderAnalysis(output, { analysis, days, kpis, period }, { regis
     level.select.addEventListener('change', draw);
     person.select.addEventListener('change', draw);
     showTimes.addEventListener('change', draw);
+    order.select.addEventListener('change', draw);
     draw();
     team.append(node('p', 'A nota e os volumes de cada pessoa vêm do CSV Performance por colaborador. Os níveis vêm do cadastro do app.'));
   }
@@ -490,9 +533,8 @@ export function renderAnalysis(output, { analysis, days, kpis, period }, { regis
     departments.append(filters, tableSpot);
     const draw = () => {
       tableSpot.replaceChildren();
-      showTable(tableSpot, 'Resultado por departamento', {
-        ...source, rows: filterDepartmentRows(source.rows, department.select.value)
-      });
+      exportDepartments = filterDepartmentRows(source.rows, department.select.value);
+      showTable(tableSpot, 'Resultado por departamento', { ...source, rows: exportDepartments });
     };
     department.select.addEventListener('change', draw);
     draw();
@@ -516,5 +558,10 @@ export function renderAnalysis(output, { analysis, days, kpis, period }, { regis
   views.push(['Operação', volume]);
   if (audit) views.push(['Conferência', audit]);
   output.classList.add('panorama-compact-report');
-  renderViews(output, views);
+  renderViews(output, views, () => {
+    const team = exportTeam.map((row, index) => [
+      teamNamesVisible() ? row[0] : 'Atendente ' + (index + 1), ...row.slice(1)
+    ]);
+    downloadPanoramaWorkbook(globalThis.XLSX, report, team, exportDepartments);
+  });
 }

@@ -14,6 +14,8 @@ As seções **Equipe** e **Departamentos** mostram notas, finalizados e tempos e
 
 A conferência de finalizados compara o cartão, o volume diário e as somas por pessoa e departamento. A concordância entre relatórios não valida a contagem de protocolos no Opa! Suite. As siglas dos tempos têm legenda nos cabeçalhos e em **Todos os indicadores**.
 
+Na Equipe, ordene por volume de finalizados ou por nota, com maiores ou menores notas primeiro. Os tempos aparecem por padrão e podem ser recolhidos. **Exportar planilha** baixa um XLSX com o resumo, a equipe e os departamentos conforme os filtros, além do volume diário e dos motivos do recorte. No Google Planilhas, use **Arquivo → Importar → Fazer upload**.
+
 ## Catálogo dos relatórios
 
 O ZIP de referência contém 35 CSVs UTF-8 separados por vírgula, dentro de uma pasta. O leitor aceita pastas internas e valida pelo nome do arquivo. Os dois heatmaps aceitam um subconjunto dos sete dias em qualquer ordem. Os relatórios diário e mensal podem trazer uma linha adicional de rótulos do Looker.

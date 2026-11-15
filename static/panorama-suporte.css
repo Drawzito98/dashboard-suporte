@@ -475,3 +475,59 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.panorama-view-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.75rem;
+}
+
+.panorama-view-actions .panorama-view-nav {
+  min-width: 0;
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+
+.panorama-view-actions > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.panorama-export-status:empty {
+  display: none;
+}
+
+.panorama-hero-stat > strong {
+  font-size: clamp(1.5rem, 3.6cqi, 2.1rem);
+}
+
+.panorama-overview {
+  gap: 1rem;
+}
+
+.panorama-finalizados-chart li {
+  grid-template-columns: 5.2rem minmax(0, 1fr) 2.6rem;
+  padding-block: 0.13rem;
+}
+
+#panoramaWeeklyRoot .panorama-report-filters {
+  gap: 0.45rem 0.65rem;
+  font-size: 0.83rem;
+}
+
+#panoramaWeeklyRoot .panorama-report-filters select {
+  min-height: 36px;
+  padding: 0.3rem 0.55rem;
+  font-size: inherit;
+}
+
+@container (max-width: 36rem) {
+  .panorama-view-actions {
+    flex-wrap: wrap;
+    padding-bottom: 0.45rem;
+  }
+  .panorama-view-actions .panorama-view-nav { width: 100%; }
+}
