@@ -4,6 +4,10 @@ App de dashboard para análise de indicadores de suporte, com autenticação Sup
 
 **Versão atual:** `1.7.2` (constante `APP_VERSION` em `static/app.js`)
 
+## Panorama semanal
+
+A aba Panorama do Suporte aceita o ZIP semanal do Looker/Opa! e mostra a prévia de KPIs e validações. Consulte o [catálogo dos CSVs e o roadmap](docs/panorama-semanal.md).
+
 ## Diagnóstico gerencial
 
 A auditoria, metodologia, limitações e validação da nova seção estão em [docs/diagnostico-gerencial.md](docs/diagnostico-gerencial.md). A migração aditiva `migration_v49.sql` foi aplicada ao banco de produção em 22/10/2026, habilitando revisões privadas sincronizadas.
