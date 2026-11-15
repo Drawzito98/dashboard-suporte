@@ -219,17 +219,17 @@
   }
 
   html[data-theme="dark"] #appScreen {
-    --bg-app: #0d1520;
-    --bg-canvas: #16212e;
-    --bg-surface: #16212e;
-    --bg-subtle: #1b2a3a;
-    --bg-inset: #101a25;
-    --text-strong: #eff5fc;
+    --bg-app: #10151b;
+    --bg-canvas: #161c24;
+    --bg-surface: #161c24;
+    --bg-subtle: #202a35;
+    --bg-inset: #131a22;
+    --text-strong: #edf2f8;
     --text-primary: #dfebf7;
     --text-secondary: #b9c9da;
     --text-muted: #a2b5ca;
-    --border: #2a3d51;
-    --border-strong: #435a72;
+    --border: #2d3845;
+    --border-strong: #465465;
     --accent: #89bcf3;
     --accent-hover: #a3cefa;
     --accent-soft: #203b54;
@@ -293,5 +293,154 @@
     min-height: 28px;
     color: var(--text-strong);
     padding-block: 0.25rem;
+  }
+}
+
+/* Densidade de leitura do Panorama aplicada à área de trabalho. */
+@media screen {
+  #appScreen {
+    --dashboard-panel-padding: 0.85rem;
+    --dashboard-block-gap: 0.75rem;
+    --dashboard-caption: 0.78rem;
+  }
+
+  #appScreen #appPageTitle {
+    font-size: clamp(1.2rem, 2.1vw, 1.55rem);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+
+  #appScreen #appPageDescription {
+    margin-block-start: 0.2rem;
+    font-size: var(--dashboard-caption);
+    color: var(--text-secondary);
+  }
+
+  #appScreen .content {
+    gap: var(--dashboard-block-gap);
+  }
+
+  #appScreen .tab-content:not(#tab-panorama-semanal) :is(
+    .home-operations-card, .home-highlight-card, .home-quick-access-card, .kpi,
+    .so-kpis > article, .so-sector-card, .so-tma-card,
+    .ih-card, .ih-sector-card, .ponto-card, .diag-card, .diag-group,
+    .pdi-context > article, .pdi-section, .pdi-objective, .rs-action-card
+  ) {
+    min-width: 0;
+    padding: var(--dashboard-panel-padding);
+    background-color: var(--bg-surface);
+    border-radius: 10px;
+    box-shadow: none;
+  }
+
+  #appScreen .tab-content:not(#tab-panorama-semanal) :is(
+    .home-kpi-grid, .home-highlights-grid, .home-actions-grid, .home-operations-grid,
+    .so-kpis, .so-sector-grid, .so-tma-grid, .ih-grid, .ih-sector-grid, .ponto-grid,
+    .pdi-grid, .pdi-context, .diag-grid, .kpi-grid, .rs-action-grid
+  ) {
+    gap: var(--dashboard-block-gap);
+  }
+
+  #appScreen .tab-content:not(#tab-panorama-semanal) > .card:not(.panorama) {
+    padding: var(--dashboard-panel-padding);
+  }
+
+  #appScreen :is(.rs-section, .pdi-section, .pdi-objective, .pdi-context) {
+    margin-block: var(--dashboard-block-gap);
+  }
+
+  #appScreen :is(.rs-section-title, .pdi-section h3, .pdi-heading h2, .diag-section h3) {
+    font-size: 1rem;
+    line-height: 1.35;
+    margin-block-end: 0.55rem;
+  }
+
+  #appScreen .kpi .value {
+    font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #appScreen .card-header {
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+  }
+
+  #appScreen .card-header h2,
+  #appScreen :is(.home-operations-header h3, .so-header h2, .so-section-heading h3, .ih-summary h3) {
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  #appScreen :is(.home-footnote, .card-header p, .so-section-heading p, .hint, .diag-intro, .diag-note) {
+    font-size: var(--dashboard-caption);
+    line-height: 1.5;
+  }
+
+  #appScreen :is(.so-hero, .ih-summary) {
+    padding: var(--dashboard-panel-padding);
+    gap: var(--dashboard-block-gap);
+    background: var(--bg-surface);
+    border-radius: 10px;
+    margin-block-end: var(--dashboard-block-gap);
+  }
+
+  #appScreen :is(.so-hero strong, .so-sector-card header > strong, .so-kpis strong, .so-tma-card strong, .ih-card > strong) {
+    font-size: clamp(1.18rem, 2.2vw, 1.55rem);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #appScreen :is(.so-hero p, .so-kpis small, .so-metrics small, .ih-sector-metrics small) {
+    color: var(--text-secondary);
+    font-size: var(--dashboard-caption);
+  }
+
+  #appScreen :is(.so-kpis > article > span, .so-table th, #previewTable th, .ranking-table th) {
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: var(--dashboard-caption);
+  }
+
+  #appScreen :is(#previewTable, .so-table, .ranking-table, .ponto-table table, .diag-scroll table) {
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #appScreen :is(#previewTable, .so-table, .ranking-table, .ponto-table table, .diag-scroll table) :is(th, td) {
+    padding: 0.45rem 0.6rem;
+    line-height: 1.4;
+  }
+
+  #appScreen :is(#previewTable, .so-table, .ranking-table, .ponto-table table, .diag-scroll table) th {
+    color: var(--text-secondary);
+    background: var(--bg-inset);
+  }
+
+  #appScreen :is(.table-wrap, .ponto-table, .diag-scroll) {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  #appScreen .global-filter-row {
+    gap: 0.55rem;
+  }
+
+  #appScreen :is(.ponto-card, .ponto-grid, .ponto-table, .diag-controls, .diag-grid, .diag-group) {
+    margin-block: var(--dashboard-block-gap);
+  }
+
+  @media (min-width: 901px) and (pointer: fine) {
+    body[data-role="admin"] #appScreen .shell-navigation .tab-btn {
+      min-height: 38px;
+      padding-block: 0.45rem;
+      gap: 0.5rem;
+    }
+
+    #appScreen .global-filter-field :is(select, input[type="text"]) {
+      min-height: 36px;
+      padding-block: 0.35rem;
+    }
   }
 }
