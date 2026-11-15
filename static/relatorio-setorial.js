@@ -213,10 +213,10 @@ function renderRelatorioSetorial() {
   let html = filterBarHtml;
 
   // ── Header ──
-  html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-5);flex-wrap:wrap;gap:var(--s-3)">
+  html += `<div class="rs-report-heading">
     <div>
-      <h2 style="font-size:20px;font-weight:700;color:var(--text-strong);margin:0">\uD83D\uDCCA Relatório Setorial</h2>
-      <p style="font-size:14px;color:var(--text-secondary);margin-top:2px">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 Rankings, análise setorial, tendências e relatório executivo</p>
+      <h2>Relatório Setorial</h2>
+      <p>${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 Rankings, análise setorial, tendências e relatório executivo</p>
     </div>
     <div style="display:flex;gap:var(--s-2);align-items:center">
       <span id="rsPresentationModeIndicator" style="font-size:12px;color:var(--text-muted);display:none">\uD83D\uDCF1 Modo apresentação</span>
@@ -277,7 +277,7 @@ function renderRelatorioSetorial() {
   ];
   if (hasTma) kpiCards.push({ label: 'TMA médio', value: _fmtDuration(tmaGeral), sub: '<span class="trend-neutral">Tempo médio de atendimento</span>' });
   if (hasTmr) kpiCards.push({ label: 'TMR médio', value: _fmtDuration(tmrGeral), sub: '<span class="trend-neutral">Tempo médio de resposta</span>' });
-  html += `<div class="kpi-grid" style="margin:0 0 var(--s-5)">
+  html += `<div class="kpi-grid rs-report-kpis">
     ${kpiCards.map(c => `<div class="kpi"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
   </div>`;
 

@@ -45,7 +45,7 @@
     const options = names();
     if (!options.includes(nome)) { nome = options[0] || ''; draft = null; dirty = false; draftDirty = false; }
     host.innerHTML = `<div class="pdi-heading"><div><span class="pdi-eyebrow">Desenvolvimento da equipe</span><h2>Análise de perfil e PDI</h2><p>Transforme evidências e objetivos em um plano acompanhado.</p></div><span class="pdi-chip">Rascunhos para revisão do líder</span></div>
-      <div class="pdi-local-note">Nesta primeira versão, complementos e planos são salvos neste navegador para seu usuário. Exporte o plano para guardar uma cópia. As fontes usam todo o histórico disponível, independentemente dos filtros globais.</div>
+      <div class="pdi-local-note">Use esta área para reunir evidências e preparar o plano antes de registrá-lo na Senio. Rascunhos, versões e complementos ficam neste navegador. Exporte o plano para guardar uma cópia. A análise usa o histórico disponível do colaborador.</div>
       <label class="field pdi-person"><span>Colaborador</span><select id="pdiPerson"><option value="">Selecione uma pessoa</option>${options.map(n => `<option value="${esc(n)}"${n === nome ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
       <p id="pdiNotice" class="pdi-notice" role="status" aria-live="polite"></p><div id="pdiPersonContent"></div>`;
     get('pdiPerson').addEventListener('change', event => {

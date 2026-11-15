@@ -18,8 +18,8 @@
       button.innerHTML = `<span class="sync-status-dot"></span><span>${count} pendente${count === 1 ? '' : 's'}</span>`;
       button.title = 'Clique para tentar sincronizar agora.';
     } else {
-      button.innerHTML = '<span class="sync-status-dot"></span><span>Sincronizado</span>';
-      button.title = 'Todos os registros estão sincronizados.';
+      button.innerHTML = '<span class="sync-status-dot"></span><span>Sem pendências</span>';
+      button.title = 'A fila de envio de registros está vazia.';
     }
   }
 

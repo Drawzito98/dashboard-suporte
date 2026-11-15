@@ -47,51 +47,41 @@ function renderColaboradores() {
     return;
   }
 
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s-3)">';
+  html += '<div class="colab-card-grid">';
   for (const nome of colabs) {
     const info = colabInfo[nome] || {};
     const hasData = info.salario != null || info.setor_atual || info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa || info.feito_relevante;
     const conduta = info.conduta_negativa === 'true' || info.conduta_negativa === true;
     const feito = info.feito_relevante === 'true' || info.feito_relevante === true;
-    html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''}" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Clique para ver/editar">`;
-    html += '<div style="display:flex;align-items:center;gap:var(--s-4)">';
-    html += `<div style="font-size:28px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 64) : '👤'}</div>`;
-    html += '<div style="flex:1;min-width:0">';
-    html += `<div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:var(--s-2)">${escapeHtml(nome)}${feito ? '<span class="feito-badge" title="Possui feito relevante">🏆</span>' : ''}${conduta ? '<span class="conduta-badge" title="Possui ponto detrator">🚩</span>' : ''}</div>`;
-    if (info.nivel) {
-      html += `<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-top:1px">${escapeHtml(info.nivel)}</div>`;
-    }
-    if (info.salario != null && info.salario !== '') {
-      html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Salário: ${escapeHtml(Number(info.salario).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))}</div>`;
-    }
     const setores = setorMap[nome];
     const setorExibido = info.setor_atual || (setores && setores.size ? [...setores].join(', ') : '');
-    if (setorExibido) {
-      html += `<div style="font-size:12px;color:var(--text-muted);margin-top:1px">🏢 ${escapeHtml(setorExibido)}</div>`;
-    }
-    if (info.data_aniversario) {
-      const [a,m,d] = info.data_aniversario.split('-');
-      html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">🎂 ${d}/${m}</div>`;
-    }
-    if (info.data_admissao) {
-      const [a,m,d] = info.data_admissao.split('-');
-      html += `<div style="font-size:12px;color:var(--text-secondary)">📅 Admissão: ${d}/${m}/${a}</div>`;
-    }
-    html += `<div style="font-size:12px;color:var(--text-secondary)">Tempo de empresa: ${escapeHtml(getTempoEmpresa(info.data_admissao))}</div>`;
-    if (info.email) {
-      html += `<div style="font-size:12px;color:var(--text-secondary)">✉️ ${escapeHtml(info.email)}</div>`;
-    }
-    if (info.observacoes) {
-      html += `<div style="font-size:12px;color:var(--danger);margin-top:2px;padding:2px 6px;background:var(--danger-soft);border-radius:var(--r-sm)">📝 ${escapeHtml(info.observacoes)}</div>`;
-    }
-    if (!hasData) {
-      html += `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">Clique para cadastrar</div>`;
-    }
-    html += '</div>';
-    html += `<div style="font-size:18px;color:var(--text-muted)">${hasData ? '✅' : '➕'}</div>`;
-    html += '</div>';
-    html += `<div class="colab-card-actions"><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button><button type="button" class="btn-small pdi-profile-btn">Análise e PDI</button></div>`;
-    html += '</div>';
+    const meta = [setorExibido, info.nivel].filter(Boolean).map(escapeHtml).join(' · ');
+    const photo = typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 88) : '👤';
+    const dateLabel = value => String(value).split('-').reverse().join('/');
+    const details = [
+      ['Salário', info.salario != null && info.salario !== '' ?
+        Number(info.salario).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''],
+      ['Admissão', info.data_admissao ? dateLabel(info.data_admissao) : ''],
+      ['Tempo de empresa', getTempoEmpresa(info.data_admissao)],
+      ['Aniversário', info.data_aniversario ? dateLabel(info.data_aniversario).slice(0, 5) : ''],
+      ['E-mail', info.email]
+    ];
+    html += `<article class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''}" data-nome="${escapeHtml(nome)}">
+      <header class="colab-card-identity">
+        <div class="colab-card-photo">${photo}</div>
+        <div class="colab-card-title">
+          <h4>${escapeHtml(nome)}</h4>
+          ${meta ? '<p>' + meta + '</p>' : ''}
+          ${feito ? '<span class="feito-badge" title="Possui feito relevante">🏆</span>' : ''}
+          ${conduta ? '<span class="conduta-badge" title="Possui ponto detrator">🚩</span>' : ''}
+          ${!hasData ? '<p>Cadastro incompleto</p>' : ''}
+        </div>
+      </header>
+      <dl class="colab-card-data">${details.filter(([, value]) => value).map(([label, value]) =>
+        `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>
+      ${info.observacoes ? '<p class="colab-card-note"><strong>Observações</strong> ' + escapeHtml(info.observacoes) + '</p>' : ''}`;
+    html += `<div class="colab-card-actions"><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button><button type="button" class="btn-small pdi-profile-btn">Preparar PDI</button></div>`;
+    html += '</article>';
   }
   html += '</div>';
 
