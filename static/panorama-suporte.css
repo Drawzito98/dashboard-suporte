@@ -159,3 +159,35 @@ body[data-active-tab="panorama-semanal"]:has(#panoramaLegacyDetails:not([open]))
     width: 100%;
   }
 }
+
+.panorama-compact-report .panorama-table :is(th, td) {
+  padding: 0.42rem 0.58rem;
+}
+
+.panorama-compact-report .panorama-table td small {
+  display: block;
+  font-size: 0.72rem;
+}
+
+.panorama-compact-report abbr[title] {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.panorama-report-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-block: 0.5rem;
+}
+
+.panorama-report-filters label {
+  display: grid;
+  gap: 0.2rem;
+  max-width: 100%;
+}
+
+.panorama-report-filters select {
+  max-width: 100%;
+}

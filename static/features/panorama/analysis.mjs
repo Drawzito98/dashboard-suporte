@@ -1,5 +1,5 @@
 const catalog = {
-  departments: ['performance_por_departamento.csv', [0, 1, 2, 6, 7, 8, 9]],
+  departments: ['performance_por_departamento.csv', [0, 1, 2, 6, 7, 8, 9, 4]],
   team: ['performance_por_colaborador.csv', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]],
   reasons: ['motivos_de_atendimento.csv', [0, 1, 2, 3]],
   stars: ['distribuição_de_notas_por_estrela.csv', [0, 1, 2, 3]],
@@ -118,7 +118,9 @@ export function buildAnalysis(reports, headers, days, kpis) {
   if (kpis.inatividade > 0 && kpis.tmr !== null && kpis.tmr !== undefined) {
     checks.push('O TMR mede o intervalo até o encerramento. A presença de fechamentos por inatividade limita seu uso como medida de tempo até a solução.');
   }
-  checks.push('Volume diário, equipe e departamentos foram conciliados com os totais de assumidos e finalizados. As avaliações e inatividade também passaram pelas conferências cruzadas.');
+  checks.push(format.format(kpis.finalizados) + ' finalizados: cartão do Looker, soma diária, soma por pessoa e soma por departamento coincidem. A conferência compara relatórios do mesmo ZIP.');
+  checks.push(format.format(kpis.assumidos) + ' assumidos: as quatro fontes do ZIP coincidem. Para conferir a origem do número, é preciso um export completo com os protocolos e o critério de contagem.');
+  checks.push('As avaliações e os encerramentos por inatividade também passaram pelas conferências cruzadas.');
   return { tables, findings, score, checks };
 }
 
@@ -126,6 +128,34 @@ function parseScore(value) {
   const raw = String(value ?? '').trim().replace(',', '.');
   const number = Number(raw);
   return /^\d(?:\.\d+)?$/.test(raw) && number >= 1 && number <= 5 ? number : null;
+}
+
+export const TIME_LABELS = Object.freeze({
+  TME: 'Tempo médio de espera até o atendimento. O indicador considera os casos com espera registrada.',
+  TMA: 'Tempo médio de atendimento informado pelo Looker. É distinto do tempo de interação e do tempo até o encerramento.',
+  TMI: 'Tempo médio de interação informado pelo Looker, calculado no relatório de turnos de conversa.',
+  TMR: 'Tempo médio até a resolução ou encerramento. Inclui fechamentos por inatividade quando fazem parte do recorte.'
+});
+
+export function filterDepartmentRows(rows, department) {
+  return department === '' ? rows : rows.filter(row => row[0] === department);
+}
+
+function choose(labelText, choices) {
+  const label = node('label', labelText);
+  const select = node('select');
+  for (const [value, text] of choices) {
+    const option = node('option', text);
+    option.value = value;
+    select.append(option);
+  }
+  label.append(select);
+  return { label, select };
+}
+
+function projectTable(table, labels) {
+  const columns = labels.map(label => table.headers.indexOf(label));
+  return { headers: labels, rows: table.rows.map(row => columns.map(index => row[index])) };
 }
 
 function nameKey(value) {
@@ -227,7 +257,14 @@ function showTable(target, title, data, { heatmap = false, toggleNames = false }
   table.className = 'panorama-table';
   const header = table.createTHead().insertRow();
   for (const label of data.headers) {
-    const cell = node('th', label);
+    const cell = node('th', TIME_LABELS[label] ? undefined : label);
+    if (TIME_LABELS[label]) {
+      const tip = node('abbr', label);
+      tip.title = TIME_LABELS[label];
+      tip.setAttribute('aria-label', label + ' — ' + TIME_LABELS[label]);
+      tip.tabIndex = 0;
+      cell.append(tip);
+    }
     cell.scope = 'col';
     header.append(cell);
   }
@@ -253,7 +290,9 @@ function showTable(target, title, data, { heatmap = false, toggleNames = false }
       if (customerScore !== null) {
         cell.textContent = scoreFormat.format(customerScore);
         cell.className = customerScore < TARGET_SCORE ? 'panorama-score-low' : 'panorama-score-high';
-        cell.append(' · ' + (customerScore < TARGET_SCORE ? 'Abaixo da meta' : 'Na meta ou acima'));
+        const gap = Math.round((customerScore - TARGET_SCORE) * 100) / 100;
+        const difference = gap < 0 ? '−' : gap > 0 ? '+' : '';
+        cell.append(node('small', gap === 0 ? 'Na meta' : difference + scoreFormat.format(Math.abs(gap)) + ' da meta'));
       }
       if (heatmap && column && Number.isFinite(value) && value > 0) {
         cell.style.backgroundColor = 'rgba(59, 130, 246, ' + (0.12 + 0.55 * value / max) + ')';
@@ -272,7 +311,7 @@ export function reportDetails(title) {
   return details;
 }
 
-const leadLabels = ['Avaliação do cliente', 'Departamento com maior volume', 'Encerrados por inatividade'];
+const leadLabels = ['Maior volume diário', 'Departamento com maior volume', 'Motivo com maior volume'];
 
 function showFindings(target, findings) {
   const summary = node('div');
@@ -290,10 +329,11 @@ export function renderAnalysis(output, { analysis, days, kpis }, registry = {}) 
   if (!analysis) return;
   const section = node('section');
   section.append(node('h3', 'Resumo do período'));
-  const totals = [['assumidos', 'assumidos'], ['finalizados', 'finalizados'], ['clientes', 'clientes atendidos']]
+  const totals = [['finalizados', 'finalizados conferidos'], ['avaliados', 'avaliações do cliente'], ['assumidos', 'assumidos no Looker']]
     .filter(([key]) => kpis[key] !== undefined)
     .map(([key, label]) => format.format(kpis[key]) + ' ' + label);
   if (totals.length) section.append(node('p', totals.join(' · ')));
+  section.className = 'panorama-compact-report';
   showScore(section, analysis.score);
 
   const byLabel = label => analysis.findings.find(finding => finding.startsWith(label + ': '));
@@ -304,54 +344,67 @@ export function renderAnalysis(output, { analysis, days, kpis }, registry = {}) 
   }
 
   const { tables } = analysis;
-  const volume = reportDetails('Volume e horários');
-  const volumeHighlights = ['Maior volume diário', 'Pico de assumidos'].map(byLabel).filter(Boolean);
+  const volume = reportDetails('Volume diário e horários · recorte completo');
+  const volumeHighlights = ['Pico de assumidos'].map(byLabel).filter(Boolean);
   volumeHighlights.push(...analysis.findings.filter(finding => finding.startsWith('Volume diário: ')));
   if (volumeHighlights.length) showFindings(volume, volumeHighlights);
   volume.append(node('h4', 'Assumidos e finalizados por dia'));
   showDailyChart(volume, days);
   showTable(volume, 'Assumidos por dia e faixa de horário', tables.heatmap, { heatmap: true });
 
-  const team = reportDetails('Equipe e departamentos');
+  const team = reportDetails('Equipe · notas, nível e tempos');
   if (tables.team) {
-    team.append(node('p', 'Média aval. vem de Performance por colaborador. O filtro de nível usa o cadastro do app e se aplica à tabela de pessoas.'));
-    const label = node('label', 'Nível da equipe ');
-    const select = node('select');
-    for (const [key, text] of [['all', 'Todos'], ['N1', 'Nível 1 (N1)'], ['N2', 'Nível 2 (N2)']]) {
-      const option = node('option', text);
-      option.value = key;
-      select.append(option);
-    }
-    label.append(select);
+    const source = projectTable(tables.team, ['Atendente', 'Finalizados', 'Média aval.', 'TMA', 'TMI', 'TMR']);
+    const levels = joinTeamLevels(source.rows, registry);
+    const level = choose('Nível', [['', 'Todos os níveis'], ['N1', 'Nível 1 (N1)'], ['N2', 'Nível 2 (N2)'], ['—', 'Sem nível identificado']]);
+    const person = choose('Pessoa', [['', 'Todas as pessoas'], ...source.rows.map(row => [row[0], row[0]])]);
+    const filters = node('div');
+    filters.className = 'panorama-report-filters';
+    filters.append(level.label, person.label);
     const status = node('p');
     status.setAttribute('role', 'status');
     const tableSpot = node('div');
-    team.append(label, status, tableSpot);
-    const levels = joinTeamLevels(tables.team.rows, registry);
+    team.append(filters, status, tableSpot);
     const draw = () => {
-      const rows = tables.team.rows.map((row, i) => [row[0], levels[i], ...row.slice(1)])
-        .filter(row => select.value === 'all' || row[1] === select.value);
+      const rows = source.rows.map((row, index) => [row[0], levels[index], ...row.slice(1)])
+        .filter(row => (!level.select.value || row[1] === level.select.value) &&
+          (!person.select.value || row[0] === person.select.value));
       tableSpot.replaceChildren();
-      status.textContent = rows.length ? format.format(rows.length) + ' atendentes exibidos.'
-        : 'Nenhum atendente com esse nível identificado no cadastro.';
-      showTable(tableSpot, 'Nota por pessoa', {
-        headers: [tables.team.headers[0], 'Nível', ...tables.team.headers.slice(1)], rows
-      });
+      status.textContent = rows.length ? format.format(rows.length) + ' de ' + format.format(source.rows.length) + ' pessoas no ZIP.'
+        : 'Nenhuma pessoa corresponde aos filtros.';
+      showTable(tableSpot, 'Resultado por pessoa', {
+        headers: ['Atendente', 'Nível', ...source.headers.slice(1)], rows
+      }, { toggleNames: true });
     };
-    select.value = 'all';
-    select.addEventListener('change', draw);
+    level.select.addEventListener('change', draw);
+    person.select.addEventListener('change', draw);
     draw();
-    team.append(node('p', 'A média geral e as notas por setor se referem ao período inteiro do ZIP. O arquivo traz médias por pessoa, mas não a quantidade de notas de cada pessoa necessária para calcular médias ponderadas por nível.'));
-  }
-  if (tables.departments) {
-    showTable(team, 'Nota por setor', { ...tables.departments,
-      headers: tables.departments.headers.map(header => header === 'Score' ? 'Nota do cliente' : header)
-    });
+    team.append(node('p', 'A nota e os volumes de cada pessoa vêm do CSV Performance por colaborador. Os níveis vêm do cadastro do app.'));
   }
 
-  const reasons = reportDetails('Principais motivos');
-  const reasonHighlight = byLabel('Motivo com maior volume');
-  if (reasonHighlight) showFindings(reasons, [reasonHighlight]);
+  const departments = reportDetails('Departamentos · finalizados, nota e tempos');
+  if (tables.departments) {
+    const source = projectTable(tables.departments, ['Departamento', 'Finalizados', 'Score', 'Avaliados', 'TMA', 'TMR']);
+    source.headers[2] = 'Nota do cliente';
+    const choices = [...new Set(source.rows.map(row => row[0]))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const department = choose('Departamento', [['', 'Todos os departamentos'], ...choices.map(name => [name, name])]);
+    const filters = node('div');
+    filters.className = 'panorama-report-filters';
+    filters.append(department.label);
+    const tableSpot = node('div');
+    departments.append(filters, tableSpot);
+    const draw = () => {
+      tableSpot.replaceChildren();
+      showTable(tableSpot, 'Resultado por departamento', {
+        ...source, rows: filterDepartmentRows(source.rows, department.select.value)
+      });
+    };
+    department.select.addEventListener('change', draw);
+    draw();
+    departments.append(node('p', 'O filtro usa o relatório por departamento do ZIP. O export não cruza departamento com pessoa, faixa horária ou motivo; essas visões continuam no recorte completo.'));
+  }
+
+  const reasons = reportDetails('Principais motivos · recorte completo');
   showTable(reasons, '12 motivos com mais finalizados', tables.reasons);
 
   const quality = reportDetails('Avaliações e plantão');
@@ -359,7 +412,9 @@ export function renderAnalysis(output, { analysis, days, kpis }, registry = {}) 
   showTable(quality, 'Plantão por turno', tables.shifts);
   showTable(quality, 'Desfecho do plantão', tables.outcomes);
 
-  section.append(volume, team);
+  if (tables.departments) section.append(departments);
+  if (tables.team) section.append(team);
+  section.append(volume);
   if (tables.reasons) section.append(reasons);
   if (tables.stars || tables.shifts || tables.outcomes) section.append(quality);
   output.append(section);

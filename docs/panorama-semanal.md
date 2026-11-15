@@ -10,7 +10,9 @@ A leitura começa pelo resumo, pela situação da meta e por três destaques. Ab
 
 O leitor aceita o período completo identificado no CSV de volume diário, inclusive recortes com mais de sete dias. A tabela de equipe usa a coluna **Média aval.** de **Performance por colaborador** e segue a ordem de assumidos. A média geral vem do cartão do cliente e é comparada com a média ponderada das estrelas.
 
-A seção **Equipe e departamentos** mostra notas do cliente por pessoa e setor. O filtro N1/N2 usa o cadastro do app e afeta a tabela de pessoas. O nome completo tem prioridade. Um nome abreviado com pelo menos duas palavras só é associado quando corresponde a um único cadastro. Sem contagens de avaliações por atendente, o filtro não recalcula as notas do setor nem a média geral. A meta usa a média das estrelas quando o cálculo é corroborado pelas notas dos departamentos ponderadas pela quantidade de avaliações.
+As seções **Equipe** e **Departamentos** mostram notas, finalizados e tempos exportados. O filtro de departamento seleciona a linha exata do relatório do Looker. O filtro de pessoa pode ser combinado com N1/N2. O ZIP não traz um cruzamento completo de pessoa, departamento, horários e motivos. O filtro N1/N2 usa o cadastro do app e afeta a tabela de pessoas. O nome completo tem prioridade. Um nome abreviado com pelo menos duas palavras só é associado quando corresponde a um único cadastro. Sem contagens de avaliações por atendente, o filtro não recalcula as notas do setor nem a média geral. A meta usa a média das estrelas quando o cálculo é corroborado pelas notas dos departamentos ponderadas pela quantidade de avaliações.
+
+A conferência de finalizados compara o cartão, o volume diário e as somas por pessoa e departamento. A concordância entre relatórios não valida a contagem de protocolos no Opa! Suite. As siglas dos tempos têm legenda nos cabeçalhos e em **Todos os indicadores**.
 
 ## Catálogo dos relatórios
 

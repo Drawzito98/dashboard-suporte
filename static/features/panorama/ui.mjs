@@ -1,6 +1,6 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs?v=8';
-import { renderAnalysis, reportDetails } from './analysis.mjs?v=8';
+import { analyzeWeekly } from './weekly.mjs?v=9';
+import { renderAnalysis, reportDetails, TIME_LABELS } from './analysis.mjs?v=9';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos', finalizados: 'Finalizados',
@@ -67,6 +67,10 @@ export function mountWeekly(root) {
         const title = document.createElement('span');
         title.className = 'panorama-metric-label';
         title.textContent = label;
+        if (TIME_LABELS[label]) {
+          title.title = TIME_LABELS[label];
+          title.setAttribute('aria-label', label + ' — ' + TIME_LABELS[label]);
+        }
         const value = document.createElement('strong');
         value.textContent = format(key, report.kpis[key]);
         card.append(title, value);
@@ -76,7 +80,13 @@ export function mountWeekly(root) {
       try { registry = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch {}
       renderAnalysis(output, report, registry);
       const indicators = reportDetails('Todos os indicadores');
-      indicators.append(metrics);
+      const glossary = document.createElement('ul');
+      for (const [label, definition] of Object.entries(TIME_LABELS)) {
+        const term = document.createElement('li');
+        term.textContent = label + ' — ' + definition;
+        glossary.append(term);
+      }
+      indicators.append(metrics, glossary);
       output.append(indicators);
       if (report.issues.length || report.analysis?.checks.length) {
         const audit = reportDetails(report.valid ? 'Conferência dos dados e avisos' : 'Erros na validação do ZIP');

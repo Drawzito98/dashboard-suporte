@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { analyzeWeekly } from '../static/features/panorama/weekly.mjs';
 import { readZip } from '../static/features/panorama/zip.mjs';
 import { schemas } from '../static/features/panorama/registry.mjs';
-import { joinTeamLevels } from '../static/features/panorama/analysis.mjs';
+import { filterDepartmentRows, joinTeamLevels } from '../static/features/panorama/analysis.mjs';
 
 export async function checkWeekly(zipPath) {
   const archive = new Blob([await readFile(zipPath)]);
@@ -64,6 +64,12 @@ export async function checkExtendedPeriod(zipPath) {
   assert.deepEqual(result.files, { expected: 35, validated: 35 });
   assert.equal(result.kpis.assumidos, 888);
   assert.equal(result.kpis.finalizados, 897);
+  const departmentRows = result.analysis.tables.departments.rows;
+  const largest = filterDepartmentRows(departmentRows, departmentRows[0][0]);
+  assert.equal(largest.length, 1);
+  assert.equal(largest[0][2], '408');
+  assert.ok(result.analysis.tables.departments.headers.includes('TMA'));
+  assert.ok(result.analysis.checks.some(line => line.startsWith('897 finalizados:')));
   assert.deepEqual(result.analysis.score, {
     target: 4.7, reported: 4.75, distributionMean: 4.57, ratingCount: 253, departmentMean: 4.57, confirmedMean: 4.57, divergent: true
   });
