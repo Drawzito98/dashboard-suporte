@@ -216,6 +216,12 @@ function node(tag, text) {
   return element;
 }
 
+export function scoreBand(value) {
+  if (value < 4.60) return { className: 'panorama-score-low', label: 'Abaixo da meta' };
+  if (value < TARGET_SCORE) return { className: 'panorama-score-near', label: 'Próximo da meta' };
+  return { className: 'panorama-score-high', label: 'Na meta' };
+}
+
 function scoreDelta(value, target) {
   const delta = Math.round((value - target) * 100);
   if (delta === 0) return 'Na meta';
@@ -233,13 +239,13 @@ function showHeadline(section, score, kpis) {
   quality.className = 'panorama-hero-stat';
   const mean = score.confirmedMean;
   const value = node('strong', mean === null ? 'Em conferência' : scoreFormat.format(mean) + ' / 5');
-  if (mean !== null) value.className = mean < score.target ? 'panorama-score-low' : 'panorama-score-high';
+  if (mean !== null) value.className = scoreBand(mean).className;
   quality.append(node('h4', 'Nota geral do cliente'), value);
   const target = 'Meta ' + scoreFormat.format(score.target);
   const details = node('ul');
   details.className = 'panorama-headline-meta';
   const values = mean === null ? [target, 'Resultado pendente'] :
-    [target, scoreDelta(mean, score.target), format.format(score.ratingCount) + ' avaliações'];
+    [target, scoreBand(mean).label, format.format(score.ratingCount) + ' avaliações'];
   for (const item of values) details.append(node('li', item));
   quality.append(details);
   summary.append(volume, quality);
@@ -356,10 +362,9 @@ function showTable(target, title, data, { heatmap = false, nameVisibility } = {}
       const customerScore = ['Média aval.', 'Nota do cliente'].includes(data.headers[column]) ? parseScore(value) : null;
       if (customerScore !== null) {
         cell.textContent = scoreFormat.format(customerScore);
-        cell.className = customerScore < TARGET_SCORE ? 'panorama-score-low' : 'panorama-score-high';
-        const gap = Math.round((customerScore - TARGET_SCORE) * 100) / 100;
-        const difference = gap < 0 ? '−' : gap > 0 ? '+' : '';
-        cell.append(node('small', gap === 0 ? 'Na meta' : difference + scoreFormat.format(Math.abs(gap)) + ' da meta'));
+        const band = scoreBand(customerScore);
+        cell.className = band.className;
+        cell.append(node('small', band.label));
       }
       if (heatmap && column && Number.isFinite(value) && value > 0) {
         cell.style.backgroundColor = 'rgba(59, 130, 246, ' + (0.12 + 0.55 * value / max) + ')';

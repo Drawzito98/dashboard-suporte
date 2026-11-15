@@ -531,3 +531,8 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
   }
   .panorama-view-actions .panorama-view-nav { width: 100%; }
 }
+
+#panoramaWeeklyRoot .panorama-score-near {
+  color: var(--score-atencao);
+  font-weight: 700;
+}
