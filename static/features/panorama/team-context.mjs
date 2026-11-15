@@ -65,7 +65,7 @@ function renderList(target, items, empty) {
   target.append(list);
 }
 
-export function mountTeamContext({ client, period, resolveNames, userId, currentUserId, isAdmin, openAbsences }) {
+export function mountTeamContext({ client, period, resolveNames, userId, currentUserId, isAdmin, openAbsences, formatAttendance }) {
   const element = document.createElement('details');
   element.className = 'panorama-team-context';
   element.hidden = true;
@@ -78,7 +78,7 @@ export function mountTeamContext({ client, period, resolveNames, userId, current
     '<label>Tipo de observação<select name="type"></select></label></div>' +
     '<label class="field">O que aconteceu?<textarea name="text" rows="3" maxlength="1200" required></textarea></label>' +
     '<button class="btn-primary" type="submit">Salvar observação</button><p role="status"></p></form></section>' +
-    '<section><h4>Ausências registradas</h4><div data-absences></div><div class="btn-row">' +
+    '<section><h4>Faltas e atrasos registrados</h4><div data-absences></div><div class="btn-row">' +
     '<button class="btn-small" type="button" data-open>Abrir Ausências</button>' +
     '<button class="btn-small" type="button" data-refresh>Atualizar registros</button></div></section></div>';
   const person = element.querySelector('[name="person"]');
@@ -121,7 +121,7 @@ export function mountTeamContext({ client, period, resolveNames, userId, current
         .gte('data', period.start).lte('data', period.end);
       const [observations, attendance] = await Promise.allSettled([
         readAll(() => query('anotacoes_diarias', 'id,data,conteudo').like('conteudo', NOTE_PREFIX + '%')),
-        readAll(() => query('ausencias', 'id,colaborador,data,periodo,motivo'))
+        readAll(() => query('ausencias', 'id,colaborador,data,periodo,motivo,tipo,minutos_atraso'))
       ]);
       if (request !== revision || currentUserId() !== owner || !isAdmin()) return;
       if (observations.status === 'fulfilled') {
@@ -130,11 +130,10 @@ export function mountTeamContext({ client, period, resolveNames, userId, current
         renderList(notes, items, 'Nenhuma observação para esta pessoa no período.');
       } else notes.textContent = 'Não foi possível carregar as observações.';
       if (attendance.status === 'fulfilled') {
-        const periods = new Map([['dia_inteiro', 'Dia inteiro'], ['manha', 'Manhã'], ['tarde', 'Tarde'], ['noite', 'Noite']]);
         const names = resolveNames(attendance.value.map(row => row.colaborador));
         const items = attendance.value.filter((_, index) => names[index] === name)
-          .map(row => ({ date: row.data, label: periods.get(row.periodo) ?? 'Ausência', text: row.motivo }));
-        renderList(absences, items, 'Nenhuma ausência sincronizada para esta pessoa no período.');
+          .map(row => ({ date: row.data, label: formatAttendance(row), text: row.motivo }));
+        renderList(absences, items, 'Nenhuma ocorrência sincronizada para esta pessoa no período.');
       } else absences.textContent = 'Não foi possível consultar as ausências.';
     } catch {
       if (request !== revision) return;

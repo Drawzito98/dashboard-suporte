@@ -16,11 +16,17 @@ function labelPeriodo(p) {
   return map[p] || p;
 }
 
+function formatarOcorrenciaAusencia(record) {
+  if (record.tipo === 'atraso') return 'Atraso · ' + record.minutos_atraso + ' min';
+  const period = labelPeriodo(record.periodo);
+  return (record.tipo === 'falta' ? 'Falta' : 'Registro anterior') + (period ? ' · ' + period : '');
+}
+
 function renderAusencias(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const saved = JSON.parse(localStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
+  const saved = _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
   const colabs = [...new Set((rawRecords || [])
     .filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente']))
     .map(r => r['Atendente']))].sort();
@@ -30,13 +36,13 @@ function renderAusencias(containerId) {
   html += '<div class="card" style="margin-bottom:var(--s-4)">';
   html += '<div class="card-header">';
   html += '<div><h3 style="font-size:16px;font-weight:600">Registrar Ausência</h3>';
-  html += '<p style="font-size:13px;color:var(--text-secondary)">Registre falta, atraso ou ausência de colaboradores</p></div>';
+  html += '<p style="font-size:13px;color:var(--text-secondary)">Registre faltas e atrasos dos colaboradores.</p></div>';
   html += '</div>';
 
-  html += '<div class="ausencias-form">';
+  html += '<form class="ausencias-form" id="ausenciaForm">';
   html += '<div class="ausencias-field">';
-  html += '<label>Colaborador</label>';
-  html += `<select id="ausenciaColabInput" style="width:100%"><option value="">Selecione...</option>`;
+  html += '<label for="ausenciaColabInput">Colaborador</label>';
+  html += `<select id="ausenciaColabInput" required style="width:100%"><option value="">Selecione...</option>`;
   for (const c of colabs) {
     html += `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`;
   }
@@ -44,12 +50,15 @@ function renderAusencias(containerId) {
   html += '</div>';
 
   html += '<div class="ausencias-field">';
-  html += '<label>Data</label>';
-  html += `<input type="date" id="ausenciaDataInput" value="${new Date().toISOString().slice(0, 10)}" style="width:100%">`;
+  html += '<label for="ausenciaDataInput">Data</label>';
+  html += `<input type="date" id="ausenciaDataInput" required value="${new Date().toISOString().slice(0, 10)}" style="width:100%">`;
   html += '</div>';
 
-  html += '<div class="ausencias-field">';
-  html += '<label>Período</label>';
+  html += '<div class="ausencias-field"><label for="ausenciaTipoInput">Tipo</label>';
+  html += '<select id="ausenciaTipoInput"><option value="falta">Falta</option><option value="atraso">Atraso</option></select></div>';
+
+  html += '<div class="ausencias-field" id="ausenciaPeriodoField">';
+  html += '<label for="ausenciaPeriodoInput">Período da falta</label>';
   html += `<select id="ausenciaPeriodoInput" style="width:100%">
     <option value="dia_inteiro">Dia inteiro</option>
     <option value="manha">Manhã</option>
@@ -58,24 +67,24 @@ function renderAusencias(containerId) {
   </select>`;
   html += '</div>';
 
+  html += '<div class="ausencias-field" id="ausenciaMinutosField" hidden>';
+  html += '<label for="ausenciaMinutosInput">Minutos de atraso</label>';
+  html += '<input id="ausenciaMinutosInput" type="number" min="1" max="1440" step="1" disabled></div>';
+
   html += '<div class="ausencias-field">';
-  html += '<label>Motivo</label>';
+  html += '<label for="ausenciaMotivoInput">Motivo (opcional)</label>';
   html += `<input type="text" id="ausenciaMotivoInput" placeholder="Ex: Médico, Particular, Folga..." style="width:100%">`;
   html += '</div>';
 
   html += '<div class="ausencias-actions">';
-  html += '<button class="btn-primary" id="ausenciaSalvarBtn" type="button" style="justify-content:center">Registrar</button>';
-  html += '</div>';
-  html += '</div>';
-  html += '</div>';
+  html += '<button class="btn-primary" id="ausenciaSalvarBtn" type="submit" style="justify-content:center">Registrar</button>';
+  html += '</div><p id="ausenciaStatus" role="status"></p></form></div>';
 
   html += '<div class="card">';
   html += '<div class="card-header">';
-  html += '<div><h3 style="font-size:16px;font-weight:600">Registros de Ausência</h3>';
+  html += '<div><h3 style="font-size:16px;font-weight:600">Registros de faltas e atrasos</h3>';
   html += `<p style="font-size:13px;color:var(--text-secondary)">${saved.length} registro(s)</p></div>`;
-  if (saved.length > 0) {
-    html += '<button class="btn-small" id="ausenciaRefreshBtn" type="button">Atualizar</button>';
-  }
+  html += '<button class="btn-small" id="ausenciaRefreshBtn" type="button">Atualizar</button>';
   html += '</div>';
 
   if (!saved.length) {
@@ -86,10 +95,10 @@ function renderAusencias(containerId) {
       html += '<div class="ausencias-item">';
       html += '<div class="ausencias-item-info">';
       html += `<strong style="font-size:14px">${escapeHtml(a.colaborador)}</strong>`;
-      html += `<span style="font-size:12px;color:var(--text-muted)">${formatarData(a.data)} · ${labelPeriodo(a.periodo)}${a.motivo ? ' · ' + escapeHtml(a.motivo) : ''}</span>`;
+      html += `<span style="font-size:12px;color:var(--text-muted)">${escapeHtml(formatarData(a.data))} · ${escapeHtml(formatarOcorrenciaAusencia(a))}${a.motivo ? ' · ' + escapeHtml(a.motivo) : ''}</span>`;
       html += '</div>';
       html += '<div class="ausencias-item-actions">';
-      html += `<button class="btn-small ausencias-del-btn" data-id="${a.id}" type="button" style="color:var(--danger)">Excluir</button>`;
+      html += `<button class="btn-small ausencias-del-btn" data-id="${escapeHtml(String(a.id))}" type="button" style="color:var(--danger)">Excluir</button>`;
       html += '</div></div>';
     }
     html += '</div>';
@@ -101,38 +110,65 @@ function renderAusencias(containerId) {
 }
 
 function bindAusenciasEvents(containerId, saved) {
-  document.getElementById('ausenciaSalvarBtn')?.addEventListener('click', async () => {
-    if (!requireAdmin()) return;
-    const colaborador = document.getElementById('ausenciaColabInput').value;
-    const data = document.getElementById('ausenciaDataInput').value;
-    const periodo = document.getElementById('ausenciaPeriodoInput').value;
-    const motivo = document.getElementById('ausenciaMotivoInput').value.trim();
-    if (!colaborador || !data) {
-      showToast('Selecione o colaborador e a data.', 'error', 'Ausência');
-      return;
+  const container = document.getElementById(containerId);
+  const form = container.querySelector('#ausenciaForm');
+  const field = suffix => form.querySelector('#ausencia' + suffix);
+  const type = field('TipoInput');
+  const minutes = field('MinutosInput');
+  const status = field('Status');
+  type.addEventListener('change', () => {
+    const delay = type.value === 'atraso';
+    field('PeriodoField').hidden = delay;
+    field('PeriodoInput').disabled = delay;
+    field('MinutosField').hidden = !delay;
+    minutes.disabled = !delay;
+    minutes.required = delay;
+    status.textContent = '';
+  });
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const submit = field('SalvarBtn');
+    if (submit.disabled || !requireAdmin()) return;
+    submit.disabled = true;
+    status.textContent = 'Salvando…';
+    try {
+      await dbAusenciasSave({
+        colaborador: field('ColabInput').value,
+        data: field('DataInput').value,
+        tipo: type.value,
+        periodo: field('PeriodoInput').value,
+        minutos_atraso: minutes.valueAsNumber,
+        motivo: field('MotivoInput').value.trim()
+      });
+      showToast('Ocorrência registrada.', 'success', 'Ausências');
+      renderAusencias(containerId);
+    } catch (error) {
+      status.textContent = error.message;
+    } finally {
+      submit.disabled = false;
     }
-    const ausencia = {
-      id: Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-      colaborador,
-      data,
-      periodo,
-      motivo
-    };
-    await dbAusenciasSave(ausencia);
-    document.getElementById('ausenciaMotivoInput').value = '';
-    showToast(`Ausência registrada para ${colaborador}!`, 'success', 'Ausências');
+  });
+
+  const refresh = container.querySelector('#ausenciaRefreshBtn');
+  refresh.addEventListener('click', async () => {
+    refresh.disabled = true;
+    await dbAusenciasLoad();
     renderAusencias(containerId);
   });
 
-  const container = document.getElementById(containerId);
-  if (!container) return;
   container.querySelectorAll('.ausencias-del-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!requireAdmin()) return;
-      const a = saved.find(x => x.id === btn.dataset.id);
-      if (!a || !confirm(`Excluir ausência de ${a.colaborador} em ${formatarData(a.data)}?`)) return;
-      await dbAusenciasDelete(a.id);
-      renderAusencias(containerId);
+      const a = saved.find(item => String(item.id) === btn.dataset.id);
+      if (!a || !confirm('Excluir ocorrência de ' + a.colaborador + ' em ' + formatarData(a.data) + '?')) return;
+      btn.disabled = true;
+      try {
+        await dbAusenciasDelete(a.id);
+        renderAusencias(containerId);
+      } catch (error) {
+        showToast(error.message, 'error', 'Ausências');
+        btn.disabled = false;
+      }
     });
   });
 }

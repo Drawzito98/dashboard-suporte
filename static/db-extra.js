@@ -766,70 +766,75 @@ async function dbPontosExtrasDelete(id) {
 
 const AUSENCIAS_LOCAL_KEY = 'sistema_ausencias_v1';
 
+function ausenciaFromRow(row) {
+  return {
+    id: row.id,
+    colaborador: row.colaborador,
+    data: row.data,
+    periodo: row.periodo,
+    motivo: row.motivo || '',
+    tipo: row.tipo ?? null,
+    minutos_atraso: row.minutos_atraso ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
 async function dbAusenciasLoad() {
   if (!sbClient) return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
   try {
     const uid = await _getUserId();
     if (!uid) return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
     const { data } = await sbClient.from('ausencias').select('*').eq('user_id', uid).order('data', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
-      const list = data.map(r => ({
-        id: r.id,
-        colaborador: r.colaborador,
-        data: r.data,
-        periodo: r.periodo,
-        motivo: r.motivo || '',
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
+    if (data?.length) {
+      const list = data.map(ausenciaFromRow);
       localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(list));
       return list;
     }
-    return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
+  } catch (error) { console.error('[Ausências]', error); }
+  return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
+}
+
+function ausenciaForInsert({ colaborador, data, tipo, minutos_atraso, periodo, motivo }) {
+  if (!colaborador || !data) throw new Error('Selecione o colaborador e a data.');
+  if (tipo !== 'falta' && tipo !== 'atraso') throw new Error('Selecione Falta ou Atraso.');
+  if (tipo === 'atraso' && (!Number.isInteger(minutos_atraso) || minutos_atraso < 1 || minutos_atraso > 1440)) {
+    throw new Error('Informe de 1 a 1440 minutos para o atraso.');
   }
+  if (tipo === 'falta' && !['dia_inteiro', 'manha', 'tarde', 'noite'].includes(periodo)) {
+    throw new Error('Selecione o período da falta.');
+  }
+  return {
+    colaborador, data, tipo, motivo: motivo || '',
+    periodo: tipo === 'falta' ? periodo : 'nao_informado',
+    minutos_atraso: tipo === 'atraso' ? minutos_atraso : null
+  };
 }
 
 async function dbAusenciasSave(ausencia) {
-  const list = JSON.parse(localStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
-  const idx = list.findIndex(a => a.id === ausencia.id);
-  if (idx >= 0) list[idx] = ausencia;
-  else list.unshift(ausencia);
-  localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(list));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('ausencias').select('id').eq('id', ausencia.id).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('ausencias').update({
-        colaborador: ausencia.colaborador,
-        data: ausencia.data,
-        periodo: ausencia.periodo,
-        motivo: ausencia.motivo || '',
-        updated_at: new Date().toISOString()
-      }).eq('id', ausencia.id);
-    } else {
-      await sbClient.from('ausencias').insert({
-        user_id: uid,
-        colaborador: ausencia.colaborador,
-        data: ausencia.data,
-        periodo: ausencia.periodo,
-        motivo: ausencia.motivo || ''
-      });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
+  const record = ausenciaForInsert(ausencia);
+  const uid = await _getUserId();
+  if (!uid) throw new Error('Entre novamente para registrar a ocorrência.');
+  const { data, error } = await sbClient.from('ausencias').insert({ ...record, user_id: uid }).select('*').single();
+  if (error || !data) throw new Error('Não foi possível registrar a ocorrência. Confira a conexão e tente de novo.');
+  const saved = ausenciaFromRow(data);
+  const list = _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
+  if (!list.some(item => String(item.id) === String(saved.id))) {
+    localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify([saved, ...list]));
+  }
+  return saved;
 }
 
 async function dbAusenciasDelete(id) {
-  const list = JSON.parse(localStorage.getItem(AUSENCIAS_LOCAL_KEY) || '[]');
-  const filtered = list.filter(a => a.id !== id);
-  localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(filtered));
-  if (!sbClient) return;
-  try {
-    await sbClient.from('ausencias').delete().eq('id', id);
-  } catch (e) { console.error('[db-extra]', e); }
+  // Os registros locais anteriores à sincronização usavam identificadores alfanuméricos.
+  if (/^d+$/.test(String(id))) {
+    const uid = await _getUserId();
+    if (!uid) throw new Error('Entre novamente para excluir o registro.');
+    const { error } = await sbClient.from('ausencias').delete().eq('id', id).eq('user_id', uid);
+    if (error) throw new Error('Não foi possível excluir o registro. Confira a conexão e tente de novo.');
+  }
+  const list = _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
+  localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(list.filter(item => String(item.id) !== String(id))));
 }
 
 // ─── AVALIAÇÃO DE ATENDIMENTOS ─────────────────────────────

@@ -2,7 +2,7 @@ import { readZip } from './zip.mjs';
 import { analyzeWeekly } from './weekly.mjs?v=19';
 import { renderAnalysis, renderScoreSources, reportDetails, TIME_LABELS } from './analysis.mjs?v=19';
 
-import { mountTeamContext } from './team-context.mjs?v=1';
+import { mountTeamContext } from './team-context.mjs?v=2';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos no Looker',
@@ -122,7 +122,8 @@ export function mountWeekly(root) {
       const teamContext = typeof isAdmin === 'function' && isAdmin() && typeof sbClient !== 'undefined' && sbClient
         ? (period, resolveNames) => mountTeamContext({
           client: sbClient, period, resolveNames, userId: _getUserId,
-          currentUserId: () => getCurrentUser()?.id, isAdmin, openAbsences: openAusenciasOverlay
+          currentUserId: () => getCurrentUser()?.id, isAdmin,
+          openAbsences: openAusenciasOverlay, formatAttendance: formatarOcorrenciaAusencia
         }) : undefined;
       if (report.analysis) renderAnalysis(output, report, { registry, indicators, audit, teamContext });
       else if (audit) output.append(audit);
