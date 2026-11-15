@@ -119,7 +119,7 @@ export function buildAnalysis(reports, headers, days, kpis) {
     checks.push('O TMR mede o intervalo até o encerramento. A presença de fechamentos por inatividade limita seu uso como medida de tempo até a solução.');
   }
   checks.push(format.format(kpis.finalizados) + ' finalizados: cartão do Looker, soma diária, soma por pessoa e soma por departamento coincidem. A conferência compara relatórios do mesmo ZIP.');
-  checks.push(format.format(kpis.assumidos) + ' assumidos: as quatro fontes do ZIP coincidem. Para conferir a origem do número, é preciso um export completo com os protocolos e o critério de contagem.');
+  checks.push(format.format(kpis.assumidos) + ' assumidos: as quatro fontes do ZIP coincidem entre si. O total segue o critério do Looker.');
   checks.push('As avaliações e os encerramentos por inatividade também passaram pelas conferências cruzadas.');
   return { tables, findings, score, checks };
 }
@@ -199,26 +199,44 @@ function node(tag, text) {
   return element;
 }
 
-function showScore(section, score) {
-  const card = node('article');
-  card.className = 'card';
-  const label = score.confirmedMean === null ? 'Resultado da meta pendente de conferência' :
-    score.confirmedMean >= score.target ? 'Meta atingida' : 'Meta não atingida';
-  card.append(node('h4', 'Meta de nota média do cliente · ' + scoreFormat.format(score.target)), node('strong', label));
-  for (const [name, value] of [['Média geral pelas ' + format.format(score.ratingCount) + ' avaliações por estrela', score.distributionMean],
-    ['Média ponderada dos departamentos (conferência)', score.departmentMean],
-    ['Cartão do Looker (referência)', score.reported]]) {
-    if (value === null) continue;
-    const gap = Math.round((value - score.target) * 100) / 100;
-    const delta = gap === 0 ? 'na meta' : scoreFormat.format(Math.abs(gap)) + (gap > 0 ? ' acima da meta' : ' abaixo da meta');
-    const row = node('p');
-    const result = node('strong', scoreFormat.format(value) + '/5');
-    result.className = gap < 0 ? 'panorama-score-low' : 'panorama-score-high';
-    row.append(name + ' · ', result, ' · ' + delta);
-    card.append(row);
+function scoreDelta(value, target) {
+  const delta = Math.round((value - target) * 100);
+  if (delta === 0) return 'Na meta';
+  return scoreFormat.format(Math.abs(delta) / 100) + (delta > 0 ? ' acima da meta' : ' abaixo da meta');
+}
+
+function showHeadline(section, score, kpis) {
+  const summary = node('div');
+  summary.className = 'panorama-headline';
+  const volume = node('article');
+  volume.className = 'panorama-metric';
+  volume.append(node('h4', 'Finalizados'), node('strong', format.format(kpis.finalizados)),
+    node('p', 'Total conferido entre os relatórios do ZIP.'));
+  const quality = node('article');
+  quality.className = 'panorama-metric';
+  const mean = score.confirmedMean;
+  const value = node('strong', mean === null ? 'Em conferência' : scoreFormat.format(mean) + ' / 5');
+  if (mean !== null) value.className = mean < score.target ? 'panorama-score-low' : 'panorama-score-high';
+  quality.append(node('h4', 'Nota geral do cliente'), value);
+  const target = 'Meta ' + scoreFormat.format(score.target);
+  const details = mean === null ? target + ' · Resultado pendente' :
+    target + ' · ' + scoreDelta(mean, score.target) + ' · ' + format.format(score.ratingCount) + ' avaliações';
+  quality.append(node('p', details));
+  summary.append(volume, quality);
+  section.append(summary);
+}
+
+export function renderScoreSources(target, score) {
+  const sources = node('ul');
+  for (const [label, value] of [
+    ['Média pelas ' + format.format(score.ratingCount) + ' avaliações por estrela', score.distributionMean],
+    ['Média dos departamentos ponderada pelas avaliações', score.departmentMean],
+    ['Cartão da nota no Looker', score.reported]
+  ]) {
+    if (value !== null) sources.append(node('li', label + ' · ' + scoreFormat.format(value) + '/5 · ' +
+      scoreDelta(value, score.target)));
   }
-  if (score.divergent) card.append(node('p', 'O cartão do Looker diverge da média calculada pelas avaliações.'));
-  section.append(card);
+  if (sources.childElementCount) target.append(node('h4', 'Origem da nota geral'), sources);
 }
 
 function showDailyChart(section, days) {
@@ -329,12 +347,8 @@ export function renderAnalysis(output, { analysis, days, kpis }, registry = {}) 
   if (!analysis) return;
   const section = node('section');
   section.append(node('h3', 'Resumo do período'));
-  const totals = [['finalizados', 'finalizados conferidos'], ['avaliados', 'avaliações do cliente'], ['assumidos', 'assumidos no Looker']]
-    .filter(([key]) => kpis[key] !== undefined)
-    .map(([key, label]) => format.format(kpis[key]) + ' ' + label);
-  if (totals.length) section.append(node('p', totals.join(' · ')));
   section.className = 'panorama-compact-report';
-  showScore(section, analysis.score);
+  showHeadline(section, analysis.score, kpis);
 
   const byLabel = label => analysis.findings.find(finding => finding.startsWith(label + ': '));
   const leads = leadLabels.map(byLabel).filter(Boolean);
@@ -412,8 +426,8 @@ export function renderAnalysis(output, { analysis, days, kpis }, registry = {}) 
   showTable(quality, 'Plantão por turno', tables.shifts);
   showTable(quality, 'Desfecho do plantão', tables.outcomes);
 
-  if (tables.departments) section.append(departments);
   if (tables.team) section.append(team);
+  if (tables.departments) section.append(departments);
   section.append(volume);
   if (tables.reasons) section.append(reasons);
   if (tables.stars || tables.shifts || tables.outcomes) section.append(quality);

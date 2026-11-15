@@ -1,11 +1,11 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs?v=9';
-import { renderAnalysis, reportDetails, TIME_LABELS } from './analysis.mjs?v=9';
+import { analyzeWeekly } from './weekly.mjs?v=10';
+import { renderAnalysis, renderScoreSources, reportDetails, TIME_LABELS } from './analysis.mjs?v=10';
 
 const labels = {
-  total: 'Atendimentos no recorte', assumidos: 'Assumidos', finalizados: 'Finalizados',
+  total: 'Atendimentos no recorte', assumidos: 'Assumidos no Looker',
   clientes: 'Clientes atendidos', tme: 'TME', tmi: 'TMI', tmr: 'TMR',
-  nota: 'Nota média do cliente · Looker', avaliados: 'Avaliados', inatividade: 'Encerrados por inatividade',
+  avaliados: 'Avaliados', inatividade: 'Encerrados por inatividade',
   recorrencia: 'Recorrência', sla: 'SLA do plantão (2h)', fila: 'Atendimentos com tempo de fila'
 };
 const formatNumber = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
@@ -26,7 +26,7 @@ export function mountWeekly(root) {
   panel.innerHTML = '<form class="card panorama-upload-row panorama-weekly-upload"><label class="panorama-upload"><span>' +
     '<strong>ZIP do Looker/Opa!</strong><small>Analise o período completo exportado no ZIP.</small>' +
     '<input type="file" accept=".zip,application/zip" required></span></label>' +
-    '<button class="btn-primary panorama-generate" type="submit">Validar ZIP</button></form>' +
+    '<button class="btn-primary panorama-generate" type="submit">Analisar ZIP</button></form>' +
     '<p class="panorama-weekly-status" role="status" aria-live="polite"></p><div class="panorama-weekly-output"></div>';
   root.replaceChildren(panel);
   const form = panel.querySelector('form');
@@ -52,7 +52,7 @@ export function mountWeekly(root) {
     try {
       const report = await analyzeWeekly(readZip(file));
       if (current !== revision) return;
-      status.textContent = (report.valid ? 'Prévia validada' : 'Prévia com erros') + ' · ' +
+      status.textContent = (report.valid ? 'ZIP validado' : 'ZIP com erros') + ' · ' +
         report.files.validated + ' de ' + report.files.expected + ' CSVs reconhecidos e validados.';
       if (report.period) {
         const period = document.createElement('p');
@@ -79,7 +79,7 @@ export function mountWeekly(root) {
       let registry = {};
       try { registry = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch {}
       renderAnalysis(output, report, registry);
-      const indicators = reportDetails('Todos os indicadores');
+      const indicators = reportDetails('Indicadores complementares e tempos');
       const glossary = document.createElement('ul');
       for (const [label, definition] of Object.entries(TIME_LABELS)) {
         const term = document.createElement('li');
@@ -103,6 +103,7 @@ export function mountWeekly(root) {
           item.textContent = message;
           list.append(item);
         }
+        if (report.analysis) renderScoreSources(audit, report.analysis.score);
         audit.append(list);
         output.append(audit);
       }

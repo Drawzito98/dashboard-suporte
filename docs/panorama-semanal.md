@@ -1,12 +1,12 @@
 # Panorama semanal do suporte
 
-Na aba **Desempenho → Panorama semanal**, selecione o ZIP de exportação do Looker/Opa! e clique em **Validar ZIP**. A prévia mostra o período observado no relatório diário, os indicadores do recorte e as divergências. A leitura ocorre no navegador e a prévia fica em memória. O formulário de CSV por colaborador está em uma seção expansível na mesma aba. Os filtros globais ficam disponíveis ao abrir esse formulário, pois a análise do ZIP segue o recorte exportado.
+Na aba **Desempenho → Panorama semanal**, selecione o ZIP de exportação do Looker/Opa! e clique em **Analisar ZIP**. A prévia mostra o período observado no relatório diário, os indicadores do recorte e as divergências. A leitura ocorre no navegador e a prévia fica em memória. O Panorama usa o ZIP como única entrada. O formulário avulso de CSV por colaborador fica recolhido no Relatório Setorial.
 
 A seção **Análise da semana** resume os destaques do recorte e mostra volume diário, mapa de horários, departamentos, equipe, motivos, avaliações e plantão. Os nomes da equipe aparecem por padrão no Panorama semanal e podem ser ocultados na própria tabela. Os destaques informam a base usada nos percentuais.
 
 A meta de nota média é 4,70 em escala de 1 a 5. O relatório confere o cartão do Looker com a média ponderada das estrelas quando a distribuição reconcilia com o total de avaliados. No ZIP de referência, o cartão tem 4,71 e as 129 avaliações da distribuição produzem 4,49. O destaque sinaliza a divergência e mostra a distância de cada valor à meta.
 
-A leitura começa pelo resumo, pela situação da meta e por três destaques. Abra as seções de volume, equipe, motivos, avaliações e plantão para consultar os detalhes. Os cartões do Looker ficam em **Todos os indicadores**. A conferência reúne diferenças de escopo, cobertura e validação em uma seção própria.
+A leitura começa pelos finalizados conferidos e pela nota geral frente à meta. Os destaques vêm em seguida. A origem das notas fica em **Conferência dos dados e avisos**. Abra as seções de volume, equipe, motivos, avaliações e plantão para consultar os detalhes. Os cartões do Looker ficam em **Indicadores complementares e tempos**. A conferência reúne diferenças de escopo, cobertura e validação em uma seção própria.
 
 O leitor aceita o período completo identificado no CSV de volume diário, inclusive recortes com mais de sete dias. A tabela de equipe usa a coluna **Média aval.** de **Performance por colaborador** e segue a ordem de assumidos. A média geral vem do cartão do cliente e é comparada com a média ponderada das estrelas.
 

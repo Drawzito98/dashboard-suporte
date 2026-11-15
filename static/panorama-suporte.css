@@ -145,7 +145,7 @@
   color: var(--text-secondary);
 }
 
-body[data-active-tab="panorama-semanal"]:has(#panoramaLegacyDetails:not([open])) #globalFilterBar {
+body[data-active-tab="panorama-semanal"] #globalFilterBar {
   display: none;
 }
 
@@ -190,4 +190,24 @@ body[data-active-tab="panorama-semanal"]:has(#panoramaLegacyDetails:not([open]))
 
 .panorama-report-filters select {
   max-width: 100%;
+}
+
+.panorama-headline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 0.75rem;
+  margin-block: 0.6rem 1rem;
+}
+
+.panorama-headline .panorama-metric h4,
+.panorama-headline .panorama-metric p {
+  margin: 0;
+}
+
+.panorama-headline .panorama-metric strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.panorama-headline .panorama-metric p {
+  color: var(--text-secondary);
 }
