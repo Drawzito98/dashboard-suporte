@@ -219,9 +219,12 @@ function showHeadline(section, score, kpis) {
   if (mean !== null) value.className = mean < score.target ? 'panorama-score-low' : 'panorama-score-high';
   quality.append(node('h4', 'Nota geral do cliente'), value);
   const target = 'Meta ' + scoreFormat.format(score.target);
-  const details = mean === null ? target + ' · Resultado pendente' :
-    target + ' · ' + scoreDelta(mean, score.target) + ' · ' + format.format(score.ratingCount) + ' avaliações';
-  quality.append(node('p', details));
+  const details = node('ul');
+  details.className = 'panorama-headline-meta';
+  const values = mean === null ? [target, 'Resultado pendente'] :
+    [target, scoreDelta(mean, score.target), format.format(score.ratingCount) + ' avaliações'];
+  for (const item of values) details.append(node('li', item));
+  quality.append(details);
   summary.append(volume, quality);
   section.append(summary);
 }
@@ -268,6 +271,7 @@ function showTable(target, title, data, { heatmap = false, toggleNames = false }
   target.append(node('h4', title));
   const wrap = node('div');
   wrap.className = 'panorama-table-wrap';
+  if (heatmap) wrap.classList.add('panorama-heatmap-wrap');
   wrap.tabIndex = 0;
   wrap.setAttribute('role', 'region');
   wrap.setAttribute('aria-label', title);
