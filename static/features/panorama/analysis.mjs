@@ -47,12 +47,21 @@ export function buildAnalysis(reports, headers, days, kpis) {
   const distributionMean = ratingCount > 0 && ratingCount === kpis.avaliados
     ? Math.round(ratings.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount * 100) / 100
     : null;
+  const departmentScores = tables.departments?.rows.map(row => ({ mean: parseScore(row[4]), count: quantity(row[5]) })) ?? [];
+  const departmentCount = departmentScores.reduce((total, row) => total + row.count, 0);
+  const departmentMean = departmentCount > 0 && departmentCount === kpis.avaliados &&
+    departmentScores.every(row => Number.isSafeInteger(row.count) && row.count >= 0 && (!row.count || row.mean !== null))
+    ? Math.round(departmentScores.reduce((total, row) => total + (row.mean ?? 0) * row.count, 0) / departmentCount * 100) / 100
+    : null;
+  const corroborated = distributionMean !== null && departmentMean !== null &&
+    Math.abs(Math.round(distributionMean * 100) - Math.round(departmentMean * 100)) <= 1;
   const reported = kpis.nota ?? null;
-  const score = { target, reported, distributionMean, ratingCount,
+  const score = { target, reported, distributionMean, ratingCount, departmentMean,
+    confirmedMean: corroborated ? distributionMean : null,
     divergent: reported !== null && distributionMean !== null && reported !== distributionMean };
   const checks = [];
   if (score.divergent) {
-    checks.push('Nota média: o cartão do Looker e a distribuição de estrelas divergem. Confira se os dois relatórios usam o mesmo filtro e a mesma população antes de concluir se a meta foi atingida.');
+    checks.push('Nota média: o cartão do Looker e a distribuição de estrelas divergem. O cartão usa uma média cuja fórmula e filtros não estão no ZIP. A avaliação da meta usa as estrelas quando a nota é confirmada pelos departamentos.');
   }
 
   const findings = [];
@@ -113,6 +122,32 @@ export function buildAnalysis(reports, headers, days, kpis) {
   return { tables, findings, score, checks };
 }
 
+function parseScore(value) {
+  const raw = String(value ?? '').trim().replace(',', '.');
+  const number = Number(raw);
+  return /^\d(?:\.\d+)?$/.test(raw) && number >= 1 && number <= 5 ? number : null;
+}
+
+function nameKey(value) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/\s+/g, ' ').trim().replace(/\s*[-(]?\s*multi[\s-]?setor\)?\s*$/i, '').trim();
+}
+
+export function joinTeamLevels(rows, registry) {
+  const byName = new Map();
+  for (const [name, profile] of Object.entries(registry ?? {})) {
+    const key = nameKey(name);
+    const label = String(profile?.nivel ?? '').trim().toUpperCase();
+    const level = /^(?:N|NÍVEL\s+|NIVEL\s+)?[12]$/.test(label) ? 'N' + label.at(-1) : '';
+    if (!byName.has(key)) byName.set(key, new Set());
+    byName.get(key).add(level);
+  }
+  return rows.map(row => {
+    const levels = byName.get(nameKey(row[0]));
+    return levels?.size === 1 ? [...levels][0] || '—' : '—';
+  });
+}
+
 function node(tag, text) {
   const element = document.createElement(tag);
   if (text !== undefined) element.textContent = text;
@@ -122,11 +157,12 @@ function node(tag, text) {
 function showScore(section, score) {
   const card = node('article');
   card.className = 'card';
-  const label = score.divergent ? 'Resultado da meta pendente de conferência' :
-    score.reported === null ? 'Média do Looker indisponível' :
-      score.reported >= score.target ? 'Meta atingida no cartão do Looker' : 'Abaixo da meta no cartão do Looker';
+  const label = score.confirmedMean === null ? 'Resultado da meta pendente de conferência' :
+    score.confirmedMean >= score.target ? 'Meta atingida' : 'Meta não atingida';
   card.append(node('h4', 'Meta de nota média do cliente · ' + scoreFormat.format(score.target)), node('strong', label));
-  for (const [name, value] of [['Média geral do Looker (cartão de nota do cliente)', score.reported], ['Média pelas ' + format.format(score.ratingCount) + ' notas por estrela', score.distributionMean]]) {
+  for (const [name, value] of [['Média geral pelas ' + format.format(score.ratingCount) + ' avaliações por estrela', score.distributionMean],
+    ['Média ponderada dos departamentos (conferência)', score.departmentMean],
+    ['Cartão do Looker (referência)', score.reported]]) {
     if (value === null) continue;
     const gap = Math.round((value - score.target) * 100) / 100;
     const delta = gap === 0 ? 'na meta' : scoreFormat.format(Math.abs(gap)) + (gap > 0 ? ' acima da meta' : ' abaixo da meta');
@@ -136,6 +172,7 @@ function showScore(section, score) {
     row.append(name + ' · ', result, ' · ' + delta);
     card.append(row);
   }
+  if (score.divergent) card.append(node('p', 'O cartão do Looker diverge da média calculada pelas avaliações.'));
   section.append(card);
 }
 
@@ -197,8 +234,8 @@ function showTable(target, title, data, { heatmap = false, toggleNames = false }
     row.forEach((value, column) => {
       const cell = node(column ? 'td' : 'th', value ?? '—');
       if (!column) cell.scope = 'row';
-      if (data.headers[column] === 'Média aval.' && /^[1-5](?:[.,]\d+)?$/.test(String(value))) {
-        const customerScore = Number(value.replace(',', '.'));
+      const customerScore = ['Média aval.', 'Nota do cliente'].includes(data.headers[column]) ? parseScore(value) : null;
+      if (customerScore !== null) {
         cell.textContent = scoreFormat.format(customerScore);
         cell.className = customerScore < TARGET_SCORE ? 'panorama-score-low' : 'panorama-score-high';
         cell.append(' · ' + (customerScore < TARGET_SCORE ? 'Abaixo da meta' : 'Na meta ou acima'));
@@ -234,7 +271,7 @@ function showFindings(target, findings) {
   target.append(summary);
 }
 
-export function renderAnalysis(output, { analysis, days, kpis }) {
+export function renderAnalysis(output, { analysis, days, kpis }, registry = {}) {
   if (!analysis) return;
   const section = node('section');
   section.append(node('h3', 'Resumo do período'));
@@ -261,9 +298,41 @@ export function renderAnalysis(output, { analysis, days, kpis }) {
   showTable(volume, 'Assumidos por dia e faixa de horário', tables.heatmap, { heatmap: true });
 
   const team = reportDetails('Equipe e departamentos');
-  team.append(node('p', 'Tabela ordenada por assumidos. Média aval. é a nota do cliente por atendente, extraída de Performance por colaborador. A meta é 4,70.'));
-  showTable(team, 'Equipe', tables.team, { toggleNames: true });
-  showTable(team, 'Departamentos', tables.departments);
+  if (tables.team) {
+    team.append(node('p', 'Média aval. vem de Performance por colaborador. O filtro de nível usa o cadastro do app e se aplica à tabela de pessoas.'));
+    const label = node('label', 'Nível da equipe ');
+    const select = node('select');
+    for (const [key, text] of [['all', 'Todos'], ['N1', 'Nível 1 (N1)'], ['N2', 'Nível 2 (N2)']]) {
+      const option = node('option', text);
+      option.value = key;
+      select.append(option);
+    }
+    label.append(select);
+    const status = node('p');
+    status.setAttribute('role', 'status');
+    const tableSpot = node('div');
+    team.append(label, status, tableSpot);
+    const levels = joinTeamLevels(tables.team.rows, registry);
+    const draw = () => {
+      const rows = tables.team.rows.map((row, i) => [row[0], levels[i], ...row.slice(1)])
+        .filter(row => select.value === 'all' || row[1] === select.value);
+      tableSpot.replaceChildren();
+      status.textContent = rows.length ? format.format(rows.length) + ' atendentes exibidos.'
+        : 'Nenhum atendente com esse nível identificado no cadastro.';
+      showTable(tableSpot, 'Nota por pessoa', {
+        headers: [tables.team.headers[0], 'Nível', ...tables.team.headers.slice(1)], rows
+      });
+    };
+    select.value = 'all';
+    select.addEventListener('change', draw);
+    draw();
+    team.append(node('p', 'A média geral e as notas por setor se referem ao período inteiro do ZIP. O arquivo traz médias por pessoa, mas não a quantidade de notas de cada pessoa necessária para calcular médias ponderadas por nível.'));
+  }
+  if (tables.departments) {
+    showTable(team, 'Nota por setor', { ...tables.departments,
+      headers: tables.departments.headers.map(header => header === 'Score' ? 'Nota do cliente' : header)
+    });
+  }
 
   const reasons = reportDetails('Principais motivos');
   const reasonHighlight = byLabel('Motivo com maior volume');

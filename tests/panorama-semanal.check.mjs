@@ -24,7 +24,7 @@ export async function checkWeekly(zipPath) {
   ]);
 
   assert.equal(result.analysis.tables.team.rows.length, 13);
-  assert.deepEqual(result.analysis.score, { target: 4.7, reported: 4.71, distributionMean: 4.49, ratingCount: 129, divergent: true });
+  assert.deepEqual(result.analysis.score, { target: 4.7, reported: 4.71, distributionMean: 4.49, ratingCount: 129, departmentMean: 4.49, confirmedMean: 4.49, divergent: true });
   assert.ok(result.analysis.findings.some(line => line.includes('43 de 460 atendimentos (9,3%)')));
   assert.ok(result.analysis.tables.heatmap.rows.some(row => row.includes(null)));
   assert.equal(result.analysis.tables.team.headers.at(-1), '% dos finalizados do período');
@@ -64,7 +64,7 @@ export async function checkExtendedPeriod(zipPath) {
   assert.equal(result.kpis.assumidos, 888);
   assert.equal(result.kpis.finalizados, 897);
   assert.deepEqual(result.analysis.score, {
-    target: 4.7, reported: 4.75, distributionMean: 4.57, ratingCount: 253, divergent: true
+    target: 4.7, reported: 4.75, distributionMean: 4.57, ratingCount: 253, departmentMean: 4.57, confirmedMean: 4.57, divergent: true
   });
   const team = result.analysis.tables.team;
   assert.equal(team.headers[5], 'Média aval.');

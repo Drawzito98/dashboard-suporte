@@ -1,6 +1,6 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs?v=6';
-import { renderAnalysis, reportDetails } from './analysis.mjs?v=6';
+import { analyzeWeekly } from './weekly.mjs?v=7';
+import { renderAnalysis, reportDetails } from './analysis.mjs?v=7';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos', finalizados: 'Finalizados',
@@ -73,7 +73,9 @@ export function mountWeekly(root) {
         card.append(title, value);
         metrics.append(card);
       }
-      renderAnalysis(output, report);
+      let registry = {};
+      try { registry = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch {}
+      renderAnalysis(output, report, registry);
       const indicators = reportDetails('Todos os indicadores');
       indicators.append(metrics);
       output.append(indicators);

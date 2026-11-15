@@ -10,6 +10,8 @@ A leitura começa pelo resumo, pela situação da meta e por três destaques. Ab
 
 O leitor aceita o período completo identificado no CSV de volume diário, inclusive recortes com mais de sete dias. A tabela de equipe usa a coluna **Média aval.** de **Performance por colaborador** e segue a ordem de assumidos. A média geral vem do cartão do cliente e é comparada com a média ponderada das estrelas.
 
+A seção **Equipe e departamentos** mostra notas do cliente por pessoa e setor. O filtro N1/N2 cruza o nome completo com o cadastro do app e afeta a tabela de pessoas. Sem contagens de avaliações por atendente, o filtro não recalcula as notas do setor nem a média geral. A meta usa a média das estrelas quando o cálculo é corroborado pelas notas dos departamentos ponderadas pela quantidade de avaliações.
+
 ## Catálogo dos relatórios
 
 O ZIP de referência contém 35 CSVs UTF-8 separados por vírgula, dentro de uma pasta. O leitor aceita pastas internas e valida pelo nome do arquivo. Os dois heatmaps aceitam um subconjunto dos sete dias em qualquer ordem. Os relatórios diário e mensal podem trazer uma linha adicional de rótulos do Looker.
