@@ -19,13 +19,13 @@ function _rsAvgScoreBySetor(rows) {
   const avgs = Object.values(bySetor).filter(a => a.length > 0).map(a => a.reduce((x, y) => x + y, 0) / a.length);
   return avgs.length ? avgs.reduce((x, y) => x + y, 0) / avgs.length : 0;
 }
-function generateAndShowReport() {
+function generateAndShowReport(reportScope) {
   // Gera o relatório e garante feedback visual (sem depender do botão "Atualizar")
   try {
     setLoading(true, 'Gerando relatório…');
     const ta = document.getElementById('reportText');
 
-    const text = buildReportText();
+    const text = buildReportText(reportScope);
     window.__lastReportText = text;
 
     if (ta) {
@@ -34,8 +34,12 @@ function generateAndShowReport() {
     }
 
     // Switch to Relatório Setorial tab
-    const tabBtn = document.querySelector('.tab-btn[data-tab="relatorio-setorial"]');
-    if (tabBtn) tabBtn.click();
+    if (!reportScope) {
+      const tabBtn = document.querySelector('.tab-btn[data-tab="relatorio-setorial"]');
+      if (tabBtn) tabBtn.click();
+      const activeText = document.getElementById('reportText');
+      if (activeText && activeText !== ta) activeText.value = text;
+    }
 
     // rola até o textarea
     if (ta && ta.scrollIntoView) {
@@ -174,9 +178,9 @@ function escapeHtml(str) {
     .replaceAll("'", '&#39;');
 }
 
-function generateIntelReport() {
+function generateIntelReport(reportScope) {
   try {
-    const rows = getCurrentFilteredRows();
+    const rows = reportScope ? reportScope.rows : getCurrentFilteredRows();
     if (!rows.length) {
       showToast('Sem dados no escopo atual para gerar análise.', 'warn', 'Relatório Inteligente');
       return;

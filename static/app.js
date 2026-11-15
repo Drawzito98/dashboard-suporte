@@ -2287,13 +2287,10 @@ function getCurrentFilteredRows() {
   }).filter(r => !isAggregateName(r['Atendente']));
 }
 
-function buildReportText() {
+function buildReportText(reportScope) {
   const now = new Date();
-  const setorVal = setorSelect.value;
-  const mesVal = getActiveMonths();
-  const arquivoVal = arquivoSelect ? arquivoSelect.value : 'all';
-
-  const rows = getCurrentFilteredRows();
+  const setorVal = reportScope ? (reportScope.sector || 'all') : setorSelect.value;
+  const rows = reportScope ? reportScope.rows : getCurrentFilteredRows();
   if (!rows.length) return 'Sem dados no escopo atual.';
 
   const sum = (key) => rows.reduce((s, r) => s + (parseInt(r[key]) || 0), 0);
@@ -2306,13 +2303,16 @@ function buildReportText() {
   const produtividade = totalAss > 0 ? (totalFin / totalAss) : null;
   const taxaTrans = totalAss > 0 ? (totalTrans / totalAss) : null;
 
-  const scope = [];
-  if (arquivoVal !== 'all') scope.push(`Arquivo: ${arquivoVal}`);
-  if (setorVal !== 'all') scope.push(`Setor: ${setorVal}`);
-  if (mesVal.length) scope.push(`Período: ${getMonthScopeLabel()}`);
+  const scope = reportScope ? [...reportScope.labels] : [];
+  if (!reportScope) {
+    const arquivoVal = arquivoSelect ? arquivoSelect.value : 'all';
+    if (arquivoVal !== 'all') scope.push(`Arquivo: ${arquivoVal}`);
+    if (setorVal !== 'all') scope.push(`Setor: ${setorVal}`);
+    if (getActiveMonths().length) scope.push(`Período: ${getMonthScopeLabel()}`);
+    const q = (searchAtendenteInput?.value || '').trim();
+    if (q) scope.push(`Busca: ${q}`);
+  }
   if (presentationMode) scope.push('Modo apresentação ativo');
-  const q = (searchAtendenteInput?.value || '').trim();
-  if (q) scope.push(`Busca: ${q}`);
 
   const byAtt = {};
   rows.forEach(r => {

@@ -611,3 +611,44 @@
     }
   }
 }
+
+@media screen {
+  body[data-active-tab="relatorio-setorial"]:not(:has(#rsLegacyPanorama[open])) #globalFilterBar {
+    display: none;
+  }
+
+  #tab-relatorio-setorial .rs-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.6rem;
+    padding: 0.75rem;
+  }
+
+  #tab-relatorio-setorial .rs-filter-group {
+    flex: 1 1 8rem;
+    min-width: 0;
+    gap: 0.25rem;
+  }
+
+  #tab-relatorio-setorial .rs-filter-group:first-child {
+    flex-basis: 12rem;
+  }
+
+  #tab-relatorio-setorial .rs-filter-group span {
+    color: var(--text-secondary);
+    font-size: var(--dashboard-caption);
+    font-weight: 600;
+  }
+
+  #tab-relatorio-setorial .rs-filter-group select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #tab-relatorio-setorial .rs-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+}
