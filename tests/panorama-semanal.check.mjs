@@ -3,7 +3,29 @@ import { readFile } from 'node:fs/promises';
 import { analyzeWeekly } from '../static/features/panorama/weekly.mjs';
 import { readZip } from '../static/features/panorama/zip.mjs';
 import { schemas } from '../static/features/panorama/registry.mjs';
-import { filterDepartmentRows, joinTeamLevels, n1PeriodTarget, n1FinalizedGap } from '../static/features/panorama/analysis.mjs';
+import { filterDepartmentRows, joinTeamNames, joinTeamLevels, n1PeriodTarget, n1FinalizedGap, sortTeamRows } from '../static/features/panorama/analysis.mjs';
+
+import { decodeTeamNote, validateTeamNote } from '../static/features/panorama/team-context.mjs';
+
+const goalRows = [['Bia', 'N1', '59'], ['Ana', 'N1', '41'], ['Caio', 'N1', '63'], ['Davi', 'N2', '20'], ['Eva', 'N1', '10']];
+assert.deepEqual(sortTeamRows(goalRows, 'n1-deficit', 59).map(row => row[0]), ['Eva', 'Ana', 'Bia', 'Caio', 'Davi']);
+assert.deepEqual(joinTeamNames([['Ana Lima'], ['João Ribeiro'], ['João Ribeiro Souza'], ['Ana Lima Multi-setor']], {
+  'Ana Ferreira Lima': { nivel: 'N1' }, 'João Ribeiro Souza': { nivel: 'N1' }, 'João Ribeiro Santos': { nivel: 'N2' }
+}), ['Ana Ferreira Lima', '', 'João Ribeiro Souza', 'Ana Ferreira Lima']);
+assert.deepEqual(joinTeamNames([['Ana Lima']], {'Ana Lima': {}, 'Ana Lima Multi-setor': {}}), ['']);
+
+const contextPeriod = { start: '2026-11-03', end: '2026-11-08' };
+const contextNote = { person: 'Ana Ferreira Lima', date: '2026-11-03', type: 'operacional', text: 'Sistema indisponível.' };
+assert.deepEqual(validateTeamNote({ ...contextNote, text: '  Sistema indisponível.  ' }, contextPeriod), contextNote);
+assert.throws(() => validateTeamNote({ ...contextNote, date: '2026-11-02' }, contextPeriod), /período/);
+assert.throws(() => validateTeamNote({ ...contextNote, date: '2026-11-31' }, { ...contextPeriod, end: '2026-12-01' }), /período/);
+assert.throws(() => validateTeamNote({ ...contextNote, type: 'invalido' }, contextPeriod), /tipo/);
+assert.throws(() => validateTeamNote({ ...contextNote, text: ' ' }, contextPeriod), /observação/);
+assert.deepEqual(decodeTeamNote({ data: contextNote.date, conteudo: 'panorama-observacao:v1:' +
+  JSON.stringify({ ...contextNote, date: '2026-11-04' }) }, contextPeriod), contextNote);
+assert.equal(decodeTeamNote({ data: contextNote.date, conteudo: 'anotação geral' }, contextPeriod), null);
+assert.equal(decodeTeamNote({ data: contextNote.date, conteudo: 'panorama-observacao:v1:{' }, contextPeriod), null);
+console.log('Ordenação, identificação do N1 e observações privadas do Panorama conferidas.');
 
 assert.deepEqual(n1PeriodTarget({ start: '2026-11-03', end: '2026-11-08' }), { days: 5, target: 59 });
 assert.deepEqual(n1PeriodTarget({ start: '2026-11-01', end: '2026-11-14' }), { days: 12, target: 140 });

@@ -198,7 +198,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     const weeklyRoot = document.getElementById('panoramaWeeklyRoot');
     if (weeklyRoot && typeof window !== 'undefined' && window === globalThis) {
-      import('./features/panorama/ui.mjs?v=19').then(({ mountWeekly }) => mountWeekly(weeklyRoot)).catch(error => {
+      import('./features/panorama/ui.mjs?v=20').then(({ mountWeekly }) => mountWeekly(weeklyRoot)).catch(error => {
         weeklyRoot.textContent = 'Não foi possível carregar o Panorama semanal.';
         console.error('Falha ao carregar o Panorama semanal.', error);
       });

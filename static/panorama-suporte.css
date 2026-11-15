@@ -445,6 +445,33 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
   .panorama-view-actions .panorama-view-nav { width: 100%; }
 }
 
+#panoramaWeeklyRoot .panorama-n1-gap.panorama-score-low { color: var(--score-critico); font-weight: 700; }
+#panoramaWeeklyRoot .panorama-n1-gap.panorama-score-high { color: var(--score-excelente); font-weight: 700; }
+
+.panorama-team-context {
+  margin-block: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+body.presentation-mode .panorama-team-context { display: none; }
+.panorama-team-context > summary { cursor: pointer; font-weight: 650; }
+
+.panorama-team-context-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+}
+
+.panorama-team-context :is(p, li) { color: var(--text-secondary); overflow-wrap: anywhere; }
+.panorama-team-context ul { padding-inline-start: 1.15rem; }
+.panorama-team-context li + li { margin-top: 0.4rem; }
+.panorama-team-context li div { white-space: pre-wrap; }
+.panorama-team-context form.panorama-context-form { background: transparent; padding: 0; border: 0; }
+.panorama-context-form textarea { width: 100%; min-width: 0; resize: vertical; }
+.panorama-context-form [role="status"]:empty { display: none; }
+
 #panoramaWeeklyRoot .panorama-score-near {
   color: var(--score-atencao);
   font-weight: 700;

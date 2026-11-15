@@ -11,6 +11,7 @@ const catalog = {
 const TARGET_SCORE = 4.70;
 const MONTHLY_N1_TARGET = 280;
 const WORKDAYS_PER_MONTH = 24;
+const N1_GAP_HEADER = 'Saldo da meta N1';
 const heatmapFile = 'assumidos_por_dia_×_hora.csv';
 const subtotal = /^(?:total(?: geral)?|totais)$/i;
 const quantity = value => Number(String(value).trim().replace(/\./g, ''));
@@ -173,8 +174,13 @@ function n1GapLabel(gap) {
   return 'Meta atingida';
 }
 
-export function sortTeamRows(rows, order) {
+export function sortTeamRows(rows, order, n1Target = 0) {
   return [...rows].sort((first, second) => {
+    if (order === 'n1-deficit') {
+      const a = n1FinalizedGap(first[1], first[2], n1Target) ?? Infinity;
+      const b = n1FinalizedGap(second[1], second[2], n1Target) ?? Infinity;
+      if (a !== b) return a - b;
+    }
     if (order === 'score-desc' || order === 'score-asc') {
       const a = parseScore(first[3]);
       const b = parseScore(second[3]);
@@ -253,6 +259,11 @@ export function joinTeamDepartments(rows, registry) {
     const keys = new Set(departments.map(department => department.toLocaleLowerCase('pt-BR')));
     return keys.size === 1 ? departments[0] : '';
   });
+}
+
+export function joinTeamNames(rows, registry) {
+  const names = Object.fromEntries(Object.keys(registry ?? {}).map(name => [name, name]));
+  return matchTeamProfiles(rows, names).map(matches => matches.length === 1 ? matches[0] : '');
 }
 
 function node(tag, text) {
@@ -426,6 +437,7 @@ function showTable(target, title, data, { heatmap = false, nameVisibility, showT
     target.append(label);
     toggle.addEventListener('change', () => {
       nameVisibility.visible = toggle.checked;
+      nameVisibility.onChange?.();
       data.rows.forEach((row, i) => {
         tbody.rows[i].cells[0].textContent = toggle.checked ? row[0] : 'Atendente ' + (i + 1);
       });
@@ -443,6 +455,11 @@ function showTable(target, title, data, { heatmap = false, nameVisibility, showT
         const band = scoreBand(customerScore);
         cell.className = band.className;
         cell.append(node('small', band.label));
+      }
+      if (data.headers[column] === N1_GAP_HEADER) {
+        cell.textContent = n1GapLabel(value);
+        cell.className = 'panorama-n1-gap';
+        if (value !== null) cell.classList.add(value < 0 ? 'panorama-score-low' : 'panorama-score-high');
       }
       if (heatmap && column && Number.isFinite(value) && value > 0) {
         cell.style.backgroundColor = 'rgba(59, 130, 246, ' + (0.12 + 0.55 * value / max) + ')';
@@ -517,7 +534,7 @@ function renderViews(output, entries, exportReport) {
   output.append(actions, status, body);
 }
 
-export function renderAnalysis(output, report, { registry = {}, indicators, audit } = {}) {
+export function renderAnalysis(output, report, { registry = {}, indicators, audit, teamContext } = {}) {
   const { analysis, days, kpis, period } = report;
   if (!analysis) return;
   const n1Goal = n1PeriodTarget(period);
@@ -569,6 +586,9 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
     const source = projectTable(tables.team, ['Atendente', 'Finalizados', 'Média aval.', 'TMA', 'TMI', 'TMR']);
     const levels = joinTeamLevels(source.rows, registry);
     const departments = joinTeamDepartments(source.rows, registry);
+    const registeredNames = joinTeamNames(source.rows, registry);
+    const namesByRow = new Map(source.rows.map((row, index) => [row[0], registeredNames[index]]));
+    const context = n1Goal.target && teamContext?.(period, names => joinTeamNames(names.map(name => [name]), registry));
     const knownDepartments = new Map();
     for (const name of departments.filter(Boolean)) knownDepartments.set(name.toLocaleLowerCase('pt-BR'), name);
     const department = choose('Departamento cadastrado', [
@@ -582,10 +602,15 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
     filters.className = 'panorama-report-filters';
     const order = choose('Ordenar por', [
       ['volume', 'Finalizados · maior volume'],
+      ['n1-deficit', 'Meta N1 · mais finalizados faltando'],
       ['score-desc', 'Nota · acima da meta primeiro'],
       ['score-asc', 'Nota · abaixo da meta primeiro']
     ]);
-    const nameVisibility = { visible: true };
+    let contextPeople = [];
+    const nameVisibility = {
+      visible: true,
+      onChange: () => context?.setPeople(nameVisibility.visible ? contextPeople : [])
+    };
     teamNamesVisible = () => nameVisibility.visible;
     const showTimes = node('input');
     showTimes.type = 'checkbox';
@@ -607,13 +632,16 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
     goalNote.append(' Base de ' + MONTHLY_N1_TARGET + ' finalizados em ' + WORKDAYS_PER_MONTH +
       ' dias por mês, de segunda a sábado, com limite mensal e arredondamento para cima. Feriados e escalas individuais não entram no cálculo.');
     team.append(filters, node('p', 'Departamento e nível vêm do cadastro. Finalizados, nota e tempos são os totais de cada pessoa no ZIP.'), goalNote, status, tableSpot);
+    if (context) team.insertBefore(context.element, status);
     const draw = () => {
       const selected = source.rows.map((row, index) => ({
         values: [row[0], levels[index], ...row.slice(1)], department: departments[index].toLocaleLowerCase('pt-BR')
       })).filter(({ values, department: key }) => (!level.select.value || values[1] === level.select.value) &&
         (!person.select.value || values[0] === person.select.value) &&
         (!department.select.value || department.select.value === (key || 'unknown'))).map(entry => entry.values);
-      const rows = sortTeamRows(selected, order.select.value);
+      const rows = sortTeamRows(selected, order.select.value, n1Goal.target);
+      contextPeople = rows.filter(row => row[1] === 'N1').map(row => namesByRow.get(row[0])).filter(Boolean);
+      nameVisibility.onChange();
       exportTeam = rows.map(row => {
         const gap = n1FinalizedGap(row[1], row[2], n1Goal.target);
         return [...row, gap === null ? null : n1Goal.target, gap];
@@ -623,8 +651,8 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
         : 'Nenhuma pessoa corresponde aos filtros.';
       const times = showTimes.checked ? ['TMA', 'TMI', 'TMR'] : [];
       showTable(tableSpot, 'Resultado por pessoa', {
-        headers: ['Atendente', 'Nível', 'Finalizados', 'Saldo da meta N1', 'Média aval.', ...times],
-        rows: exportTeam.map(row => [...row.slice(0, 3), n1GapLabel(row[8]), row[3], ...row.slice(4, 4 + times.length)])
+        headers: ['Atendente', 'Nível', 'Finalizados', N1_GAP_HEADER, 'Média aval.', ...times],
+        rows: exportTeam.map(row => [...row.slice(0, 3), row[8], row[3], ...row.slice(4, 4 + times.length)])
       }, { nameVisibility });
     };
     department.select.addEventListener('change', draw);
