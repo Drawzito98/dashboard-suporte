@@ -11,7 +11,7 @@ function gap(value, target) {
   return value === null ? null : Math.round((value - target) * 100) / 100;
 }
 
-function sheetDefinitions(report, team, departments) {
+function sheetDefinitions(report, team, departments, n1Goal) {
   const { period, kpis, days, analysis } = report;
   const { target, confirmedMean, reported } = analysis.score;
   const summary = [
@@ -23,15 +23,17 @@ function sheetDefinitions(report, team, departments) {
     ['Meta de nota', target],
     ['Diferença para a meta', gap(confirmedMean, target)],
     ['Avaliações do cliente', kpis.avaliados],
-    ['Nota do cartão do Looker', reported]
+    ['Nota do cartão do Looker', reported],
+    ['Dias considerados na meta N1', n1Goal?.days],
+    ['Meta N1 no recorte', n1Goal?.target || null]
   ];
   return [
     { name: 'Resumo', rows: summary, widths: [33, 22], decimals: ['B5', 'B6', 'B7', 'B9'] },
     { name: 'Equipe', rows: [
-      ['Atendente', 'Nível', 'Finalizados', 'Nota', 'Diferença da meta', 'TMA', 'TMI', 'TMR'],
-      ...team.map(([name, level, volume, value, tma, tmi, tmr]) =>
-        [name, level, integer(volume), score(value), gap(score(value), target), tma, tmi, tmr])
-    ], widths: [38, 12, 14, 12, 21, 15, 15, 15], decimalColumns: ['D', 'E'] },
+      ['Atendente', 'Nível', 'Finalizados', 'Nota', 'Diferença da meta', 'TMA', 'TMI', 'TMR', 'Meta N1 no recorte', 'Saldo da meta N1'],
+      ...team.map(([name, level, volume, value, tma, tmi, tmr, volumeTarget, volumeGap]) =>
+        [name, level, integer(volume), score(value), gap(score(value), target), tma, tmi, tmr, volumeTarget, volumeGap])
+    ], widths: [38, 12, 14, 12, 21, 15, 15, 15, 22, 21], decimalColumns: ['D', 'E'] },
     { name: 'Departamentos', rows: [
       ['Departamento', 'Finalizados', 'Nota', 'Diferença da meta', 'Avaliados', 'TMA', 'TMR'],
       ...departments.map(([name, volume, value, count, tma, tmr]) =>
@@ -69,9 +71,9 @@ function styles(xml) {
       cellStyle(0, 0, 2) + cellStyle(0, 3, 2) + '</cellXfs>');
 }
 
-export function buildPanoramaWorkbook(XLSX, report, team, departments) {
+export function buildPanoramaWorkbook(XLSX, report, team, departments, n1Goal) {
   if (!XLSX?.utils || !XLSX?.CFB) throw new Error('Editor Excel indisponível. Recarregue a página e tente novamente.');
-  const definitions = sheetDefinitions(report, team, departments);
+  const definitions = sheetDefinitions(report, team, departments, n1Goal);
   const book = XLSX.utils.book_new();
   for (const { name, rows, widths } of definitions) {
     const sheet = XLSX.utils.aoa_to_sheet(rows);
@@ -95,8 +97,8 @@ export function buildPanoramaWorkbook(XLSX, report, team, departments) {
   return new Uint8Array(bytes);
 }
 
-export function downloadPanoramaWorkbook(XLSX, report, team, departments) {
-  const bytes = buildPanoramaWorkbook(XLSX, report, team, departments);
+export function downloadPanoramaWorkbook(XLSX, report, team, departments, n1Goal) {
+  const bytes = buildPanoramaWorkbook(XLSX, report, team, departments, n1Goal);
   const link = document.createElement('a');
   const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
   link.href = url;

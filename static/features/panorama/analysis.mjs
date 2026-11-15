@@ -1,4 +1,4 @@
-import { downloadPanoramaWorkbook } from './xlsx.mjs?v=1';
+import { downloadPanoramaWorkbook } from './xlsx.mjs?v=2';
 
 const catalog = {
   departments: ['performance_por_departamento.csv', [0, 1, 2, 6, 7, 8, 9, 4]],
@@ -9,6 +9,8 @@ const catalog = {
   outcomes: ['plantão__resolvidos_×_repassados.csv', [0, 1]]
 };
 const TARGET_SCORE = 4.70;
+const MONTHLY_N1_TARGET = 280;
+const WORKDAYS_PER_MONTH = 24;
 const heatmapFile = 'assumidos_por_dia_×_hora.csv';
 const subtotal = /^(?:total(?: geral)?|totais)$/i;
 const quantity = value => Number(String(value).trim().replace(/\./g, ''));
@@ -143,6 +145,32 @@ export const TIME_LABELS = Object.freeze({
 
 export function filterDepartmentRows(rows, department) {
   return department === '' ? rows : rows.filter(row => row[0] === department);
+}
+
+export function n1PeriodTarget(period) {
+  const workdays = new Map();
+  if (period) {
+    const day = new Date(period.start + 'T00:00:00Z');
+    const end = Date.parse(period.end + 'T00:00:00Z');
+    for (; day.getTime() <= end; day.setUTCDate(day.getUTCDate() + 1)) {
+      if (day.getUTCDay() === 0) continue;
+      const month = day.getUTCFullYear() * 12 + day.getUTCMonth();
+      workdays.set(month, (workdays.get(month) ?? 0) + 1);
+    }
+  }
+  const days = [...workdays.values()].reduce((total, count) => total + Math.min(count, WORKDAYS_PER_MONTH), 0);
+  return { days, target: Math.ceil(MONTHLY_N1_TARGET * days / WORKDAYS_PER_MONTH) };
+}
+
+export function n1FinalizedGap(level, finalized, target) {
+  return level === 'N1' && target > 0 ? quantity(finalized) - target : null;
+}
+
+function n1GapLabel(gap) {
+  if (gap === null) return '—';
+  if (gap < 0) return 'Faltam ' + format.format(-gap);
+  if (gap > 0) return format.format(gap) + ' acima';
+  return 'Meta atingida';
 }
 
 export function sortTeamRows(rows, order) {
@@ -492,6 +520,7 @@ function renderViews(output, entries, exportReport) {
 export function renderAnalysis(output, report, { registry = {}, indicators, audit } = {}) {
   const { analysis, days, kpis, period } = report;
   if (!analysis) return;
+  const n1Goal = n1PeriodTarget(period);
   let exportTeam = [];
   let exportDepartments = [];
   let teamNamesVisible = () => true;
@@ -568,7 +597,16 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
     const status = node('p');
     status.setAttribute('role', 'status');
     const tableSpot = node('div');
-    team.append(filters, node('p', 'Departamento e nível vêm do cadastro. Finalizados, nota e tempos são os totais de cada pessoa no ZIP.'), status, tableSpot);
+    const goalNote = node('p');
+    if (n1Goal.days) {
+      goalNote.append(node('strong', 'Meta N1 no recorte: ' + format.format(n1Goal.target) + ' finalizados'),
+        ' · ' + format.format(n1Goal.days) + (n1Goal.days === 1 ? ' dia considerado.' : ' dias considerados.'));
+    } else {
+      goalNote.append(node('strong', 'Sem meta N1 neste recorte.'), ' Nenhum dia de segunda a sábado no período.');
+    }
+    goalNote.append(' Base de ' + MONTHLY_N1_TARGET + ' finalizados em ' + WORKDAYS_PER_MONTH +
+      ' dias por mês, de segunda a sábado, com limite mensal e arredondamento para cima. Feriados e escalas individuais não entram no cálculo.');
+    team.append(filters, node('p', 'Departamento e nível vêm do cadastro. Finalizados, nota e tempos são os totais de cada pessoa no ZIP.'), goalNote, status, tableSpot);
     const draw = () => {
       const selected = source.rows.map((row, index) => ({
         values: [row[0], levels[index], ...row.slice(1)], department: departments[index].toLocaleLowerCase('pt-BR')
@@ -576,14 +614,17 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
         (!person.select.value || values[0] === person.select.value) &&
         (!department.select.value || department.select.value === (key || 'unknown'))).map(entry => entry.values);
       const rows = sortTeamRows(selected, order.select.value);
-      exportTeam = rows;
+      exportTeam = rows.map(row => {
+        const gap = n1FinalizedGap(row[1], row[2], n1Goal.target);
+        return [...row, gap === null ? null : n1Goal.target, gap];
+      });
       tableSpot.replaceChildren();
       status.textContent = rows.length ? format.format(rows.length) + ' de ' + format.format(source.rows.length) + ' pessoas no ZIP.'
         : 'Nenhuma pessoa corresponde aos filtros.';
-      const columns = showTimes.checked ? 7 : 4;
+      const times = showTimes.checked ? ['TMA', 'TMI', 'TMR'] : [];
       showTable(tableSpot, 'Resultado por pessoa', {
-        headers: ['Atendente', 'Nível', 'Finalizados', 'Média aval.', 'TMA', 'TMI', 'TMR'].slice(0, columns),
-        rows: rows.map(row => row.slice(0, columns))
+        headers: ['Atendente', 'Nível', 'Finalizados', 'Saldo da meta N1', 'Média aval.', ...times],
+        rows: exportTeam.map(row => [...row.slice(0, 3), n1GapLabel(row[8]), row[3], ...row.slice(4, 4 + times.length)])
       }, { nameVisibility });
     };
     department.select.addEventListener('change', draw);
@@ -636,6 +677,6 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
     const team = exportTeam.map((row, index) => [
       teamNamesVisible() ? row[0] : 'Atendente ' + (index + 1), ...row.slice(1)
     ]);
-    downloadPanoramaWorkbook(globalThis.XLSX, report, team, exportDepartments);
+    downloadPanoramaWorkbook(globalThis.XLSX, report, team, exportDepartments, n1Goal);
   });
 }

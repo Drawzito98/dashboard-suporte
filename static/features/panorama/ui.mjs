@@ -1,6 +1,6 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs?v=17';
-import { renderAnalysis, renderScoreSources, reportDetails, TIME_LABELS } from './analysis.mjs?v=17';
+import { analyzeWeekly } from './weekly.mjs?v=18';
+import { renderAnalysis, renderScoreSources, reportDetails, TIME_LABELS } from './analysis.mjs?v=18';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos no Looker',

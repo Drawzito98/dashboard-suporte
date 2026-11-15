@@ -3,7 +3,20 @@ import { readFile } from 'node:fs/promises';
 import { analyzeWeekly } from '../static/features/panorama/weekly.mjs';
 import { readZip } from '../static/features/panorama/zip.mjs';
 import { schemas } from '../static/features/panorama/registry.mjs';
-import { filterDepartmentRows, joinTeamLevels } from '../static/features/panorama/analysis.mjs';
+import { filterDepartmentRows, joinTeamLevels, n1PeriodTarget, n1FinalizedGap } from '../static/features/panorama/analysis.mjs';
+
+assert.deepEqual(n1PeriodTarget({ start: '2026-11-03', end: '2026-11-08' }), { days: 5, target: 59 });
+assert.deepEqual(n1PeriodTarget({ start: '2026-11-01', end: '2026-11-14' }), { days: 12, target: 140 });
+assert.deepEqual(n1PeriodTarget({ start: '2026-07-01', end: '2026-07-31' }), { days: 24, target: 280 });
+assert.deepEqual(n1PeriodTarget({ start: '2026-10-30', end: '2026-11-02' }), { days: 3, target: 35 });
+assert.deepEqual(n1PeriodTarget({ start: '2026-11-08', end: '2026-11-08' }), { days: 0, target: 0 });
+assert.equal(n1FinalizedGap('N1', '50', 59), -9);
+assert.equal(n1FinalizedGap('N1', '59', 59), 0);
+assert.equal(n1FinalizedGap('N1', '1.000', 59), 941);
+assert.equal(n1FinalizedGap('N1', '20', 0), null);
+assert.equal(n1FinalizedGap('N2', '100', 59), null);
+assert.equal(n1FinalizedGap('—', '100', 59), null);
+console.log('Meta de finalizados N1: projeção, teto mensal, mudança de mês e saldo conferidos.');
 
 export async function checkWeekly(zipPath) {
   const archive = new Blob([await readFile(zipPath)]);
@@ -61,6 +74,7 @@ export async function checkExtendedPeriod(zipPath) {
   const result = await analyzeWeekly(readZip(new Blob([await readFile(zipPath)])));
   assert.equal(result.valid, true, JSON.stringify(result.issues));
   assert.deepEqual(result.period, { start: '2026-11-01', end: '2026-11-14' });
+  assert.equal(n1PeriodTarget(result.period).target, 140);
   assert.deepEqual(result.files, { expected: 35, validated: 35 });
   assert.equal(result.kpis.assumidos, 888);
   assert.equal(result.kpis.finalizados, 897);

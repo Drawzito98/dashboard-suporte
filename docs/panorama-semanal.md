@@ -16,6 +16,8 @@ A conferência de finalizados compara o cartão, o volume diário e as somas por
 
 Na Equipe, ordene por volume de finalizados ou por nota, com maiores ou menores notas primeiro. Os tempos aparecem por padrão e podem ser recolhidos. **Exportar planilha** baixa um XLSX com o resumo, a equipe e os departamentos conforme os filtros, além do volume diário e dos motivos do recorte. No Google Planilhas, use **Arquivo → Importar → Fazer upload**.
 
+Na Equipe, a meta de volume vale para quem está cadastrado como N1. A base é de 280 finalizados em 24 dias de trabalho. A projeção conta de segunda a sábado no intervalo inclusivo do ZIP, com teto de 24 dias por mês e arredondamento para cima. Feriados e escalas individuais não entram. Em um recorte de cinco dias de segunda a sábado, a meta é 59. O saldo compara o total da pessoa no ZIP com a meta proporcional. N2 e pessoas sem nível identificado ficam sem saldo. A exportação XLSX inclui a meta e o saldo numérico por pessoa.
+
 O Resumo usa cartões compactos, barras diárias de assumidos e finalizados, mapa de horários e rankings de motivos e notas. Os valores vêm do ZIP atual. A conferência sinaliza divergências entre as fontes exportadas; a apresentação não replica números ou variações do HTML de referência.
 
 ## Catálogo dos relatórios
