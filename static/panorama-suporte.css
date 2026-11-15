@@ -192,20 +192,7 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
   max-width: 100%;
 }
 
-.panorama-headline-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.15rem 0.75rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-}
 
-.panorama-headline-meta li {
-  white-space: nowrap;
-}
 
 .panorama-compact-report .panorama-analysis {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
@@ -314,46 +301,11 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
   font-variant-numeric: tabular-nums;
 }
 
-.panorama-headline {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-  gap: 0;
-  margin-block: 0.75rem 1rem;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-}
 
-.panorama-hero-stat {
-  padding: 0.9rem clamp(0.85rem, 2.3cqi, 1.5rem);
-  min-width: 0;
-}
 
-.panorama-hero-stat + .panorama-hero-stat {
-  border-inline-start: 1px solid var(--border);
-}
 
-.panorama-hero-stat h4 {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
 
-.panorama-hero-stat > strong {
-  display: block;
-  color: var(--text-strong);
-  font-size: clamp(1.6rem, 4.3cqi, 2.45rem);
-  line-height: 1.15;
-  letter-spacing: -0.035em;
-  font-variant-numeric: tabular-nums;
-  margin-block: 0.35rem;
-}
 
-.panorama-hero-stat p {
-  margin: 0;
-  font-size: 0.8rem;
-}
 
 .panorama-findings {
   margin: 0.35rem 0 0;
@@ -420,43 +372,11 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
   color: var(--text-strong);
 }
 
-.panorama-finalizados-chart {
-  min-width: 0;
-  margin: 0;
-}
 
-.panorama-finalizados-chart ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
 
-.panorama-finalizados-chart li {
-  display: grid;
-  grid-template-columns: 3rem minmax(0, 1fr) 2.5rem;
-  align-items: center;
-  gap: 0.45rem;
-  padding-block: 0.17rem;
-  font-size: 0.78rem;
-  font-variant-numeric: tabular-nums;
-}
 
-.panorama-finalizados-chart strong {
-  text-align: right;
-}
 
-.panorama-finalizados-track {
-  height: 0.55rem;
-  border-radius: 4px;
-  background: var(--bg-subtle);
-}
 
-.panorama-finalizados-track > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent);
-}
 
 .panorama-overview .panorama-findings > div {
   grid-template-columns: minmax(0, 1fr);
@@ -500,18 +420,11 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
   display: none;
 }
 
-.panorama-hero-stat > strong {
-  font-size: clamp(1.5rem, 3.6cqi, 2.1rem);
-}
 
 .panorama-overview {
   gap: 1rem;
 }
 
-.panorama-finalizados-chart li {
-  grid-template-columns: 5.2rem minmax(0, 1fr) 2.6rem;
-  padding-block: 0.13rem;
-}
 
 #panoramaWeeklyRoot .panorama-report-filters {
   gap: 0.45rem 0.65rem;
@@ -535,4 +448,231 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
 #panoramaWeeklyRoot .panorama-score-near {
   color: var(--score-atencao);
   font-weight: 700;
+}
+
+#panoramaWeeklyRoot {
+  --panorama-assumed: #397fcb;
+  --panorama-closed: #bd4d25;
+  --panorama-chart-grid: color-mix(in srgb, var(--border) 76%, transparent);
+}
+
+html[data-theme="dark"] #panoramaWeeklyRoot {
+  --panorama-assumed: #4795e9;
+  --panorama-closed: #e06e42;
+}
+
+.panorama-summary-view > h3 {
+  font-size: clamp(1.2rem, 2.8cqi, 1.65rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.panorama-reference-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: 0.65rem;
+  margin: 0.9rem 0;
+}
+
+.panorama-reference-kpis article, .panorama-graph-panel {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-surface);
+}
+
+.panorama-reference-kpis article {
+  display: grid;
+  align-content: start;
+  gap: 0.22rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.panorama-reference-kpis article :is(span, small) {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.panorama-reference-kpis article strong {
+  color: var(--text-strong);
+  font-size: clamp(1.15rem, 2.4cqi, 1.55rem);
+  line-height: 1.13;
+  font-variant-numeric: tabular-nums;
+}
+
+.panorama-summary-view .panorama-overview {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  align-items: stretch;
+  margin-block: 0.8rem;
+}
+
+.panorama-graph-panel {
+  padding: 0.8rem 0.9rem;
+}
+
+.panorama-graph-panel h4, .panorama-summary-highlights h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text-strong);
+}
+
+.panorama-chart-legend {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.panorama-chart-legend span::before {
+  display: inline-block;
+  width: 0.62rem;
+  height: 0.62rem;
+  margin-right: 0.35rem;
+  border-radius: 2px;
+  background: var(--panorama-assumed);
+  content: '';
+}
+
+.panorama-chart-legend span + span::before {
+  background: var(--panorama-closed);
+}
+
+.panorama-chart-scroll {
+  overflow-x: auto;
+  padding-top: 1.15rem;
+}
+
+.panorama-daily-columns {
+  display: flex;
+  align-items: end;
+  gap: 0.25rem;
+  list-style: none;
+  padding: 0 0 0.3rem;
+  margin: 0;
+}
+
+.panorama-daily-columns > li {
+  flex: 1 0 3.2rem;
+  text-align: center;
+}
+
+.panorama-column-pair {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.15rem;
+  height: 9.5rem;
+  background: repeating-linear-gradient(to top, var(--panorama-chart-grid) 0 1px, transparent 1px 25%);
+}
+
+.panorama-day-bar {
+  position: relative;
+  width: 39%;
+  max-width: 1.35rem;
+  background: var(--panorama-assumed);
+  border-radius: 3px 3px 0 0;
+}
+
+.panorama-day-bar + .panorama-day-bar {
+  background: var(--panorama-closed);
+}
+
+.panorama-day-bar span {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  font-size: 0.64rem;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.panorama-daily-columns time {
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+}
+
+#panoramaWeeklyRoot .panorama-heatmap-wrap .panorama-table {
+  border-collapse: separate;
+  border-spacing: 3px;
+}
+
+#panoramaWeeklyRoot .panorama-heatmap-wrap :is(th, td) {
+  border: 0;
+  border-radius: 3px;
+  padding: 0.3rem 0.43rem;
+}
+
+.panorama-rank-bars, .panorama-audit-list {
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panorama-rank-bars li {
+  display: grid;
+  grid-template-columns: minmax(5rem, 1fr) minmax(2rem, 1.2fr) 2.4rem;
+  gap: 0.55rem;
+  align-items: center;
+  padding-block: 0.24rem;
+  font-size: 0.75rem;
+}
+
+.panorama-rank-bars strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.panorama-rank-track, .panorama-rank-track > span {
+  display: block;
+  height: 0.48rem;
+  border-radius: 4px;
+}
+
+.panorama-rank-track {
+  background: var(--bg-subtle);
+}
+
+.panorama-rank-track > span {
+  background: var(--panorama-assumed);
+}
+
+.panorama-summary-highlights {
+  margin-top: 0.8rem;
+}
+
+.panorama-audit-list li {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: start;
+  gap: 0.65rem;
+  padding-block: 0.45rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.panorama-audit-badge {
+  padding: 0.12rem 0.43rem;
+  border-radius: 999px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.69rem;
+}
+
+.panorama-audit-badge[data-kind="ok"] {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.panorama-audit-badge[data-kind="error"] {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+@container (max-width: 47rem) {
+  .panorama-summary-view .panorama-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

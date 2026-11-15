@@ -1,6 +1,6 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs?v=16';
-import { renderAnalysis, renderScoreSources, reportDetails, TIME_LABELS } from './analysis.mjs?v=16';
+import { analyzeWeekly } from './weekly.mjs?v=17';
+import { renderAnalysis, renderScoreSources, reportDetails, TIME_LABELS } from './analysis.mjs?v=17';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos no Looker',
@@ -94,16 +94,25 @@ export function mountWeekly(root) {
         heading.textContent = report.valid ? 'Conferência dos dados' : 'Erros na validação do ZIP';
         audit.append(heading);
         const list = document.createElement('ul');
-        for (const { severity, file: name, message } of report.issues) {
+        list.className = 'panorama-audit-list';
+        const addCheck = (label, message) => {
           const item = document.createElement('li');
-          item.textContent = (severity === 'error' ? 'Erro' : 'Aviso') + ' · ' + name + ' · ' + message;
+          const badge = document.createElement('strong');
+          badge.className = 'panorama-audit-badge';
+          badge.dataset.kind = label === 'Confere' ? 'ok' : label === 'Erro' ? 'error' : 'warning';
+          badge.textContent = label;
+          const detail = document.createElement('span');
+          detail.textContent = message;
+          item.append(badge, detail);
           list.append(item);
+        };
+        for (const { severity, file: name, message } of report.issues) {
+          addCheck(severity === 'error' ? 'Erro' : 'Verificar', name + ' · ' + message);
         }
         const coverage = report.analysis?.findings.find(line => line.startsWith('Cobertura do tempo de fila: '));
         for (const message of [coverage, ...(report.analysis?.checks ?? [])].filter(Boolean)) {
-          const item = document.createElement('li');
-          item.textContent = message;
-          list.append(item);
+          const verified = /^([\d.]+ (finalizados|assumidos):|As avaliações e os encerramentos)/.test(message);
+          addCheck(verified ? 'Confere' : 'Verificar', message);
         }
         if (report.analysis) renderScoreSources(audit, report.analysis.score);
         audit.append(list);

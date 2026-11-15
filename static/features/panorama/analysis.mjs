@@ -245,28 +245,43 @@ function scoreDelta(value, target) {
   return scoreFormat.format(Math.abs(delta) / 100) + (delta > 0 ? ' acima da meta' : ' abaixo da meta');
 }
 
+function compactTime(value) {
+  if (value == null) return '—';
+  const hours = Math.floor(value / 3600);
+  const minutes = Math.floor(value / 60) % 60;
+  return (hours ? hours + 'h' : '') + minutes + 'm' + value % 60 + 's';
+}
+
 function showHeadline(section, score, kpis) {
-  const summary = node('div');
-  summary.className = 'panorama-headline';
-  const volume = node('article');
-  volume.className = 'panorama-hero-stat';
-  volume.append(node('h4', 'Finalizados'), node('strong', format.format(kpis.finalizados)),
-    node('p', 'Conferidos nos relatórios do ZIP'));
-  const quality = node('article');
-  quality.className = 'panorama-hero-stat';
-  const mean = score.confirmedMean;
-  const value = node('strong', mean === null ? 'Em conferência' : scoreFormat.format(mean) + ' / 5');
-  if (mean !== null) value.className = scoreBand(mean).className;
-  quality.append(node('h4', 'Nota geral do cliente'), value);
-  const target = 'Meta ' + scoreFormat.format(score.target);
-  const details = node('ul');
-  details.className = 'panorama-headline-meta';
-  const values = mean === null ? [target, 'Resultado pendente'] :
-    [target, scoreBand(mean).label, format.format(score.ratingCount) + ' avaliações'];
-  for (const item of values) details.append(node('li', item));
-  quality.append(details);
-  summary.append(volume, quality);
-  section.append(summary);
+  const grid = node('div');
+  grid.className = 'panorama-reference-kpis';
+  const note = score.confirmedMean;
+  const inat = kpis.total > 0 && kpis.inatividade !== undefined ? percent(kpis.inatividade, kpis.total) : '—';
+  const pct = value => value == null ? '—' : scoreFormat.format(value) + '%';
+  const metrics = [
+    ['Finalizados', kpis.finalizados, 'Conferidos nos relatórios do ZIP'],
+    ['Nota geral do cliente', note == null ? '—' : scoreFormat.format(note), 'Meta ' + scoreFormat.format(score.target) +
+      (note == null ? ' · Em conferência' : ' · ' + scoreBand(note).label + ' · ' + format.format(score.ratingCount) + ' avaliações')],
+    ['Assumidos', kpis.assumidos, 'Total informado pelo Looker'],
+    ['Clientes atendidos', kpis.clientes],
+    ['Espera média (TME)', compactTime(kpis.tme), undefined, 'TME'],
+    ['Interação média (TMI)', compactTime(kpis.tmi), undefined, 'TMI'],
+    ['Resolução média (TMR)', compactTime(kpis.tmr), undefined, 'TMR'],
+    ['Encerrados por inatividade', inat, kpis.inatividade === undefined ? null : format.format(kpis.inatividade) + ' de ' + format.format(kpis.total)],
+    ['Recorrência', pct(kpis.recorrencia)],
+    ['SLA do plantão (2h)', pct(kpis.sla)]
+  ];
+  for (const [label, value, caption, term] of metrics) {
+    const tile = node('article');
+    const title = node('span', label);
+    if (term) title.title = TIME_LABELS[term];
+    const main = node('strong', typeof value === 'number' ? format.format(value) : value ?? '—');
+    if (label === 'Nota geral do cliente' && note !== null) main.className = scoreBand(note).className;
+    tile.append(title, main);
+    if (caption) tile.append(node('small', caption));
+    grid.append(tile);
+  }
+  section.append(grid);
 }
 
 export function renderScoreSources(target, score) {
@@ -282,57 +297,75 @@ export function renderScoreSources(target, score) {
   if (sources.childElementCount) target.append(node('h4', 'Origem da nota geral'), sources);
 }
 
-function showFinalizadosChart(target, days) {
+function chartPanel(title) {
+  const panel = node('section');
+  panel.className = 'panorama-graph-panel';
+  panel.append(node('h4', title));
+  return panel;
+}
+
+function showDailyChart(target, days) {
   if (!days.length) return;
-  const figure = node('figure');
-  figure.className = 'panorama-finalizados-chart';
-  figure.append(node('figcaption', 'Finalizados por dia'));
-  const list = node('ul');
-  const max = days.reduce((largest, day) => Math.max(largest, day.finalizados), 1);
+  const panel = chartPanel('Assumidos e finalizados por dia');
+  const legend = node('p');
+  legend.className = 'panorama-chart-legend';
+  for (const text of ['Assumidos', 'Finalizados']) legend.append(node('span', text));
+  panel.append(legend);
+  const scroll = node('div');
+  scroll.className = 'panorama-chart-scroll';
+  scroll.tabIndex = 0;
+  scroll.setAttribute('role', 'region');
+  scroll.setAttribute('aria-label', 'Volume por dia');
+  const chart = node('ul');
+  chart.className = 'panorama-daily-columns';
+  const max = days.reduce((largest, day) => Math.max(largest, day.assumidos, day.finalizados), 1);
   for (const day of days) {
+    const item = node('li');
+    const columns = node('div');
+    columns.className = 'panorama-column-pair';
+    for (const [key, title] of [['assumidos', 'Assumidos'], ['finalizados', 'Finalizados']]) {
+      const bar = node('div');
+      bar.className = 'panorama-day-bar';
+      bar.style.blockSize = (day[key] / max * 100) + '%';
+      const number = node('span', format.format(day[key]));
+      number.setAttribute('aria-label', title + ': ' + day[key]);
+      bar.append(number);
+      columns.append(bar);
+    }
+    const label = node('time', dayLabel(day.date));
+    label.dateTime = day.date;
+    item.append(columns, label);
+    chart.append(item);
+  }
+  scroll.append(chart);
+  panel.append(scroll);
+  target.append(panel);
+}
+
+function showRanking(target, title, rows) {
+  if (!rows.length) return;
+  const panel = chartPanel(title);
+  const bars = node('ul');
+  bars.className = 'panorama-rank-bars';
+  const max = rows.reduce((largest, row) => Math.max(largest, row[1]), 1);
+  for (const [label, value] of rows) {
     const row = node('li');
     const track = node('span');
-    track.className = 'panorama-finalizados-track';
+    track.className = 'panorama-rank-track';
     track.setAttribute('aria-hidden', 'true');
     const fill = node('span');
-    fill.style.width = (day.finalizados / max * 100) + '%';
+    fill.style.width = (value / max * 100) + '%';
     track.append(fill);
-    const dateLabel = node('time', dayLabel(day.date));
-    dateLabel.dateTime = day.date;
-    row.append(dateLabel, track, node('strong', format.format(day.finalizados)));
-    list.append(row);
+    row.append(node('span', label), track, node('strong', format.format(value)));
+    bars.append(row);
   }
-  figure.append(list);
-  target.append(figure);
+  panel.append(bars);
+  target.append(panel);
 }
 
-function showDailyChart(section, days) {
-  if (!days.length) return;
-  const chart = node('div');
-  chart.className = 'panorama-analysis';
-  chart.setAttribute('aria-label', 'Volume diário de atendimentos');
-  const max = Math.max(1, ...days.flatMap(day => [day.assumidos, day.finalizados]));
-  for (const day of days) {
-    const card = node('article');
-    card.append(node('strong', date(day.date)));
-    for (const [label, value] of [['Assumidos', day.assumidos], ['Finalizados', day.finalizados]]) {
-      const line = node('div');
-      const bar = node('meter');
-      bar.min = 0;
-      bar.max = max;
-      bar.value = value;
-      bar.setAttribute('aria-label', label + ' em ' + date(day.date));
-      line.append(node('span', label + ' · ' + format.format(value) + ' '), bar);
-      card.append(line);
-    }
-    chart.append(card);
-  }
-  section.append(chart);
-}
-
-function showTable(target, title, data, { heatmap = false, nameVisibility } = {}) {
+function showTable(target, title, data, { heatmap = false, nameVisibility, showTitle = true } = {}) {
   if (!data?.rows.length) return;
-  target.append(node('h4', title));
+  if (showTitle) target.append(node('h4', title));
   const wrap = node('div');
   wrap.className = 'panorama-table-wrap';
   if (heatmap) wrap.classList.add('panorama-heatmap-wrap');
@@ -462,10 +495,10 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
   let exportTeam = [];
   let exportDepartments = [];
   let teamNamesVisible = () => true;
-  const section = view('Resumo do período');
+  const section = view('Atendimentos do suporte');
   section.classList.add('panorama-summary-view');
   if (period) {
-    const range = node('p', date(period.start) + ' a ' + date(period.end));
+    const range = node('p', date(period.start) + ' a ' + date(period.end) + ' · Exportação do Looker/Opa! Suite');
     range.className = 'panorama-period';
     section.append(range);
   }
@@ -475,23 +508,32 @@ export function renderAnalysis(output, report, { registry = {}, indicators, audi
   const leads = leadLabels.map(byLabel).filter(Boolean);
   const overview = node('div');
   overview.className = 'panorama-overview';
-  showFinalizadosChart(overview, days);
+  showDailyChart(overview, days);
+  const { tables } = analysis;
+  if (tables.heatmap) {
+    const heat = chartPanel('Quando os atendimentos são assumidos');
+    heat.append(node('p', 'Volume por dia e faixa de horário. — indica dado ausente.'));
+    showTable(heat, 'Assumidos por faixa de horário', tables.heatmap, { heatmap: true, showTitle: false });
+    overview.append(heat);
+  }
+  section.append(overview);
   if (leads.length) {
     const highlights = node('section');
     highlights.append(node('h4', 'Destaques do período'));
     showFindings(highlights, leads);
-    overview.append(highlights);
+    highlights.className = 'panorama-summary-highlights';
+    section.append(highlights);
   }
-  section.append(overview);
 
-  const { tables } = analysis;
+  const rankings = node('div');
+  rankings.className = 'panorama-overview';
+  showRanking(rankings, 'Principais motivos', (tables.reasons?.rows ?? []).map(row => [row[0], quantity(row[1])]));
+  showRanking(rankings, 'Notas dadas pelos clientes', (tables.stars?.rows ?? []).map(row => [row[0], row.slice(1).reduce((total, count) => total + quantity(count), 0)]));
+  if (rankings.childElementCount) section.append(rankings);
   const volume = view('Operação no período');
   const volumeHighlights = ['Pico de assumidos'].map(byLabel).filter(Boolean);
   volumeHighlights.push(...analysis.findings.filter(finding => finding.startsWith('Volume diário: ')));
   if (volumeHighlights.length) showFindings(volume, volumeHighlights);
-  volume.append(node('h4', 'Assumidos e finalizados por dia'));
-  showDailyChart(volume, days);
-  showTable(volume, 'Assumidos por dia e faixa de horário', tables.heatmap, { heatmap: true });
 
   const team = view('Equipe');
   if (tables.team) {
