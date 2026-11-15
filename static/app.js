@@ -1201,8 +1201,12 @@ function renderSummary(filtered) {
   const periodoTxt = mesesNoEscopo.length===0 ? '—' : (mesesNoEscopo.length===1 ? mesesNoEscopo[0] : `${mesesNoEscopo[0]} → ${mesesNoEscopo[mesesNoEscopo.length-1]}`);
   const atendentesNoEscopo = Array.from(new Set(rows.map(r=>String(r['Atendente']||'')).filter(Boolean))).length;
   const setoresNoEscopo = Array.from(new Set(rows.map(r=>String(r['Setor']||'')).filter(Boolean))).length;
+  const scoreGap = avgScoreNum === null ? null : Math.round((avgScoreNum - 4.7) * 100) / 100;
+  const scoreGoalLabel = scoreGap === null ? 'Meta 4,70 · sem nota' :
+    'Meta 4,70 · ' + (scoreGap === 0 ? 'Na meta' :
+      Math.abs(scoreGap).toFixed(2).replace('.', ',') + (scoreGap < 0 ? ' abaixo' : ' acima'));
   container.innerHTML = `
-    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end">
+    <div class="dashboard-scope">
       <div>
         <div style="font-size:12px;color:var(--muted)">Resumo do escopo</div>
         <div style="font-weight:600">${scopeParts.length ? scopeParts.join(' · ') : 'Todos os dados importados'}</div>
@@ -1214,12 +1218,12 @@ function renderSummary(filtered) {
       </div>
     </div>
 
-    <div class="kpi-grid" style="margin-top:12px">
+    <div class="kpi-grid dashboard-results">
+      <div class="kpi kpi-drill dashboard-metric-primary" data-kpi="finalizados"><div class="label">Finalizados</div><div class="value">${fmtInt(totalFinalizados)}</div><div class="sub">${deltaFinalizados===null?'':`<span class="${deltaFinalizados>=0?'variation-pos':'variation-neg'}">${deltaFinalizados>=0?'▲':'▼'} mês ant.: ${fmtPct(deltaFinalizados)}</span>`}</div></div>
+      <div class="kpi kpi-drill dashboard-metric-primary" data-kpi="score"><div class="label">Score médio</div><div class="value${avgScoreNum!==null ? ' ' + getClasseScore(avgScoreNum) : ''}">${fmtScore(avgScoreNum)}</div><div class="sub"><span class="metric-target">${scoreGoalLabel}</span>${deltaScore===null?'':`<span class="${deltaScore>=0?'variation-pos':'variation-neg'}">${deltaScore>=0?'▲':'▼'} mês ant.: ${deltaScore>=0?'+':''}${deltaScore.toFixed(2)}</span>`}</div></div>
+      <div class="kpi kpi-drill" data-kpi="produtividade"><div class="label">Produtividade</div><div class="value">${produtividade===null?'—':(produtividade*100).toFixed(1)+'%'}</div><div class="sub">Finalizados / Assumidos</div></div>
       <div class="kpi kpi-drill" data-kpi="assumidos"><div class="label">Assumidos</div><div class="value">${fmtInt(totalAssumidos)}</div><div class="sub">${deltaAssumidos===null?'':`<span class="${deltaAssumidos>=0?'variation-pos':'variation-neg'}">${deltaAssumidos>=0?'▲':'▼'} mês ant.: ${fmtPct(deltaAssumidos)}</span>`}</div></div>
       <div class="kpi kpi-drill" data-kpi="transferidos"><div class="label">Transferidos</div><div class="value">${fmtInt(totalTransferidos)}</div><div class="sub">${taxaTransfer===null?'':`Taxa: ${(taxaTransfer*100).toFixed(1)}%`}</div></div>
-      <div class="kpi kpi-drill" data-kpi="finalizados"><div class="label">Finalizados</div><div class="value">${fmtInt(totalFinalizados)}</div><div class="sub">${deltaFinalizados===null?'':`<span class="${deltaFinalizados>=0?'variation-pos':'variation-neg'}">${deltaFinalizados>=0?'▲':'▼'} mês ant.: ${fmtPct(deltaFinalizados)}</span>`}</div></div>
-      <div class="kpi kpi-drill" data-kpi="score"><div class="label">Score médio</div><div class="value${avgScoreNum!==null ? ' ' + getClasseScore(avgScoreNum) : ''}">${fmtScore(avgScoreNum)}</div><div class="sub">${deltaScore===null?'':`<span class="${deltaScore>=0?'variation-pos':'variation-neg'}">${deltaScore>=0?'▲':'▼'} mês ant.: ${deltaScore>=0?'+':''}${deltaScore.toFixed(2)}</span>`}</div></div>
-      <div class="kpi kpi-drill" data-kpi="produtividade"><div class="label">Produtividade</div><div class="value">${produtividade===null?'—':(produtividade*100).toFixed(1)+'%'}</div><div class="sub">Finalizados / Assumidos</div></div>
       <div class="kpi kpi-drill" data-kpi="atendentes"><div class="label">Atendentes</div><div class="value">${fmtInt(atendentesNoEscopo)}</div><div class="sub">no escopo</div></div>
       <div class="kpi kpi-drill" data-kpi="setores"><div class="label">Setores</div><div class="value">${fmtInt(setoresNoEscopo)}</div><div class="sub">no escopo</div></div>
     </div>

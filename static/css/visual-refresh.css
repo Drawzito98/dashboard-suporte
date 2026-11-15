@@ -957,3 +957,80 @@
     }
   }
 }
+
+@media screen {
+  #tab-home .home-welcome {
+    padding-block: 0;
+    margin-bottom: 0.65rem;
+  }
+
+  #tab-home .home-welcome h2 {
+    font-size: 1.12rem;
+    line-height: 1.3;
+  }
+
+  #tab-home .home-operations-grid {
+    align-items: start;
+    margin-bottom: 0.75rem;
+  }
+
+  #tab-home .home-operations-list {
+    margin-block: 0.4rem;
+  }
+
+  #tab-home .home-kpi-grid {
+    margin-bottom: 0.65rem;
+  }
+
+  .dashboard-scope {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  }
+
+  #tab-dashboard .dashboard-results {
+    margin-top: 0.65rem;
+  }
+
+  #tab-dashboard .dashboard-metric-primary {
+    border-color: var(--border-strong);
+  }
+
+  #tab-dashboard .metric-target {
+    display: block;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.15rem;
+  }
+
+  #tab-saude-operacional .so-header {
+    padding: 0.75rem 0.9rem;
+  }
+
+  #tab-saude-operacional .so-hero {
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+    align-items: start;
+    gap: 0.65rem 1.4rem;
+  }
+
+  #tab-saude-operacional .so-hero p {
+    max-width: 65ch;
+    align-self: center;
+  }
+
+  #tab-saude-operacional .so-section-heading {
+    margin-bottom: 0.6rem;
+  }
+
+  @media (max-width: 640px) {
+    #tab-saude-operacional .so-header {
+      flex-wrap: wrap;
+    }
+
+    #tab-saude-operacional .so-hero {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
