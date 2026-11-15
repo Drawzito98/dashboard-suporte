@@ -444,3 +444,170 @@
     }
   }
 }
+
+/* Ajustes locais para os componentes que não usam os cartões padrão. */
+@media screen {
+  #tab-home .home-section {
+    margin-block: 0.75rem;
+  }
+
+  #tab-home :is(.home-kpi, .home-activity-item, .home-operations-item, .home-card-link) {
+    padding: 0.55rem 0.7rem;
+  }
+
+  #tab-home .home-kpi {
+    background: var(--bg-surface);
+    border-radius: 10px;
+    box-shadow: none;
+  }
+
+  #tab-home .home-kpi-value {
+    font-size: 1.4rem;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #tab-home .home-kpi-label,
+  #tab-home .home-kpi-hint {
+    font-size: var(--dashboard-caption);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  #tab-home .home-kpi-icon {
+    width: 26px;
+    height: 26px;
+    font-size: 0.85rem;
+  }
+
+  #tab-home .home-section-title {
+    font-size: 1rem;
+    margin-block-end: 0.55rem;
+  }
+
+  #tab-dashboard :is(.card + .card, .table-wrap),
+  #tab-lider .gamification-stats,
+  #tab-insights .ih-next {
+    margin-block-start: var(--dashboard-block-gap);
+  }
+
+  :is(#tab-dashboard, #tab-lider) .kpi :is(.label, .sub) {
+    font-size: var(--dashboard-caption);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  #tab-insights :is(.ih-summary, .ih-sector-card, .ih-card) header {
+    gap: 0.5rem;
+  }
+
+  #tab-insights .ih-sector-metrics {
+    margin-block: 0.45rem;
+  }
+
+  #tab-insights .ih-sector-metrics > span {
+    padding: 0.4rem 0.55rem;
+  }
+
+  #tab-relatorio-setorial .rs-container :is(.rs-filter-bar, .rs-list) {
+    gap: 0.5rem;
+  }
+
+  #tab-relatorio-setorial .rs-container .rs-list-item {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+
+  #tab-relatorio-setorial .rs-action-card :is(h3, p) {
+    margin-block: 0.25rem;
+  }
+
+  #tab-saude-operacional :is(.so-metrics, .so-tma-grid, .so-sector-grid) {
+    margin-block: 0.55rem;
+  }
+
+  #tab-saude-operacional .so-metrics span {
+    padding: 0.4rem 0.55rem;
+  }
+
+  :is(#tab-tarefas, #tab-regras) :is(.grid-2col, .regras-cards),
+  #tab-avaliacao .avaliacao-historico-grid,
+  #tab-mapeamento-time :is(.mt-grid, .mt-legend-grid) {
+    gap: var(--dashboard-block-gap);
+  }
+
+  #tab-tarefas #tarefasContent > .card,
+  #tab-regras :is(.regra-card, .regra-form-card),
+  #tab-avaliacao :is(.avaliacao-form-card, .avaliacao-historico-card, .avaliacao-comentario-item),
+  #tab-mapeamento-time :is(.mt-card, .mt-legend-item, .mt-details-section) {
+    padding: var(--dashboard-panel-padding);
+    border-radius: 10px;
+    background-color: var(--bg-surface);
+    box-shadow: none;
+  }
+
+  #tab-regras .regras-header,
+  #tab-avaliacao .avaliacao-historico-header,
+  #tab-mapeamento-time .mt-header {
+    gap: 0.6rem;
+    margin-block-end: var(--dashboard-block-gap);
+  }
+
+  #tab-avaliacao :is(.avaliacao-historico-item, .avaliacao-questao-header) {
+    padding-block: 0.5rem;
+  }
+
+  #tab-avaliacao .avaliacao-detail-table :is(th, td) {
+    padding: 0.45rem 0.6rem;
+    line-height: 1.4;
+  }
+
+  #tab-colaboradores :is(.team-management-actions, .colab-card-actions, .colab-list-header) {
+    gap: 0.5rem;
+    margin-block: 0.55rem;
+  }
+
+  #tab-colaboradores .colab-card {
+    border-radius: 10px;
+    box-shadow: none;
+  }
+
+  #tab-ponto .ponto-drop {
+    padding: 0.75rem;
+    margin-block: var(--dashboard-block-gap);
+    border-width: 1px;
+    border-color: var(--border-strong);
+  }
+
+  #tab-ponto .ponto-stats strong {
+    font-size: 1.4rem;
+    line-height: 1.2;
+    margin-block-start: 0.35rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #tab-perfil-pdi :is(.pdi-heading, .pdi-local-note, .pdi-actions) {
+    margin-block: var(--dashboard-block-gap);
+  }
+
+  #tab-perfil-pdi .pdi-local-note {
+    padding: 0.65rem 0.8rem;
+    font-size: var(--dashboard-caption);
+  }
+
+  #tab-mapeamento-time :is(.mt-card-nome, .mt-header h2) {
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  #tab-mapeamento-time :is(.mt-card-top, .mt-card-foot, .mt-card-actions) {
+    gap: 0.5rem;
+  }
+
+  @media (max-width: 640px) {
+    :is(#tab-regras, #tab-avaliacao, #tab-mapeamento-time) :is(.regras-header, .avaliacao-historico-header, .mt-header) {
+      flex-wrap: wrap;
+    }
+  }
+}
