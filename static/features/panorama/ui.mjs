@@ -23,13 +23,12 @@ function format(key, value) {
 export function mountWeekly(root) {
   const panel = document.createElement('section');
   panel.className = 'panorama-weekly';
-  panel.innerHTML = '<h3>Panorama semanal</h3>' +
-    '<form class="panorama-upload-row"><label class="panorama-upload"><span>' +
+  panel.innerHTML = '<form class="card panorama-upload-row panorama-weekly-upload"><label class="panorama-upload"><span>' +
     '<strong>ZIP do Looker/Opa!</strong><small>Analise o período completo exportado no ZIP.</small>' +
     '<input type="file" accept=".zip,application/zip" required></span></label>' +
     '<button class="btn-primary panorama-generate" type="submit">Validar ZIP</button></form>' +
-    '<p role="status" aria-live="polite"></p><div></div>';
-  root.querySelector('#panoramaForm').before(panel);
+    '<p class="panorama-weekly-status" role="status" aria-live="polite"></p><div class="panorama-weekly-output"></div>';
+  root.replaceChildren(panel);
   const form = panel.querySelector('form');
   const input = panel.querySelector('input');
   const button = panel.querySelector('button');

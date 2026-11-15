@@ -2941,6 +2941,7 @@ if (!rawRecords || !rawRecords.length) {
       home: ['Início', 'Visão geral da operação e acessos rápidos'],
       dashboard: ['Indicadores', 'Desempenho, qualidade e produtividade do suporte'],
       'relatorio-setorial': ['Relatório Setorial', 'Resultados, evolução e destaques por setor'],
+      'panorama-semanal': ['Panorama semanal', 'Volume e qualidade do atendimento no período exportado do Looker'],
       'saude-operacional': ['Saúde Operacional', 'Resultados consolidados dos setores e desempenho individual'],
       tarefas: ['Rotina', 'Agenda, tarefas e anotações diárias'],
       regras: ['Regras', 'Quadro de normas e orientações atuais'],
@@ -3472,7 +3473,7 @@ function initNotificacoesUI() {
     tabBar.querySelectorAll(".tab-btn[data-tab]").forEach(btn => { buttons[btn.dataset.tab] = btn; });
     const groups = [
       ["Principal", ["home"]],
-      ["Desempenho", ["dashboard", "relatorio-setorial", "saude-operacional", "insights"]],
+      ["Desempenho", ["dashboard", "relatorio-setorial", "panorama-semanal", "saude-operacional", "insights"]],
       ["Pessoas", ["colaboradores", "ponto", "perfil-pdi", "mapeamento-time", "lider", "avaliacao"]],
       ["Organização", ["tarefas", "regras"]]
     ];

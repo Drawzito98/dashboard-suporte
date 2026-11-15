@@ -1,6 +1,6 @@
 # Panorama semanal do suporte
 
-Na aba Panorama do Suporte, selecione o ZIP de exportação do Looker/Opa! e clique em **Validar ZIP**. A prévia mostra o período observado no relatório diário, os indicadores do recorte e as divergências. A leitura ocorre no navegador e a prévia fica em memória. O formulário de CSV por colaborador continua disponível abaixo.
+Na aba **Desempenho → Panorama semanal**, selecione o ZIP de exportação do Looker/Opa! e clique em **Validar ZIP**. A prévia mostra o período observado no relatório diário, os indicadores do recorte e as divergências. A leitura ocorre no navegador e a prévia fica em memória. O formulário de CSV por colaborador está em uma seção expansível na mesma aba. Os filtros globais ficam disponíveis ao abrir esse formulário, pois a análise do ZIP segue o recorte exportado.
 
 A seção **Análise da semana** resume os destaques do recorte e mostra volume diário, mapa de horários, departamentos, equipe, motivos, avaliações e plantão. Os nomes da equipe aparecem por padrão no Panorama semanal e podem ser ocultados na própria tabela. Os destaques informam a base usada nos percentuais.
 

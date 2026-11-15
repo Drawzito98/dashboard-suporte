@@ -121,3 +121,41 @@
 .panorama-weekly-details[open] > summary {
   margin-bottom: 0.75rem;
 }
+
+.panorama-workspace {
+  max-width: 76rem;
+  margin-inline: auto;
+  min-width: 0;
+}
+
+.panorama-weekly-upload {
+  margin: 0;
+}
+
+.panorama-weekly-upload .panorama-upload {
+  flex: 1;
+  min-width: 0;
+}
+
+.panorama-weekly-status:empty {
+  display: none;
+}
+
+.panorama-weekly-output > p {
+  color: var(--text-secondary);
+}
+
+body[data-active-tab="panorama-semanal"]:has(#panoramaLegacyDetails:not([open])) #globalFilterBar {
+  display: none;
+}
+
+@media screen and (max-width: 640px) {
+  .panorama-weekly-upload {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .panorama-weekly-upload .panorama-generate {
+    width: 100%;
+  }
+}

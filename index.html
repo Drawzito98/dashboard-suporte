@@ -14,7 +14,7 @@
   <link rel="manifest" href="manifest.json"/>
   <link href="static/css/tokens.css?v=80" rel="stylesheet"/>
   <link href="static/styles.css?v=129" rel="stylesheet"/>
-  <link href="static/panorama-suporte.css?v=6" rel="stylesheet"/>
+  <link href="static/panorama-suporte.css?v=7" rel="stylesheet"/>
   <link href="static/projecao.css?v=3" rel="stylesheet"/>
   <link href="static/ponto.css?v=2" rel="stylesheet"/>
   <link href="static/home.css?v=80" rel="stylesheet"/>
@@ -237,6 +237,9 @@
       </button>
       <button class="tab-btn" data-tab="relatorio-setorial" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="8" y="13" width="3" height="4"/><rect x="13" y="11" width="3" height="6"/></svg></span> Relatório Setorial
+      </button>
+      <button class="tab-btn" id="panoramaWeeklyTab" data-tab="panorama-semanal" role="tab" aria-controls="tab-panorama-semanal" aria-selected="false">
+        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 10h18m-13 7h2m4-3h2"/></svg></span> Panorama semanal
       </button>
       <button class="tab-btn" data-tab="saude-operacional" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span> Saúde Operacional
@@ -549,10 +552,19 @@
 
         <!-- ===== TAB: RELATÓRIO SETORIAL ===== -->
         <div class="tab-content" id="tab-relatorio-setorial" role="tabpanel">
-          <section class="card" id="panoramaSuporteRoot"></section>
           <section class="card">
             <div id="relatorioSetorialContent"></div>
           </section>
+        </div>
+
+        <div class="tab-content" id="tab-panorama-semanal" role="tabpanel" aria-labelledby="panoramaWeeklyTab">
+          <div class="panorama-workspace">
+            <section class="panorama" id="panoramaWeeklyRoot" aria-label="Análise por ZIP do Looker"></section>
+            <details class="card panorama-weekly-details" id="panoramaLegacyDetails">
+              <summary>Gerar panorama por CSV de colaborador</summary>
+              <section id="panoramaSuporteRoot"></section>
+            </details>
+          </div>
         </div>
 
         <!-- ===== TAB: AVALIAÇÃO DE DESEMPENHO ===== -->
@@ -801,7 +813,7 @@
 <script defer src="static/regras.js?v=1"></script>
 <script defer src="static/bonus.js?v=1"></script>
 <script defer src="static/relatorio-setorial.js?v=85"></script>
-<script defer src="static/panorama-suporte.js?v=19"></script>
+<script defer src="static/panorama-suporte.js?v=20"></script>
 <script defer src="static/avaliacao.js"></script>
 <script defer src="static/relatorio-feedback.js?v=123"></script>
 <script defer src="static/colaboradores.js?v=131"></script>
@@ -818,7 +830,7 @@
 <script defer src="static/ponto-engine.js?v=4"></script>
 <script defer src="static/ponto.js?v=7"></script>
 <script defer src="static/preview-columns.js?v=1"></script>
-<script defer src="static/app.js?v=132"></script>
+<script defer src="static/app.js?v=133"></script>
 <script defer src="static/manage-colabs-v2.js?v=95"></script>
 <script defer src="static/features.js"></script>
 <script defer src="static/privacy-screen.js?v=84"></script>
