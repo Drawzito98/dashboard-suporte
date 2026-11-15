@@ -209,11 +209,11 @@ function showHeadline(section, score, kpis) {
   const summary = node('div');
   summary.className = 'panorama-headline';
   const volume = node('article');
-  volume.className = 'panorama-metric';
+  volume.className = 'panorama-hero-stat';
   volume.append(node('h4', 'Finalizados'), node('strong', format.format(kpis.finalizados)),
-    node('p', 'Total conferido entre os relatórios do ZIP.'));
+    node('p', 'Conferidos nos relatórios do ZIP'));
   const quality = node('article');
-  quality.className = 'panorama-metric';
+  quality.className = 'panorama-hero-stat';
   const mean = score.confirmedMean;
   const value = node('strong', mean === null ? 'Em conferência' : scoreFormat.format(mean) + ' / 5');
   if (mean !== null) value.className = mean < score.target ? 'panorama-score-low' : 'panorama-score-high';
@@ -336,22 +336,54 @@ export function reportDetails(title) {
 const leadLabels = ['Maior volume diário', 'Departamento com maior volume', 'Motivo com maior volume'];
 
 function showFindings(target, findings) {
-  const summary = node('div');
-  summary.className = 'panorama-analysis';
+  const summary = node('dl');
+  summary.className = 'panorama-findings';
   for (const finding of findings) {
     const separator = finding.indexOf(': ');
-    const card = node('article');
-    card.append(node('strong', finding.slice(0, separator)), node('p', finding.slice(separator + 2)));
-    summary.append(card);
+    const row = node('div');
+    row.append(node('dt', finding.slice(0, separator)), node('dd', finding.slice(separator + 2)));
+    summary.append(row);
   }
   target.append(summary);
 }
 
-export function renderAnalysis(output, { analysis, days, kpis }, registry = {}) {
+function view(title) {
+  const panel = node('section');
+  panel.className = 'panorama-view';
+  panel.append(node('h3', title));
+  return panel;
+}
+
+function renderViews(output, entries) {
+  const nav = node('nav');
+  nav.className = 'panorama-view-nav';
+  nav.setAttribute('aria-label', 'Visões do Panorama');
+  const body = node('div');
+  const views = entries.map(([label, panel]) => {
+    const button = node('button', label);
+    button.type = 'button';
+    nav.append(button);
+    body.append(panel);
+    return { button, panel };
+  });
+  const activate = index => views.forEach(({ panel, button }, position) => {
+    panel.hidden = position !== index;
+    button.setAttribute('aria-pressed', String(position === index));
+  });
+  views.forEach(({ button }, index) => button.addEventListener('click', () => activate(index)));
+  activate(0);
+  output.append(nav, body);
+}
+
+export function renderAnalysis(output, { analysis, days, kpis, period }, { registry = {}, indicators, audit } = {}) {
   if (!analysis) return;
-  const section = node('section');
-  section.append(node('h3', 'Resumo do período'));
-  section.className = 'panorama-compact-report';
+  const section = view('Resumo do período');
+  section.classList.add('panorama-summary-view');
+  if (period) {
+    const range = node('p', date(period.start) + ' a ' + date(period.end));
+    range.className = 'panorama-period';
+    section.append(range);
+  }
   showHeadline(section, analysis.score, kpis);
 
   const byLabel = label => analysis.findings.find(finding => finding.startsWith(label + ': '));
@@ -362,7 +394,7 @@ export function renderAnalysis(output, { analysis, days, kpis }, registry = {}) 
   }
 
   const { tables } = analysis;
-  const volume = reportDetails('Volume diário e horários · recorte completo');
+  const volume = view('Operação no período');
   const volumeHighlights = ['Pico de assumidos'].map(byLabel).filter(Boolean);
   volumeHighlights.push(...analysis.findings.filter(finding => finding.startsWith('Volume diário: ')));
   if (volumeHighlights.length) showFindings(volume, volumeHighlights);
@@ -370,7 +402,7 @@ export function renderAnalysis(output, { analysis, days, kpis }, registry = {}) 
   showDailyChart(volume, days);
   showTable(volume, 'Assumidos por dia e faixa de horário', tables.heatmap, { heatmap: true });
 
-  const team = reportDetails('Equipe · notas, nível e tempos');
+  const team = view('Equipe');
   if (tables.team) {
     const source = projectTable(tables.team, ['Atendente', 'Finalizados', 'Média aval.', 'TMA', 'TMI', 'TMR']);
     const levels = joinTeamLevels(source.rows, registry);
@@ -400,7 +432,7 @@ export function renderAnalysis(output, { analysis, days, kpis }, registry = {}) 
     team.append(node('p', 'A nota e os volumes de cada pessoa vêm do CSV Performance por colaborador. Os níveis vêm do cadastro do app.'));
   }
 
-  const departments = reportDetails('Departamentos · finalizados, nota e tempos');
+  const departments = view('Departamentos');
   if (tables.departments) {
     const source = projectTable(tables.departments, ['Departamento', 'Finalizados', 'Score', 'Avaliados', 'TMA', 'TMR']);
     source.headers[2] = 'Nota do cliente';
@@ -430,10 +462,14 @@ export function renderAnalysis(output, { analysis, days, kpis }, registry = {}) 
   showTable(quality, 'Plantão por turno', tables.shifts);
   showTable(quality, 'Desfecho do plantão', tables.outcomes);
 
-  if (tables.team) section.append(team);
-  if (tables.departments) section.append(departments);
-  section.append(volume);
-  if (tables.reasons) section.append(reasons);
-  if (tables.stars || tables.shifts || tables.outcomes) section.append(quality);
-  output.append(section);
+  if (tables.reasons) volume.append(reasons);
+  if (tables.stars || tables.shifts || tables.outcomes) volume.append(quality);
+  if (indicators) volume.append(indicators);
+  const views = [['Resumo', section]];
+  if (tables.team) views.push(['Equipe', team]);
+  if (tables.departments) views.push(['Departamentos', departments]);
+  views.push(['Operação', volume]);
+  if (audit) views.push(['Conferência', audit]);
+  output.classList.add('panorama-compact-report');
+  renderViews(output, views);
 }

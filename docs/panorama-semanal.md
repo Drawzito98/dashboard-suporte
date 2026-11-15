@@ -6,7 +6,7 @@ A seção **Análise da semana** resume os destaques do recorte e mostra volume 
 
 A meta de nota média é 4,70 em escala de 1 a 5. O relatório confere o cartão do Looker com a média ponderada das estrelas quando a distribuição reconcilia com o total de avaliados. No ZIP de referência, o cartão tem 4,71 e as 129 avaliações da distribuição produzem 4,49. O destaque sinaliza a divergência e mostra a distância de cada valor à meta.
 
-A leitura começa pelos finalizados conferidos e pela nota geral frente à meta. Os destaques vêm em seguida. A origem das notas fica em **Conferência dos dados e avisos**. Abra as seções de volume, equipe, motivos, avaliações e plantão para consultar os detalhes. Os cartões do Looker ficam em **Indicadores complementares e tempos**. A conferência reúne diferenças de escopo, cobertura e validação em uma seção própria.
+A visão inicial **Resumo** mostra período, finalizados, nota geral frente à meta e destaques. Use **Equipe**, **Departamentos**, **Operação** e **Conferência** para visualizar um recorte da interface por vez. A origem das notas fica em **Conferência dos dados e avisos**. Abra as seções de volume, equipe, motivos, avaliações e plantão para consultar os detalhes. Os cartões do Looker ficam em **Indicadores complementares e tempos**. A conferência reúne diferenças de escopo, cobertura e validação em uma seção própria.
 
 O leitor aceita o período completo identificado no CSV de volume diário, inclusive recortes com mais de sete dias. A tabela de equipe usa a coluna **Média aval.** de **Performance por colaborador** e segue a ordem de assumidos. A média geral vem do cartão do cliente e é comparada com a média ponderada das estrelas.
 

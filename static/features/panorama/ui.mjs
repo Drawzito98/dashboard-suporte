@@ -1,6 +1,6 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs?v=11';
-import { renderAnalysis, renderScoreSources, reportDetails, TIME_LABELS } from './analysis.mjs?v=11';
+import { analyzeWeekly } from './weekly.mjs?v=12';
+import { renderAnalysis, renderScoreSources, reportDetails, TIME_LABELS } from './analysis.mjs?v=12';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos no Looker',
@@ -23,7 +23,7 @@ function format(key, value) {
 export function mountWeekly(root) {
   const panel = document.createElement('section');
   panel.className = 'panorama-weekly';
-  panel.innerHTML = '<form class="card panorama-upload-row panorama-weekly-upload"><label class="panorama-upload"><span>' +
+  panel.innerHTML = '<form class="panorama-upload-row panorama-weekly-upload"><label class="panorama-upload"><span>' +
     '<strong>ZIP do Looker/Opa!</strong>' +
     '<input type="file" accept=".zip,application/zip" required></span></label>' +
     '<button class="btn-primary panorama-generate" type="submit">Analisar ZIP</button></form>' +
@@ -54,7 +54,7 @@ export function mountWeekly(root) {
       if (current !== revision) return;
       status.textContent = (report.valid ? 'ZIP validado' : 'ZIP com erros') + ' · ' +
         report.files.validated + ' de ' + report.files.expected + ' CSVs reconhecidos e validados.';
-      if (report.period) {
+      if (report.period && !report.valid) {
         const period = document.createElement('p');
         period.textContent = formatDate(report.period.start) + ' a ' + formatDate(report.period.end);
         output.append(period);
@@ -78,7 +78,6 @@ export function mountWeekly(root) {
       }
       let registry = {};
       try { registry = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch {}
-      renderAnalysis(output, report, registry);
       const indicators = reportDetails('Indicadores complementares e tempos');
       const glossary = document.createElement('ul');
       for (const [label, definition] of Object.entries(TIME_LABELS)) {
@@ -87,10 +86,13 @@ export function mountWeekly(root) {
         glossary.append(term);
       }
       indicators.append(metrics, glossary);
-      output.append(indicators);
+      let audit;
       if (report.issues.length || report.analysis?.checks.length) {
-        const audit = reportDetails(report.valid ? 'Conferência dos dados e avisos' : 'Erros na validação do ZIP');
-        audit.open = !report.valid;
+        audit = document.createElement('section');
+        audit.className = 'panorama-view';
+        const heading = document.createElement('h3');
+        heading.textContent = report.valid ? 'Conferência dos dados' : 'Erros na validação do ZIP';
+        audit.append(heading);
         const list = document.createElement('ul');
         for (const { severity, file: name, message } of report.issues) {
           const item = document.createElement('li');
@@ -105,8 +107,9 @@ export function mountWeekly(root) {
         }
         if (report.analysis) renderScoreSources(audit, report.analysis.score);
         audit.append(list);
-        output.append(audit);
       }
+      if (report.analysis) renderAnalysis(output, report, { registry, indicators, audit });
+      else if (audit) output.append(audit);
     } catch (error) {
       if (current === revision) status.textContent = 'Não foi possível ler o ZIP. ' + error.message;
     } finally {

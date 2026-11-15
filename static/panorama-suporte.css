@@ -192,59 +192,6 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
   max-width: 100%;
 }
 
-.panorama-headline {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
-  gap: 0.75rem;
-  margin-block: 0.6rem 1rem;
-}
-
-.panorama-headline .panorama-metric h4,
-.panorama-headline .panorama-metric p {
-  margin: 0;
-}
-
-.panorama-headline .panorama-metric strong {
-  font-variant-numeric: tabular-nums;
-}
-
-.panorama-headline .panorama-metric p {
-  color: var(--text-secondary);
-}
-
-#panoramaWeeklyRoot {
-  container-type: inline-size;
-}
-
-#panoramaWeeklyRoot form.panorama-weekly-upload {
-  margin: 0;
-  padding: 0.65rem 0.85rem;
-  gap: 0.75rem;
-}
-
-#panoramaWeeklyRoot .panorama-weekly-upload .panorama-upload {
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-#panoramaWeeklyRoot .panorama-upload input {
-  display: block;
-  margin-top: 0.25rem;
-  width: 100%;
-}
-
-.panorama-headline .panorama-metric {
-  gap: 0.25rem;
-  padding: 0.75rem 0.9rem;
-}
-
-.panorama-headline .panorama-metric strong {
-  margin: 0;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
 .panorama-headline-meta {
   display: flex;
   flex-wrap: wrap;
@@ -308,5 +255,153 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
   #panoramaWeeklyRoot .panorama-generate {
     width: 100%;
     justify-content: center;
+  }
+}
+
+#panoramaWeeklyRoot .panorama-weekly-upload {
+  border-color: var(--border);
+  background: var(--bg-surface);
+  border-radius: var(--r-md);
+}
+
+.panorama-weekly-status:not(:empty) {
+  font-size: 0.78rem;
+  margin-block: 0.45rem 0.8rem;
+}
+
+.panorama-view-nav {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.9rem;
+}
+
+.panorama-view-nav button {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0.4rem 0.75rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.panorama-view-nav button:hover {
+  background: var(--bg-subtle);
+}
+
+.panorama-view-nav button[aria-pressed="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.panorama-view {
+  min-width: 0;
+}
+
+.panorama-view > h3 {
+  color: var(--text-strong);
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.panorama-period {
+  font-variant-numeric: tabular-nums;
+}
+
+.panorama-headline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 0;
+  margin-block: 0.75rem 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.panorama-hero-stat {
+  padding: 0.9rem clamp(0.85rem, 2.3cqi, 1.5rem);
+  min-width: 0;
+}
+
+.panorama-hero-stat + .panorama-hero-stat {
+  border-inline-start: 1px solid var(--border);
+}
+
+.panorama-hero-stat h4 {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.panorama-hero-stat > strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: clamp(1.6rem, 4.3cqi, 2.45rem);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  margin-block: 0.35rem;
+}
+
+.panorama-hero-stat p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.panorama-findings {
+  margin: 0.35rem 0 0;
+  border-block: 1px solid var(--border);
+}
+
+.panorama-findings > div {
+  display: grid;
+  grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr);
+  gap: 0.8rem;
+  padding: 0.55rem 0;
+  font-size: 0.86rem;
+}
+
+.panorama-findings > div + div {
+  border-top: 1px solid var(--border);
+}
+
+.panorama-findings dt {
+  font-weight: 650;
+  color: var(--text-strong);
+}
+
+.panorama-findings dd {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.panorama-view > h4 {
+  margin-block: 0.85rem 0.4rem;
+}
+
+.panorama-view .panorama-report-filters {
+  margin-block: 0.75rem 0.5rem;
+}
+
+@container (max-width: 31rem) {
+  .panorama-headline {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .panorama-hero-stat + .panorama-hero-stat {
+    border-inline-start: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .panorama-findings > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
   }
 }
