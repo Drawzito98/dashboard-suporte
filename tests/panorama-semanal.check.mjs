@@ -24,6 +24,9 @@ export async function checkWeekly(zipPath) {
   ]);
 
   assert.equal(result.analysis.tables.team.rows.length, 13);
+  assert.equal(result.analysis.tables.team.headers.at(-1), '% dos finalizados da semana');
+  assert.ok(result.analysis.findings.some(line => line.includes('10 de 129 avaliações')));
+  assert.ok(result.analysis.findings.some(line => line.includes('354 de 460 atendimentos')));
   assert.equal(result.analysis.tables.reasons.rows.length, 12);
   assert.ok(result.analysis.tables.heatmap.rows.length > 0);
   assert.ok(result.analysis.findings.some(line => line.includes('14 finalizados e nenhum assumido')));

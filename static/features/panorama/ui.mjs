@@ -1,6 +1,6 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs?v=2';
-import { renderAnalysis } from './analysis.mjs';
+import { analyzeWeekly } from './weekly.mjs?v=3';
+import { renderAnalysis } from './analysis.mjs?v=3';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos', finalizados: 'Finalizados',

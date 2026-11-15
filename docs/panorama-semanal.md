@@ -2,7 +2,7 @@
 
 Na aba Panorama do Suporte, selecione o ZIP de exportação do Looker/Opa! e clique em **Validar ZIP**. A prévia mostra o período observado no relatório diário, os indicadores do recorte e as divergências. A leitura ocorre no navegador e a prévia fica em memória. O formulário de CSV por colaborador continua disponível abaixo.
 
-A seção **Análise da semana** resume os destaques do recorte e mostra volume diário, mapa de horários, departamentos, equipe, motivos, avaliações e plantão. Os nomes da equipe ficam ocultos até o usuário marcar a opção de exibição.
+A seção **Análise da semana** resume os destaques do recorte e mostra volume diário, mapa de horários, departamentos, equipe, motivos, avaliações e plantão. Os nomes da equipe aparecem por padrão no Panorama semanal e podem ser ocultados na própria tabela. Os destaques informam a base usada nos percentuais.
 
 ## Catálogo dos relatórios
 

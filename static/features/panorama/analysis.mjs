@@ -11,6 +11,8 @@ const heatmapFile = 'assumidos_por_dia_×_hora.csv';
 const subtotal = /^(?:total(?: geral)?|totais)$/i;
 const quantity = value => Number(String(value).trim().replace(/\./g, ''));
 const format = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
+const percent = (part, whole) => format.format(part / whole * 100) + '%';
+const scoreFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
 const date = value => value.split('-').reverse().join('/');
 const peakBy = (rows, value) => rows.reduce((best, row) =>
   (!best || value(row) > value(best)) ? row : best, null);
@@ -42,22 +44,55 @@ export function buildAnalysis(reports, headers, days, kpis) {
   if (heatmap.length) tables.heatmap = { headers: ['Faixa', ...headers.get(heatmapFile).slice(1)], rows: heatmap };
 
   const findings = [];
+  const summarize = (label, text) => findings.push(label + ': ' + text);
   const peak = peakBy(days, day => day.finalizados);
-  if (peak?.finalizados) findings.push(date(peak.date) + ' teve o maior volume de finalizações (' + format.format(peak.finalizados) + ').');
-  const spillover = days.filter(day => day.finalizados && !day.assumidos);
-  for (const day of spillover) findings.push(date(day.date) + ' teve ' + format.format(day.finalizados) + ' finalizados e nenhum assumido.');
-  const lead = (key, column, label) => {
+  if (peak?.finalizados && kpis.finalizados > 0) {
+    const tiedDays = days.filter(day => day.finalizados === peak.finalizados).map(day => date(day.date));
+    summarize('Maior volume diário', tiedDays.join(' e ') + ' · ' + format.format(peak.finalizados) +
+      ' de ' + format.format(kpis.finalizados) + ' finalizados na semana (' + percent(peak.finalizados, kpis.finalizados) +
+      (tiedDays.length > 1 ? ' em cada dia).' : ').'));
+  }
+  for (const day of days.filter(day => day.finalizados && !day.assumidos)) {
+    summarize('Volume diário', date(day.date) + ' teve ' + format.format(day.finalizados) + ' finalizados e nenhum assumido.');
+  }
+  for (const [key, column, label] of [['departments', 2, 'Departamento com maior volume'], ['reasons', 1, 'Motivo com maior volume']]) {
     const row = tables[key]?.rows[0];
     const value = row && quantity(row[column]);
-    if (value > 0) findings.push(label + row[0] + ' (' + format.format(value) + ' finalizados).');
-  };
-  lead('departments', 2, 'Departamento com mais finalizações: ');
-  lead('reasons', 1, 'Motivo mais frequente: ');
+    if (value > 0 && kpis.finalizados > 0) {
+      summarize(label, row[0] + ' · ' + format.format(value) + ' de ' + format.format(kpis.finalizados) +
+        ' finalizados (' + percent(value, kpis.finalizados) + ').');
+    }
+  }
+  if (tables.team && kpis.finalizados > 0) {
+    tables.team.headers.push('% dos finalizados da semana');
+    for (const row of tables.team.rows) {
+      row.push(percent(quantity(row[2]), kpis.finalizados));
+    }
+  }
+  const peakSlots = heatmap.flatMap(([range, ...volumes]) =>
+    volumes.map((volume, index) => ({ range, day: tables.heatmap.headers[index + 1], volume })));
+  const slot = peakBy(peakSlots.filter(item => Number.isFinite(item.volume)), item => item.volume);
+  if (slot?.volume > 0) {
+    const tied = peakSlots.filter(item => item.volume === slot.volume);
+    summarize('Pico de assumidos', tied.map(item => item.day + ', ' + item.range).join(' · ') +
+      ' · ' + format.format(slot.volume) + ' assumidos' + (tied.length > 1 ? ' em cada faixa.' : '.'));
+  }
   if (kpis.total > 0 && kpis.avaliados !== undefined) {
-    findings.push(format.format(kpis.avaliados / kpis.total * 100) + '% dos atendimentos receberam avaliação do cliente.');
+    const lowRatings = tables.stars?.rows.reduce((sum, row) => sum + quantity(row[3]), 0);
+    const score = kpis.nota == null ? '' : ' Nota média de ' + scoreFormat.format(kpis.nota) + '/5.';
+    const low = kpis.avaliados > 0 && Number.isFinite(lowRatings)
+      ? ' ' + format.format(lowRatings) + ' de ' + format.format(kpis.avaliados) + ' avaliações deram 1 ou 2 estrelas (' +
+        percent(lowRatings, kpis.avaliados) + ').' : '';
+    summarize('Avaliação do cliente', format.format(kpis.avaliados) + ' de ' + format.format(kpis.total) +
+      ' atendimentos avaliados (' + percent(kpis.avaliados, kpis.total) + ').' + score + low);
   }
   if (kpis.total > 0 && kpis.inatividade !== undefined) {
-    findings.push(format.format(kpis.inatividade / kpis.total * 100) + '% dos atendimentos no recorte foram encerrados por inatividade.');
+    summarize('Encerrados por inatividade', format.format(kpis.inatividade) + ' de ' + format.format(kpis.total) +
+      ' atendimentos no recorte (' + percent(kpis.inatividade, kpis.total) + ').');
+  }
+  if (kpis.fila !== undefined) {
+    summarize('Cobertura do tempo de fila', format.format(kpis.fila) +
+      ' atendimentos aparecem nas faixas do relatório de fila. O TME é lido do indicador exportado.');
   }
   return { tables, findings };
 }
@@ -68,7 +103,7 @@ function node(tag, text) {
   return element;
 }
 
-function showTable(target, title, data, { heatmap = false, hiddenNames = false } = {}) {
+function showTable(target, title, data, { heatmap = false, toggleNames = false } = {}) {
   if (!data?.rows.length) return;
   target.append(node('h4', title));
   const wrap = node('div');
@@ -86,10 +121,11 @@ function showTable(target, title, data, { heatmap = false, hiddenNames = false }
   }
   const tbody = table.createTBody();
   const max = heatmap ? Math.max(1, ...data.rows.flatMap(row => row.slice(1)).filter(Number.isFinite)) : 1;
-  if (hiddenNames) {
+  if (toggleNames) {
     const label = node('label');
     const toggle = node('input');
     toggle.type = 'checkbox';
+    toggle.checked = true;
     label.append(toggle, ' Exibir nomes da equipe');
     target.append(label);
     toggle.addEventListener('change', () => data.rows.forEach((row, i) => {
@@ -99,7 +135,7 @@ function showTable(target, title, data, { heatmap = false, hiddenNames = false }
   data.rows.forEach((row, i) => {
     const tr = tbody.insertRow();
     row.forEach((value, column) => {
-      const cell = node(column ? 'td' : 'th', hiddenNames && !column ? 'Atendente ' + (i + 1) : value);
+      const cell = node(column ? 'td' : 'th', value);
       if (!column) cell.scope = 'row';
       if (heatmap && column && Number.isFinite(value) && value > 0) {
         cell.style.backgroundColor = 'rgba(59, 130, 246, ' + (0.12 + 0.55 * value / max) + ')';
@@ -115,9 +151,17 @@ export function renderAnalysis(output, { analysis, days }) {
   if (!analysis) return;
   const section = node('section');
   section.append(node('h3', 'Análise da semana'));
-  const list = node('ul');
-  for (const finding of analysis.findings) list.append(node('li', finding));
-  if (list.childElementCount) section.append(list);
+  if (analysis.findings.length) {
+    const summary = node('div');
+    summary.className = 'panorama-analysis';
+    for (const finding of analysis.findings) {
+      const separator = finding.indexOf(': ');
+      const card = node('article');
+      card.append(node('strong', finding.slice(0, separator)), node('p', finding.slice(separator + 2)));
+      summary.append(card);
+    }
+    section.append(summary);
+  }
   const { tables } = analysis;
   showTable(section, 'Assumidos e finalizados por dia', {
     headers: ['Data', 'Assumidos', 'Finalizados'],
@@ -125,7 +169,7 @@ export function renderAnalysis(output, { analysis, days }) {
   });
   showTable(section, 'Quando os atendimentos são assumidos', tables.heatmap, { heatmap: true });
   showTable(section, 'Departamentos', tables.departments);
-  showTable(section, 'Equipe', tables.team, { hiddenNames: true });
+  showTable(section, 'Equipe', tables.team, { toggleNames: true });
   showTable(section, 'Principais motivos', tables.reasons);
   showTable(section, 'Notas dadas pelos clientes', tables.stars);
   showTable(section, 'Plantão por turno', tables.shifts);
