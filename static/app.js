@@ -3472,18 +3472,20 @@ function initNotificacoesUI() {
     const buttons = {};
     tabBar.querySelectorAll(".tab-btn[data-tab]").forEach(btn => { buttons[btn.dataset.tab] = btn; });
     const groups = [
-      ["Principal", ["home"]],
-      ["Desempenho", ["dashboard", "relatorio-setorial", "panorama-semanal", "saude-operacional", "insights"]],
-      ["Pessoas", ["colaboradores", "ponto", "perfil-pdi", "mapeamento-time", "lider", "avaliacao"]],
-      ["Organização", ["tarefas", "regras"]]
+      ["", ["home"]],
+      ["Desempenho", ["dashboard", "panorama-semanal", "relatorio-setorial", "saude-operacional", "insights"]],
+      ["Pessoas", ["colaboradores", "lider", "avaliacao", "perfil-pdi", "mapeamento-time"]],
+      ["Rotina", ["tarefas", "ponto", "regras"]]
     ];
     const fragment = document.createDocumentFragment();
     groups.forEach(([label, tabs]) => {
-      const heading = document.createElement("span");
-      heading.className = "nav-section-label";
-      heading.setAttribute("role", "presentation");
-      heading.textContent = label;
-      fragment.appendChild(heading);
+      if (label) {
+        const heading = document.createElement("span");
+        heading.className = "nav-section-label";
+        heading.setAttribute("role", "presentation");
+        heading.textContent = label;
+        fragment.appendChild(heading);
+      }
       tabs.forEach(tab => { if (buttons[tab]) fragment.appendChild(buttons[tab]); });
     });
     tabBar.replaceChildren(fragment);

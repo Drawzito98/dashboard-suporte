@@ -852,3 +852,108 @@
     }
   }
 }
+
+/* Base de leitura para a área autenticada. As exportações mantêm seus estilos. */
+@media screen {
+  #appScreen {
+    --workspace-font: 'Source Sans 3', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --workspace-data-font: 'Inter', 'Source Sans 3', sans-serif;
+    --workspace-text: 0.9rem;
+    --workspace-label: 0.82rem;
+    --workspace-reading-width: 70ch;
+    font-family: var(--workspace-font);
+    font-size: var(--workspace-text);
+    line-height: 1.48;
+    --bg-app: #f3f5f6;
+    --bg-inset: #f6f8f9;
+    --bg-subtle: #eaf0f2;
+    --border: #d7dfe5;
+    --accent-soft: #e7eff5;
+  }
+
+  html[data-theme="dark"] #appScreen {
+    --bg-app: #11171d;
+    --bg-surface: #182029;
+    --bg-inset: #151c24;
+    --bg-subtle: #222d38;
+    --border: #303d4a;
+    --accent-soft: #20374b;
+  }
+
+  #appScreen #appPageTitle {
+    font-size: clamp(1.24rem, 2vw, 1.55rem);
+    font-weight: 650;
+    letter-spacing: -0.015em;
+  }
+
+  #appScreen #appPageDescription {
+    font-size: var(--workspace-label);
+    line-height: 1.35;
+    max-width: var(--workspace-reading-width);
+  }
+
+  #appScreen .card-header {
+    align-items: flex-start;
+  }
+
+  #appScreen :is(.card-header p, .pdi-heading p, .diag-intro, .so-header p) {
+    max-width: var(--workspace-reading-width);
+    font-size: var(--workspace-label);
+  }
+
+  #appScreen :is(.kpi .value, .home-kpi-value, .so-hero strong, .so-kpis strong, .panorama-reference-kpis strong) {
+    font-family: var(--workspace-data-font);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+  }
+
+  #appScreen :is(.kpi .label, .home-kpi-label, .so-kpis span, .panorama-reference-kpis article > span) {
+    font-size: var(--workspace-label);
+    font-weight: 600;
+  }
+
+  #appScreen :is(.global-filter-field > span, .rs-filter-group > span, .panorama-report-filters label) {
+    font-size: var(--workspace-label);
+    line-height: 1.3;
+  }
+
+  #appScreen :is(.global-filter-bar, .rs-filter-bar, .panorama-weekly-upload) {
+    background: var(--bg-surface);
+    border-color: var(--border);
+  }
+
+  #appScreen .tab-bar .tab-btn {
+    font-family: var(--workspace-font);
+  }
+
+  body[data-role="admin"] #appScreen .shell-navigation .nav-section-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    font-weight: 650;
+  }
+
+  #appScreen :is(.table-wrap, .panorama-table-wrap, .ponto-table, .diag-scroll) table {
+    font-family: var(--workspace-font);
+    font-size: var(--workspace-label);
+  }
+
+  #appScreen :is(.table-wrap, .panorama-table-wrap, .ponto-table, .diag-scroll) th {
+    font-size: var(--workspace-label);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  #appScreen :is(.score-critico, .score-atencao, .score-excelente, .panorama-score-low, .panorama-score-near, .panorama-score-high) {
+    font-weight: 700;
+  }
+
+  @media (max-width: 640px) {
+    #appScreen :is(.card-header, .rs-report-heading) {
+      flex-wrap: wrap;
+    }
+
+    #appScreen .global-filter-row {
+      gap: 0.55rem 0.65rem;
+    }
+  }
+}
