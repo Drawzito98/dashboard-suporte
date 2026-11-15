@@ -1141,7 +1141,7 @@
   }
 
   #tab-tarefas .rotina-kanban {
-    grid-template-columns: repeat(4, minmax(12rem, 1fr));
+    grid-template-columns: repeat(4, minmax(9.5rem, 1fr));
     gap: 0.55rem;
     overscroll-behavior-inline: contain;
     padding-block-end: 0.3rem;
@@ -1202,6 +1202,28 @@
     align-items: start;
   }
 
+  #tab-ponto #pontoFile {
+    padding: 0.3rem 0.45rem;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+  }
+
+  #tab-ponto #pontoFile::file-selector-button {
+    margin-inline-end: 0.55rem;
+    padding: 0.35rem 0.55rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background: var(--bg-subtle);
+    color: var(--text-strong);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  #tab-ponto #pontoFile::file-selector-button:hover {
+    background: var(--accent-soft);
+  }
+
   #tab-ponto .ponto-table :is(th, td) {
     font-size: var(--workspace-label);
   }
@@ -1234,8 +1256,46 @@
     line-height: 1.45;
   }
 
+  #tab-perfil-pdi .pdi-heading {
+    margin-block: 0 0.45rem;
+  }
+
+  #tab-perfil-pdi .pdi-heading h2 {
+    margin-block: 0.2rem;
+  }
+
+  #tab-perfil-pdi .pdi-heading p {
+    margin-block: 0.25rem 0;
+  }
+
+  #tab-perfil-pdi .pdi-local-note {
+    margin-block: 0.45rem;
+  }
+
+  #tab-perfil-pdi .pdi-notice:empty {
+    min-height: 0;
+    margin: 0;
+  }
+
+  #tab-perfil-pdi #pdiPersonContent {
+    margin-top: 0.6rem;
+  }
+
   #tab-perfil-pdi .pdi-context span {
     margin-bottom: 0.15rem;
+  }
+
+  #tab-mapeamento-time .mt-header {
+    margin-block: 0 0.45rem;
+  }
+
+  #tab-mapeamento-time .mt-filtros {
+    gap: 0.35rem;
+    padding-block: 0.35rem 0.6rem;
+  }
+
+  #tab-mapeamento-time .mt-filtro-btn {
+    padding: 0.35rem 0.65rem;
   }
 
   #tab-mapeamento-time .mt-grid {
