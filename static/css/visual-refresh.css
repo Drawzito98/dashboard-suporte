@@ -304,6 +304,7 @@
     --dashboard-caption: 0.78rem;
     --dashboard-indicator-width: 11rem;
     --dashboard-indicator-min: 9rem;
+    --dashboard-filter-height: 42px;
   }
 
   #appScreen #appPageTitle {
@@ -360,7 +361,7 @@
   #appScreen :is(.kpi-grid, .home-kpi-grid, .so-kpis) {
     grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--dashboard-indicator-min)), var(--dashboard-indicator-width)));
     gap: var(--dashboard-block-gap);
-    align-items: start;
+    align-items: stretch;
   }
 
   #appScreen .tab-content :is(.kpi, .home-kpi, .so-kpis > article) {
@@ -455,7 +456,29 @@
   }
 
   #appScreen .global-filter-row {
+    align-items: end;
     gap: 0.55rem;
+  }
+
+  #appScreen .global-filter-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  #appScreen :is(.global-filter-bar, .rs-filter-bar) {
+    border-radius: 10px;
+    box-shadow: none;
+  }
+
+  #appScreen :is(.global-filter-field, .rs-filter-group) :is(select, input[type="text"]),
+  #appScreen :is(.global-filter-actions, .rs-filter-actions, .global-filter-range .multi-actions) button {
+    box-sizing: border-box;
+    min-height: var(--dashboard-filter-height);
+    height: var(--dashboard-filter-height);
+    padding-block: 0;
+    border-radius: 8px;
   }
 
   #appScreen :is(.ponto-card, .ponto-grid, .ponto-table, .diag-controls, .diag-grid, .diag-group) {
@@ -469,10 +492,7 @@
       gap: 0.5rem;
     }
 
-    #appScreen .global-filter-field :is(select, input[type="text"]) {
-      min-height: 36px;
-      padding-block: 0.35rem;
-    }
+    #appScreen { --dashboard-filter-height: 36px; }
   }
 }
 
@@ -795,7 +815,7 @@
 
   #tab-relatorio-setorial .rs-report-kpis {
     grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--dashboard-indicator-min)), var(--dashboard-indicator-width)));
-    align-items: start;
+    align-items: stretch;
     gap: 0.55rem;
     margin: 0 0 0.85rem;
   }
@@ -819,6 +839,10 @@
   :is(#historicoContent, #usuariosOverlayContent) th {
     color: var(--text-secondary);
     background: var(--bg-inset);
+  }
+
+  @media (max-width: 640px), (pointer: coarse) {
+    #appScreen { --dashboard-filter-height: 44px; }
   }
 
   @media (max-width: 640px) {
