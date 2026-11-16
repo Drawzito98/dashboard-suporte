@@ -11,6 +11,8 @@ const client = {
     return {
       select(...args) { record.push(['select', ...args]); return this; },
       eq(...args) { record.push(['eq', ...args]); return this; },
+      lte(...args) { record.push(['lte', ...args]); return this; },
+      gte(...args) { record.push(['gte', ...args]); return this; },
       order(...args) { record.push(['order', ...args]); return this; },
       insert(...args) { record.push(['insert', ...args]); return this; },
       update(...args) { record.push(['update', ...args]); return this; },
@@ -56,6 +58,13 @@ assert.deepEqual(calls.at(-1).slice(0, 4), [
 ]);
 assert.deepEqual(await store.list(), []);
 await assert.rejects(store.open(previous.id), /não está mais/);
+
+queued.push({ data: [] });
+assert.deepEqual(await store.listTeam('2028-02'), []);
+assert.ok(calls.at(-1)[0][1].includes('equipe:relatorio->analysis->tables->team'));
+assert.deepEqual(calls.at(-1).slice(1, 4), [
+  ['eq', 'user_id', user], ['lte', 'periodo_inicio', '2028-02-29'], ['gte', 'periodo_fim', '2028-02-01']
+]);
 
 user = 'outro-gestor';
 assert.equal(store.isCurrent(), false);

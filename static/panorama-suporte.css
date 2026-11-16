@@ -479,6 +479,12 @@ body[data-active-tab="panorama-semanal"] #globalFilterBar {
   border-radius: var(--r-pill);
 }
 .panorama-history-actions { flex-wrap: nowrap; }
+.panorama-history-views { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+.panorama-history-views .btn-small[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
 
 .panorama-team-context {
   margin-block: 0.65rem;

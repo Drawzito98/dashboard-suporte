@@ -79,6 +79,8 @@ A migração v51 cria o histórico privado de prévias validadas no Supabase. O 
 
 Em **Histórico mensal do Panorama**, selecione o mês para consultar finalizados por semana do calendário e o acumulado dos dias com dados. Semanas sem cobertura mostram **Sem dados**. Quando dois ZIPs cobrem a mesma data, vale o dado do salvamento mais recente para aquele dia. Salve ZIPs exportados com os mesmos filtros do Looker para séries comparáveis. As notas confirmadas são exibidas por ZIP e os recortes podem ser reabertos para conferir equipe e departamentos.
 
+Na visão **Por pessoa**, escolha um colaborador para ver os finalizados, a **Média aval.** do Looker e a meta e o saldo N1 de cada ZIP. A associação usa o cadastro atual e só unifica abreviações quando o nome aponta a uma única pessoa no cadastro. Notas e saldos aparecem por recorte. Sem volume por pessoa e dia no ZIP, o acumulado de finalizados soma apenas recortes inteiros do mês que não se sobrepõem. O salvamento mais recente tem prioridade entre os recortes elegíveis. Recortes que cruzam meses, se sobrepõem, têm linhas ambíguas ou não incluem a pessoa ficam visíveis e fora do acumulado. Um dia coberto por dois recortes conta uma vez na visão Operação, que dispõe de volume diário.
+
 **Salvar dados** substitui um recorte idêntico somente após confirmação. **Excluir** pede confirmação, remove apenas a importação selecionada e recalcula a evolução com os registros restantes. As ações do histórico não alteram a meta N1, ausências ou observações. Os registros ficam disponíveis apenas na conta que os salvou.
 
 ## Teste de regressão

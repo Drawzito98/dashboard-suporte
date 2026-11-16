@@ -131,7 +131,7 @@ export function buildAnalysis(reports, headers, days, kpis) {
   return { tables, findings, score, checks };
 }
 
-function parseScore(value) {
+export function parseScore(value) {
   const raw = String(value ?? '').trim().replace(',', '.');
   const number = Number(raw);
   return /^\d(?:\.\d+)?$/.test(raw) && number >= 1 && number <= 5 ? number : null;
@@ -167,7 +167,7 @@ export function n1FinalizedGap(level, finalized, target) {
   return level === 'N1' && target > 0 ? quantity(finalized) - target : null;
 }
 
-function n1GapLabel(gap) {
+export function n1GapLabel(gap) {
   if (gap === null) return '—';
   if (gap < 0) return 'Faltam ' + format.format(-gap);
   if (gap > 0) return format.format(gap) + ' acima';

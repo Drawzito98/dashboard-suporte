@@ -1,10 +1,10 @@
 import { readZip } from './zip.mjs';
-import { analyzeWeekly } from './weekly.mjs?v=19';
-import { renderAnalysis, renderScoreSources, reportDetails, TIME_LABELS } from './analysis.mjs?v=19';
+import { analyzeWeekly } from './weekly.mjs?v=20';
+import { renderAnalysis, renderScoreSources, reportDetails, TIME_LABELS } from './analysis.mjs?v=20';
 
 import { mountTeamContext } from './team-context.mjs?v=2';
-import { createPanoramaHistoryStore } from './history.mjs?v=1';
-import { mountPanoramaHistory } from './history-ui.mjs?v=1';
+import { createPanoramaHistoryStore } from './history.mjs?v=2';
+import { mountPanoramaHistory } from './history-ui.mjs?v=2';
 
 const labels = {
   total: 'Atendimentos no recorte', assumidos: 'Assumidos no Looker',
@@ -22,6 +22,11 @@ function format(key, value) {
       .map(unit => String(unit).padStart(2, '0')).join(':');
   }
   return formatNumber.format(value) + (['recorrencia', 'sla'].includes(key) ? '%' : '');
+}
+
+function readTeamRegistry() {
+  try { return JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}') ?? {}; }
+  catch { return {}; }
 }
 
 function showWeeklyReport(output, report) {
@@ -47,8 +52,7 @@ function showWeeklyReport(output, report) {
     card.append(title, value);
     metrics.append(card);
   }
-  let registry = {};
-  try { registry = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch {}
+  const registry = readTeamRegistry();
   const indicators = reportDetails('Indicadores complementares e tempos');
   const glossary = document.createElement('ul');
   for (const [label, definition] of Object.entries(TIME_LABELS)) {
@@ -150,6 +154,7 @@ export function mountWeekly(root) {
       store = createPanoramaHistoryStore({ client: sbClient, getUserId: _getUserId, currentUserId: () => getCurrentUser()?.id, isAdmin });
       history = mountPanoramaHistory({
         store,
+        getRegistry: readTeamRegistry,
         onOpen(report, id) {
           revision++;
           input.value = '';

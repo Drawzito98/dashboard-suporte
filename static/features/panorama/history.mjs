@@ -1,5 +1,6 @@
 const HISTORY_TABLE = 'panorama_importacoes';
 const SUMMARY_COLUMNS = 'id,periodo_inicio,periodo_fim,updated_at,dias:relatorio->days,finalizados:relatorio->kpis->finalizados,nota:relatorio->analysis->score->confirmedMean';
+const TEAM_COLUMNS = 'id,periodo_inicio,periodo_fim,updated_at,equipe:relatorio->analysis->tables->team';
 const TABLES = ['departments', 'team', 'reasons', 'stars', 'shifts', 'outcomes', 'heatmap'];
 
 export function buildHistorySnapshot(report) {
@@ -22,10 +23,14 @@ export function historyMonths(records) {
   return [...new Set(records.flatMap(record => record.dias.map(day => day.date.slice(0, 7))))].sort().reverse();
 }
 
+export function newestHistoryFirst(a, b) {
+  return Date.parse(b.updated_at) - Date.parse(a.updated_at) || a.id.localeCompare(b.id);
+}
+
 export function summarizeHistoryMonth(records, month) {
   const available = new Map();
   const duplicates = new Set();
-  const newestFirst = [...records].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at) || a.id.localeCompare(b.id));
+  const newestFirst = [...records].sort(newestHistoryFirst);
   for (const record of newestFirst) {
     for (const day of record.dias) {
       if (day.date.slice(0, 7) !== month) continue;
@@ -68,19 +73,29 @@ export function createPanoramaHistoryStore({ client, getUserId, currentUserId, i
     return uid;
   }
   const table = () => client.from(HISTORY_TABLE);
+  async function listRecords(columns, dateRange, errorMessage) {
+    const uid = await session();
+    const records = [];
+    const limit = 200;
+    for (let offset = 0; ; offset += limit) {
+      let query = table().select(columns).eq('user_id', uid);
+      if (dateRange) query = query.lte('periodo_inicio', dateRange.end).gte('periodo_fim', dateRange.start);
+      const page = readResult(await query.order('periodo_inicio', { ascending: false }).order('id').range(offset, offset + limit - 1), errorMessage);
+      records.push(...page);
+      if (page.length < limit) return records;
+    }
+  }
   return {
     isCurrent: () => owner && currentUserId() === owner && isAdmin(),
-    async list() {
-      const uid = await session();
-      const records = [];
-      const limit = 200;
-      for (let offset = 0; ; offset += limit) {
-        const page = readResult(await table().select(SUMMARY_COLUMNS).eq('user_id', uid)
-          .order('periodo_inicio', { ascending: false }).order('id').range(offset, offset + limit - 1),
-        'Não foi possível consultar o histórico.');
-        records.push(...page);
-        if (page.length < limit) return records;
-      }
+    list() {
+      return listRecords(SUMMARY_COLUMNS, null, 'Não foi possível consultar o histórico.');
+    },
+    listTeam(month) {
+      const start = month + '-01';
+      const last = new Date(start + 'T00:00:00Z');
+      last.setUTCMonth(last.getUTCMonth() + 1, 0);
+      const end = last.toISOString().slice(0, 10);
+      return listRecords(TEAM_COLUMNS, { start, end }, 'Não foi possível consultar o histórico por pessoa.');
     },
     async find(period) {
       const uid = await session();

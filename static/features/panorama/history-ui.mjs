@@ -1,4 +1,6 @@
-import { historyMonths, summarizeHistoryMonth } from './history.mjs?v=1';
+import { historyMonths, summarizeHistoryMonth } from './history.mjs?v=2';
+import { buildHistoryPeople, summarizeHistoryPerson } from './history-person.mjs?v=1';
+import { n1GapLabel, scoreBand } from './analysis.mjs?v=20';
 
 const count = new Intl.NumberFormat('pt-BR');
 const rating = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -46,7 +48,52 @@ function action(label, handle) {
   return button;
 }
 
-export function mountPanoramaHistory({ store, onOpen, onDelete }) {
+const eligibilityLabels = {
+  included: 'Incluído',
+  overlap: 'Sobreposição',
+  'cross-month': 'Cruza meses',
+  missing: 'Sem resultado no ZIP',
+  ambiguous: 'Mais de uma linha no ZIP'
+};
+
+function renderPersonPeriods(target, periods, personId) {
+  target.replaceChildren();
+  if (!personId) {
+    target.append(node('p', 'Selecione uma pessoa para ver a evolução no mês.'));
+    return;
+  }
+  const { total, included, rows } = summarizeHistoryPerson(periods, personId);
+  const summary = node('p');
+  if (total === null) {
+    summary.append(node('strong', 'Sem volume disponível para o acumulado.'));
+  } else {
+    const title = included < rows.length ? ' finalizados no acumulado parcial' : ' finalizados no acumulado';
+    summary.append(node('strong', count.format(total) + title),
+      ' · ' + count.format(included) + (included === 1 ? ' período incluído' : ' períodos incluídos'));
+  }
+  target.append(summary);
+  const resultRows = rows.map(row => {
+    const score = node('span', row.score != null ? rating.format(row.score) : '—');
+    if (row.score != null) score.className = scoreBand(row.score).className;
+    const balance = node('span', n1GapLabel(row.balance ?? null));
+    if (row.balance != null) {
+      balance.classList.add('panorama-n1-gap', row.balance < 0 ? 'panorama-score-low' : 'panorama-score-high');
+      balance.title = 'Meta do recorte · ' + count.format(row.target) + ' finalizados';
+    }
+    return [
+      periodLabel(row.start, row.end),
+      row.finalized == null ? '—' : count.format(row.finalized),
+      score,
+      row.balance == null ? '—' : count.format(row.target),
+      balance,
+      eligibilityLabels[row.status]
+    ];
+  });
+  target.append(table('Histórico por pessoa',
+    ['Período do ZIP', 'Finalizados', 'Nota', 'Meta N1', 'Saldo N1', 'No acumulado'], resultRows));
+}
+
+export function mountPanoramaHistory({ store, onOpen, onDelete, getRegistry }) {
   const element = node('details');
   element.className = 'panorama-history';
   const monthFilter = node('label', 'Mês ');
@@ -58,17 +105,79 @@ export function mountPanoramaHistory({ store, onOpen, onDelete }) {
   feedback.setAttribute('role', 'status');
   const content = node('div');
   element.append(node('summary', 'Histórico mensal do Panorama'), toolbar, feedback, content);
-  toolbar.append(monthFilter, action('Atualizar histórico', () => refresh()));
+  const views = node('div');
+  views.className = 'panorama-history-views';
+  views.setAttribute('role', 'group');
+  views.setAttribute('aria-label', 'Visões do histórico mensal');
+  const operation = action('Operação', () => switchView('operation'));
+  const byPerson = action('Por pessoa', () => switchView('person'));
+  operation.setAttribute('aria-pressed', 'true');
+  byPerson.setAttribute('aria-pressed', 'false');
+  views.append(operation, byPerson);
+  toolbar.append(monthFilter, views, action('Atualizar histórico', () => refresh()));
+  let currentView = 'operation';
+  let selectedPerson = '';
+  let personRevision = 0;
   let records = [];
   let revision = 0;
   let busy = false;
 
+  function switchView(next) {
+    if (currentView === next) return;
+    currentView = next;
+    operation.setAttribute('aria-pressed', String(next === 'operation'));
+    byPerson.setAttribute('aria-pressed', String(next === 'person'));
+    draw();
+  }
+
+  async function drawPeople(month, request) {
+    content.append(node('p', 'Carregando histórico por pessoa…'));
+    try {
+      const records = await store.listTeam(month);
+      if (request !== personRevision || !store.isCurrent()) return;
+      const { people, periods } = buildHistoryPeople(records, month, getRegistry());
+      content.replaceChildren();
+      if (!people.length) {
+        content.append(node('p', 'Nenhum período salvo com resultado por pessoa neste mês.'));
+        return;
+      }
+      const filters = node('div');
+      filters.className = 'panorama-report-filters';
+      const label = node('label', 'Colaborador');
+      const select = node('select');
+      select.append(new Option('Selecione uma pessoa', ''));
+      for (const { id, name, level } of people) {
+        select.append(new Option(name + (level === '—' ? '' : ' · ' + level), id));
+      }
+      if (people.some(person => person.id === selectedPerson)) select.value = selectedPerson;
+      label.append(select);
+      filters.append(label);
+      const results = node('div');
+      content.append(filters, node('p', 'A nota é a Média aval. do ZIP. O nível e o saldo N1 usam o cadastro atual.'),
+        node('p', 'O acumulado usa recortes inteiros dentro do mês. Em caso de sobreposição, o salvamento mais recente tem prioridade.'),
+        results);
+      select.addEventListener('change', () => {
+        selectedPerson = select.value;
+        renderPersonPeriods(results, periods, selectedPerson);
+      });
+      renderPersonPeriods(results, periods, select.value);
+    } catch (error) {
+      if (request !== personRevision || !store.isCurrent()) return;
+      content.replaceChildren(node('p', error.message));
+    }
+  }
+
   function draw() {
+    const request = ++personRevision;
     content.replaceChildren();
     if (!store.isCurrent()) return;
     const month = monthSelect.value;
     if (!month) {
       content.append(node('p', 'Nenhuma importação salva. Analise um ZIP e clique em Salvar dados.'));
+      return;
+    }
+    if (currentView === 'person') {
+      drawPeople(month, request);
       return;
     }
     const { total, days, overlapping, weeks } = summarizeHistoryMonth(records, month);
@@ -123,7 +232,7 @@ export function mountPanoramaHistory({ store, onOpen, onDelete }) {
       ];
     });
     content.append(node('h4', 'Períodos salvos'),
-      node('p', 'Os volumes abaixo são de cada ZIP completo. Se quiser ver pessoas e departamentos, abra o período.'),
+      node('p', 'Os volumes e notas abaixo são de cada ZIP completo. Abra um período para consultar todos os seus indicadores.'),
       table('Períodos salvos', ['Período', 'Finalizados no ZIP', 'Nota confirmada', 'Ações'], historyRows));
   }
 
@@ -144,6 +253,7 @@ export function mountPanoramaHistory({ store, onOpen, onDelete }) {
       feedback.textContent = success;
     } catch (error) {
       if (request !== revision || !store.isCurrent()) return;
+      personRevision++;
       records = [];
       monthSelect.replaceChildren();
       monthSelect.disabled = true;
@@ -171,7 +281,10 @@ export function mountPanoramaHistory({ store, onOpen, onDelete }) {
   monthSelect.addEventListener('change', draw);
   element.addEventListener('toggle', () => {
     if (element.open) refresh();
-    else revision++;
+    else {
+      revision++;
+      personRevision++;
+    }
   });
   return { element, refresh };
 }
