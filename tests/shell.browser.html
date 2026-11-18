@@ -103,6 +103,19 @@
   assert(!document.getElementById('domainNav').getClientRects().length, 'Apresentação sem navegação');
   document.body.classList.remove('presentation-mode');
   assert(document.documentElement.scrollWidth <= innerWidth, 'Sem overflow horizontal no shell');
+  if (innerWidth > 900) {
+    const chrome = [...document.querySelectorAll('.topbar-right .sync-status, .topbar-right .accent-quick, .topbar-right .current-user, .topbar-right .notif-btn, .topbar-right .theme-toggle, .topbar-right #logoutBtn')]
+      .filter(el => el.getClientRects().length);
+    const heights = chrome.map(el => Math.round(el.getBoundingClientRect().height));
+    assert(heights.length >= 4 && Math.max(...heights) - Math.min(...heights) <= 2, 'Controles do topbar alinhados');
+    assert(heights.every(height => height >= 30 && height <= 38), 'Controles do topbar compactos');
+    const menu = document.getElementById('userDropdown');
+    const previousDisplay = menu.style.display;
+    menu.style.display = 'block';
+    const itemHeight = menu.querySelector('.user-dropdown-item').getBoundingClientRect().height;
+    menu.style.display = previousDisplay;
+    assert(itemHeight >= 28 && itemHeight <= 40, 'Itens do menu compactos');
+  }
   if (innerWidth <= 900) toggle.click();
   document.getElementById('testResult').textContent = 'PASS: 14 destinos, 4 áreas, callbacks, restauração, filtros, ferramentas, foco, papéis e apresentação';
 })().catch(error => {document.getElementById('testResult').textContent='FAIL: '+error.message;console.error(error);});
