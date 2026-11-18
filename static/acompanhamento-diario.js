@@ -95,7 +95,7 @@ function renderAcompDiario(containerId) {
   if (saved.length > 0) {
     html += '<div class="card" style="margin-bottom:var(--s-4)">';
     html += '<div class="card-header">';
-    html += '<div><h3 style="font-size:16px;font-weight:600">🏆 Rankings</h3>';
+    html += '<div><h3 style="font-size:16px;font-weight:600"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-award"></use></svg> Rankings</h3>';
     html += `<p style="font-size:13px;color:var(--text-secondary)">${saved.length} registro(s) · ${totalFinalizacoes} finalizados · ${totalAssumidos} assumidos</p></div>`;
     html += '</div>';
 

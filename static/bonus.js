@@ -81,7 +81,7 @@ function renderBonus() {
     html += '</div>';
   } else {
     html += '<div style="display:flex;gap:var(--s-2)">';
-    html += `<button class="btn-primary" id="bonusAdicionarBtn" type="button" style="flex:1;background:var(--success)">➕ Conceder bônus</button>`;
+    html += `<button class="btn-primary" id="bonusAdicionarBtn" type="button" style="flex:1;background:var(--success)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-plus"></use></svg> Conceder bônus</button>`;
     html += `<button class="btn-primary" id="bonusRemoverBtn" type="button" style="flex:1;background:var(--danger)">➖ Registrar penalidade</button>`;
     html += '</div>';
   }
@@ -122,8 +122,8 @@ function renderBonus() {
       html += `<div style="font-size:11px;color:var(--text-muted);margin-top:1px">${mesInfo}${mesInfo ? ' · ' : ''}${b.createdAt ? new Date(b.createdAt).toLocaleString('pt-BR') : ''}</div>`;
       html += '</div>';
       html += '<div style="display:flex;gap:var(--s-1)">';
-      html += `<button class="btn-small bonus-editar-btn" data-id="${b.id}" aria-label="Editar lançamento de ${escapeHtml(b.colaborador)}" type="button">✏️</button>`;
-      html += `<button class="btn-small btn-delete bonus-excluir-btn" data-id="${b.id}" aria-label="Excluir lançamento de ${escapeHtml(b.colaborador)}" type="button">🗑️</button>`;
+      html += `<button class="btn-small bonus-editar-btn" data-id="${b.id}" aria-label="Editar lançamento de ${escapeHtml(b.colaborador)}" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> </button>`;
+      html += `<button class="btn-small btn-delete bonus-excluir-btn" data-id="${b.id}" aria-label="Excluir lançamento de ${escapeHtml(b.colaborador)}" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-trash"></use></svg> </button>`;
       html += '</div></div>';
     }
     html += '</div>';

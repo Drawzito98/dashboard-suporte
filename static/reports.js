@@ -320,9 +320,9 @@ function generateIntelReport() {
       container.style.display = 'block';
       container.innerHTML = `
         <div class="intel-report-header">
-          <h3>🤖 Relatório Inteligente</h3>
+          <h3><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-suggest"></use></svg> Relatório Inteligente</h3>
           <div style="display:flex;gap:8px">
-            <button class="btn-small" id="copyIntelReportBtn" type="button">📋 Copiar</button>
+            <button class="btn-small" id="copyIntelReportBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
             <button class="btn-small" id="closeIntelReportBtn" type="button">✕</button>
           </div>
         </div>
@@ -868,7 +868,11 @@ function buildReportHTML(text) {
   pre.raw { white-space:pre-wrap; word-wrap:break-word; margin:0; font-size:13px; line-height:1.6; color:var(--fg); }
   .footer-meta { color:var(--muted); font-size:11px; text-align:center; margin-top:8px; }
   @media print {
-    body { padding:0; background:#fff; color:#000; }
+    html, body { background:#fff; color:#000; }
+    body { padding:0; min-height:auto; }
+    pre.raw { font-family:inherit; overflow-wrap:anywhere; }
+    .rank li, .setor-card, .kpi { break-inside:avoid; }
+    @page { margin:12mm; }
     .actions, .btn { display:none !important; }
     .card { box-shadow:none; border-color:#ddd; background:#fff; }
     .kpi, .setor-card { background:#fafafa; }

@@ -339,13 +339,13 @@ function rfRenderForm() {
           </div>
 
           <div style="display:flex;gap:var(--s-2);flex-wrap:wrap">
-            <button class="btn-primary" id="rfGerarBtn" type="button" style="flex:1">📊 Gerar relatório</button>
+            <button class="btn-primary" id="rfGerarBtn" type="button" style="flex:1"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Gerar relatório</button>
             <button class="btn-primary" id="rfExportBtn" type="button" style="flex:1;background:var(--success, #059669)">📄 Exportar PDF</button>
           </div>
         </div>
 
         <div class="card" style="padding:var(--s-4)">
-          <h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3)">👁️ Pré-visualização</h3>
+          <h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-eye"></use></svg> Pré-visualização</h3>
           <div id="rfPreview" style="max-height:70vh;overflow-y:auto">
             <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:30px 10px">Selecione um colaborador e clique em "Gerar relatório".</div>
           </div>

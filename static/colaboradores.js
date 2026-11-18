@@ -380,7 +380,7 @@ function openColabReport(nome) {
   html += '</div>';
 
   // ── Detailed table ──
-  html += '<div class="report-section"><h3 class="report-section-title">📋 Métricas Detalhadas</h3>';
+  html += '<div class="report-section"><h3 class="report-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Métricas Detalhadas</h3>';
   html += '<div class="report-grid">';
   const detRows = [
     { label: 'Finalizados', value: fmtInt(fin), team: fmtInt(teamFin), var: finVar },

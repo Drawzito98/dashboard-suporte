@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.38.1';
+const APP_VERSION = '1.39.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -1641,7 +1641,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (homeScreen) homeScreen.style.display = "none";
     if (appScreen) appScreen.style.display = "block";
     const content = document.querySelector('#appScreen .content');
-    if (content) content.innerHTML = '<section class="card"><h2>Área do colaborador</h2><p>Nenhum módulo está disponível para este perfil no momento.</p></section>';
+    if (content) content.innerHTML = '<section class="card"><h2>Área do colaborador</h2><div class="empty-state"><div class="empty-title">Sem módulos disponíveis</div><p class="empty-sub">Nenhum módulo está disponível para este perfil no momento.</p></div></section>';
     setLoading(false);
     return;
   }

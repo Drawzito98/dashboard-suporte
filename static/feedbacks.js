@@ -231,7 +231,7 @@ function renderFeedbacks() {
   // ── LEFT: Formulário ──
   html += '<div class="card">';
   html += '<div style="margin-bottom:var(--s-4)">';
-  html += '<h3 style="font-size:15px;font-weight:600;margin-bottom:4px">✏️ Feedback</h3>';
+  html += '<h3 style="font-size:15px;font-weight:600;margin-bottom:4px"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Feedback</h3>';
   html += '<p style="font-size:13px;color:var(--text-secondary)">Selecione colaborador e período, gere uma sugestão e personalize.</p>';
   html += '</div>';
 
@@ -287,7 +287,7 @@ function renderFeedbacks() {
   // ── RIGHT: Feedbacks Salvos ──
   html += '<div class="card">';
   html += '<div class="card-header">';
-  html += '<div><h3 style="font-size:15px;font-weight:600">📋 Feedbacks Salvos</h3>';
+  html += '<div><h3 style="font-size:15px;font-weight:600"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Feedbacks Salvos</h3>';
   html += `<p style="font-size:13px;color:var(--text-secondary)">${saved.length} registro(s)</p></div>`;
   html += '<div style="display:flex;gap:var(--s-2);align-items:center">';
   html += `<input type="text" id="fbFiltroColab" placeholder="Filtrar por colaborador..." value="${escapeHtml(filtroColab)}" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-card);color:var(--text);width:140px">`;
@@ -518,7 +518,7 @@ function verFeedback(fb) {
     <div style="padding:var(--s-5)">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:var(--s-4)">
         <div>
-          <h2 style="font-size:18px;font-weight:700">💬 Feedback</h2>
+          <h2 style="font-size:18px;font-weight:700"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-message"></use></svg> Feedback</h2>
           <p style="font-size:13px;color:var(--text-secondary)">${escapeHtml(fb.colaborador)} · ${escapeHtml(fb.mes)} · ${dateStr}</p>
         </div>
         <button class="btn-small" id="fbViewCloseBtn" type="button">✕ Fechar</button>

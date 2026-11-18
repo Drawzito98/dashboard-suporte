@@ -149,7 +149,7 @@ function renderPainelLider() {
 
   // Pontos de atenção (deduplicados)
   const seen = new Set();
-  html += `<h3 class="lider-section-title">🚨 Pontos de Atenção</h3>`;
+  html += `<h3 class="lider-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-attention"></use></svg> Pontos de Atenção</h3>`;
   if (atencao.length) {
     html += `<div class="lider-attention-list">`;
     atencao.filter(a => {
@@ -231,7 +231,7 @@ function renderPainelLider() {
   sugestoes.sort((a, b) => b.sugestoes.length - a.sugestoes.length || a.name.localeCompare(b.name));
 
   html += `<div class="lider-suggestions">
-    <h3 class="lider-section-title">💡 Sugestões por Colaborador</h3>`;
+    <h3 class="lider-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-insight"></use></svg> Sugestões por Colaborador</h3>`;
 
   if (sugestoes.length === 0) {
     html += `<div class="lider-clear-suggestions">✅ Nenhuma sugestão no momento — time estável.</div>`;
@@ -258,7 +258,7 @@ function renderPainelLider() {
   }
 
   html += `</div>`; }
-  html += `<h3 class="lider-section-title">📋 Resumo por Colaborador</h3>`;
+  html += `<h3 class="lider-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Resumo por Colaborador</h3>`;
   html += `<div class="lider-summary-table table-wrap" data-scroll-label="Resumo por colaborador da liderança"><table class="ranking-table">
     <thead><tr><th>Colaborador</th><th>Finalizados</th><th>Δ Fin</th><th>Score</th><th>Δ Score</th><th>Prod.</th><th>Meta</th><th>Status</th><th></th></tr></thead>
     <tbody>${Object.entries(byColab).sort((a, b) => b[1].fin - a[1].fin).map(([name, d]) => {

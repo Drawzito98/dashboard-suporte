@@ -48,7 +48,7 @@ function renderComentarios() {
 
   let html = `
     <div style="padding:var(--s-5)">
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--s-1)">💬 Comentários por Período</h2>
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--s-1)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-message"></use></svg> Comentários por Período</h2>
       <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">Anotações e observações sobre cada mês.</p>
       <p id="comentariosMessage" role="status" aria-live="polite"></p>
       <button class="btn-small" id="comentariosAtualizar" type="button">Atualizar lista</button>
@@ -86,7 +86,7 @@ function renderComentarios() {
                   </div>
                 </td>
                 <td style="vertical-align:top;padding-top:14px">
-                  <button class="btn-small add-comentario-btn" data-mes="${escapeHtml(m)}" type="button" aria-label="Adicionar comentário para ${escapeHtml(m)}">✏️</button>
+                  <button class="btn-small add-comentario-btn" data-mes="${escapeHtml(m)}" type="button" aria-label="Adicionar comentário para ${escapeHtml(m)}"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> </button>
                 </td>
               </tr>`;
             }).join('') : `<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--text-muted)">Nenhum período encontrado.</td></tr>`}

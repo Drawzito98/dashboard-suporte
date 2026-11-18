@@ -105,8 +105,8 @@ function renderProjecao() {
       </div>
 
       <div class="projecao-data-actions">
-        <button class="btn-small" id="projecaoCopyBtn" type="button">📋 Copiar do mês anterior</button>
-        <button class="btn-small" id="projecaoCopyNextBtn" type="button">📋 Copiar do mês seguinte</button>
+        <button class="btn-small" id="projecaoCopyBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar do mês anterior</button>
+        <button class="btn-small" id="projecaoCopyNextBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar do mês seguinte</button>
         <button class="btn-small projecao-reset" id="projecaoResetBtn" type="button">Zerar dados do mês</button>
       </div>
       <p class="projecao-action-hint">Copiar preenche apenas os colaboradores exibidos. Zerar abrange todo o mês, inclusive registros ocultos pelos filtros. As alterações só são aplicadas ao salvar.</p>

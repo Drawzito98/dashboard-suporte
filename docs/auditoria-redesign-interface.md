@@ -122,3 +122,32 @@ npm test, release:check, diff e sintaxe dos dois renderizadores. Workspace compl
 Pendências que continuam abertas
 
 Ranking/consolidado de avaliações e outros módulos ainda têm estilos inline. Não foi realizada certificação WCAG, teste com leitor de tela, Safari/Firefox ou paginação física de impressão. A padronização de ícones legados e a revisão da experiência específica do colaborador também precisam de rodadas próprias. Não se declara conclusão integral de todas as recomendações originais.
+
+## Conclusão do ciclo — 1.39.0
+
+Solicitação de executar as pendências e publicar ao final. Base c12f4b3, árvore inicialmente limpa, branch feat/conclusao-redesign-interface.
+
+### Implementação
+
+- Ranking, consolidado e visualização individual de avaliações passaram a usar people-workspace.css. De 70 atributos style anteriores, restam apenas cinco pontos dinâmicos de cor/largura, derivados dos mesmos valores de apresentação. O histórico expressa seu estado por data-status e tokens semânticos.
+- Ordenação do consolidado usa botões reais, aria-sort e preserva o foco depois da renderização. Observações extensas podem quebrar linha e têm região de tabela com rolagem acessível.
+- Relatórios de avaliação têm títulos e controles de fechamento acessíveis. As janelas legadas passam a ficar acima do cabeçalho fixo. A moldura e o padding duplicados foram corrigidos.
+- O radar mantém séries, valores, escala 0–4 e rótulos completos nos dados/tooltips. Os eixos visuais são numerados e correspondem à tabela numerada, evitando nomes cortados no celular. O canvas tem descrição acessível.
+- 79 ícones de ação/cabeçalho foram substituídos por SVG com símbolos compartilhados e currentColor. Emojis que expressam conteúdo, status e medalhas não foram transformados em decoração.
+- A área de colaborador foi auditada com o papel real simulado. O fluxo vigente apresenta “Nenhum módulo está disponível para este perfil” e retorna antes dos filtros antigos. Seu estado vazio foi padronizado. O desafio diário não consta do HTML nem do manifest atual. Não foi reativado código inacessível nem alterada a autorização para apresentar uma funcionalidade diferente.
+- Impressão do relatório executivo recebeu fundo branco também no elemento html, texto corrido legível e proteção contra quebra interna de itens. O conteúdo e os indicadores permanecem iguais.
+- Não há novos scripts iniciais, biblioteca de ícones ou dependência de rede para SVG. O CSS específico utiliza os controles e tokens já existentes.
+
+### Verificação
+
+npm test aprovado com 171 casos do runner e checks adicionais; sintaxe dos scripts alterados, release:check e diff. Workspace completo em Chromium nas quatro larguras e nos dois temas. Firefox instalado executou o workspace em janela reduzida e desktop, nos dois temas. Seu modo headless impõe largura externa mínima de 500px; a área vazia de colaborador também foi verificada dentro de iframe limitado a 360px e em desktop.
+
+Teste específico em 360/1440px, claro/escuro, abriu ranking/consolidado/detalhe com duas avaliações simuladas, conferiu médias, ordenação por Enter real, aria-sort, retorno de foco, janela contida e radar. Fixtures de avaliação exercitam falha/rascunho/edição/exclusão/duplo envio somente no cliente simulado. Design system e fixtures de shell, dados e módulos completam a regressão.
+
+Um PDF real do relatório executivo, com registros simulados, foi gerado por impressão do Chromium. As quatro páginas da amostra foram renderizadas e inspecionadas. A paginação digital não representa um ensaio em impressora física.
+
+### Limites de conclusão
+
+A revisão implementa a padronização dos componentes prioritários e os ajustes verificáveis neste ambiente. Ainda existem estilos inline em módulos históricos e valores dinâmicos que não foram removidos indiscriminadamente. A extração adicional pode continuar por componente, sem ser necessária para utilizar esta versão.
+
+Acessibilidade foi verificada automaticamente e por teclado, com amostragem de contraste. Não se declara certificação WCAG nem teste humano com leitor de tela. Safari e impressão física não estão disponíveis neste ambiente. Esses ensaios e a revisão assistida com a equipe em dados reais permanecem validações externas. Não houve alteração de banco, RLS, autenticação, regras de cálculo ou metas, nem testes de escrita em produção.

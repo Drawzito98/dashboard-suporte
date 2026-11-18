@@ -458,7 +458,7 @@
         <div style="padding:20px 24px">
           <pre class="summary-text">${escapeH(text)}</pre>
           <div style="display:flex;gap:8px;margin-top:16px">
-            <button class="btn summary-copy-btn" style="flex:1">📋 Copiar texto</button>
+            <button class="btn summary-copy-btn" style="flex:1"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar texto</button>
             <button class="btn summary-close-go" style="flex:1;background:var(--border);color:var(--text)">Fechar</button>
           </div>
         </div>

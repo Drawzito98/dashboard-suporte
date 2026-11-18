@@ -180,7 +180,7 @@ function renderInsights() {
   let html = '';
 
   // ── Mini tabela de evolução do time ──
-  html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📊 Evolução do Time</h3>`;
+  html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Evolução do Time</h3>`;
   html += `<div style="overflow-x:auto;margin-bottom:var(--s-5)"><table class="ranking-table" style="min-width:auto">
     <thead><tr><th>Mês</th><th>Finalizados</th><th>Δ</th><th>Score</th><th>Δ</th><th>Transferências</th><th>Δ</th><th>Prod.</th><th>Colabs</th></tr></thead>
     <tbody>${meses.map((m, i) => {
@@ -228,7 +228,7 @@ function renderInsights() {
   html += `</div>`;
 
   // ── Lista de insights ──
-  html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">💡 Insights</h3>`;
+  html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-insight"></use></svg> Insights</h3>`;
 
   if (!insights.length) {
     html += '<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-surface);color:var(--text-muted);font-size:13px">Nenhum insight significativo — os dados estão estáveis.</div>';

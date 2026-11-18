@@ -394,7 +394,7 @@ function renderRelatorioSetorial() {
 
   html += `<div class="rs-section rs-action-section">
     <div class="rs-action-heading">
-      <div><h2 class="rs-section-title">📋 Próximos Passos e Plano de Ação</h2><p>Recomendações calculadas para os filtros atuais${hasPrev ? ` e comparadas com ${escapeHtml(_prevLabel.replace('vs ', ''))}` : ''}.</p></div>
+      <div><h2 class="rs-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Próximos Passos e Plano de Ação</h2><p>Recomendações calculadas para os filtros atuais${hasPrev ? ` e comparadas com ${escapeHtml(_prevLabel.replace('vs ', ''))}` : ''}.</p></div>
       <div class="rs-action-summary"><span class="critical">${criticalCount} urgente(s)</span><span class="high">${highCount} prioridade(s) alta(s)</span></div>
     </div>
     <div class="rs-action-grid">
@@ -531,12 +531,12 @@ function renderRelatorioSetorial() {
   // ── Relatório Executivo ──
   html += `<div class="reportBox" style="margin-top:var(--s-6)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-3);flex-wrap:wrap;gap:var(--s-2)">
-      <h3 style="font-size:14px;font-weight:600;color:var(--text-strong);margin:0">📝 Relatório Executivo</h3>
+      <h3 style="font-size:14px;font-weight:600;color:var(--text-strong);margin:0"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-note"></use></svg> Relatório Executivo</h3>
       <div style="display:flex;gap:var(--s-2);flex-wrap:wrap">
         <button id="copyReportBtn" type="button" class="btn-small">Copiar relatório</button>
         <button id="exportPdfBtn" type="button" class="btn-small">Exportar PDF</button>
         <button id="refreshReportBtn" type="button" class="btn-small">Atualizar</button>
-        <button id="intelReportBtn" type="button" class="btn-small">🤖 Relatório Inteligente</button>
+        <button id="intelReportBtn" type="button" class="btn-small"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-suggest"></use></svg> Relatório Inteligente</button>
         <button id="deleteReportBtn" type="button" class="btn-small btn-danger">Apagar</button>
       </div>
     </div>

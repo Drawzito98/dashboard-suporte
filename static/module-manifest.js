@@ -153,7 +153,7 @@ window.APP_MODULES = {
   },
   "panorama": {
     "scripts": [
-      "/static/relatorio-setorial.js?v=1380"
+      "/static/relatorio-setorial.js?v=1390"
     ],
     "styles": [],
     "exports": [

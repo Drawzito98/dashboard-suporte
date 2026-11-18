@@ -218,8 +218,8 @@ function renderHome() {
           <button class="btn-small" id="homeColabsModalClose" type="button" style="font-size:18px;padding:4px 8px">✕</button>
         </div>
         <div style="display:flex;gap:var(--s-2);margin-bottom:var(--s-3)">
-          <button class="btn-small" id="homeColabsCopyAll" type="button" style="flex:1;justify-content:center">📋 Copiar todos</button>
-          <button class="btn-small" id="homeColabsCopyNames" type="button" style="flex:1;justify-content:center">📝 Só nomes</button>
+          <button class="btn-small" id="homeColabsCopyAll" type="button" style="flex:1;justify-content:center"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar todos</button>
+          <button class="btn-small" id="homeColabsCopyNames" type="button" style="flex:1;justify-content:center"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-note"></use></svg> Só nomes</button>
         </div>
         <div id="homeColabsList" style="max-height:400px;overflow-y:auto"></div>
       </div>
@@ -272,7 +272,7 @@ function renderHome() {
           <button class="btn-small home-score-modal-close" type="button" style="font-size:18px;padding:4px 8px">✕</button>
         </div>
         <div style="display:flex;gap:var(--s-2);margin-bottom:var(--s-3)">
-          <button class="btn-small" id="homeScoreCopyAll" type="button" style="flex:1;justify-content:center">📋 Copiar todos</button>
+          <button class="btn-small" id="homeScoreCopyAll" type="button" style="flex:1;justify-content:center"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar todos</button>
         </div>
         <div id="homeScoreList" style="max-height:400px;overflow-y:auto"></div>
       </div>

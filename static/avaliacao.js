@@ -116,7 +116,7 @@ function renderAvaliacao() {
       <div class="avaliacao-form-card">
         <div class="card-header">
           <div>
-            <h2>📋 Avaliação de Desempenho</h2>
+            <h2><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Avaliação de Desempenho</h2>
             <p>Avalie um colaborador nas 11 competências C1</p>
           </div>
         </div>
@@ -137,8 +137,8 @@ function renderAvaliacao() {
             </div>
           </label>
           <div class="avaliacao-start-actions">
-            <button class="btn-small" id="avaliacaoNovaBtn" type="button">➕ Nova avaliação</button>
-            <button class="btn-primary avaliacao-suggest-action" id="avaliacaoSugerirNotasBtn" type="button">🎯 Sugerir Notas Inteligentes</button>
+            <button class="btn-small" id="avaliacaoNovaBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-plus"></use></svg> Nova avaliação</button>
+            <button class="btn-primary avaliacao-suggest-action" id="avaliacaoSugerirNotasBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-target"></use></svg> Sugerir Notas Inteligentes</button>
           </div>
         </div>
         <div class="avaliacao-qualitative">
@@ -154,7 +154,7 @@ function renderAvaliacao() {
       <div class="avaliacao-historico-card">
         <div class="card-header">
           <div>
-            <h2>📊 Histórico de Avaliações</h2>
+            <h2><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Histórico de Avaliações</h2>
             <p>Visualize avaliações salvas por colaborador e ciclo</p>
           </div>
         </div>
@@ -185,10 +185,10 @@ function renderAvaliacao() {
               <option value="nome-desc">Nome Z-A</option>
             </select>
           </label>
-          <button class="btn-primary avaliacao-history-action" id="avaliacaoCarregarBtn" type="button" disabled>📋 Carregar selecionada</button>
-          <button class="btn-small avaliacao-history-action" id="avaliacaoRankingBtn" type="button">🏆 Ranking</button>
-          <button class="btn-small avaliacao-history-action" id="avaliacaoConsolidadoViewBtn" type="button">👁️ Consolidado</button>
-          <button class="btn-small avaliacao-history-action" id="avaliacaoExportAllBtn" type="button">📊 Exportar</button>
+          <button class="btn-primary avaliacao-history-action" id="avaliacaoCarregarBtn" type="button" disabled><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Carregar selecionada</button>
+          <button class="btn-small avaliacao-history-action" id="avaliacaoRankingBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-award"></use></svg> Ranking</button>
+          <button class="btn-small avaliacao-history-action" id="avaliacaoConsolidadoViewBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-eye"></use></svg> Consolidado</button>
+          <button class="btn-small avaliacao-history-action" id="avaliacaoExportAllBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Exportar</button>
         </div>
         <div id="avaliacaoHistoricoLista"></div>
       </div>
@@ -311,7 +311,7 @@ function renderAvaliacaoForm(colaborador, ciclo, existing, resume = false) {
             <span>Período</span>
             <input type="text" id="avaliacaoCicloInput" value="${escapeHtml(ciclo)}" class="avaliacao-cycle-input"/>
           </label>
-          ${isEdit ? `<span style="font-size:12px;color:var(--text-muted)">Última atualização: ${existing.updatedAt ? new Date(existing.updatedAt).toLocaleString('pt-BR') : '—'}</span>` : ''}
+          ${isEdit ? `<span class="avaliacao-caption">Última atualização: ${existing.updatedAt ? new Date(existing.updatedAt).toLocaleString('pt-BR') : '—'}</span>` : ''}
         </div>
       </div>
       <form id="avaliacaoForm" class="avaliacao-form" data-colaborador="${escapeHtml(colaborador)}" data-id="${escapeHtml(_writeUuid(existing?.id))}">
@@ -367,11 +367,11 @@ function renderAvaliacaoForm(colaborador, ciclo, existing, resume = false) {
         <div class="avaliacao-comentarios-ia-section">
           <div class="avaliacao-comentarios-ia-header">
             <div>
-              <h3 class="avaliacao-comment-heading">💬 Comentários da Avaliação</h3>
+              <h3 class="avaliacao-comment-heading"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-message"></use></svg> Comentários da Avaliação</h3>
               <p class="avaliacao-comment-description">É obrigatório registrar pelo menos um comentário antes de concluir ou publicar a avaliação.</p>
             </div>
             <div class="avaliacao-comment-toolbar">
-              <button class="btn-primary avaliacao-comment-generate" id="avaliacaoGerarIaBtn" type="button">🤖 Gerar Sugestões com IA</button>
+              <button class="btn-primary avaliacao-comment-generate" id="avaliacaoGerarIaBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-suggest"></use></svg> Gerar Sugestões com IA</button>
             </div>
           </div>
           <div id="avaliacaoComentariosIaList" class="avaliacao-comentarios-list">
@@ -382,14 +382,14 @@ function renderAvaliacaoForm(colaborador, ciclo, existing, resume = false) {
           </div>
           <div class="avaliacao-comentarios-add">
             <textarea id="avaliacaoNovoComentarioInput" rows="2" placeholder="Digite um comentário personalizado..." class="avaliacao-comment-input"></textarea>
-            <button class="btn-small avaliacao-comment-add" id="avaliacaoAddComentarioBtn" type="button">➕ Adicionar comentário</button>
+            <button class="btn-small avaliacao-comment-add" id="avaliacaoAddComentarioBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-plus"></use></svg> Adicionar comentário</button>
           </div>
         </div>
 
         <div class="avaliacao-form-actions">
           <p id="avaliacaoSaveMessage" class="ui-message" role="status" aria-live="polite">Edição ainda não confirmada no servidor.</p>
           <button class="btn-primary" type="submit">💾 Salvar avaliação</button>
-          <button class="btn-small" type="button" id="avaliacaoExportXlsxBtn">📊 Exportar para Excel</button>
+          <button class="btn-small" type="button" id="avaliacaoExportXlsxBtn"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Exportar para Excel</button>
           <button class="btn-small" type="button" id="avaliacaoCancelarBtn">Fechar edição</button>
         </div>
       </form>
@@ -408,15 +408,15 @@ function renderAvaliacaoForm(colaborador, ciclo, existing, resume = false) {
 }
 
 function renderComentariosIa(comentariosIa, comentariosFinais) {
-  if (!comentariosIa || !comentariosIa.length) return '<p style="font-size:13px;color:var(--text-muted);padding:var(--s-3) 0">Clique em "Gerar Sugestões com IA" para obter recomendações.</p>';
+  if (!comentariosIa || !comentariosIa.length) return '<p class="avaliacao-empty-hint">Clique em "Gerar Sugestões com IA" para obter recomendações.</p>';
   return comentariosIa.map((c, i) => `
     <div class="avaliacao-comentario-item ia" data-index="${i}">
       <div class="avaliacao-comentario-tag">🤖 Sugestão IA</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar">📋 Copiar</button>
-        <button class="btn-small av-usar-btn avaliacao-comment-action" type="button" title="Usar como comentário final">➕ Usar</button>
-        <button class="btn-small av-regenerar-btn avaliacao-comment-action" type="button" title="Regenerar">🔄 Regenerar</button>
+        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
+        <button class="btn-small av-usar-btn avaliacao-comment-action" type="button" title="Usar como comentário final"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-plus"></use></svg> Usar</button>
+        <button class="btn-small av-regenerar-btn avaliacao-comment-action" type="button" title="Regenerar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-refresh"></use></svg> Regenerar</button>
       </div>
     </div>
   `).join('');
@@ -429,9 +429,9 @@ function renderComentariosFinais(comentariosFinais) {
       <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar">✏️ Editar</button>
-        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar">📋 Copiar</button>
-        <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir">🗑️ Excluir</button>
+        <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Editar</button>
+        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
+        <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-trash"></use></svg> Excluir</button>
       </div>
     </div>
   `).join('');
@@ -525,9 +525,9 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
       <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(texto)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar">✏️ Editar</button>
-        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar">📋 Copiar</button>
-        <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir">🗑️ Excluir</button>
+        <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Editar</button>
+        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
+        <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-trash"></use></svg> Excluir</button>
       </div>
     `;
     list.appendChild(div);
@@ -578,9 +578,9 @@ function handleUsar(e) {
     <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
     <div class="avaliacao-comentario-texto">${escapeHtml(texto)}</div>
     <div class="avaliacao-comentario-actions">
-      <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar">✏️ Editar</button>
-      <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar">📋 Copiar</button>
-      <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir">🗑️ Excluir</button>
+      <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Editar</button>
+      <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
+      <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-trash"></use></svg> Excluir</button>
     </div>
   `;
   list.appendChild(div);
@@ -719,9 +719,9 @@ function gerarSugestoesIA(colaborador, ciclo, existing, replaceIndex) {
         <div class="avaliacao-comentario-tag">🤖 Sugestão IA</div>
         <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
         <div class="avaliacao-comentario-actions">
-          <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar">📋 Copiar</button>
-          <button class="btn-small av-usar-btn avaliacao-comment-action" type="button" title="Usar como comentário final">➕ Usar</button>
-          <button class="btn-small av-regenerar-btn avaliacao-comment-action" type="button" title="Regenerar">🔄 Regenerar</button>
+          <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
+          <button class="btn-small av-usar-btn avaliacao-comment-action" type="button" title="Usar como comentário final"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-plus"></use></svg> Usar</button>
+          <button class="btn-small av-regenerar-btn avaliacao-comment-action" type="button" title="Regenerar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-refresh"></use></svg> Regenerar</button>
         </div>
       </div>
     `).join('');
@@ -1014,23 +1014,23 @@ function mostrarRankingAvaliacoes() {
   const overlay = document.createElement('div');
   overlay.className = 'colab-detail-overlay open';
   overlay.innerHTML = `
-    <div class="colab-detail-panel" style="max-width:800px">
-      <button class="colab-detail-close" type="button">✕</button>
-      <div style="padding:var(--s-5)">
-        <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">🏆 Ranking de Avaliações</h2>
-        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--s-4)">Ranking por período — ordenado por média</p>
+    <div class="colab-detail-panel avaliacao-ranking-panel">
+      <button class="colab-detail-close" type="button" aria-label="Fechar relatório">✕</button>
+      <div class="avaliacao-report-body">
+        <h2 class="avaliacao-report-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-award"></use></svg> Ranking de Avaliações</h2>
+        <p class="avaliacao-report-description">Ranking por período — ordenado por média</p>
 
-        <div style="margin-bottom:var(--s-4);display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap">
+        <div class="avaliacao-report-filters">
           <label class="field avaliacao-cycle-field">
             <span>Período</span>
-            <select id="rankingCicloSelect" style="width:100%">
+            <select id="rankingCicloSelect" class="avaliacao-full-width">
               ${ciclos.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
             </select>
           </label>
-          <span style="font-size:13px;color:var(--text-muted)" id="rankingCount"></span>
+          <span id="rankingCount" class="avaliacao-report-count"></span>
         </div>
 
-        <div id="rankingTableContainer" style="overflow-x:auto"></div>
+        <div id="rankingTableContainer" class="avaliacao-report-scroll table-wrap"></div>
       </div>
     </div>
   `;
@@ -1058,17 +1058,17 @@ function mostrarRankingAvaliacoes() {
 
     const container = document.getElementById('rankingTableContainer');
     if (!ranked.length) {
-      container.innerHTML = '<div style="text-align:center;padding:var(--s-8);color:var(--text-muted)">Nenhuma avaliação neste período.</div>';
+      container.innerHTML = '<div class="avaliacao-report-empty">Nenhuma avaliação neste período.</div>';
       return;
     }
 
-    let html = `<table style="width:100%;border-collapse:collapse;font-size:14px">
+    let html = `<table class="avaliacao-report-table">
       <thead>
-        <tr style="background:var(--bg-subtle)">
-          <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--border);width:60px">#</th>
-          <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Colaborador</th>
-          <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--border);width:100px">Média</th>
-          <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--border);width:100px">Total</th>
+        <tr class="avaliacao-report-head">
+          <th class="avaliacao-position-heading">#</th>
+          <th class="avaliacao-name-heading">Colaborador</th>
+          <th class="avaliacao-number-heading">Média</th>
+          <th class="avaliacao-number-heading">Total</th>
         </tr>
       </thead>
       <tbody>`;
@@ -1076,11 +1076,11 @@ function mostrarRankingAvaliacoes() {
       const pos = i + 1;
       const cor = av.media >= 3 ? 'var(--success)' : av.media >= 2 ? 'var(--warning)' : 'var(--danger)';
       const medalha = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}.`;
-      html += `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:10px 12px;text-align:center;font-weight:600;font-size:16px">${medalha}</td>
-        <td style="padding:10px 12px"><strong>${escapeHtml(av.colaborador)}</strong></td>
-        <td style="padding:10px 12px;text-align:center;font-weight:700;color:${cor};font-size:16px">${av.media.toFixed(2)}</td>
-        <td style="padding:10px 12px;text-align:center">${av.total}/${comps.length * 4}</td>
+      html += `<tr class="avaliacao-report-row">
+        <td class="avaliacao-position-cell">${medalha}</td>
+        <td class="avaliacao-report-cell"><strong>${escapeHtml(av.colaborador)}</strong></td>
+        <td class="avaliacao-score-cell" style="--evaluation-score-color:${cor}">${av.media.toFixed(2)}</td>
+        <td class="avaliacao-number-cell">${av.total}/${comps.length * 4}</td>
       </tr>`;
     });
     html += '</tbody></table>';
@@ -1104,25 +1104,25 @@ function mostrarConsolidado() {
   overlay.className = 'colab-detail-overlay open';
   overlay.style.zIndex = '2000';
   overlay.innerHTML = `
-    <div class="colab-detail-panel" style="max-width:1200px;max-height:90vh;display:flex;flex-direction:column">
-      <button class="colab-detail-close" type="button">✕</button>
-      <div style="padding:var(--s-5);flex:1;display:flex;flex-direction:column;min-height:0">
-        <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">👁️ Consolidado de Avaliações</h2>
-        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--s-4)">Todas as avaliações em uma única tabela — clique nos cabeçalhos para ordenar</p>
+    <div class="colab-detail-panel avaliacao-consolidated-panel">
+      <button class="colab-detail-close" type="button" aria-label="Fechar relatório">✕</button>
+      <div class="avaliacao-consolidated-body">
+        <h2 class="avaliacao-report-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-eye"></use></svg> Consolidado de Avaliações</h2>
+        <p class="avaliacao-report-description">Todas as avaliações em uma única tabela — clique nos cabeçalhos para ordenar</p>
 
-        <div style="margin-bottom:var(--s-4);display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap">
-          <label class="field" style="margin:0;min-width:200px">
+        <div class="avaliacao-report-filters">
+          <label class="field avaliacao-report-period">
             <span>Período</span>
-            <select id="consolidadoCicloSelect" style="width:100%">
+            <select id="consolidadoCicloSelect" class="avaliacao-full-width">
               <option value="">Todos os períodos</option>
               ${ciclos.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
             </select>
           </label>
-          <span style="font-size:13px;color:var(--text-muted)" id="consolidadoCount"></span>
+          <span id="consolidadoCount" class="avaliacao-report-count"></span>
         </div>
 
-        <div id="consolidadoTableWrapper" style="overflow:auto;flex:1;border:1px solid var(--border);border-radius:var(--r-md)">
-          <table id="consolidadoTable" style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
+        <div id="consolidadoTableWrapper" class="avaliacao-consolidated-scroll table-wrap">
+          <table id="consolidadoTable" class="avaliacao-consolidated-table">
             <thead id="consolidadoThead"></thead>
             <tbody id="consolidadoTbody"></tbody>
           </table>
@@ -1168,6 +1168,7 @@ function mostrarConsolidado() {
     if (sortField === field) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
     else { sortField = field; sortDir = 'asc'; }
     render();
+    document.querySelector('#consolidadoThead button[data-field="' + field + '"]')?.focus({ preventScroll: true });
   }
 
   function render() {
@@ -1181,34 +1182,34 @@ function mostrarConsolidado() {
     function th(label, field, w) {
       const isActive = sortField === field;
       const arrow = isActive ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
-      return `<th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);cursor:pointer;white-space:nowrap;min-width:${w};user-select:none;background:var(--bg-subtle);position:sticky;top:0;z-index:1" data-field="${field}">${escapeHtml(label)}${arrow}</th>`;
+      return `<th class="avaliacao-sort-heading" scope="col" aria-sort="${isActive ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}" style="--evaluation-column-width:${w}"><button type="button" data-field="${field}">${escapeHtml(label)}${arrow}</button></th>`;
     }
 
     thead.innerHTML = `<tr>${th('Colaborador', 'colaborador', '180px')}${th('Período', 'ciclo', '160px')}${comps.map(c => th(c.nome, String(c.id), '140px')).join('')}${th('Média', 'media', '80px')}${th('Total', 'total', '80px')}</tr>`;
 
     if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="' + (2 + comps.length + 2) + '" style="text-align:center;padding:var(--s-8);color:var(--text-muted)">Nenhuma avaliação neste período.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="' + (2 + comps.length + 2) + '" class="avaliacao-report-empty">Nenhuma avaliação neste período.</td></tr>';
       return;
     }
 
     tbody.innerHTML = data.map(av => {
       const cor = av.media >= 3 ? 'var(--success)' : av.media >= 2 ? 'var(--warning)' : 'var(--danger)';
-      return `<tr style="border-bottom:1px solid var(--border)">` +
-        `<td style="padding:8px 10px;font-weight:600">${escapeHtml(av.colaborador)}</td>` +
-        `<td style="padding:8px 10px;color:var(--text-secondary)">${escapeHtml(av.ciclo)}</td>` +
+      return `<tr class="avaliacao-report-row">` +
+        `<td class="avaliacao-person-cell">${escapeHtml(av.colaborador)}</td>` +
+        `<td class="avaliacao-cycle-cell">${escapeHtml(av.ciclo)}</td>` +
         comps.map(c => {
           const score = av.scores?.[c.id];
           const obs = av.observacoes_competencias?.[c.id] || '';
-          if (score == null && !obs) return `<td style="padding:8px 10px;text-align:center;color:var(--text-muted)">—</td>`;
+          if (score == null && !obs) return `<td class="avaliacao-missing-cell">—</td>`;
           const txt = score != null ? (obs ? `${score} — ${obs}` : String(score)) : obs;
-          return `<td style="padding:8px 10px;max-width:300px;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(txt)}">${escapeHtml(txt)}</td>`;
+          return `<td title="${escapeHtml(txt)}" class="avaliacao-observation-cell">${escapeHtml(txt)}</td>`;
         }).join('') +
-        `<td style="padding:8px 10px;text-align:center;font-weight:700;color:${cor}">${av.media.toFixed(2)}</td>` +
-        `<td style="padding:8px 10px;text-align:center">${av.total}/${comps.length * 4}</td>` +
+        `<td class="avaliacao-score-cell" style="--evaluation-score-color:${cor}">${av.media.toFixed(2)}</td>` +
+        `<td class="avaliacao-number-cell">${av.total}/${comps.length * 4}</td>` +
         `</tr>`;
     }).join('');
 
-    thead.querySelectorAll('th[data-field]').forEach(th => {
+    thead.querySelectorAll('button[data-field]').forEach(th => {
       th.addEventListener('click', () => setSort(th.dataset.field));
     });
   }
@@ -1248,7 +1249,7 @@ function renderHistoricoAvaliacoes() {
   });
 
   if (!filtered.length) {
-    container.innerHTML = '<div class="empty-state" style="border:none"><div class="empty-title">Nenhuma avaliação encontrada</div><div class="empty-sub">As avaliações salvas aparecerão aqui.</div></div>';
+    container.innerHTML = '<div class="empty-state avaliacao-guidance-form"><div class="empty-title">Nenhuma avaliação encontrada</div><div class="empty-sub">As avaliações salvas aparecerão aqui.</div></div>';
     return;
   }
 
@@ -1261,14 +1262,13 @@ function renderHistoricoAvaliacoes() {
 
     const status = av.status || 'pendente';
     const statusLabel = status === 'revisado' ? '✅ Revisado' : '⏳ Pendente';
-    const statusCor = status === 'revisado' ? 'var(--success)' : 'var(--warning)';
 
     html += `
       <div class="avaliacao-historico-item" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}">
         <div class="avaliacao-historico-header">
           <strong>${escapeHtml(av.colaborador)}</strong>
           <span class="avaliacao-historico-ciclo">${escapeHtml(av.ciclo)}</span>
-          <button type="button" class="btn-small avaliacao-status-tag" data-id="${av.id}" style="margin-left:auto;font-size:var(--font-caption);font-weight:600;padding:1px 6px;border-radius:var(--r-sm);cursor:pointer;background:${status === 'revisado' ? 'var(--success-soft)' : 'var(--warning-soft)'};color:${statusCor};border:1px solid ${statusCor};white-space:nowrap">${statusLabel}</button>
+          <button type="button" class="btn-small avaliacao-status-tag" data-id="${av.id}" data-status="${status === 'revisado' ? 'revisado' : 'pendente'}">${statusLabel}</button>
         </div>
         <div class="avaliacao-historico-stats">
           <span>Notas: <strong>${scoresArray.length}/${comps.length}</strong></span>
@@ -1278,9 +1278,9 @@ function renderHistoricoAvaliacoes() {
         </div>
         <div class="avaliacao-historico-mini-radar" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}"></div>
         <div class="avaliacao-historico-actions">
-          <button class="btn-small avaliacao-ver-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button">👁️ Ver</button>
-          <button class="btn-small avaliacao-editar-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button">✏️ Editar</button>
-          <button class="btn-small avaliacao-excluir-btn" data-id="${av.id}" type="button" style="color:var(--danger)">🗑️</button>
+          <button class="btn-small avaliacao-ver-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-eye"></use></svg> Ver</button>
+          <button class="btn-small avaliacao-editar-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Editar</button>
+          <button class="btn-small avaliacao-excluir-btn avaliacao-danger-action" data-id="${av.id}" type="button">🗑️</button>
         </div>
       </div>
     `;
@@ -1422,31 +1422,32 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
   const overlay = document.createElement('div');
   overlay.className = 'colab-detail-overlay open';
   overlay.innerHTML = `
-    <div class="colab-detail-panel" style="max-width:960px">
-      <button class="colab-detail-close" type="button">✕</button>
-      <div style="padding:var(--s-5)">
-        <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">📋 Avaliação: ${escapeHtml(av.colaborador)}</h2>
-        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--s-4)">Ciclo <strong>${escapeHtml(av.ciclo)}</strong> · Média: <strong style="color:${media !== '—' ? (parseFloat(media) >= 3 ? 'var(--success)' : parseFloat(media) >= 2 ? 'var(--warning)' : 'var(--danger)') : 'var(--text-muted)'}">${media}</strong> · Total: <strong>${total}/${comps.length * 4}</strong></p>
+    <div class="colab-detail-panel avaliacao-detail-panel">
+      <button class="colab-detail-close" type="button" aria-label="Fechar relatório">✕</button>
+      <div class="avaliacao-report-body">
+        <h2 class="avaliacao-report-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Avaliação: ${escapeHtml(av.colaborador)}</h2>
+        <p class="avaliacao-report-description">Ciclo <strong>${escapeHtml(av.ciclo)}</strong> · Média: <strong style="color:${media !== '—' ? (parseFloat(media) >= 3 ? 'var(--success)' : parseFloat(media) >= 2 ? 'var(--warning)' : 'var(--danger)') : 'var(--text-muted)'}">${media}</strong> · Total: <strong>${total}/${comps.length * 4}</strong></p>
 
-        <div style="display:flex;gap:var(--s-6);flex-wrap:wrap;margin-bottom:var(--s-5)">
-          <div style="flex:0 0 420px">
-            <div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--s-4)">
-              <div style="position:relative;width:360px;height:360px;margin:0 auto">
-                <canvas id="avaliacaoRadarDetail" width="360" height="360"></canvas>
+        <div class="avaliacao-detail-grid">
+          <div class="avaliacao-detail-chart-column">
+            <div class="avaliacao-detail-surface">
+              <p class="avaliacao-chart-key">Os números do gráfico correspondem às competências da tabela.</p>
+              <div class="avaliacao-detail-chart">
+                <canvas id="avaliacaoRadarDetail" width="360" height="360" role="img" aria-label="Distribuição das notas por competência. Os mesmos valores estão na tabela de pontuação."></canvas>
               </div>
             </div>
           </div>
-          <div style="flex:1;min-width:280px">
-            <h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3)">📊 Pontuação por competência</h3>
-            <div style="overflow-x:auto">
+          <div class="avaliacao-detail-content">
+            <h3 class="avaliacao-detail-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Pontuação por competência</h3>
+            <div class="avaliacao-report-scroll table-wrap">
               <table class="avaliacao-detail-table">
                 <thead><tr><th>Competência</th><th>Nota</th><th>Observação</th></tr></thead>
                 <tbody>
-                  ${scores.map(s => `
+                  ${scores.map((s, index) => `
                     <tr>
-                      <td><strong>${escapeHtml(s.nome)}</strong></td>
-                      <td style="text-align:center;font-weight:600">${s.nota !== null ? s.nota : '—'}</td>
-                      <td style="font-size:12px;color:var(--text-secondary);max-width:250px">${s.obs ? escapeHtml(s.obs) : '<span style="color:var(--text-muted)">—</span>'}</td>
+                      <td><strong>${index + 1}. ${escapeHtml(s.nome)}</strong></td>
+                      <td class="avaliacao-detail-score">${s.nota !== null ? s.nota : '—'}</td>
+                      <td class="avaliacao-detail-observation">${s.obs ? escapeHtml(s.obs) : '<span class="avaliacao-muted">—</span>'}</td>
                     </tr>
                   `).join('')}
                 </tbody>
@@ -1456,23 +1457,23 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
         </div>
 
         ${obsGerais ? `
-          <div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--s-4);margin-bottom:var(--s-4)">
-            <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-2)">📝 Observações gerais</h3>
-            <p style="font-size:13px;color:var(--text-secondary);white-space:pre-wrap">${escapeHtml(obsGerais)}</p>
+          <div class="avaliacao-detail-notes">
+            <h3 class="avaliacao-notes-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-note"></use></svg> Observações gerais</h3>
+            <p class="avaliacao-note-text">${escapeHtml(obsGerais)}</p>
           </div>
         ` : ''}
 
         ${comentariosFinais.length ? `
-          <div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--s-4);margin-bottom:var(--s-4)">
-            <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-2)">💬 Comentários da Avaliação</h3>
-            ${comentariosFinais.map(c => `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5">${escapeHtml(c)}</div>`).join('')}
-            ${comentariosIa.length ? `<details style="margin-top:var(--s-2)"><summary style="font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer">🤖 Ver sugestões da IA (${comentariosIa.length})</summary>${comentariosIa.map(c => `<div style="padding:6px 0;font-size:12px;color:var(--text-muted);white-space:pre-wrap">${escapeHtml(c)}</div>`).join('')}</details>` : ''}
+          <div class="avaliacao-detail-notes">
+            <h3 class="avaliacao-notes-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-message"></use></svg> Comentários da Avaliação</h3>
+            ${comentariosFinais.map(c => `<div class="avaliacao-final-note">${escapeHtml(c)}</div>`).join('')}
+            ${comentariosIa.length ? `<details class="avaliacao-suggestion-details"><summary class="avaliacao-suggestion-summary">🤖 Ver sugestões da IA (${comentariosIa.length})</summary>${comentariosIa.map(c => `<div class="avaliacao-suggestion-note">${escapeHtml(c)}</div>`).join('')}</details>` : ''}
           </div>
         ` : ''}
 
-        <div style="display:flex;gap:var(--s-3);justify-content:flex-end;flex-wrap:wrap">
-          <button class="btn-small" id="avaliacaoDetailEditar" type="button">✏️ Editar</button>
-          <button class="btn-small" id="avaliacaoDetailExportarXlsx" type="button">📊 Exportar Excel</button>
+        <div class="avaliacao-report-actions">
+          <button class="btn-small" id="avaliacaoDetailEditar" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Editar</button>
+          <button class="btn-small" id="avaliacaoDetailExportarXlsx" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Exportar Excel</button>
           <button class="btn-small" id="avaliacaoDetailExportar" type="button">📄 Exportar texto</button>
         </div>
       </div>
@@ -1547,9 +1548,10 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
             grid: { color: ChartTheme.border() },
             angleLines: { color: ChartTheme.border() },
             pointLabels: {
+              callback: (_label, index) => String(index + 1),
               color: ChartTheme.text(),
-              font: { size: 11, weight: '500' },
-              padding: 18
+              font: { size: 12, weight: '500' },
+              padding: 8
             }
           }
         },

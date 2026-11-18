@@ -237,7 +237,7 @@ function suggestAutoMeta() {
     </div>
     <div style="display:flex;gap:var(--s-3);margin-top:var(--s-3)">
       <button class="btn-primary" id="saveMetaBtn" type="button" style="flex:1">Salvar Meta</button>
-      <button class="btn-small" id="suggestMetaBtn" type="button">💡 Sugerir automático</button>
+      <button class="btn-small" id="suggestMetaBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-insight"></use></svg> Sugerir automático</button>
     </div>
   </div>`;
 

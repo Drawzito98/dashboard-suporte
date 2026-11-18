@@ -108,7 +108,7 @@ function renderColabDetail(name) {
 
 
   // Monthly data table
-  html += `<h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📋 Histórico Detalhado</h3>
+  html += `<h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Histórico Detalhado</h3>
   <div style="overflow-x:auto"><table class="ranking-table">
     <thead><tr><th>Período</th><th>Assumidos</th><th>Finalizados</th><th>Transferidos</th><th>Score</th></tr></thead>
     <tbody>

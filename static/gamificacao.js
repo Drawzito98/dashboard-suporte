@@ -149,7 +149,7 @@ function renderGamification() {
   }
 
   // Ranking table
-  html += '<div style="margin-top:var(--s-5)"><h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📋 Ranking Completo</h3>';
+  html += '<div style="margin-top:var(--s-5)"><h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Ranking Completo</h3>';
   html += '<div style="overflow-x:auto"><table class="ranking-table">';
   html += '<thead><tr><th>#</th><th>Colaborador</th><th>Pontuação</th><th>+/-</th><th>Medalhas</th><th>🔥 Sequência</th><th></th></tr></thead><tbody>';
   ranking.forEach((item, i) => {
@@ -244,7 +244,7 @@ function renderGamification() {
 
   // Conquistas section
   if (conquistasHtml) {
-    html += `<div style="margin-top:var(--s-6)"><h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">🏆 Conquistas</h3>${conquistasHtml}</div>`;
+    html += `<div style="margin-top:var(--s-6)"><h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-award"></use></svg> Conquistas</h3>${conquistasHtml}</div>`;
   }
 
   // Heatmap section
