@@ -75,3 +75,7 @@ Camada isolada em `static/css/visual-system.css`, carregada por último. A casca
 ## Ajuste 1.42.0 — Alinhamento e interações
 
 Barra global sem sobreposição entre busca e ação, com campo elástico e botões em largura fixa. Cards de Equipe usam grade flexível, rodapé de ações alinhado na base e botões de mesma largura. Score médio do Relatório Setorial e scores das tabelas abrem detalhamento: a média geral mostra os scores por setor; o score de um setor mostra média por pessoa e avaliações individuais. A preferência de cor de destaque fica no menu do usuário, com presets discretos e isolados por sessão via `appStorage`; a cor também é aplicada ao `theme-color`. Nenhuma regra de cálculo, filtro ou persistência de negócio foi alterada. Assets versionados em `?v=1401`; validar npm test, release:check, auditoria de sobreposição e fixtures de shell/workspace/design-system em claro/escuro, desktop e celular.
+
+## Ajuste 1.43.0 — Ranking privado de destaques
+
+Visão da equipe ganha ranking administrativo de reconhecimentos com ordenação explícita e filtro por mês. Colaborador, finalizações, score e produtividade vêm do recorte atual; contagens e motivos vêm das Atividades do mês da própria conta admin, sem leitura de registros de outras contas. O botão Anotar abre o registro já direcionado à pessoa e ao mês. Para viewers o bloco não existe. Validar npm test, release:check e fixtures de workspace/atividades em desktop e celular.

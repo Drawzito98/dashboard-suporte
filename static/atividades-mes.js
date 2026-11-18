@@ -89,7 +89,13 @@ const AtividadesMes = (() => {
       if (busy) return;
       busy = true;
       container.querySelectorAll('button,input,select,textarea').forEach(el => el.disabled = true);
-      try { await action(); editing = null; render(); showToast('Registro atualizado.', 'success'); }
+      try {
+        await action();
+        editing = null;
+        render();
+        document.dispatchEvent(new CustomEvent('atividades-mes-changed'));
+        showToast('Registro atualizado.', 'success');
+      }
       catch (error) { container.querySelector('#atividadeErro').textContent = 'Não foi possível salvar a alteração. Verifique a conexão e tente novamente.'; }
       finally { busy = false; container.querySelectorAll('button,input,select,textarea').forEach(el => el.disabled = false); }
     }
@@ -122,9 +128,10 @@ const AtividadesMes = (() => {
       });
     }));
   }
-  async function open(personName) {
+  async function open(personName, month) {
     if (!isAdmin()) return;
     if (typeof personName === 'string') selectedPerson = personName;
+    const mesSelecionado = monthKey(month);
     let overlay = document.getElementById('atividadesMesOverlay');
     if (!overlay) {
       overlay = document.createElement('div'); overlay.id = 'atividadesMesOverlay'; overlay.className = 'colab-detail-overlay'; overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-modal', 'true'); overlay.setAttribute('aria-label', 'Atividades do mês');
@@ -133,13 +140,13 @@ const AtividadesMes = (() => {
       overlay.querySelector('button').addEventListener('click', close);
       overlay.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
     }
-    const now = new Date(); selectedMonth = selectedMonth || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; editing = null;
+    const now = new Date(); selectedMonth = mesSelecionado || selectedMonth || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; editing = null;
     overlay.classList.add('open'); overlay.querySelector('button').focus();
     document.getElementById('atividadesMesContent').textContent = 'Carregando registros…';
     try { await load(); render(); }
     catch { document.getElementById('atividadesMesContent').textContent = 'Não foi possível carregar os registros. Feche e tente novamente.'; }
   }
   if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => document.getElementById('atividadesMesBtn')?.addEventListener('click', open));
-  return { load, people, openPerson: name => open(name), months: () => [...new Set(items.map(item => item.mes))].sort(), feedback: (person, month) => textFor(items, person, month), monthKey, decode, textFor };
+  return { load, people, openPerson: (name, month) => open(name, month), items: () => items.map(item => ({ ...item })), months: () => [...new Set(items.map(item => item.mes))].sort(), feedback: (person, month) => textFor(items, person, month), monthKey, decode, textFor };
 })();
 if (typeof module !== 'undefined') module.exports = AtividadesMes;

@@ -172,6 +172,114 @@
   margin-bottom: var(--s-2);
 }
 
+.lider-recognition-panel {
+  margin: var(--s-4) 0 var(--s-5);
+  padding: var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-panel, 0 1px 2px rgba(0, 0, 0, .06));
+}
+
+.lider-recognition-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: var(--s-3);
+}
+
+.lider-recognition-head h3 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: center;
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.lider-recognition-head p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.lider-private-badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+.lider-recognition-month {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 190px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.lider-recognition-month select {
+  min-height: var(--control-height);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-inset);
+  color: var(--text);
+}
+
+.lider-recognition-table th,
+.lider-recognition-table td {
+  white-space: nowrap;
+}
+
+.lider-recon-sort {
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lider-recon-sort:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lider-recon-rank {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.lider-recon-count {
+  display: inline-flex;
+  min-width: 24px;
+  justify-content: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  font-weight: 700;
+}
+
+.lider-recon-positive { background: var(--success-soft); color: var(--success); }
+.lider-recon-attention { background: var(--danger-soft); color: var(--danger); }
+
+.lider-recon-reason {
+  max-width: 360px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+}
+
+.lider-recon-note { white-space: nowrap; }
+
 .avaliacao-period-range {
   display: flex;
   gap: var(--s-2);
@@ -311,6 +419,19 @@
 
   .lider-suggestion-name, .lider-person-name {
   overflow-wrap:  anywhere;
+}
+
+  .lider-recognition-panel {
+  padding:  var(--s-3);
+}
+
+  .lider-recognition-head {
+  align-items:  stretch;
+}
+
+  .lider-recognition-month, .lider-recognition-month select {
+  width:  100%;
+  min-width:  0;
 }
 
 }
