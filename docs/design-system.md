@@ -87,3 +87,7 @@ O painel de ranking privado agora acompanha explicitamente a cor de destaque esc
 ## Ajuste 1.44.0 — Cor de destaque fácil de encontrar
 
 O seletor passou a ficar diretamente na barra superior, com ícone na cor ativa e rótulo curto "Cor" (oculto abaixo de 900px). O menu do usuário mantém apenas o atalho "Cor de destaque", que fecha o menu e foca/exibe o seletor visível. `app-interface.js` usa `.accent-select` para sincronizar valor, `theme-color`, `appStorage` e gráficos. Assets versionados em `?v=1395`; validar release:check, workspace-ux (`?ranking=1` e geral), shell, design-system e lazy-modules em desktop/celular.
+
+## Ajuste 1.44.1 — Nome da cor sem corte
+
+Largura do seletor ampliada para acomodar "Padrão", "Violeta", "Azul" e "Âmbar" inclusive com a seta nativa; em telas estreitas o rótulo "Cor" continua oculto, mas o campo mantém largura mínima. Assets versionados em `?v=1396`; fixture `workspace-ux.browser.html` verifica a largura mínima no fluxo geral e no modo `?ranking=1`.

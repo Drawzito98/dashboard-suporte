@@ -387,6 +387,7 @@
    d().body.dataset.role='admin';win().renderPainelLider();assert(panel(),'Ranking disponível para admin');
     const accent=d().getElementById('accentSelect');
     assert(accent.closest('.accent-quick')?.getClientRects().length,'Controle de cor visível na barra superior');
+    assert(accent.getBoundingClientRect().width>=90,'Largura do seletor acomoda o nome da cor');
     assert(d().getElementById('accentMenuItem'),'Atalho de cor mantido no menu do usuário');
     d().getElementById('currentUserDisplay').click();d().getElementById('accentMenuItem').click();
     assert(d().activeElement===accent,'Atalho do menu foca o seletor visível');
@@ -400,6 +401,7 @@
    assert(win().__uxWrites.length===0,'Ranking não grava dados');assert(win().__uxErrors.length===0,'Sem erros: '+win().__uxErrors.join(';'));
    document.getElementById('testResult').textContent='PASS: ranking privado do admin, motivos por mês, ordenação, direcionamento da anotação e ocultação para viewer; somente leitura';return;
   }
+  assert(d().getElementById('accentSelect').getBoundingClientRect().width>=90,'Largura do seletor de cor mantém o nome legível');
   for(const name of ['home','dashboard','relatorio-setorial','saude-operacional','metas','tarefas','regras','ponto','colaboradores','lider','insights','avaliacao','perfil-pdi','mapeamento-time']){
   await tab(name);if(name==='relatorio-setorial'){assert(!d().getElementById('panoramaSuporteRoot'),'Panorama fora da tela setorial');assert(!d().querySelector('script[src*="panorama-suporte"],link[href*="panorama-suporte"]'),'Relatório não carrega recursos do Panorama');}assert(d().documentElement.scrollWidth<=frame.clientWidth,'Overflow global: '+name);assert(bounds(d().getElementById('appPageTitle')),'Título dentro do cabeçalho: '+name);
  }
