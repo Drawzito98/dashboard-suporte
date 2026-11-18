@@ -385,7 +385,12 @@
    d().querySelector('#atividadesMesOverlay .colab-detail-close').click();
    d().body.dataset.role='viewer';win().renderPainelLider();assert(!panel(),'Ranking oculto para viewer');
    d().body.dataset.role='admin';win().renderPainelLider();assert(panel(),'Ranking disponível para admin');
-   const accent=d().getElementById('accentSelect');accent.value='violeta';accent.dispatchEvent(new(win().Event)('change',{bubbles:true}));
+    const accent=d().getElementById('accentSelect');
+    assert(accent.closest('.accent-quick')?.getClientRects().length,'Controle de cor visível na barra superior');
+    assert(d().getElementById('accentMenuItem'),'Atalho de cor mantido no menu do usuário');
+    d().getElementById('currentUserDisplay').click();d().getElementById('accentMenuItem').click();
+    assert(d().activeElement===accent,'Atalho do menu foca o seletor visível');
+    accent.value='violeta';accent.dispatchEvent(new(win().Event)('change',{bubbles:true}));
    await wait(()=>d().documentElement.getAttribute('data-accent')==='violeta','Cor de destaque aplicada');
    assert(getComputedStyle(d().documentElement).getPropertyValue('--accent').trim()==='#6d28d9','Token da cor de destaque');
    assert(d().querySelector('meta[name="theme-color"]').content==='#6d28d9','theme-color segue o destaque');

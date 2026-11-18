@@ -42,8 +42,7 @@
     const safe = ACCENTS.has(id) ? id : 'padrao';
     if(safe === 'padrao') document.documentElement.removeAttribute('data-accent');
     else document.documentElement.setAttribute('data-accent', safe);
-    const select = document.getElementById('accentSelect');
-    if(select) select.value = safe;
+    document.querySelectorAll('.accent-select').forEach(function(select){ select.value = safe; });
     const meta = document.querySelector('meta[name="theme-color"]');
     if(meta){
       const value = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
@@ -56,17 +55,37 @@
     let saved = 'padrao';
     try { saved = appStorage.getItem(ACCENT_KEY) || 'padrao'; } catch(e) {}
     applyAccent(saved);
-    const select = document.getElementById('accentSelect');
-    if(!select || select.dataset.bound === 'true') return;
-    select.dataset.bound = 'true';
-    select.addEventListener('change', function(){
-      const id = ACCENTS.has(select.value) ? select.value : 'padrao';
-      try {
-        if(id === 'padrao') appStorage.removeItem(ACCENT_KEY);
-        else appStorage.setItem(ACCENT_KEY, id);
-      } catch(e) { console.warn('[App] Erro ao salvar cor de destaque:', e); }
-      applyAccent(id);
-    });
+    const selects = [...document.querySelectorAll('.accent-select')];
+    if(!selects.length) return;
+    if(selects[0].dataset.bound !== 'true'){
+      selects.forEach(function(select){
+        select.dataset.bound = 'true';
+        select.addEventListener('change', function(){
+          const id = ACCENTS.has(select.value) ? select.value : 'padrao';
+          try {
+            if(id === 'padrao') appStorage.removeItem(ACCENT_KEY);
+            else appStorage.setItem(ACCENT_KEY, id);
+          } catch(e) { console.warn('[App] Erro ao salvar cor de destaque:', e); }
+          applyAccent(id);
+        });
+      });
+    }
+    const menuItem = document.getElementById('accentMenuItem');
+    if(menuItem && menuItem.dataset.bound !== 'true'){
+      menuItem.dataset.bound = 'true';
+      menuItem.addEventListener('click', function(){
+        const dropdown = document.getElementById('userDropdown');
+        if(dropdown) dropdown.style.display = 'none';
+        const trigger = document.getElementById('currentUserDisplay');
+        if(trigger) trigger.setAttribute('aria-expanded', 'false');
+        const select = document.getElementById('accentSelect');
+        if(!select) return;
+        select.focus();
+        if(typeof select.showPicker === 'function'){
+          try { select.showPicker(); } catch(e) {}
+        }
+      });
+    }
   }
   function init(){
     const saved = appStorage.getItem('theme');

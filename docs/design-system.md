@@ -83,3 +83,7 @@ Visão da equipe ganha ranking administrativo de reconhecimentos com ordenação
 ## Ajuste 1.43.1 — Destaque no ranking
 
 O painel de ranking privado agora acompanha explicitamente a cor de destaque escolhida no menu do usuário: faixa superior, selo privado e posições usam `--accent`, respeitando os temas claro/escuro. Fixture `workspace-ux.browser.html?ranking=1` verifica a troca no seletor, o token CSS, o `theme-color`, a preferência salva e a reapresentação no ranking.
+
+## Ajuste 1.44.0 — Cor de destaque fácil de encontrar
+
+O seletor passou a ficar diretamente na barra superior, com ícone na cor ativa e rótulo curto "Cor" (oculto abaixo de 900px). O menu do usuário mantém apenas o atalho "Cor de destaque", que fecha o menu e foca/exibe o seletor visível. `app-interface.js` usa `.accent-select` para sincronizar valor, `theme-color`, `appStorage` e gráficos. Assets versionados em `?v=1395`; validar release:check, workspace-ux (`?ranking=1` e geral), shell, design-system e lazy-modules em desktop/celular.
