@@ -23,10 +23,10 @@ function formatReporteShortDate(iso) {
 }
 
 function reporteStatusBadge(r) {
-  if (r.respondida) return '<span class="role-badge" style="background:var(--success-bg,#d1fae5);color:var(--success-text,#065f46)">Respondido</span>';
-  if (r.user_id && !r.lida) return '<span class="role-badge" style="background:var(--warning-bg,#fef3c7);color:var(--warning-text,#92400e)">Pendente</span>';
-  if (r.lida) return '<span class="role-badge" style="background:var(--bg-subtle,#f3f4f6);color:var(--text-muted,#9ca3af)">Lido</span>';
-  return '<span class="role-badge" style="background:var(--danger-bg,#fee2e2);color:var(--danger-text,#991b1b)">Não lido</span>';
+  if (r.respondida) return '<span class="role-badge reportes-status-success">Respondido</span>';
+  if (r.user_id && !r.lida) return '<span class="role-badge reportes-status-warning">Pendente</span>';
+  if (r.lida) return '<span class="role-badge reportes-status-neutral">Lido</span>';
+  return '<span class="role-badge reportes-status-danger">Não lido</span>';
 }
 
 function reporteCategoriaBadge(r) {
@@ -48,17 +48,17 @@ function renderReportes() {
   const isAdminUser = isAdmin();
 
   container.innerHTML = `
-    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--s-2);margin-bottom:var(--s-4)">
+    <div class="card-header reportes-heading">
       <div>
-        <h2 style="margin:0;display:flex;align-items:center;gap:8px">
+        <h2 class="reportes-title">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1.2em" height="1.2em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           Reportes
         </h2>
-        <p style="margin:2px 0 0;font-size:13px;color:var(--text-secondary)">
+        <p class="reportes-description">
           Mensagens enviadas por usuários externos
         </p>
       </div>
-      <div style="display:flex;gap:var(--s-2);align-items:center">
+      <div class="reportes-heading-actions">
         <button class="btn-small" id="exportarCsvBtn" type="button" title="Exportar CSV">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           CSV
@@ -79,16 +79,16 @@ function renderReportes() {
         ` : ''}
       </div>
     </div>
-    <div class="reportes-filters" style="display:flex;gap:var(--s-2);flex-wrap:wrap;margin-bottom:var(--s-3);align-items:center">
-      <input id="reportesSearchInput" type="text" placeholder="Buscar por assunto, nome, email..." style="flex:1;min-width:180px;padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-input);color:var(--text)">
-      <select id="reportesFilterCategoria" style="padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-input);color:var(--text)">
+    <div class="reportes-filters reportes-filters">
+      <input id="reportesSearchInput" type="text" placeholder="Buscar por assunto, nome, email..." class="reportes-search">
+      <select id="reportesFilterCategoria" class="reportes-filter">
         <option value="">Todas categorias</option>
         <option value="suporte">Suporte</option>
         <option value="feedback">Feedback</option>
         <option value="bug">Bug</option>
         <option value="outro">Outro</option>
       </select>
-      <select id="reportesFilterPrioridade" style="padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-input);color:var(--text)">
+      <select id="reportesFilterPrioridade" class="reportes-filter">
         <option value="">Todas prioridades</option>
         <option value="alta">Alta</option>
         <option value="media">Média</option>
@@ -117,7 +117,7 @@ function renderReportes() {
 async function carregarReportes() {
   const lista = document.getElementById('reportesLista');
   if (!lista) return;
-  lista.innerHTML = '<p style="text-align:center;padding:var(--s-4);color:var(--text-muted)">Carregando...</p>';
+  lista.innerHTML = '<p class="admin-empty">Carregando...</p>';
 
   const isAdminUser = isAdmin();
   const reportes = await dbReportesListar();
@@ -125,7 +125,7 @@ async function carregarReportes() {
 
   if (!reportes.length) {
     lista.innerHTML = `
-      <div class="empty-state" style="margin-top:var(--s-4)">
+      <div class="empty-state admin-top-gap">
         <div class="empty-title">Nenhum reporte recebido</div>
         <div class="empty-sub">
           ${isAdminUser
@@ -145,7 +145,7 @@ async function carregarReportes() {
 
   if (!visiveis.length) {
     lista.innerHTML = `
-      <div class="empty-state" style="margin-top:var(--s-4)">
+      <div class="empty-state admin-top-gap">
         <div class="empty-title">Nenhum reporte para você</div>
         <div class="empty-sub">Aguarde até que um administrador atribua mensagens a você.</div>
       </div>`;
@@ -167,7 +167,7 @@ async function carregarReportes() {
   if (priFiltro) filtrados = filtrados.filter(r => (r.prioridade || 'media') === priFiltro);
 
   if (!filtrados.length) {
-    lista.innerHTML = `<div class="empty-state" style="margin-top:var(--s-4)"><div class="empty-title">Nenhum resultado</div><div class="empty-sub">Tente ajustar os filtros.</div></div>`;
+    lista.innerHTML = `<div class="empty-state admin-top-gap"><div class="empty-title">Nenhum resultado</div><div class="empty-sub">Tente ajustar os filtros.</div></div>`;
     return;
   }
 
@@ -183,7 +183,7 @@ async function carregarReportes() {
       <div class="reporte-card ${!r.lida ? 'reporte-card-unread' : ''}" data-id="${r.id}">
         <div class="reporte-card-header">
           <div class="reporte-card-info">
-            <div style="display:flex;gap:var(--s-1);flex-wrap:wrap;margin-bottom:2px">
+            <div class="reportes-badges">
               ${reporteCategoriaBadge(r)}
               ${reportePrioridadeBadge(r)}
             </div>
@@ -202,39 +202,39 @@ async function carregarReportes() {
           </div>
         </div>
         <div class="reporte-card-body" style="display:none">
-          ${r.data ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:var(--s-2)">Data: <strong>${r.data}</strong></div>` : ''}
+          ${r.data ? `<div class="reportes-body-description">Data: <strong>${r.data}</strong></div>` : ''}
           <div class="reporte-mensagem">
             <p>${escHtml(r.mensagem)}</p>
           </div>
-          ${r.imagem_url ? `<div style="margin-bottom:var(--s-3)"><img src="${escHtml(r.imagem_url)}" style="max-width:100%;max-height:300px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer" onclick="window.open(this.src)" title="Clique para ampliar"/></div>` : ''}
+          ${r.imagem_url ? `<div class="admin-section-gap"><img src="${escHtml(r.imagem_url)}" onclick="window.open(this.src)" title="Clique para ampliar" class="reportes-image"/></div>` : ''}
           ${r.resposta ? `
           <div class="reporte-resposta">
-            <strong style="font-size:12px;color:var(--text-secondary)">Sua resposta:</strong>
+            <strong class="reportes-meta">Sua resposta:</strong>
             <p>${escHtml(r.resposta)}</p>
           </div>
           ` : ''}
           <div class="reporte-card-footer">
-            <span style="font-size:11px;color:var(--text-muted)">${formatReporteDate(r.created_at)}</span>
-            <div style="display:flex;gap:var(--s-2);flex-wrap:wrap;align-items:center">
-              ${`<button class="btn-small reporte-toggle-lida" data-id="${r.id}" data-lida="${r.lida}" type="button" style="font-size:11px">${r.lida ? 'Marcar como não lida' : 'Marcar como lida'}</button>`}
-              ${!r.respondida ? `<button class="btn-small reporte-responder-btn" data-id="${r.id}" type="button" style="font-size:11px">Responder</button>` : ''}
+            <span class="reportes-caption">${formatReporteDate(r.created_at)}</span>
+            <div class="reportes-actions">
+              ${`<button class="btn-small reporte-toggle-lida reportes-action" data-id="${r.id}" data-lida="${r.lida}" type="button">${r.lida ? 'Marcar como não lida' : 'Marcar como lida'}</button>`}
+              ${!r.respondida ? `<button class="btn-small reporte-responder-btn reportes-action" data-id="${r.id}" type="button">Responder</button>` : ''}
               ${isAdminUser ? `
-                <select class="reporte-categoria-select" data-id="${r.id}" style="font-size:11px;padding:2px 4px">
+                <select class="reporte-categoria-select reportes-status-filter" data-id="${r.id}">
                   <option value="">Sem cat.</option>
                   <option value="suporte" ${r.categoria === 'suporte' ? 'selected' : ''}>Suporte</option>
                   <option value="feedback" ${r.categoria === 'feedback' ? 'selected' : ''}>Feedback</option>
                   <option value="bug" ${r.categoria === 'bug' ? 'selected' : ''}>Bug</option>
                   <option value="outro" ${r.categoria === 'outro' ? 'selected' : ''}>Outro</option>
                 </select>
-                <select class="reporte-prioridade-select" data-id="${r.id}" style="font-size:11px;padding:2px 4px">
+                <select class="reporte-prioridade-select reportes-status-filter" data-id="${r.id}">
                   <option value="baixa" ${(r.prioridade||'media') === 'baixa' ? 'selected' : ''}>Baixa</option>
                   <option value="media" ${(r.prioridade||'media') === 'media' ? 'selected' : ''}>Média</option>
                   <option value="alta" ${(r.prioridade||'media') === 'alta' ? 'selected' : ''}>Alta</option>
                 </select>
-                <select class="reporte-assign-select" data-id="${r.id}" style="font-size:11px;padding:2px 4px;max-width:150px">
+                <select class="reporte-assign-select reportes-responsible-filter" data-id="${r.id}">
                   <option value="">Atribuir para...</option>
                 </select>
-                <button class="btn-small reporte-deletar-btn" data-id="${r.id}" type="button" style="font-size:11px;color:var(--danger-text,#991b1b)" title="Excluir mensagem">
+                <button class="btn-small reporte-deletar-btn reportes-delete-action" data-id="${r.id}" type="button" title="Excluir mensagem">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                   Excluir
                 </button>
@@ -368,22 +368,21 @@ function mostrarModalResposta(id, assunto) {
 function criarOverlayResposta() {
   const div = document.createElement('div');
   div.id = 'reporteRespostaOverlay';
-  div.className = 'hidden';
-  div.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center';
+  div.className = 'hidden admin-dialog-overlay';
   div.innerHTML = `
-    <div style="background:var(--bg-surface);border-radius:var(--r-lg);padding:var(--s-6);max-width:500px;width:90%;box-shadow:var(--shadow-lg)">
-      <h3 style="margin:0 0 var(--s-2)">Responder reporte</h3>
-      <p style="font-size:0.875rem;color:var(--text-secondary);margin:0 0 var(--s-4)">
+    <div class="admin-response-panel">
+      <h3 class="admin-dialog-title">Responder reporte</h3>
+      <p class="admin-dialog-description">
         Assunto: <strong id="reporteRespostaAssunto"></strong>
       </p>
       <input type="hidden" id="reporteRespostaId" />
       <label class="field">
         <span>Sua resposta</span>
-        <textarea id="reporteRespostaTexto" rows="5" placeholder="Digite sua resposta..." style="width:100%;resize:vertical"></textarea>
+        <textarea id="reporteRespostaTexto" rows="5" placeholder="Digite sua resposta..." class="admin-textarea"></textarea>
       </label>
-      <div style="display:flex;gap:var(--s-2);margin-top:var(--s-3)">
-        <button class="btn-primary" id="reporteRespostaEnviarBtn" type="button" style="flex:1;justify-content:center">Enviar resposta</button>
-        <button class="btn-small" id="reporteRespostaCancelarBtn" type="button" style="flex:1;justify-content:center">Cancelar</button>
+      <div class="admin-dialog-actions">
+        <button class="btn-primary admin-dialog-action" id="reporteRespostaEnviarBtn" type="button">Enviar resposta</button>
+        <button class="btn-small admin-dialog-action" id="reporteRespostaCancelarBtn" type="button">Cancelar</button>
       </div>
       <div id="reporteRespostaError" class="auth-error hidden"></div>
       <div id="reporteRespostaSuccess" class="auth-success hidden"></div>
@@ -407,7 +406,7 @@ function criarOverlayResposta() {
       const copyBtn = document.createElement('button');
       copyBtn.className = 'btn-small';
       copyBtn.textContent = '📋 Copiar resposta';
-      copyBtn.style.cssText = 'margin-top:8px;width:100%;justify-content:center';
+      copyBtn.classList.add('admin-copy-action');
       copyBtn.onclick = () => {
         copyToClipboard(texto).then(ok => {
           if (ok) {
@@ -444,39 +443,38 @@ function mostrarModalLink() {
   overlay.querySelector('#reporteLinkUrl').value = link;
   const embedInput = overlay.querySelector('#reporteLinkEmbed');
   if (embedInput) {
-    embedInput.value = `<iframe src="${link}" width="100%" height="520px" style="border:none"></iframe>`;
+    embedInput.value = `<iframe src="${link}" width="100%" height="520px" class="admin-borderless"></iframe>`;
   }
 }
 
 function criarOverlayLink() {
   const div = document.createElement('div');
   div.id = 'reporteLinkOverlay';
-  div.className = 'hidden';
-  div.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center';
+  div.className = 'hidden admin-dialog-overlay';
   div.innerHTML = `
-    <div style="background:var(--bg-surface);border-radius:var(--r-lg);padding:var(--s-6);max-width:520px;width:90%;box-shadow:var(--shadow-lg)">
-      <h3 style="margin:0 0 var(--s-2)">Link público para reportes</h3>
-      <p style="font-size:0.875rem;color:var(--text-secondary);margin:0 0 var(--s-4)">
+    <div class="admin-link-panel">
+      <h3 class="admin-dialog-title">Link público para reportes</h3>
+      <p class="admin-dialog-description">
         Compartilhe este link para que usuários externos enviem mensagens diretamente para o seu dashboard.
       </p>
       <label class="field">
         <span>URL pública</span>
-        <div style="display:flex;gap:var(--s-2)">
-          <input id="reporteLinkUrl" type="text" readonly style="flex:1;font-size:13px" />
+        <div class="admin-inline-actions">
+          <input id="reporteLinkUrl" type="text" readonly  class="admin-link-input"/>
           <button class="btn-small" id="reporteLinkCopiarBtn" type="button">Copiar</button>
         </div>
       </label>
-      <label class="field" style="margin-top:var(--s-3)">
+      <label class="field admin-small-top-gap">
         <span>Embed iframe (para colar no seu site)</span>
-        <div style="display:flex;gap:var(--s-2)">
-          <input id="reporteLinkEmbed" type="text" readonly style="flex:1;font-size:12px" />
+        <div class="admin-inline-actions">
+          <input id="reporteLinkEmbed" type="text" readonly  class="admin-link-action"/>
           <button class="btn-small" id="reporteLinkEmbedCopiarBtn" type="button">Copiar</button>
         </div>
       </label>
-      <div style="display:flex;gap:var(--s-2);margin-top:var(--s-3)">
-        <button class="btn-primary" id="reporteLinkFecharBtn" type="button" style="flex:1;justify-content:center">Fechar</button>
+      <div class="admin-dialog-actions">
+        <button class="btn-primary admin-dialog-action" id="reporteLinkFecharBtn" type="button">Fechar</button>
       </div>
-      <div id="reporteLinkCopiado" class="auth-success hidden" style="margin-top:var(--s-2);font-size:13px">Link copiado!</div>
+      <div id="reporteLinkCopiado" class="auth-success hidden admin-feedback">Link copiado!</div>
     </div>
   `;
   document.body.appendChild(div);
@@ -517,25 +515,25 @@ function mostrarPreviewForm() {
 function criarOverlayPreview() {
   const div = document.createElement('div');
   div.id = 'reportePreviewOverlay';
-  div.className = 'hidden';
-  div.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center';
+  div.className = 'hidden admin-dialog-overlay';
+  div.classList.add('admin-preview-overlay');
   const formUrl = `${window.location.origin}/reportlider`;
   div.innerHTML = `
-    <div style="background:var(--bg-surface);border-radius:var(--r-lg);padding:var(--s-4);max-width:600px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-3)">
-        <h3 style="margin:0">Preview do formulário</h3>
-        <button class="btn-small" id="reportePreviewFechar" type="button" style="font-size:18px;line-height:1">✕</button>
+    <div class="admin-preview-panel">
+      <div class="admin-preview-heading">
+        <h3 class="admin-zero-margin">Preview do formulário</h3>
+        <button class="btn-small admin-preview-close" id="reportePreviewFechar" type="button">✕</button>
       </div>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-3)">
+      <p class="admin-preview-description">
         É assim que seus usuários veem o formulário. Você pode incorporar esta página no seu site com um iframe.
       </p>
-      <div style="border:2px dashed var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:var(--s-3)">
-        <iframe src="${formUrl}" style="width:100%;height:520px;border:none" title="Formulário de reporte"></iframe>
+      <div class="admin-preview-frame-wrap">
+        <iframe src="${formUrl}" title="Formulário de reporte" class="admin-preview-frame"></iframe>
       </div>
       <label class="field">
         <span>Embed code (iframe)</span>
-        <div style="display:flex;gap:var(--s-2)">
-          <input id="reporteEmbedCode" type="text" readonly value="&lt;iframe src=&quot;${formUrl}&quot; width=&quot;100%&quot; height=&quot;520px&quot; style=&quot;border:none&quot;&gt;&lt;/iframe&gt;" style="flex:1;font-size:12px" />
+        <div class="admin-inline-actions">
+          <input id="reporteEmbedCode" type="text" readonly value="&lt;iframe src=&quot;${formUrl}&quot; width=&quot;100%&quot; height=&quot;520px&quot; style=&quot;border:none&quot;&gt;&lt;/iframe&gt;"  class="admin-link-action"/>
           <button class="btn-small" id="reporteEmbedCopiarBtn" type="button">Copiar</button>
         </div>
       </label>
@@ -648,7 +646,7 @@ function openReportesOverlay() {
   if (!overlay) return;
   const content = document.getElementById('reportesOverlayContent');
   if (!content) return;
-  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>';
+  content.innerHTML = '<div class="card admin-content-padding"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>';
   overlay.classList.add('open');
   setTimeout(() => renderReportes(), 50);
 }

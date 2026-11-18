@@ -172,3 +172,26 @@ Validação da rodada
 - Catálogo de design system para foco, modais, contraste amostral e redução de movimento.
 
 Persistência, autenticação, contratos, filtros e cálculos não foram alterados. A consolidação continua por módulo: relatório de feedback, reportes e usuários ainda concentram estilos inline próprios. Não se declara remoção integral de estilos legados de toda a aplicação. Safari, leitor de tela e impressão física permanecem os limites externos já registrados.
+
+## Continuação 1.39.2 — Feedback, Reportes e Usuários
+
+Base 26df66d. Branch refactor/estilos-administracao-feedback, árvore inicialmente limpa. Foram extraídos 169 atributos style fixos para administration.css: Relatório de feedback 71 → 7, Reportes 61 → 3 e Usuários 48 → 1. Estilos fixos de criação de diálogos e captura de PDF também passaram de cssText para classes.
+
+O novo arquivo contém componentes de formulário, listagem, ações e diálogos administrativos. Campos e ações reaproveitam dimensões, foco e tokens compartilhados. Rótulos abaixo de 12px foram alinhados à legenda de 12px e os campos de texto do formulário usam a escala compartilhada.
+
+O documento RF conserva sua superfície branca e cores de papel, tanto na prévia quanto na captura de PDF; isso é independente do tema do painel. Metadados sobre fundo branco ganharam contraste maior. O estágio de exportação conserva a largura de 820px e o mesmo algoritmo de captura/paginação. Os parâmetros calculados de cor das notas e variações continuam dinâmicos.
+
+Os estados display:none lidos pelos controladores do corpo de Reportes e do vínculo CSV em Usuários foram preservados. O código incorporável de iframe continua sendo uma saída textual com seu estilo de borda. Não houve alteração de autenticação, papéis, endpoints, corpo de requisições, regras de nota, filtros, envio de mensagens ou operações de conta.
+
+Verificações
+
+- npm test aprovado, sintaxe dos três scripts, cache determinístico e diff.
+- Workspace dos quatorze destinos e cenários adicionais em 360, 768, 1024 e 1440px, claro e escuro.
+- Leitura de usuários simulados por API local e listagem agrupada. Abertura/cancelamento de diálogo de senha sem fornecer nova senha ou enviar a operação.
+- Leitura de reporte simulado, expansão/recolhimento do conteúdo e abertura/cancelamento da resposta, sem envio.
+- Formulário e prévia do RF, fundo branco nos dois temas e exportação com bytes reais de PDF. Requisições de escrita de usuários foram bloqueadas no teste; nenhum cliente de produção foi usado.
+- Capturas móveis de feedback em ambos os temas inspecionadas.
+- Workspace no Firefox com janela reduzida e desktop, nos dois temas. A largura mínima headless permanece a limitação já registrada.
+- Design system em 1440/390/320px e nos dois temas, com teclado, modais, contraste amostral e redução de movimento.
+
+Estilos históricos em outros módulos continuam fora do escopo destes três renderizadores. Os limites de Safari, leitor de tela e impressão física não mudam nesta rodada.

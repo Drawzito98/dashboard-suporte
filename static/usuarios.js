@@ -28,8 +28,8 @@ function findCsvSectorByName(name) {
 async function carregarUsuarios() {
   const container = document.getElementById('listaUsuarios');
   if (!container) return;
-  if (!requireAdmin()) { container.innerHTML = '<p style="text-align:center;padding:var(--s-4);color:var(--text-muted)">Sem permissão.</p>'; return; }
-  container.innerHTML = '<p style="text-align:center;padding:var(--s-4);color:var(--text-muted)">Carregando...</p>';
+  if (!requireAdmin()) { container.innerHTML = '<p class="admin-empty">Sem permissão.</p>'; return; }
+  container.innerHTML = '<p class="admin-empty">Carregando...</p>';
 
   try {
     const headers = { ...(await _authHeaders()) };
@@ -43,7 +43,7 @@ async function carregarUsuarios() {
 
     const users = Array.isArray(data) ? data : (data.users || []);
     if (!users.length) {
-      container.innerHTML = '<p style="text-align:center;padding:var(--s-4);color:var(--text-muted)">Nenhum usuário encontrado.</p>';
+      container.innerHTML = '<p class="admin-empty">Nenhum usuário encontrado.</p>';
       return;
     }
 
@@ -68,19 +68,19 @@ async function carregarUsuarios() {
         const csvSetor = u.app_metadata?.csv_setor || u.user_metadata?.csv_setor || '';
 
         return `<tr data-user-role="${role}">
-          <td title="${escapeHtml(name)}">${escapeHtml(displayName) || '<span style="color:var(--text-muted);font-style:italic">—</span>'}</td>
+          <td title="${escapeHtml(name)}">${escapeHtml(displayName) || '<span class="users-empty-name">—</span>'}</td>
           <td>${escapeHtml(email)}${isYou ? ' <strong>(você)</strong>' : ''}</td>
           <td><span class="role-badge role-${role}">${roleLabel}</span></td>
           <td>${created}</td>
-          <td style="display:flex;gap:4px;flex-wrap:wrap">
-            <button class="btn-small btn-edit-name" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-name="${escapeHtml(name)}" style="font-size:11px"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Nome</button>
-            <button class="btn-small btn-reset-pwd" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔑 Senha</button>
-            ${role !== 'admin' && !isSelf ? `<button class="btn-small btn-csv-map" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-csv-nome="${escapeHtml(csvNome)}" data-csv-setor="${escapeHtml(csvSetor)}" style="font-size:11px"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Vincular CSV</button>` : ''}
-            ${!isSelf ? `<button class="btn-small btn-reset-default" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="font-size:11px">🔢 Padrão</button>` : ''}
-            ${!isSelf ? `<button class="btn-small btn-toggle-role" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">${role === 'admin' ? '👁️ Tornar viewer' : role === 'colaborador' ? '👁️ Tornar viewer' : '👑 Tornar admin'}</button>` : ''}
-            ${!isSelf && role !== 'colaborador' ? `<button class="btn-small btn-toggle-colab" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}" style="font-size:11px">📬 Tornar colaborador</button>` : ''}
-            ${!isSelf ? `<button class="btn-small btn-toggle-block" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-ativo="${u.app_metadata?.ativo !== false}" style="font-size:11px">${u.app_metadata?.ativo === false ? '🔓 Desbloquear' : '🔒 Bloquear'}</button>` : ''}
-            ${!isSelf ? `<button class="btn-small btn-delete-user" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" style="color:var(--danger);font-size:11px">🗑️</button>` : ''}
+          <td class="users-actions">
+            <button class="btn-small btn-edit-name users-action" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-name="${escapeHtml(name)}"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Nome</button>
+            <button class="btn-small btn-reset-pwd users-action" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}">🔑 Senha</button>
+            ${role !== 'admin' && !isSelf ? `<button class="btn-small btn-csv-map users-action" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-csv-nome="${escapeHtml(csvNome)}" data-csv-setor="${escapeHtml(csvSetor)}"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Vincular CSV</button>` : ''}
+            ${!isSelf ? `<button class="btn-small btn-reset-default users-action" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}">🔢 Padrão</button>` : ''}
+            ${!isSelf ? `<button class="btn-small btn-toggle-role users-action" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}">${role === 'admin' ? '👁️ Tornar viewer' : role === 'colaborador' ? '👁️ Tornar viewer' : '👑 Tornar admin'}</button>` : ''}
+            ${!isSelf && role !== 'colaborador' ? `<button class="btn-small btn-toggle-colab users-action" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-role="${role}">📬 Tornar colaborador</button>` : ''}
+            ${!isSelf ? `<button class="btn-small btn-toggle-block users-action" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}" data-ativo="${u.app_metadata?.ativo !== false}">${u.app_metadata?.ativo === false ? '🔓 Desbloquear' : '🔒 Bloquear'}</button>` : ''}
+            ${!isSelf ? `<button class="btn-small btn-delete-user users-danger-action" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(email)}">🗑️</button>` : ''}
           </td>
         </tr>`;
       }),
@@ -162,7 +162,7 @@ async function carregarUsuarios() {
       }
       const resultEl = document.getElementById('syncActiveTeamResult');
       const unresolved = [...new Set([...pending, ...failed])];
-      resultEl.innerHTML = '<strong>' + updated + ' acessos padronizados</strong>' + (unresolved.length ? ' · ' + unresolved.length + ' sem vínculo CSV<div style="margin-top:6px;color:var(--text-muted)">O desafio e o humor já estão liberados. Revise apenas os resultados mensais de: ' + unresolved.map(escapeHtml).join(', ') + '.</div>' : '<div style="margin-top:6px;color:var(--success)">Todos receberam o mesmo acesso e foram vinculados aos resultados.</div>');
+      resultEl.innerHTML = '<strong>' + updated + ' acessos padronizados</strong>' + (unresolved.length ? ' · ' + unresolved.length + ' sem vínculo CSV<div class="users-result-note">O desafio e o humor já estão liberados. Revise apenas os resultados mensais de: ' + unresolved.map(escapeHtml).join(', ') + '.</div>' : '<div class="users-result-success">Todos receberam o mesmo acesso e foram vinculados aos resultados.</div>');
       bulkCsvButton.disabled = false;
       bulkCsvButton.textContent = 'Padronizar equipe e CSV';
       carregarUsuarios();
@@ -360,16 +360,16 @@ function renderUsuariosAba() {
   if (!container) return;
 
   container.innerHTML = `
-    <section class="card" style="padding:var(--s-4);margin-bottom:var(--s-5);border-color:var(--accent-soft)">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);flex-wrap:wrap">
-        <div><h3 style="margin:0 0 4px">Acessos da equipe ativa</h3><p style="margin:0;color:var(--text-secondary);font-size:12px">Cria somente contas ausentes, vinculadas ao e-mail e aos resultados do colaborador.</p></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-small" id="bulkCsvLinkBtn" type="button">Padronizar equipe e CSV</button><button class="btn-primary" id="syncActiveTeamBtn" type="button">Criar acessos ausentes</button></div>
+    <section class="card users-sync-card">
+      <div class="users-sync-heading">
+        <div><h3 class="users-sync-title">Acessos da equipe ativa</h3><p class="users-sync-description">Cria somente contas ausentes, vinculadas ao e-mail e aos resultados do colaborador.</p></div>
+        <div class="users-sync-actions"><button class="btn-small" id="bulkCsvLinkBtn" type="button">Padronizar equipe e CSV</button><button class="btn-primary" id="syncActiveTeamBtn" type="button">Criar acessos ausentes</button></div>
       </div>
-      <p style="margin:10px 0 0;color:var(--text-muted);font-size:11px">Senha provisória: <strong>12345678</strong>. A troca será obrigatória no primeiro acesso.</p>
-      <div id="syncActiveTeamResult" style="margin-top:10px;font-size:12px"></div>
+      <p class="users-sync-note">Senha provisória: <strong>12345678</strong>. A troca será obrigatória no primeiro acesso.</p>
+      <div id="syncActiveTeamResult" class="users-sync-result"></div>
     </section>
-    <div class="form-stack" style="max-width:500px;margin-bottom:var(--s-6)">
-      <h3 style="margin:0 0 var(--s-3)">Criar novo usuário</h3>
+    <div class="form-stack users-create-form">
+      <h3 class="users-create-title">Criar novo usuário</h3>
       <label class="field">
         <span>Nome</span>
         <input id="novoUserName" type="text" placeholder="Nome do usuário" />
@@ -396,29 +396,29 @@ function renderUsuariosAba() {
           <option value="">Selecione...</option>
         </select>
       </label>
-      <button class="btn-primary" id="criarUsuarioBtn" type="button" style="width:100%;justify-content:center">Criar usuário</button>
+      <button class="btn-primary admin-full-action" id="criarUsuarioBtn" type="button">Criar usuário</button>
       <div id="novoUserError" class="auth-error hidden"></div>
       <div id="novoUserSuccess" class="auth-success hidden"></div>
     </div>
-    <hr style="margin:var(--s-4) 0;border-color:var(--border)">
-    <h3 style="margin:0 0 var(--s-3)">Usuários cadastrados</h3>
+    <hr class="users-divider">
+    <h3 class="users-create-title">Usuários cadastrados</h3>
     <div id="listaUsuarios"></div>
 
     <!-- Reset Password Overlay -->
-    <div id="resetPwdOverlay" class="hidden" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center">
-      <div style="background:var(--bg-surface);border-radius:var(--r-lg);padding:var(--s-6);max-width:400px;width:90%;box-shadow:var(--shadow-lg)">
-        <h3 style="margin:0 0 var(--s-2)">Redefinir senha</h3>
-        <p style="font-size:0.875rem;color:var(--text-secondary);margin:0 0 var(--s-4)">
+    <div id="resetPwdOverlay" class="hidden admin-dialog-overlay">
+      <div class="admin-password-panel">
+        <h3 class="admin-dialog-title">Redefinir senha</h3>
+        <p class="admin-dialog-description">
           Usuário: <strong id="resetPwdEmail"></strong>
         </p>
-        <label class="field" style="position:relative">
+        <label class="field users-password-field">
           <span>Nova senha</span>
           <input id="resetPwdNewPassword" type="password" placeholder="mínimo 6 caracteres" />
-          <span id="resetPwdToggle" style="position:absolute;right:8px;bottom:6px;cursor:pointer;font-size:18px;user-select:none" title="Mostrar/esconder senha">👁️</span>
+          <span id="resetPwdToggle" title="Mostrar/esconder senha" class="users-password-toggle">👁️</span>
         </label>
-        <div style="display:flex;gap:var(--s-2);margin-top:var(--s-3)">
-          <button class="btn-primary" id="resetPwdConfirmBtn" type="button" style="flex:1;justify-content:center">Salvar</button>
-          <button class="btn-small" id="resetPwdCancelBtn" type="button" style="flex:1;justify-content:center">Cancelar</button>
+        <div class="admin-dialog-actions">
+          <button class="btn-primary admin-dialog-action" id="resetPwdConfirmBtn" type="button">Salvar</button>
+          <button class="btn-small admin-dialog-action" id="resetPwdCancelBtn" type="button">Cancelar</button>
         </div>
         <div id="resetPwdError" class="auth-error hidden"></div>
         <div id="resetPwdSuccess" class="auth-success hidden"></div>
@@ -426,10 +426,10 @@ function renderUsuariosAba() {
     </div>
 
     <!-- CSV Map Overlay -->
-    <div id="csvMapOverlay" class="hidden" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center">
-      <div style="background:var(--bg-surface);border-radius:var(--r-lg);padding:var(--s-6);max-width:420px;width:90%;box-shadow:var(--shadow-lg)">
-        <h3 style="margin:0 0 var(--s-2)">Vincular colaborador aos resultados</h3>
-        <p style="font-size:0.875rem;color:var(--text-secondary);margin:0 0 var(--s-4)">
+    <div id="csvMapOverlay" class="hidden admin-dialog-overlay">
+      <div class="admin-name-panel">
+        <h3 class="admin-dialog-title">Vincular colaborador aos resultados</h3>
+        <p class="admin-dialog-description">
           Usuário: <strong id="csvMapUserEmail"></strong>
         </p>
         <input type="hidden" id="csvMapUserId" />
@@ -442,9 +442,9 @@ function renderUsuariosAba() {
           <span>Setor identificado</span>
           <input id="csvMapSetor" type="text" placeholder="Preenchido automaticamente" />
         </label>
-        <div style="display:flex;gap:var(--s-2);margin-top:var(--s-3)">
-          <button class="btn-primary" id="csvMapSalvarBtn" type="button" style="flex:1;justify-content:center">Salvar</button>
-          <button class="btn-small" id="csvMapCancelarBtn" type="button" style="flex:1;justify-content:center">Cancelar</button>
+        <div class="admin-dialog-actions">
+          <button class="btn-primary admin-dialog-action" id="csvMapSalvarBtn" type="button">Salvar</button>
+          <button class="btn-small admin-dialog-action" id="csvMapCancelarBtn" type="button">Cancelar</button>
         </div>
         <div id="csvMapError" class="auth-error hidden"></div>
         <div id="csvMapSuccess" class="auth-success hidden"></div>
@@ -549,10 +549,10 @@ function renderUsuariosAba() {
       if (!response.ok) throw new Error(data.error || 'Não foi possível criar os acessos.');
       const skipped = [...(data.skipped || []), ...(data.failed || [])];
       resultEl.innerHTML = '<strong>' + Number(data.created?.length || 0) + ' criados</strong> · ' + Number(data.existing?.length || 0) + ' já existentes · ' + skipped.length + ' pendentes' +
-        (skipped.length ? '<div style="margin-top:6px;color:var(--danger)">' + skipped.map(item => '<div>' + escapeHtml(item.name) + ' (' + escapeHtml(item.email || 'sem e-mail') + '): ' + escapeHtml(item.reason || 'revise o cadastro') + '</div>').join('') + '</div>' : '<div style="margin-top:6px;color:var(--success)">Todos os colaboradores ativos possuem acesso.</div>');
+        (skipped.length ? '<div class="users-result-error">' + skipped.map(item => '<div>' + escapeHtml(item.name) + ' (' + escapeHtml(item.email || 'sem e-mail') + '): ' + escapeHtml(item.reason || 'revise o cadastro') + '</div>').join('') + '</div>' : '<div class="users-result-success">Todos os colaboradores ativos possuem acesso.</div>');
       carregarUsuarios();
     } catch (error) {
-      resultEl.innerHTML = '<span style="color:var(--danger)">' + escapeHtml(error.message) + '</span>';
+      resultEl.innerHTML = '<span class="users-danger">' + escapeHtml(error.message) + '</span>';
     }
     button.disabled = false;
     button.textContent = 'Criar acessos ausentes';
@@ -717,7 +717,7 @@ function openUsuariosOverlay() {
   if (!overlay) return;
   const content = document.getElementById('usuariosOverlayContent');
   if (!content) return;
-  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>';
+  content.innerHTML = '<div class="card admin-content-padding"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>';
   overlay.classList.add('open');
   setTimeout(() => renderUsuariosAba(), 50);
 }

@@ -135,14 +135,14 @@ function rfSectionHeader(colaborador, mes, opts) {
   const now = new Date();
   const periodLabel = mes && mes !== 'all' ? mes : 'Todo o período';
   const setor = opts.setor || '';
-  const setorHtml = setor ? `<div style="font-size:12px;color:#94a3b8;margin-top:2px">${escapeHtml(setor)}</div>` : '';
+  const setorHtml = setor ? `<div class="rf-paper-sector">${escapeHtml(setor)}</div>` : '';
   return `
-    <div style="background:#0f172a;color:#f8fafc;padding:24px 28px;border-radius:8px;margin-bottom:20px">
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#60a5fa;margin-bottom:6px">Relatório de Feedback</div>
-      <div style="font-size:26px;font-weight:700">${escapeHtml(colaborador)}</div>
+    <div class="rf-paper-header">
+      <div class="rf-paper-eyebrow">Relatório de Feedback</div>
+      <div class="rf-paper-title">${escapeHtml(colaborador)}</div>
       ${setorHtml}
-      <div style="font-size:13px;color:#cbd5e1;margin-top:8px">Período: <strong style="color:#f8fafc">${escapeHtml(periodLabel)}</strong></div>
-      <div style="font-size:12px;color:#64748b;margin-top:2px">Gerado em ${now.toLocaleString('pt-BR')}</div>
+      <div class="rf-paper-header-meta">Período: <strong class="rf-paper-header-value">${escapeHtml(periodLabel)}</strong></div>
+      <div class="rf-paper-meta">Gerado em ${now.toLocaleString('pt-BR')}</div>
     </div>`;
 }
 
@@ -154,45 +154,45 @@ function rfSectionKPIs(colaborador, mes, metricas, records) {
     if (prev && met.tipo !== 'texto') {
       const d = rfDeltaPct(val, rfCalcVal(prev.records, met));
       if (d != null) {
-        cmp = `<div style="font-size:11px;font-weight:700;color:${rfDeltaColor(d, met.key)};margin-top:3px">${rfArrow(d)} ${Math.abs(d).toFixed(1).replace('.', ',')}% <span style="color:#94a3b8;font-weight:400">vs ${escapeHtml(prev.mes)}</span></div>`;
+        cmp = `<div style="font-size:11px;font-weight:700;color:${rfDeltaColor(d, met.key)};margin-top:3px">${rfArrow(d)} ${Math.abs(d).toFixed(1).replace('.', ',')}% <span class="rf-paper-total">vs ${escapeHtml(prev.mes)}</span></div>`;
       }
     }
     return `
-      <div style="flex:1;min-width:120px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px">
-        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.4px">${escapeHtml(met.label)}</div>
-        <div style="font-size:22px;font-weight:700;color:#0f172a;margin-top:4px">${rfFmtVal(val, met)}</div>
+      <div class="rf-paper-metric">
+        <div class="rf-paper-metric-label">${escapeHtml(met.label)}</div>
+        <div class="rf-paper-metric-value">${rfFmtVal(val, met)}</div>
         ${cmp}
       </div>`;
   }).join('');
 
   return `
-    <div style="margin-bottom:20px">
-      <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px">📊 Resultados do período</div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px">${cards}</div>
+    <div class="rf-paper-section">
+      <div class="rf-paper-section-title">📊 Resultados do período</div>
+      <div class="rf-paper-metrics">${cards}</div>
     </div>`;
 }
 
 function rfSectionObservacoes(observacoes, comentarios) {
-  let html = `<div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px">📝 Observações e análises</div>`;
+  let html = `<div class="rf-paper-section-title">📝 Observações e análises</div>`;
 
   if (observacoes && observacoes.trim()) {
-    html += `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-bottom:12px;font-size:13px;color:#78350f;line-height:1.6;white-space:pre-wrap">${escapeHtml(observacoes)}</div>`;
+    html += `<div class="rf-paper-warning">${escapeHtml(observacoes)}</div>`;
   }
 
   if (comentarios && comentarios.length) {
-    html += `<div style="margin-bottom:10px"><strong style="font-size:13px;color:#334155">Comentários do período:</strong></div>`;
+    html += `<div class="rf-paper-paragraph"><strong class="rf-paper-copy">Comentários do período:</strong></div>`;
     html += comentarios.map(c => `
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:8px">
-        <div style="font-size:12.5px;color:#334155;line-height:1.5">${escapeHtml(c.texto)}</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:4px">${c.mes ? escapeHtml(c.mes) + ' · ' : ''}${escapeHtml(c.user || '')}${c.ts ? ' · ' + new Date(c.ts).toLocaleDateString('pt-BR') : ''}</div>
+      <div class="rf-paper-note">
+        <div class="rf-paper-note-copy">${escapeHtml(c.texto)}</div>
+        <div class="rf-paper-note-meta">${c.mes ? escapeHtml(c.mes) + ' · ' : ''}${escapeHtml(c.user || '')}${c.ts ? ' · ' + new Date(c.ts).toLocaleDateString('pt-BR') : ''}</div>
       </div>`).join('');
   }
 
   if ((!observacoes || !observacoes.trim()) && (!comentarios || !comentarios.length)) {
-    html += `<div style="font-size:12px;color:#94a3b8;font-style:italic">Nenhuma observação registrada para o período.</div>`;
+    html += `<div class="rf-paper-empty">Nenhuma observação registrada para o período.</div>`;
   }
 
-  return `<div style="margin-bottom:20px">${html}</div>`;
+  return `<div class="rf-paper-section">${html}</div>`;
 }
 
 function rfSectionProtocolos(protocolos) {
@@ -200,7 +200,7 @@ function rfSectionProtocolos(protocolos) {
   const rows = protocolos.map((p, i) => {
     const rowBg = i % 2 === 1 ? '#f8fafc' : '#ffffff';
     const notaBadge = (!p.teve_nota || p.nota == null)
-      ? '<span style="font-size:11px;color:#94a3b8">Sem nota</span>'
+      ? '<span class="rf-paper-caption">Sem nota</span>'
       : `<span style="font-size:12px;font-weight:700;color:${p.nota >= 4 ? '#059669' : p.nota >= 3 ? '#d97706' : '#dc2626'}">${p.nota}</span>`;
     return `
       <tr>
@@ -213,16 +213,16 @@ function rfSectionProtocolos(protocolos) {
   }).join('');
 
   return `
-    <div style="margin-bottom:20px">
-      <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px">🎧 Protocolos de atendimento (${protocolos.length})</div>
-      <div style="overflow:hidden;border:1px solid #e2e8f0;border-radius:8px;background:#ffffff">
-        <table style="width:100%;border-collapse:collapse">
+    <div class="rf-paper-section">
+      <div class="rf-paper-section-title">🎧 Protocolos de atendimento (${protocolos.length})</div>
+      <div class="rf-paper-table-wrap">
+        <table class="rf-paper-table">
           <thead><tr>
-            <th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Protocolo</th>
-            <th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Data</th>
-            <th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:center">Nota</th>
-            <th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Resumo</th>
-            <th style="background:#f1f5f9;position:static;backdrop-filter:none;padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#64748b;text-align:left">Orientação</th>
+            <th class="rf-paper-table-heading">Protocolo</th>
+            <th class="rf-paper-table-heading">Data</th>
+            <th class="rf-paper-number-heading">Nota</th>
+            <th class="rf-paper-table-heading">Resumo</th>
+            <th class="rf-paper-table-heading">Orientação</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
@@ -233,9 +233,9 @@ function rfSectionProtocolos(protocolos) {
 function rfSectionFeedback(feedbackTexto) {
   if (!feedbackTexto || !feedbackTexto.trim()) return '';
   return `
-    <div style="margin-bottom:20px">
-      <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px">💬 Feedback</div>
-      <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:16px 18px;font-size:13px;color:#312e81;line-height:1.7;white-space:pre-wrap">${escapeHtml(feedbackTexto)}</div>
+    <div class="rf-paper-section">
+      <div class="rf-paper-section-title">💬 Feedback</div>
+      <div class="rf-paper-summary">${escapeHtml(feedbackTexto)}</div>
     </div>`;
 }
 
@@ -254,7 +254,7 @@ function rfRenderPreview(opts) {
   const container = document.getElementById('rfPreview');
   if (!container) return;
   const sections = rfBuildSections(opts);
-  container.innerHTML = `<div style="max-width:820px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:28px">${sections.join('\n')}</div>`;
+  container.innerHTML = `<div class="rf-paper">${sections.join('\n')}</div>`;
 }
 
 // ─── Formulário ──────────────────────────────────────────────────
@@ -264,7 +264,7 @@ function rfOpenOverlay() {
   if (!overlay) return;
   const content = document.getElementById('relatorioFeedbackContent');
   if (!content) return;
-  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
+  content.innerHTML = '<div class="card admin-content-padding"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
   overlay.classList.add('open');
   setTimeout(() => rfRenderForm(), 50);
 }
@@ -283,28 +283,28 @@ function rfRenderForm() {
   const selMetricas = Array.isArray(cfg.metricas) ? cfg.metricas : RF_DEFAULT_METRICAS.slice();
 
   let html = `
-    <div style="padding:var(--s-5)">
-      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:var(--s-4)">
+    <div class="admin-content-padding">
+      <div class="rf-editor-heading">
         <div>
-          <h2 style="font-size:18px;font-weight:700">📄 Relatório de Feedback</h2>
-          <p style="font-size:13px;color:var(--text-secondary);margin-top:2px">Resultados, observações, protocolos e feedback em um PDF entregável ao colaborador.</p>
+          <h2 class="rf-editor-title">📄 Relatório de Feedback</h2>
+          <p class="rf-editor-description">Resultados, observações, protocolos e feedback em um PDF entregável ao colaborador.</p>
         </div>
-        <button class="btn-small" id="rfCloseBtn" type="button" style="font-size:12px">✕ Fechar</button>
+        <button class="btn-small admin-caption" id="rfCloseBtn" type="button">✕ Fechar</button>
       </div>
 
-      <div class="grid-2col" style="gap:var(--s-5);align-items:start">
-        <div class="card" style="padding:var(--s-4)">
-          <h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3)">⚙️ Configuração</h3>
+      <div class="grid-2col rf-editor-grid">
+        <div class="card admin-card-padding">
+          <h3 class="rf-editor-section-title">⚙️ Configuração</h3>
 
-          <div style="display:flex;gap:var(--s-3);flex-wrap:wrap;margin-bottom:var(--s-3)">
-            <label class="field" style="flex:1;min-width:160px">
+          <div class="rf-editor-fields">
+            <label class="field rf-editor-person-field">
               <span>Colaborador</span>
               <select id="rfColabSelect">
                 <option value="">Selecionar...</option>
                 ${colabs.map(c => `<option value="${escapeHtml(c)}" ${c === selColab ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
               </select>
             </label>
-            <label class="field" style="flex:1;min-width:140px">
+            <label class="field rf-editor-period-field">
               <span>Período</span>
               <select id="rfMesSelect">
                 <option value="all" ${selMes === 'all' ? 'selected' : ''}>Todos</option>
@@ -313,41 +313,41 @@ function rfRenderForm() {
             </label>
           </div>
 
-          <div class="field" style="margin-bottom:var(--s-3)">
+          <div class="field admin-section-gap">
             <span>Métricas do relatório</span>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+            <div class="rf-editor-options">
               ${RF_METRICAS.map(met => `
-                <label class="checkbox-label" style="margin:0;font-size:12px">
+                <label class="checkbox-label rf-editor-option">
                   <input type="checkbox" class="rf-metrica-cb" value="${escapeHtml(met.key)}" ${selMetricas.includes(met.key) ? 'checked' : ''}> ${escapeHtml(met.label)}
                 </label>`).join('')}
             </div>
           </div>
 
-          <div class="field" style="margin-bottom:var(--s-3)">
+          <div class="field admin-section-gap">
             <span>Observações do gestor</span>
-            <textarea id="rfObservacoes" style="width:100%;min-height:80px;font-size:12px;line-height:1.5" placeholder="Análises, pontos discutidos, mudanças que justificam o resultado, falhas a apontar...">${escapeHtml(cfg.observacoes || '')}</textarea>
+            <textarea id="rfObservacoes" placeholder="Análises, pontos discutidos, mudanças que justificam o resultado, falhas a apontar..." class="rf-editor-notes">${escapeHtml(cfg.observacoes || '')}</textarea>
           </div>
 
-          <div class="field" style="margin-bottom:var(--s-3)">
+          <div class="field admin-section-gap">
             <span>Feedback (texto)</span>
-            <textarea id="rfFeedbackTexto" style="width:100%;min-height:100px;font-size:12px;line-height:1.5;white-space:pre-wrap" placeholder="Feedback final que será entregue ao colaborador.">${escapeHtml(cfg.feedback || '')}</textarea>
+            <textarea id="rfFeedbackTexto" placeholder="Feedback final que será entregue ao colaborador." class="rf-editor-summary">${escapeHtml(cfg.feedback || '')}</textarea>
           </div>
 
-          <div style="display:flex;gap:var(--s-2);flex-wrap:wrap;margin-bottom:var(--s-3)">
+          <div class="rf-editor-tools">
             <button class="btn-small" id="rfGerarSugestaoBtn" type="button">✨ Gerar sugestão</button>
             <button class="btn-small" id="rfLimparBtn" type="button">🧹 Limpar</button>
           </div>
 
-          <div style="display:flex;gap:var(--s-2);flex-wrap:wrap">
-            <button class="btn-primary" id="rfGerarBtn" type="button" style="flex:1"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Gerar relatório</button>
-            <button class="btn-primary" id="rfExportBtn" type="button" style="flex:1;background:var(--success, #059669)">📄 Exportar PDF</button>
+          <div class="admin-actions">
+            <button class="btn-primary admin-grow" id="rfGerarBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Gerar relatório</button>
+            <button class="btn-primary rf-export-action" id="rfExportBtn" type="button">📄 Exportar PDF</button>
           </div>
         </div>
 
-        <div class="card" style="padding:var(--s-4)">
-          <h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-eye"></use></svg> Pré-visualização</h3>
-          <div id="rfPreview" style="max-height:70vh;overflow-y:auto">
-            <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:30px 10px">Selecione um colaborador e clique em "Gerar relatório".</div>
+        <div class="card admin-card-padding">
+          <h3 class="rf-editor-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-eye"></use></svg> Pré-visualização</h3>
+          <div id="rfPreview" class="rf-preview">
+            <div class="rf-preview-empty">Selecione um colaborador e clique em "Gerar relatório".</div>
           </div>
         </div>
       </div>
@@ -463,14 +463,14 @@ async function rfExportarPDF() {
     const contentW = pageW - margin * 2;
 
     const container = document.createElement('div');
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1';
+    container.className = 'rf-export-stage';
     document.body.appendChild(container);
 
     let first = true;
 
     for (const sectionHtml of sections) {
       const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'width:820px;background:#ffffff';
+      wrapper.className = 'rf-export-sheet';
       wrapper.innerHTML = sectionHtml;
       container.appendChild(wrapper);
 
