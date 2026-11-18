@@ -99,3 +99,26 @@ Equipe360, Perfil/PDI, Ponto, Diagnóstico, Atividades do mês, Exportadores e R
 A matriz revelou uma opção de aba parcialmente fora da faixa ao navegar por teclado. O ajuste de foco com preventScroll e a chamada explícita ao revelador do shell corrigiram o cenário, que passou na repetição. Não houve erro não tratado no console nas execuções finais do workspace.
 
 A entrega permanece local na branch de auditoria. As capturas são de uma conta e registros sintéticos das fixtures, com identificação visível de teste.
+
+## Continuação 1.38.1 — Avaliações e Liderança
+
+A revisão 1.38.0 foi publicada com autorização em 18/11/2026, commit ddef58d. As referências anteriores a entrega local descrevem o estado anterior à publicação.
+
+Esta continuação usa a branch refactor/pessoas-componentes. people-workspace.css reúne a apresentação específica de Avaliações e Liderança sobre os controles compartilhados. Avaliações passou de 110 para 70 atributos style, e Liderança de 38 para zero. Os estilos restantes de Avaliações incluem ranking, consolidado e conteúdo específico que exigem revisão própria.
+
+Correções desta rodada
+
+- O formulário de Avaliações tinha um div extra que fechava o layout antes do editor e do histórico. A estrutura agora contém as três áreas no mesmo layout.
+- A moldura externa redundante foi removida da página. Os painéis internos continuam com sua própria hierarquia.
+- Seletores de mês têm nomes acessíveis distintos e altura compartilhada de 44px. No celular, o intervalo se organiza em linhas.
+- Botões de comentários e sugestões usam os controles e cores semânticas do painel.
+- A tabela de Liderança usa a região compartilhada de rolagem por teclado. Botões de perfil identificam a pessoa pelo nome acessível.
+- Cards e pontos de atenção em Liderança permitem quebra de texto e organização em telas estreitas. A condição que destaca a linha continua igual, expressa por classe em vez de style.
+
+Validação
+
+npm test, release:check, diff e sintaxe dos dois renderizadores. Workspace completo passou nas quatro larguras e nos dois temas. Fixture evaluations passou em 360/1440px, claro/escuro, exercitando formulário real com servidor simulado, rascunho, quota/falha, resposta perdida, UUID estável, edição, status, exclusão e duplo envio. A estrutura HTML e alvos dos seletores foram conferidos no navegador. Captura móvel inspecionada.
+
+Pendências que continuam abertas
+
+Ranking/consolidado de avaliações e outros módulos ainda têm estilos inline. Não foi realizada certificação WCAG, teste com leitor de tela, Safari/Firefox ou paginação física de impressão. A padronização de ícones legados e a revisão da experiência específica do colaborador também precisam de rodadas próprias. Não se declara conclusão integral de todas as recomendações originais.

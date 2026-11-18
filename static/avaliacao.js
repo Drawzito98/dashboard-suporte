@@ -130,23 +130,22 @@ function renderAvaliacao() {
           </label>
           <label class="field">
             <span>Período</span>
-            <div style="display:flex;gap:6px;align-items:center">
-              <select id="avaliacaoMesInicio" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"></select>
-              <span style="font-size:13px;color:var(--text-secondary)">até</span>
-              <select id="avaliacaoMesFim" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"></select>
+            <div class="avaliacao-period-range">
+              <select id="avaliacaoMesInicio" aria-label="Mês inicial da avaliação" class="avaliacao-period-select"></select>
+              <span class="avaliacao-secondary">até</span>
+              <select id="avaliacaoMesFim" aria-label="Mês final da avaliação" class="avaliacao-period-select"></select>
             </div>
           </label>
-          <div style="display:flex;gap:var(--s-2);margin-top:var(--s-2);flex-wrap:wrap">
+          <div class="avaliacao-start-actions">
             <button class="btn-small" id="avaliacaoNovaBtn" type="button">➕ Nova avaliação</button>
-            <button class="btn-primary" id="avaliacaoSugerirNotasBtn" type="button" style="background:#8B5CF6;font-size:12px;padding:6px 12px">🎯 Sugerir Notas Inteligentes</button>
+            <button class="btn-primary avaliacao-suggest-action" id="avaliacaoSugerirNotasBtn" type="button">🎯 Sugerir Notas Inteligentes</button>
           </div>
         </div>
-        <div style="margin:var(--s-3) var(--s-4) var(--s-3)">
+        <div class="avaliacao-qualitative">
           <label class="field">
-            <span>📝 Avaliação qualitativa <span style="font-size:var(--font-caption);color:var(--text-muted)">(opcional — usado nas sugestões)</span></span>
-            <textarea id="avaliacaoQualitativa" rows="3" placeholder="Ex: Colaborador proativo, mas precisa melhorar organização e pontualidade..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px;resize:vertical;font-family:inherit;line-height:1.5"></textarea>
+            <span>📝 Avaliação qualitativa <span class="avaliacao-caption">(opcional — usado nas sugestões)</span></span>
+            <textarea id="avaliacaoQualitativa" rows="3" placeholder="Ex: Colaborador proativo, mas precisa melhorar organização e pontualidade..." class="avaliacao-qualitative-input"></textarea>
           </label>
-        </div>
         </div>
       </div>
 
@@ -167,7 +166,7 @@ function renderAvaliacao() {
               ${colabs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
             </select>
           </label>
-          <label class="field" style="min-width:130px">
+          <label class="field avaliacao-status-field">
             <span>Status</span>
             <select id="avaliacaoStatusFilter">
               <option value="">Todos</option>
@@ -186,10 +185,10 @@ function renderAvaliacao() {
               <option value="nome-desc">Nome Z-A</option>
             </select>
           </label>
-          <button class="btn-primary" id="avaliacaoCarregarBtn" type="button" disabled style="align-self:flex-end">📋 Carregar selecionada</button>
-          <button class="btn-small" id="avaliacaoRankingBtn" type="button" style="align-self:flex-end">🏆 Ranking</button>
-          <button class="btn-small" id="avaliacaoConsolidadoViewBtn" type="button" style="align-self:flex-end">👁️ Consolidado</button>
-          <button class="btn-small" id="avaliacaoExportAllBtn" type="button" style="align-self:flex-end">📊 Exportar</button>
+          <button class="btn-primary avaliacao-history-action" id="avaliacaoCarregarBtn" type="button" disabled>📋 Carregar selecionada</button>
+          <button class="btn-small avaliacao-history-action" id="avaliacaoRankingBtn" type="button">🏆 Ranking</button>
+          <button class="btn-small avaliacao-history-action" id="avaliacaoConsolidadoViewBtn" type="button">👁️ Consolidado</button>
+          <button class="btn-small avaliacao-history-action" id="avaliacaoExportAllBtn" type="button">📊 Exportar</button>
         </div>
         <div id="avaliacaoHistoricoLista"></div>
       </div>
@@ -307,10 +306,10 @@ function renderAvaliacaoForm(colaborador, ciclo, existing, resume = false) {
           <h2>${isEdit ? '✏️' : '➕'} ${isEdit ? 'Editar' : 'Nova'} Avaliação</h2>
           <p><strong>${escapeHtml(colaborador)}</strong></p>
         </div>
-        <div style="display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap;padding:0 var(--s-4)">
-          <label class="field" style="margin:0;flex:1;min-width:200px">
+        <div class="avaliacao-editor-context">
+          <label class="field avaliacao-cycle-field">
             <span>Período</span>
-            <input type="text" id="avaliacaoCicloInput" value="${escapeHtml(ciclo)}" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"/>
+            <input type="text" id="avaliacaoCicloInput" value="${escapeHtml(ciclo)}" class="avaliacao-cycle-input"/>
           </label>
           ${isEdit ? `<span style="font-size:12px;color:var(--text-muted)">Última atualização: ${existing.updatedAt ? new Date(existing.updatedAt).toLocaleString('pt-BR') : '—'}</span>` : ''}
         </div>
@@ -368,11 +367,11 @@ function renderAvaliacaoForm(colaborador, ciclo, existing, resume = false) {
         <div class="avaliacao-comentarios-ia-section">
           <div class="avaliacao-comentarios-ia-header">
             <div>
-              <h3 style="font-size:15px;font-weight:600;color:var(--text-strong)">💬 Comentários da Avaliação</h3>
-              <p style="font-size:12.5px;color:var(--text-secondary)">É obrigatório registrar pelo menos um comentário antes de concluir ou publicar a avaliação.</p>
+              <h3 class="avaliacao-comment-heading">💬 Comentários da Avaliação</h3>
+              <p class="avaliacao-comment-description">É obrigatório registrar pelo menos um comentário antes de concluir ou publicar a avaliação.</p>
             </div>
-            <div style="display:flex;gap:var(--s-2);flex-wrap:wrap;align-items:center">
-              <button class="btn-primary" id="avaliacaoGerarIaBtn" type="button" style="font-size:12px;padding:6px 12px">🤖 Gerar Sugestões com IA</button>
+            <div class="avaliacao-comment-toolbar">
+              <button class="btn-primary avaliacao-comment-generate" id="avaliacaoGerarIaBtn" type="button">🤖 Gerar Sugestões com IA</button>
             </div>
           </div>
           <div id="avaliacaoComentariosIaList" class="avaliacao-comentarios-list">
@@ -382,8 +381,8 @@ function renderAvaliacaoForm(colaborador, ciclo, existing, resume = false) {
             ${renderComentariosFinais(comentariosFinais)}
           </div>
           <div class="avaliacao-comentarios-add">
-            <textarea id="avaliacaoNovoComentarioInput" rows="2" placeholder="Digite um comentário personalizado..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px;resize:vertical"></textarea>
-            <button class="btn-small" id="avaliacaoAddComentarioBtn" type="button" style="margin-top:6px">➕ Adicionar comentário</button>
+            <textarea id="avaliacaoNovoComentarioInput" rows="2" placeholder="Digite um comentário personalizado..." class="avaliacao-comment-input"></textarea>
+            <button class="btn-small avaliacao-comment-add" id="avaliacaoAddComentarioBtn" type="button">➕ Adicionar comentário</button>
           </div>
         </div>
 
@@ -415,9 +414,9 @@ function renderComentariosIa(comentariosIa, comentariosFinais) {
       <div class="avaliacao-comentario-tag">🤖 Sugestão IA</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:var(--font-caption);padding:3px 8px">📋 Copiar</button>
-        <button class="btn-small av-usar-btn" type="button" title="Usar como comentário final" style="font-size:var(--font-caption);padding:3px 8px">➕ Usar</button>
-        <button class="btn-small av-regenerar-btn" type="button" title="Regenerar" style="font-size:var(--font-caption);padding:3px 8px">🔄 Regenerar</button>
+        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar">📋 Copiar</button>
+        <button class="btn-small av-usar-btn avaliacao-comment-action" type="button" title="Usar como comentário final">➕ Usar</button>
+        <button class="btn-small av-regenerar-btn avaliacao-comment-action" type="button" title="Regenerar">🔄 Regenerar</button>
       </div>
     </div>
   `).join('');
@@ -430,9 +429,9 @@ function renderComentariosFinais(comentariosFinais) {
       <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:var(--font-caption);padding:3px 8px">✏️ Editar</button>
-        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:var(--font-caption);padding:3px 8px">📋 Copiar</button>
-        <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:var(--font-caption);padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
+        <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar">✏️ Editar</button>
+        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar">📋 Copiar</button>
+        <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir">🗑️ Excluir</button>
       </div>
     </div>
   `).join('');
@@ -526,9 +525,9 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
       <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(texto)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:var(--font-caption);padding:3px 8px">✏️ Editar</button>
-        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:var(--font-caption);padding:3px 8px">📋 Copiar</button>
-        <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:var(--font-caption);padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
+        <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar">✏️ Editar</button>
+        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar">📋 Copiar</button>
+        <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir">🗑️ Excluir</button>
       </div>
     `;
     list.appendChild(div);
@@ -579,9 +578,9 @@ function handleUsar(e) {
     <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
     <div class="avaliacao-comentario-texto">${escapeHtml(texto)}</div>
     <div class="avaliacao-comentario-actions">
-      <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:var(--font-caption);padding:3px 8px">✏️ Editar</button>
-      <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:var(--font-caption);padding:3px 8px">📋 Copiar</button>
-      <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:var(--font-caption);padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
+      <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar">✏️ Editar</button>
+      <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar">📋 Copiar</button>
+      <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir">🗑️ Excluir</button>
     </div>
   `;
   list.appendChild(div);
@@ -720,9 +719,9 @@ function gerarSugestoesIA(colaborador, ciclo, existing, replaceIndex) {
         <div class="avaliacao-comentario-tag">🤖 Sugestão IA</div>
         <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
         <div class="avaliacao-comentario-actions">
-          <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:var(--font-caption);padding:3px 8px">📋 Copiar</button>
-          <button class="btn-small av-usar-btn" type="button" title="Usar como comentário final" style="font-size:var(--font-caption);padding:3px 8px">➕ Usar</button>
-          <button class="btn-small av-regenerar-btn" type="button" title="Regenerar" style="font-size:var(--font-caption);padding:3px 8px">🔄 Regenerar</button>
+          <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar">📋 Copiar</button>
+          <button class="btn-small av-usar-btn avaliacao-comment-action" type="button" title="Usar como comentário final">➕ Usar</button>
+          <button class="btn-small av-regenerar-btn avaliacao-comment-action" type="button" title="Regenerar">🔄 Regenerar</button>
         </div>
       </div>
     `).join('');
@@ -1022,7 +1021,7 @@ function mostrarRankingAvaliacoes() {
         <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--s-4)">Ranking por período — ordenado por média</p>
 
         <div style="margin-bottom:var(--s-4);display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap">
-          <label class="field" style="margin:0;flex:1;min-width:200px">
+          <label class="field avaliacao-cycle-field">
             <span>Período</span>
             <select id="rankingCicloSelect" style="width:100%">
               ${ciclos.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
@@ -1369,7 +1368,7 @@ function renderMiniRadars(avaliacoes) {
       return (v !== null && v !== undefined) ? v : null;
     });
     const hasData = scores.some(s => s !== null);
-    if (!hasData) { container.innerHTML = '<span style="font-size:var(--font-caption);color:var(--text-muted)">Sem dados</span>'; return; }
+    if (!hasData) { container.innerHTML = '<span class="avaliacao-caption">Sem dados</span>'; return; }
 
     const w = 110, h = 110, cx = w / 2, cy = h / 2, r = 42;
     const angleStep = (2 * Math.PI) / comps.length;
