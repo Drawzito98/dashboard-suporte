@@ -36,6 +36,38 @@
       }
     } catch(e) { console.error('[App] Erro ao alternar tema:', e); }
   }
+  const ACCENT_KEY = 'sistema_accent_v1';
+  const ACCENTS = new Set(['padrao', 'azul', 'violeta', 'ambar']);
+  function applyAccent(id){
+    const safe = ACCENTS.has(id) ? id : 'padrao';
+    if(safe === 'padrao') document.documentElement.removeAttribute('data-accent');
+    else document.documentElement.setAttribute('data-accent', safe);
+    const select = document.getElementById('accentSelect');
+    if(select) select.value = safe;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if(meta){
+      const value = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+      if(value) meta.setAttribute('content', value);
+    }
+    if(typeof Chart !== 'undefined' && typeof ChartTheme !== 'undefined') ChartTheme.applyDefaults();
+    updateChartTheme();
+  }
+  function initAccent(){
+    let saved = 'padrao';
+    try { saved = appStorage.getItem(ACCENT_KEY) || 'padrao'; } catch(e) {}
+    applyAccent(saved);
+    const select = document.getElementById('accentSelect');
+    if(!select || select.dataset.bound === 'true') return;
+    select.dataset.bound = 'true';
+    select.addEventListener('change', function(){
+      const id = ACCENTS.has(select.value) ? select.value : 'padrao';
+      try {
+        if(id === 'padrao') appStorage.removeItem(ACCENT_KEY);
+        else appStorage.setItem(ACCENT_KEY, id);
+      } catch(e) { console.warn('[App] Erro ao salvar cor de destaque:', e); }
+      applyAccent(id);
+    });
+  }
   function init(){
     const saved = appStorage.getItem('theme');
     if(saved === 'dark' || saved === 'light') setTheme(saved);
@@ -55,8 +87,13 @@
         if (!savedNow) setTheme(ev.matches ? 'dark' : 'light');
       });
     }
+    initAccent();
     setTimeout(updateTarefasBadge, 100);
   }
+  document.addEventListener('app-role-ready', initAccent);
+  window.addEventListener('app-data-changed', function(event){
+    if(event.detail && event.detail.reason === 'bound') initAccent();
+  });
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();

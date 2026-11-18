@@ -311,3 +311,75 @@ html[data-theme="dark"] {
   --shadow-panel:      0 1px 2px rgba(0, 0, 0, .32), 0 18px 44px -30px rgba(0, 0, 0, .8);
   --shadow-float:      0 30px 90px -36px rgba(0, 0, 0, .9);
 }
+
+html[data-accent="azul"] {
+  --accent: #1d4ed8;
+  --accent-hover: #1e40af;
+  --accent-soft: #e8efff;
+  --accent-ring: rgba(29, 78, 216, .2);
+  --accent-rgb: 29, 78, 216;
+  --accent-selected: #1d4ed8;
+  --accent-selected-ring: rgba(29, 78, 216, .26);
+  --accent-selected-soft: rgba(29, 78, 216, .08);
+  --text-on-accent: #ffffff;
+}
+
+html[data-theme="dark"][data-accent="azul"] {
+  --accent: #93c5fd;
+  --accent-hover: #bfdbfe;
+  --accent-soft: rgba(147, 197, 253, .14);
+  --accent-ring: rgba(147, 197, 253, .3);
+  --accent-rgb: 147, 197, 253;
+  --accent-selected: #93c5fd;
+  --accent-selected-ring: rgba(147, 197, 253, .3);
+  --accent-selected-soft: rgba(147, 197, 253, .12);
+  --text-on-accent: #0f172a;
+}
+
+html[data-accent="violeta"] {
+  --accent: #6d28d9;
+  --accent-hover: #5b21b6;
+  --accent-soft: #f1e9ff;
+  --accent-ring: rgba(109, 40, 217, .2);
+  --accent-rgb: 109, 40, 217;
+  --accent-selected: #6d28d9;
+  --accent-selected-ring: rgba(109, 40, 217, .26);
+  --accent-selected-soft: rgba(109, 40, 217, .08);
+  --text-on-accent: #ffffff;
+}
+
+html[data-theme="dark"][data-accent="violeta"] {
+  --accent: #c4b5fd;
+  --accent-hover: #ddd6fe;
+  --accent-soft: rgba(196, 181, 253, .14);
+  --accent-ring: rgba(196, 181, 253, .3);
+  --accent-rgb: 196, 181, 253;
+  --accent-selected: #c4b5fd;
+  --accent-selected-ring: rgba(196, 181, 253, .3);
+  --accent-selected-soft: rgba(196, 181, 253, .12);
+  --text-on-accent: #0f172a;
+}
+
+html[data-accent="ambar"] {
+  --accent: #a16207;
+  --accent-hover: #854d0e;
+  --accent-soft: #fef3c7;
+  --accent-ring: rgba(161, 98, 7, .22);
+  --accent-rgb: 161, 98, 7;
+  --accent-selected: #a16207;
+  --accent-selected-ring: rgba(161, 98, 7, .28);
+  --accent-selected-soft: rgba(161, 98, 7, .08);
+  --text-on-accent: #ffffff;
+}
+
+html[data-theme="dark"][data-accent="ambar"] {
+  --accent: #fcd34d;
+  --accent-hover: #fde68a;
+  --accent-soft: rgba(252, 211, 77, .14);
+  --accent-ring: rgba(252, 211, 77, .3);
+  --accent-rgb: 252, 211, 77;
+  --accent-selected: #fcd34d;
+  --accent-selected-ring: rgba(252, 211, 77, .3);
+  --accent-selected-soft: rgba(252, 211, 77, .12);
+  --text-on-accent: #0f172a;
+}

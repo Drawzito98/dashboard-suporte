@@ -182,14 +182,14 @@ const globalFilters = {
             <span>Nível</span>
             <select id="gfNivel"><option value="all">Todos</option></select>
           </label>
-          <label class="global-filter-field global-filter-field--flex" style="min-width:180px">
+          <label class="global-filter-field global-filter-field--flex">
             <span>Colaborador / Busca</span>
-            <input type="text" id="gfPesquisa" placeholder="Buscar nome ou termo..." list="gfColabList" autocomplete="off" style="padding:6px 10px;font-size:12px"/>
+            <input type="text" id="gfPesquisa" placeholder="Buscar nome ou termo..." list="gfColabList" autocomplete="off"/>
             <datalist id="gfColabList"></datalist>
           </label>
-          <div style="display:flex;align-items:flex-end;padding-bottom:2px;gap:4px">
-            <button class="btn-small" id="gfApplyBtn" type="button" hidden style="padding:6px 12px;font-size:12px">Aplicar filtros</button>
-            <button class="btn-small" id="gfClearBtn" type="button" style="padding:6px 12px;font-size:12px">Limpar filtros</button>
+          <div class="global-filter-actions">
+            <button class="btn-small" id="gfApplyBtn" type="button" hidden>Aplicar filtros</button>
+            <button class="btn-small" id="gfClearBtn" type="button">Limpar filtros</button>
           </div>
         </div>
         <div id="gfMonthRange" class="global-filter-multi global-filter-range gf-performance-filter" style="display:none">

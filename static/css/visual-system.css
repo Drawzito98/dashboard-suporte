@@ -153,6 +153,32 @@ body.shell-v2 .current-user::first-letter {
   color: var(--accent);
 }
 
+.user-dropdown-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.user-dropdown-field span {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.user-dropdown-field select {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background-color: var(--bg-inset);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
 body.shell-v2 .theme-toggle,
 body.shell-v2 #logoutBtn,
 body.shell-v2 .notif-btn,
@@ -315,12 +341,28 @@ body.shell-v2 .global-filter-field input {
 }
 
 body.shell-v2 .global-filter-field--flex {
-  flex: 1 1 220px;
+  flex: 1 1 240px;
+  min-width: 220px;
 }
 
 body.shell-v2 .global-filter-field--flex input {
-  flex: 1;
-  min-width: 160px;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+body.shell-v2 .global-filter-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+body.shell-v2 .global-filter-actions .btn-small {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 12px;
 }
 
 body.shell-v2 .filter-hint {
@@ -830,6 +872,197 @@ body.shell-v2 #menuBtn::after {
   border-radius: 20px;
   background-color: var(--bg-surface);
   box-shadow: var(--shadow-float);
+}
+
+.colab-cards-grid {
+  align-items: stretch;
+}
+
+.colab-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.colab-card-heading {
+  align-items: flex-start;
+  padding-right: 28px;
+}
+
+.colab-card-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.colab-card-completeness {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  line-height: 1;
+}
+
+.colab-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.colab-card-actions button {
+  width: 100%;
+  min-height: 38px;
+  margin: 0;
+}
+
+.rs-score-trigger-card {
+  cursor: pointer;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
+}
+
+.rs-score-trigger-card:hover,
+.rs-score-trigger-card:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 12px 30px -22px var(--accent);
+  transform: translateY(-2px);
+}
+
+.rs-score-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  width: 100%;
+  min-height: 28px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline dotted transparent;
+  text-underline-offset: 3px;
+}
+
+.rs-score-trigger::after {
+  content: '↗';
+  font-size: 11px;
+  opacity: .55;
+}
+
+.rs-score-trigger:hover,
+.rs-score-trigger:focus-visible {
+  background-color: var(--vs-tint);
+  color: var(--accent);
+  text-decoration-color: currentColor;
+}
+
+.rs-score-overlay .rs-modal-box {
+  width: min(720px, calc(100vw - 32px));
+  max-width: 720px;
+  max-height: min(82vh, 760px);
+}
+
+.rs-score-overlay .rs-modal-header {
+  align-items: flex-start;
+}
+
+.rs-score-overlay .rs-modal-title {
+  font-size: 17px;
+}
+
+.rs-score-overlay .rs-modal-close {
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.rs-score-subtitle {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.rs-score-modal .rs-modal-body h4 {
+  margin: 18px 0 8px;
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.rs-score-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background-color: var(--bg-inset);
+}
+
+.rs-score-total span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.rs-score-total strong {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rs-score-table-wrap {
+  margin-top: 10px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.rs-score-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.rs-score-table :is(th, td) {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.rs-score-table th {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.rs-score-table td {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rs-score-table tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.rs-score-empty {
+  color: var(--text-muted);
+  text-align: center !important;
 }
 
 .tab-content.active {

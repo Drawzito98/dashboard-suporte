@@ -9,7 +9,7 @@ window.ChartTheme = {
   grid: () => ChartTheme.isDark() ? 'rgba(148,163,184,0.15)' : 'rgba(148,163,184,0.12)',
   gridStrong: () => ChartTheme.isDark() ? 'rgba(148,163,184,0.28)' : 'rgba(148,163,184,0.22)',
 
-  accent: () => ChartTheme.isDark() ? '#60a5fa' : '#2563eb',
+  accent: () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || (ChartTheme.isDark() ? '#60a5fa' : '#2563eb'),
   success: () => ChartTheme.isDark() ? '#34d399' : '#059669',
   warning: () => ChartTheme.isDark() ? '#fbbf24' : '#d97706',
   danger: () => ChartTheme.isDark() ? '#f87171' : '#dc2626',

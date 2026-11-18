@@ -209,14 +209,14 @@ function renderRelatorioSetorial() {
     { label: 'Assumidos', value: fmtNum(totalAss), sub: _deltaSpan(_calcDeltaPct(prevAss, totalAss)) },
     { label: 'Transferidos', value: fmtNum(totalTra), sub: _deltaSpan(_calcDeltaPct(prevTra, totalTra), true) },
     { label: 'Finalizados', value: fmtNum(totalFin), sub: _deltaSpan(_calcDeltaPct(prevFin, totalFin)) },
-    { label: 'Score médio', value: fmtScore(avgScore), sub: _deltaSpan(_calcDeltaPct(prevAvg, avgScore)) },
+    { label: 'Score médio', value: fmtScore(avgScore), sub: _deltaSpan(_calcDeltaPct(prevAvg, avgScore)), score: true },
     { label: 'Produtividade', value: fmtPct(prodGeral), sub: _deltaSpan(_calcDeltaPct(prevProd, prodGeral)) },
     { label: 'Taxa Transferência', value: fmtPct(traGeral), sub: _deltaSpan(_calcDeltaPct(prevTraG, traGeral), true) }
   ];
   if (hasTma) kpiCards.push({ label: 'TMA médio', value: _fmtDuration(tmaGeral), sub: '<span class="trend-neutral">Tempo médio de atendimento</span>' });
   if (hasTmr) kpiCards.push({ label: 'TMR médio', value: _fmtDuration(tmrGeral), sub: '<span class="trend-neutral">Tempo médio de resposta</span>' });
   html += `<div class="kpi-grid rs-summary-kpis">
-    ${kpiCards.map(c => `<div class="kpi"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
+    ${kpiCards.map(c => `<div class="kpi${c.score ? ' kpi-drill rs-score-trigger-card' : ''}"${c.score ? ' data-rs-score="all" role="button" tabindex="0" title="Ver scores por setor"' : ''}><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
   </div>`;
 
   // ── Top 3 Rankings ──
@@ -445,7 +445,7 @@ function renderRelatorioSetorial() {
         <td>${fmtNum(s.fin)}</td>
         <td>${fmtNum(s.ass)}</td>
         <td>${fmtNum(s.tra)}</td>
-        <td class="score-cell ${classeSc}">${fmtScore(s.scAvg)}</td>
+        <td class="score-cell ${classeSc}"><button type="button" class="rs-score-trigger" data-rs-score="setor" data-rs-score-setor="${escapeHtml(s.nome)}" aria-label="Ver scores individuais de ${escapeHtml(s.nome)}">${fmtScore(s.scAvg)}</button></td>
         <td>${fmtPct(s.prod)}</td>
         ${hasTma ? `<td>${s.tma !== null ? _fmtDuration(s.tma) : '\u2014'}</td>` : ''}
         ${hasTmr ? `<td>${s.tmr !== null ? _fmtDuration(s.tmr) : '\u2014'}</td>` : ''}
@@ -511,7 +511,7 @@ function renderRelatorioSetorial() {
             <td>${fmtNum(md.ass)}${dAss}</td>
             <td>${fmtNum(md.tra)}${dTra}</td>
             <td>${fmtNum(md.fin)}${dFin}</td>
-            <td class="score-cell ${cls}">${fmtScore(md.scAvg)}${dSc}</td>
+            <td class="score-cell ${cls}"><button type="button" class="rs-score-trigger" data-rs-score="setor" data-rs-score-setor="${escapeHtml(s)}" data-rs-score-mes="${escapeHtml(md.mes)}" aria-label="Ver scores individuais de ${escapeHtml(s)} em ${escapeHtml(md.mes)}">${fmtScore(md.scAvg)}${dSc}</button></td>
             <td>${fmtPct(md.prod)}${dProd}</td>
             ${hasTma ? `<td>${md.tma !== null ? _fmtDuration(md.tma) : '\u2014'}</td>` : ''}
             ${hasTmr ? `<td>${md.tmr !== null ? _fmtDuration(md.tmr) : '\u2014'}</td>` : ''}
@@ -819,7 +819,30 @@ function renderRelatorioSetorial() {
   const pdfBtn = document.getElementById('rsPdfBtn');
   if (pdfBtn) {
     pdfBtn.addEventListener('click', () => {
-      exportSetorPdf(setorMetrics, meses, { contextLabel: _rsContextLabel({ privateNames: false }), avgScore, prodGeral, traGeral, totalAtendentes, totalAss, totalFin, totalTra, hasPrev, prevLabel: prevRange.length ? prevRange[0] + (prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : '') : '', setorMetricsPrev: prevSetorMap, totalFinPrev: prevFin, totalAssPrev: prevAss, totalTraPrev: prevTra, avgScorePrev: prevAvg, prodGeralPrev: prevProd, traGeralPrev: prevTraG, hasTma, hasTmr, tmaGeral, tmrGeral });
+      exportSetorPdf(setorMetrics, meses, { contextLabel: _rsContextLabel({ privateNames: false }), avgScore, prodGeral, traGeral, totalAtendentes, totalAss, totalTra, totalFin, hasPrev, prevLabel: prevRange.length ? prevRange[0] + (prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : '') : '', setorMetricsPrev: prevSetorMap, totalFinPrev: prevFin, totalAssPrev: prevAss, totalTraPrev: prevTra, avgScorePrev: prevAvg, prodGeralPrev: prevProd, traGeralPrev: prevTraG, hasTma, hasTmr, tmaGeral, tmrGeral });
+    });
+  }
+
+  container.__rsScoreData = { rows, bySetor, setores, meses, fmtScore };
+  if (!container.dataset.rsScoreBound) {
+    container.dataset.rsScoreBound = '1';
+    container.addEventListener('click', event => {
+      const trigger = event.target.closest('[data-rs-score]');
+      if (!trigger || !container.contains(trigger)) return;
+      const source = container.__rsScoreData;
+      if (!source) return;
+      _rsShowScoreBreakdown(source, {
+        all: trigger.dataset.rsScore === 'all',
+        setor: trigger.dataset.rsScoreSetor || '',
+        mes: trigger.dataset.rsScoreMes || ''
+      });
+    });
+    container.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const trigger = event.target.closest('[data-rs-score]');
+      if (!trigger || !container.contains(trigger)) return;
+      event.preventDefault();
+      trigger.click();
     });
   }
 }
@@ -847,6 +870,81 @@ function _showModalAtendentes(nomes) {
   box.querySelector('button').addEventListener('click', () => overlay.remove());
   overlay.appendChild(box);
   document.body.appendChild(overlay);
+}
+
+function _rsShowScoreBreakdown(source, options) {
+  document.querySelector('.rs-score-overlay')?.remove();
+  const previousFocus = document.activeElement;
+  const numeric = row => {
+    const value = row && row['SCORE'];
+    if (value === null || value === undefined || value === '' || isNaN(Number(value))) return null;
+    return Number(value);
+  };
+  const fmt = source.fmtScore;
+  const table = (headers, body) => `<div class="rs-score-table-wrap"><table class="rs-score-table"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body || `<tr><td colspan="${headers.length}" class="rs-score-empty">Sem scores válidos neste recorte.</td></tr>`}</tbody></table></div>`;
+  let title, subtitle, content;
+
+  if (options.all) {
+    const sectors = source.setores.map(name => {
+      const values = (source.bySetor[name] || []).map(numeric).filter(v => v !== null);
+      return { name, count: values.length, value: values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0 };
+    });
+    const values = sectors.filter(s => s.value > 0).map(s => s.value);
+    const total = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+    title = 'Scores por setor';
+    subtitle = `Média simples de ${values.length} setor(es) com score: ${fmt(total)}`;
+    content = `<div class="rs-score-total"><span>Média geral</span><strong>${fmt(total)}</strong></div>` + table(
+      ['Setor', 'Avaliações', 'Score do setor'],
+      sectors.map(s => `<tr><td>${escapeHtml(s.name)}</td><td>${s.count}</td><td><strong>${fmt(s.value)}</strong></td></tr>`).join('')
+    );
+  } else {
+    const setor = options.setor;
+    const mes = options.mes;
+    let recs = source.bySetor[setor] || [];
+    if (mes) recs = recs.filter(row => String(row['Mês'] || '') === mes);
+    const entries = recs.map(row => ({
+      nome: String(row['Atendente'] || '').trim() || '(sem atendente)',
+      mes: String(row['Mês'] || '').trim() || '—',
+      score: numeric(row)
+    })).filter(entry => entry.score !== null);
+    const total = entries.length ? entries.reduce((sum, entry) => sum + entry.score, 0) / entries.length : 0;
+    const byPerson = new Map();
+    entries.forEach(entry => {
+      if (!byPerson.has(entry.nome)) byPerson.set(entry.nome, []);
+      byPerson.get(entry.nome).push(entry.score);
+    });
+    const people = [...byPerson.entries()].map(([nome, scores]) => ({
+      nome,
+      count: scores.length,
+      value: scores.reduce((a, b) => a + b, 0) / scores.length
+    })).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    title = mes ? `Scores de ${setor} · ${mes}` : `Scores individuais · ${setor}`;
+    subtitle = `Média de ${entries.length} avaliação(ões): ${fmt(total)}`;
+    content = `<div class="rs-score-total"><span>Score do setor</span><strong>${fmt(total)}</strong></div>` +
+      `<h4 class="rs-score-subtitle">Média por pessoa</h4>` + table(
+        ['Colaborador', 'Avaliações', 'Média'],
+        people.map(person => `<tr><td>${escapeHtml(person.nome)}</td><td>${person.count}</td><td><strong>${fmt(person.value)}</strong></td></tr>`).join('')
+      ) +
+      `<h4 class="rs-score-subtitle">Avaliações consideradas</h4>` + table(
+        ['Colaborador', 'Mês', 'Score'],
+        entries.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR') || a.mes.localeCompare(b.mes)).map(entry => `<tr><td>${escapeHtml(entry.nome)}</td><td>${escapeHtml(entry.mes)}</td><td><strong>${fmt(entry.score)}</strong></td></tr>`).join('')
+      );
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'rs-modal-overlay rs-score-overlay';
+  overlay.innerHTML = `<div class="rs-modal-box rs-score-modal" role="dialog" aria-modal="true" aria-labelledby="rsScoreTitle">
+    <div class="rs-modal-header">
+      <div><h3 class="rs-modal-title" id="rsScoreTitle">${escapeHtml(title)}</h3><p class="rs-score-subtitle">${escapeHtml(subtitle)}</p></div>
+      <button type="button" class="rs-modal-close" data-close aria-label="Fechar">×</button>
+    </div>
+    <div class="rs-modal-body">${content}</div>
+  </div>`;
+  const close = () => { overlay.remove(); previousFocus?.focus?.(); };
+  overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+  overlay.querySelector('.rs-modal-close').addEventListener('click', close);
+  document.body.appendChild(overlay);
+  overlay.querySelector('.rs-modal-close').focus();
 }
 
 function onRelatorioSetorialTabActivated() {

@@ -2,7 +2,7 @@
 
 App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer), gamificação, relatórios inteligentes, e deploy no Vercel.
 
-**Versão atual:** `1.41.0` (constante `APP_VERSION` em `static/app.js`)
+**Versão atual:** `1.42.0` (constante `APP_VERSION` em `static/app.js`)
 
 ## Diagnóstico gerencial
 
