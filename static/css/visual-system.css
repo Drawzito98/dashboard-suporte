@@ -1248,3 +1248,102 @@ body.shell-v2 #menuBtn::after {
     transition: none !important;
   }
 }
+
+@media (min-width: 901px) {
+  body.shell-v2 :is(.btn-small, .btn-secondary) {
+    min-height: 36px;
+    padding: 7px 11px;
+    border-radius: var(--control-radius);
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  body.shell-v2 .topbar-right {
+    gap: 6px;
+  }
+
+  body.shell-v2 .topbar-right :is(.sync-status, .accent-quick, .current-user, .notif-btn, .theme-toggle, #logoutBtn, .seg-toggles) {
+    min-height: 34px;
+    height: 34px;
+    border-radius: var(--control-radius);
+    font-size: 12px;
+  }
+
+  body.shell-v2 .topbar-right .sync-status {
+    padding: 0 10px;
+  }
+
+  body.shell-v2 .topbar-right .accent-quick {
+    padding: 0 8px;
+    border-radius: var(--control-radius);
+  }
+
+  body.shell-v2 .topbar-right .current-user {
+    padding: 0 9px 0 5px;
+    max-width: 190px;
+  }
+
+  body.shell-v2 .topbar-right :is(.notif-btn, .theme-toggle, #logoutBtn) {
+    padding: 0 9px;
+    gap: 6px;
+  }
+
+  body.shell-v2 .topbar-right :is(.notif-btn, .theme-toggle, #logoutBtn) svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  body.shell-v2 .topbar-right .seg-toggles {
+    padding: 3px;
+  }
+
+  body.shell-v2 .topbar-right .presentation-toggle {
+    min-height: 26px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  body.shell-v2 .user-dropdown,
+  body.shell-v2 .notif-panel {
+    border-radius: var(--control-radius);
+    animation: none;
+    box-shadow: var(--shadow-sm);
+  }
+
+  body.shell-v2 .user-dropdown {
+    min-width: 190px;
+  }
+
+  body.shell-v2 .user-dropdown-header {
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+
+  body.shell-v2 .user-dropdown-item {
+    min-height: 34px;
+    padding: 6px 10px;
+    gap: 7px;
+    font-size: 12px;
+  }
+
+  body.shell-v2 .user-dropdown-preferences {
+    margin-top: 3px;
+    padding-top: 3px;
+  }
+
+  body.shell-v2 .notif-panel-header {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  body.shell-v2 .notif-item {
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+
+  body.shell-v2 #toolsDialog .sidebar :is(.btn-small, .btn-primary) {
+    min-height: 36px;
+    font-size: 12px;
+  }
+}

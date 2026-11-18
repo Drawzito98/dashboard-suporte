@@ -91,3 +91,7 @@ O seletor passou a ficar diretamente na barra superior, com ícone na cor ativa 
 ## Ajuste 1.44.1 — Nome da cor sem corte
 
 Largura do seletor ampliada para acomodar "Padrão", "Violeta", "Azul" e "Âmbar" inclusive com a seta nativa; em telas estreitas o rótulo "Cor" continua oculto, mas o campo mantém largura mínima. Assets versionados em `?v=1396`; fixture `workspace-ux.browser.html` verifica a largura mínima no fluxo geral e no modo `?ranking=1`.
+
+## Ajuste 1.44.2 — Chrome mais enxuto
+
+Controles do topbar alinhados em 34px no desktop, com ícones de 14px, cantos em `--control-radius` e respiro menor. `.btn-small`/`.btn-secondary` ficam em 36px somente acima de 900px; menus de usuário e notificações perdem padding, animação elástica e sombra pesada. Alvos de toque de 44px e layout mobile permanecem intactos. Assets versionados em `?v=1402`; fixture `shell.browser.html` verifica altura uniforme, compacidade e ausência de overflow.
