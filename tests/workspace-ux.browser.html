@@ -19,12 +19,22 @@
   const evaluationsMode=new URLSearchParams(parent.location.search).has('evaluations');
   const savesMode=new URLSearchParams(parent.location.search).has('saves');
   const cockpitMode=new URLSearchParams(parent.location.search).has('cockpit');
+  const rankingMode=new URLSearchParams(parent.location.search).has('ranking');
   if(cockpitMode){const NativeDate=Date;class TestDate extends NativeDate{constructor(...args){super(...(args.length?args:[new NativeDate(2026,9,28,12).getTime()]))}};window.Date=TestDate;}
   window.__uxWrites=[];window.__uxReads=[];
   const user={id:'ux-local-test',email:'teste@local.invalid',app_metadata:{role:'admin'},user_metadata:{name:'Gestão de teste'}};
   const people=Array.from({length:12},(_,i)=>({nome:`Pessoa de teste ${i+1} com nome extenso para revisão de interface`,setor_atual:i<6?'Financeiro':'Estoque e OS',nivel:i%2?'N1':'N2',user_id:user.id,id:'person-'+i,observacoes:'Contexto de acompanhamento. '.repeat(25)}));
   const records=people.flatMap((p,i)=>Array.from({length:6},(_,m)=>({id:i*6+m+1,user_id:user.id,Atendente:p.nome,Setor:p.setor_atual,'Mês':`2026-0${m+4}`,Assumidos:150+i,Finalizados:120+i,Transferidos:15,Score:4.8,Total:12,TMA:'00:20:00',TMR:'00:02:00'})));
   const tables={registros:records,colaboradores_info:people,anotacoes_diarias:[],feedbacks:[],avaliacoes:[],tarefas:[],ferias:[],ausencias:[]};
+  if(rankingMode){
+   const prefix='atividade-colaborador:v1:';
+   const note=(id,mes,colaborador,tipo,descricao)=>({id,user_id:user.id,data:mes+'-01',conteudo:prefix+JSON.stringify({colaborador,tipo,descricao})});
+   tables.anotacoes_diarias=[
+    note('rank-1','2026-09',people[0].nome,'positivo','Conduziu fechamento crítico'),
+    note('rank-2','2026-09',people[0].nome,'atencao','Atraso em duas entregas'),
+    note('rank-3','2026-08',people[1].nome,'positivo','Apoiou o time em auditoria')
+   ];
+  }
   if(cockpitMode){
     records.find(r=>r.Atendente===people[0].nome&&r['Mês']==='2026-07').Score=4.9;
     records.find(r=>r.Atendente===people[0].nome&&r['Mês']==='2026-08').Score=4.6;
@@ -343,7 +353,43 @@
   }
   document.getElementById('testResult').textContent='PASS: Home com volume/cobertura, zero/ausência, agenda confirmada, seções expansíveis, cockpit, mês fechado/parcial, ausência de nota, evidências, perfil exato, tarefa focada, filtros, cache, vazio e atualização sem escrita';return;
  }
- for(const name of ['home','dashboard','relatorio-setorial','saude-operacional','metas','tarefas','regras','ponto','colaboradores','lider','insights','avaliacao','perfil-pdi','mapeamento-time']){
+  if(new URLSearchParams(location.search).has('ranking')){
+   const first='Pessoa de teste 1 com nome extenso para revisão de interface',second='Pessoa de teste 2 com nome extenso para revisão de interface';
+   await tab('lider');
+   const panel=()=>d().querySelector('.lider-recognition-panel');
+   await wait(()=>panel()&&panel().querySelectorAll('tbody tr').length===12,'Ranking de destaques');
+   assert(panel().textContent.includes('Privado · admin'),'Selo privado do ranking');
+   const rowFor=name=>[...panel().querySelectorAll('tbody tr')].find(tr=>tr.querySelector('[data-lider-recon-note]')?.dataset.liderReconNote===name);
+   const reasonFor=name=>rowFor(name)?.querySelector('.lider-recon-reason')?.textContent||'';
+   assert(reasonFor(first).includes('Conduziu fechamento crítico')&&reasonFor(first).includes('Atraso em duas entregas'),'Motivos positivos e de atenção na mesma linha');
+   assert(d().getElementById('liderReconMonth').value==='all','Recorte padrão todos os meses');
+   d().getElementById('liderReconMonth').value='2026-08';
+   d().getElementById('liderReconMonth').dispatchEvent(new(win().Event)('change',{bubbles:true}));
+   await wait(()=>reasonFor(second).includes('Apoiou o time em auditoria'),'Filtro por mês');
+   assert(!reasonFor(first).includes('Conduziu fechamento crítico'),'Mês filtra motivos');
+   d().getElementById('liderReconMonth').value='all';
+   d().getElementById('liderReconMonth').dispatchEvent(new(win().Event)('change',{bubbles:true}));
+   d().querySelector('[data-lider-sort="name"]').click();
+   await wait(()=>panel().querySelector('[data-lider-sort="name"]').closest('th').getAttribute('aria-sort')==='ascending','Ordenação por nome');
+   const names=()=>[...panel().querySelectorAll('[data-lider-recon-note]')].map(btn=>btn.dataset.liderReconNote);
+   assert(names()[0]===first,'Ordenação ascendente por nome');
+   d().querySelector('[data-lider-sort="positives"]').click();
+   await wait(()=>panel().querySelector('[data-lider-sort="positives"]').closest('th').getAttribute('aria-sort')==='descending','Ordenação por destaques');
+   const counts=()=>[...panel().querySelectorAll('.lider-recon-positive')].map(span=>Number(span.textContent));
+   const ordenados=counts();assert(ordenados[0]===1&&ordenados.every((value,index)=>!index||ordenados[index-1]>=value),'Destaques descendente');
+   const noteBtn=rowFor(first).querySelector('[data-lider-recon-note]');
+   assert(noteBtn.dataset.liderReconMonth==='2026-09','Mês do registro Direcionado');
+   noteBtn.click();
+   await wait(()=>d().getElementById('atividadesMesOverlay')?.classList.contains('open')&&d().getElementById('atividadePessoa')?.value===first,'Editor aberto na pessoa exata');
+   assert(d().getElementById('atividadeMes').value==='2026-09','Editor abre no mês do destaque');
+   d().querySelector('#atividadesMesOverlay .colab-detail-close').click();
+   d().body.dataset.role='viewer';win().renderPainelLider();assert(!panel(),'Ranking oculto para viewer');
+   d().body.dataset.role='admin';win().renderPainelLider();assert(panel(),'Ranking disponível para admin');
+   assert(d().documentElement.scrollWidth<=frame.clientWidth,'Ranking sem overflow horizontal');
+   assert(win().__uxWrites.length===0,'Ranking não grava dados');assert(win().__uxErrors.length===0,'Sem erros: '+win().__uxErrors.join(';'));
+   document.getElementById('testResult').textContent='PASS: ranking privado do admin, motivos por mês, ordenação, direcionamento da anotação e ocultação para viewer; somente leitura';return;
+  }
+  for(const name of ['home','dashboard','relatorio-setorial','saude-operacional','metas','tarefas','regras','ponto','colaboradores','lider','insights','avaliacao','perfil-pdi','mapeamento-time']){
   await tab(name);if(name==='relatorio-setorial'){assert(!d().getElementById('panoramaSuporteRoot'),'Panorama fora da tela setorial');assert(!d().querySelector('script[src*="panorama-suporte"],link[href*="panorama-suporte"]'),'Relatório não carrega recursos do Panorama');}assert(d().documentElement.scrollWidth<=frame.clientWidth,'Overflow global: '+name);assert(bounds(d().getElementById('appPageTitle')),'Título dentro do cabeçalho: '+name);
  }
  await tab('relatorio-setorial');

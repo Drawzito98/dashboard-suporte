@@ -2,7 +2,7 @@
 // Inactive colabs/setores → static/inactive-state.js
 // Colab fotos/avatar → static/colab-fotos.js
 
-const APP_VERSION = '1.42.0';
+const APP_VERSION = '1.43.0';
 
 // Foto do colaborador → static/colab-fotos.js
 
@@ -2077,7 +2077,8 @@ if (!rawRecords || !rawRecords.length) {
   const refreshLiderBtn = document.getElementById('refreshLiderBtn');
   if (refreshLiderBtn) {
     refreshLiderBtn.addEventListener('click', () => {
-      if (typeof renderPainelLider === 'function') renderPainelLider();
+      if (typeof onLiderTabActivated === 'function') onLiderTabActivated();
+      else if (typeof renderPainelLider === 'function') renderPainelLider();
       showToast('Painel do líder atualizado!', 'success');
     });
   }

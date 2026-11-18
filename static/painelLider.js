@@ -4,6 +4,89 @@ function _liderData() {
   return typeof getDataFiltered === 'function' ? getDataFiltered() : (typeof globalFilters !== 'undefined' && globalFilters ? globalFilters.aplicar(rawRecords) : (rawRecords || []));
 }
 
+const _liderRecon = { field: 'avgSc', dir: 'desc', month: 'all', loaded: false, loading: false };
+
+function _liderIsAdmin() {
+  return typeof isAdmin === 'function' && isAdmin();
+}
+
+function _liderReconRecords() {
+  if (!_liderIsAdmin() || typeof AtividadesMes === 'undefined' || !AtividadesMes.items) return [];
+  return AtividadesMes.items() || [];
+}
+
+async function loadLiderRecognition(force = false) {
+  if (!_liderIsAdmin() || typeof AtividadesMes === 'undefined' || typeof AtividadesMes.load !== 'function') return false;
+  if (_liderRecon.loading || (_liderRecon.loaded && !force)) return false;
+  _liderRecon.loading = true;
+  try {
+    await AtividadesMes.load();
+    _liderRecon.loaded = true;
+    return true;
+  } catch (error) {
+    console.warn('Não foi possível carregar as atividades do mês para o ranking.', error);
+    return false;
+  } finally {
+    _liderRecon.loading = false;
+  }
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('atividades-mes-changed', async () => {
+    _liderRecon.loaded = false;
+    if (document.body?.dataset.activeTab === 'lider') {
+      await loadLiderRecognition(true);
+      renderPainelLider();
+    }
+  });
+}
+
+function _liderReconCompare(a, b) {
+  const primary = _liderRecon.field === 'name'
+    ? a.display.localeCompare(b.display, 'pt-BR')
+    : Number(a[_liderRecon.field] || 0) - Number(b[_liderRecon.field] || 0);
+  const tie = b.avgSc - a.avgSc || b.fin - a.fin || a.display.localeCompare(b.display, 'pt-BR');
+  return (_liderRecon.dir === 'asc' ? primary : -primary) || tie;
+}
+
+function _liderReconHeader(label, field) {
+  const active = _liderRecon.field === field;
+  const sort = active ? (_liderRecon.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+  const arrow = active ? (_liderRecon.dir === 'asc' ? ' ▲' : ' ▼') : '';
+  return `<th scope="col" aria-sort="${sort}"><button type="button" class="btn-small lider-recon-sort" data-lider-sort="${field}">${escapeHtml(label)}${arrow}</button></th>`;
+}
+
+function _liderReconModel(colaboradores, byColab, aliasMap) {
+  const records = _liderReconRecords();
+  const months = [...new Set(records.map(item => item.mes).filter(Boolean))].sort().reverse();
+  if (_liderRecon.month !== 'all' && !months.includes(_liderRecon.month)) _liderRecon.month = 'all';
+  const scoped = _liderRecon.month === 'all' ? records : records.filter(item => item.mes === _liderRecon.month);
+  const monthValue = _liderRecon.month === 'all' ? (months[0] || new Date().toISOString().slice(0, 7)) : _liderRecon.month;
+  const entries = colaboradores.map(name => {
+    const items = scoped.filter(item => item.colaborador === name);
+    const positives = items.filter(item => item.tipo === 'positivo');
+    const attentions = items.filter(item => item.tipo === 'atencao');
+    const latest = list => list.slice().sort((a, b) => String(b.mes).localeCompare(String(a.mes)))[0];
+    const reasons = [];
+    const positive = latest(positives);
+    const attention = latest(attentions);
+    if (positive) reasons.push(`🟢 ${positive.mes}: ${positive.descricao}`);
+    if (attention) reasons.push(`🔴 ${attention.mes}: ${attention.descricao}`);
+    const metrics = byColab[name] || { fin: 0, avgSc: 0, prod: 0 };
+    return {
+      name,
+      display: getDisplayName(name, aliasMap),
+      fin: metrics.fin,
+      avgSc: metrics.avgSc,
+      prod: metrics.prod,
+      positives: positives.length,
+      attentions: attentions.length,
+      reason: reasons.join(' · ') || 'Sem registro privado neste recorte.'
+    };
+  }).sort(_liderReconCompare);
+  return { months, entries, monthValue };
+}
+
 function renderPainelLider() {
   const container = document.getElementById('painelLiderContent');
   if (!container) return;
@@ -146,6 +229,33 @@ function renderPainelLider() {
   </div>`;
 
   html += `</div>`;
+
+  if (_liderIsAdmin()) {
+    const recon = _liderReconModel(colaboradores, byColab, aliasMap);
+    html += `<section class="lider-recognition-panel" aria-labelledby="liderRecognitionTitle">
+      <div class="lider-recognition-head">
+        <div>
+          <h3 id="liderRecognitionTitle">Ranking de destaques <span class="lider-private-badge" title="Registros privados da sua conta administrador">Privado · admin</span></h3>
+          <p>Motivos e anotações vêm das Atividades do mês da sua conta. Ordene por qualquer coluna.</p>
+        </div>
+        <label class="lider-recognition-month"><span>Mês dos registros</span><select id="liderReconMonth" aria-label="Mês dos registros de destaque"><option value="all"${_liderRecon.month === 'all' ? ' selected' : ''}>Todos os meses</option>${recon.months.map(month => `<option value="${escapeHtml(month)}"${_liderRecon.month === month ? ' selected' : ''}>${escapeHtml(month)}</option>`).join('')}</select></label>
+      </div>
+      <div class="table-wrap" data-scroll-label="Ranking de destaques privado"><table class="ranking-table lider-recognition-table">
+        <thead><tr><th scope="col">#</th>${_liderReconHeader('Colaborador', 'name')}${_liderReconHeader('Finalizados', 'fin')}${_liderReconHeader('Score', 'avgSc')}${_liderReconHeader('Produtividade', 'prod')}${_liderReconHeader('Destaques', 'positives')}${_liderReconHeader('Atenção', 'attentions')}<th scope="col">Motivo registrado</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
+        <tbody>${recon.entries.map((entry, index) => `<tr>
+          <td class="lider-recon-rank">${index + 1}</td>
+          <td><strong>${escapeHtml(entry.display)}</strong>${condutaBadge(entry.name)}</td>
+          <td>${entry.fin.toLocaleString('pt-BR')}</td>
+          <td class="score-cell ${entry.avgSc > 0 ? getClasseScore(entry.avgSc) : 'score-neutro'}">${entry.avgSc > 0 ? entry.avgSc.toFixed(2) : '—'}</td>
+          <td>${(entry.prod * 100).toFixed(0)}%</td>
+          <td><span class="lider-recon-count lider-recon-positive">${entry.positives}</span></td>
+          <td><span class="lider-recon-count ${entry.attentions ? 'lider-recon-attention' : ''}">${entry.attentions}</span></td>
+          <td class="lider-recon-reason" title="${escapeHtml(entry.reason)}">${escapeHtml(entry.reason)}</td>
+          <td><button type="button" class="btn-small lider-recon-note" data-lider-recon-note="${escapeHtml(entry.name)}" data-lider-recon-month="${escapeHtml(recon.monthValue)}" aria-label="Anotar destaque de ${escapeHtml(entry.display)}">✎ Anotar</button></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </section>`;
+  }
 
   // Pontos de atenção (deduplicados)
   const seen = new Set();
@@ -296,8 +406,30 @@ function renderPainelLider() {
       }
     });
   });
+
+  container.querySelector('#liderReconMonth')?.addEventListener('change', event => {
+    _liderRecon.month = event.target.value;
+    renderPainelLider();
+  });
+  container.querySelectorAll('[data-lider-sort]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const field = btn.dataset.liderSort;
+      if (_liderRecon.field === field) _liderRecon.dir = _liderRecon.dir === 'asc' ? 'desc' : 'asc';
+      else { _liderRecon.field = field; _liderRecon.dir = field === 'name' ? 'asc' : 'desc'; }
+      renderPainelLider();
+      container.querySelector(`[data-lider-sort="${field}"]`)?.focus();
+    });
+  });
+  container.querySelectorAll('[data-lider-recon-note]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (typeof AtividadesMes !== 'undefined' && typeof AtividadesMes.openPerson === 'function') {
+        AtividadesMes.openPerson(btn.dataset.liderReconNote, btn.dataset.liderReconMonth);
+      }
+    });
+  });
 }
 
-function onLiderTabActivated() {
+async function onLiderTabActivated() {
   renderPainelLider();
+  if (await loadLiderRecognition() && document.body?.dataset.activeTab === 'lider') renderPainelLider();
 }
