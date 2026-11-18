@@ -159,9 +159,9 @@ main.app { max-width: 1440px; margin: 0 auto; padding: var(--s-5) var(--s-6) var
 .sync-status.is-offline .sync-status-dot { background: var(--text-muted); box-shadow: none; }
 .sync-status:disabled { cursor: wait; opacity: .7; }
 body[data-role="colaborador"] .sync-status { display: none; }
-.accent-quick { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-surface); color: var(--text-secondary); font-size: var(--font-caption); font-weight: 700; white-space: nowrap; cursor: pointer; }
+.accent-quick { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; max-width: 100%; padding: 4px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-surface); color: var(--text-secondary); font-size: var(--font-caption); font-weight: 700; white-space: nowrap; cursor: pointer; }
 .accent-quick svg { color: var(--accent); flex: none; }
-.accent-quick select { width: 70px; padding: 0; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: inherit; cursor: pointer; }
+.accent-quick select { box-sizing: border-box; width: 96px; min-width: 96px; padding: 0 0 0 2px; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: inherit; cursor: pointer; }
 .accent-quick:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .current-user { overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 
@@ -3339,7 +3339,7 @@ body[data-role="viewer"] .cell-edit[contenteditable="true"] {
   .topbar-right .theme-toggle { width: 36px; justify-content: center; padding: 5px; }
   .accent-quick { gap: 4px; padding-inline: 7px; }
   .accent-quick > span { display: none; }
-  .accent-quick select { width: 66px; }
+  .accent-quick select { width: 92px; min-width: 92px; }
 
   /* ── Botão hambúrguer ── */
   .menu-btn { display: inline-flex; }

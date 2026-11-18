@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.44.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.44.1. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -214,3 +214,7 @@ Leia docs/carregamento-inicial.md. export-tools.js tem catálogo fechado das mes
 ## Continuação 1.44.0 — Preferência de acesso
 
 A cor de destaque agora fica na barra superior (`.accent-quick`/`.accent-select`); o item `#accentMenuItem` do menu do usuário apenas foca/exibe o controle. Preserve seletor visível em desktop/mobile, chave `sistema_accent_v1`, `data-accent`, `theme-color` e tokens por tema. Rode npm test, release:check e fixtures workspace/shell/design-system em desktop/celular. Preferência registrada do usuário: ao finalizar alterações pedidas aqui, commitar e publicar sem pedir nova confirmação, mantendo proibições de migrations/testes de escrita em produção e sem encadear push com deploy.
+
+## Continuação 1.44.1 — Seletor sem corte
+
+Mantenha `.accent-quick select` com largura mínima suficiente para o nome da cor e a seta nativa, inclusive abaixo de 900px quando o rótulo "Cor" fica oculto. Não reduzir essa largura para ganhar espaço no topbar; se faltar largura, o próprio topbar deve quebrar linha. Rode release:check e workspace-ux (`?ranking=1` e geral), shell e design-system em desktop/celular.
