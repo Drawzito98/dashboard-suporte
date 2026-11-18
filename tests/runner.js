@@ -52,10 +52,9 @@ assert.ok = (val, msg) => {
 
 // Load test files
 const testDir = path.join(__dirname);
-const files = fs.readdirSync(testDir).filter(f => f.endsWith('.test.js'));
+const files = fs.readdirSync(testDir).filter(f => f.endsWith('.test.js')).sort();
 
 for (const file of files) {
-  const mod = { exports: {} };
   const fn = require(path.join(testDir, file));
   if (typeof fn === 'function') fn({ describe, it, assert });
 }

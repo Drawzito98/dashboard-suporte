@@ -3,8 +3,9 @@ const METAS_STORAGE_KEY = 'sistema_metas_v1';
 let goals = [];
 
 function loadMetas() {
+  const token = typeof AppDataSession !== 'undefined' ? AppDataSession.token() : null;
   try {
-    const raw = localStorage.getItem(METAS_STORAGE_KEY);
+    const raw = appStorage.getItem(METAS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) { goals = parsed; return; }
@@ -13,33 +14,22 @@ function loadMetas() {
   goals = [];
   if (typeof dbMetasLoad === 'function') {
     dbMetasLoad().then(loaded => {
-      if (loaded && Array.isArray(loaded)) {
+      if ((!token || AppDataSession.current(token)) && loaded && Array.isArray(loaded)) {
         goals = loaded;
-        saveMetas();
-        if (document.querySelector('#tab-gamificacao.active')) renderMetas();
+        // dbMetasLoad already refreshed the cache; reads must never rewrite server goals.
+        if (document.querySelector('#tab-metas.active, #tab-gamificacao.active')) renderMetas();
       }
     }).catch(() => {});
   }
 }
 
-function saveMetas() {
-  try { localStorage.setItem(METAS_STORAGE_KEY, JSON.stringify(goals)); } catch (e) { console.warn('[Metas] Erro ao salvar metas:', e); }
-  if (typeof dbMetasSave === 'function') {
-    dbMetasSave(goals);
-  }
-}
-
-function addMeta(meta) {
-  meta.id = 'meta_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-  meta.createdAt = new Date().toISOString();
-  goals.push(meta);
-  saveMetas();
-  renderMetas();
-}
-
-function removeMeta(id) {
+let metasSaving = false;
+async function removeMeta(id) {
+  const token = AppDataSession.token();
+  const result = await dbMetasDelete(id);
+  if (!AppDataSession.current(token)) throw new Error('Sessão alterada.');
+  if (result?.status !== 'confirmed') throw new Error('Exclusão da meta não confirmada.');
   goals = goals.filter(g => g.id !== id);
-  saveMetas();
   renderMetas();
 }
 
@@ -94,19 +84,18 @@ function renderMetas() {
   if (!container) return;
   const data = _gfData();
 
-  if (!data || !data.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado carregado</div><div class="empty-sub">Importe um CSV para definir metas.</div></div>';
-    return;
-  }
+  const hasData = Boolean(data?.length);
+  const canManage = document.body.dataset.role === 'admin';
 
-  const setores = [...new Set((data || []).filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
-  const cols = [...new Set((data || []).filter(r => r && r['Atendente']).map(r => r['Atendente']))].sort();
-  const meses = [...new Set((data || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
+  const catalog = typeof rawRecords !== 'undefined' ? rawRecords : (data || []);
+  const setores = [...new Set((catalog || []).filter(r => r && r['Setor']).map(r => r['Setor']))].sort();
+  const cols = [...new Set((catalog || []).filter(r => r && r['Atendente']).map(r => r['Atendente']))].sort();
+  const meses = [...new Set((catalog || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
 
-  let html = '<div class="metas-header"><span style="color:var(--text-secondary);font-size:13px">' + goals.length + ' meta' + (goals.length !== 1 ? 's' : '') + ' cadastrada' + (goals.length !== 1 ? 's' : '') + '</span></div>';
+  let html = (!hasData ? '<p class="text-muted">Sem indicadores neste recorte. As metas cadastradas continuam disponíveis; o progresso será calculado quando houver dados.</p>' : '') + '<div class="metas-header"><span style="color:var(--text-secondary);font-size:13px">' + goals.length + ' meta' + (goals.length !== 1 ? 's' : '') + ' cadastrada' + (goals.length !== 1 ? 's' : '') + '</span>' + (canManage ? '<button class="btn-small" id="newMetaBtn" type="button">Nova meta</button>' : '') + '</div>';
 
   if (goals.length === 0) {
-    html += '<div class="empty-state"><div class="empty-title">Nenhuma meta cadastrada</div><div class="empty-sub">Clique em "+ Nova Meta" para começar.</div></div>';
+    html += '<div class="empty-state"><div class="empty-title">Nenhuma meta cadastrada</div><div class="empty-sub">' + (canManage ? 'Defina um objetivo no formulário abaixo.' : 'As metas cadastradas por esta conta aparecerão aqui.') + '</div></div>';
   } else {
     goals.forEach(meta => {
       const progress = getMetaProgress(meta);
@@ -124,7 +113,8 @@ function renderMetas() {
           </div>
           <span class="meta-badge ${meta.type}">${typeLabel}</span>
         </div>
-        <div class="meta-progress">
+        ${!hasData ? '<p class="text-muted">Sem dados para calcular o progresso neste recorte.</p>' : ''}
+        <div class="meta-progress" ${!hasData ? 'hidden style="display:none"' : ''}>
           <div class="meta-progress-bar">
             <div class="meta-progress-fill ${progClass}" style="width:${Math.min(100, progress)}%"></div>
           </div>
@@ -134,10 +124,15 @@ function renderMetas() {
           </div>
         </div>
         <div class="meta-actions">
-          <button class="btn-small btn-delete remove-meta-btn" data-id="${escapeHtml(meta.id)}" type="button">Excluir</button>
+          ${canManage ? `<button class="btn-small btn-delete remove-meta-btn" data-id="${escapeHtml(meta.id)}" type="button">Excluir</button>` : ''}
         </div>
       </div>`;
     });
+  }
+
+  if (!canManage) {
+    container.innerHTML = html + '<p class="text-muted">A criação e exclusão de metas são realizadas por administradores.</p>';
+    return;
   }
 
 function suggestAutoMeta() {
@@ -242,25 +237,52 @@ function suggestAutoMeta() {
     </div>
     <div style="display:flex;gap:var(--s-3);margin-top:var(--s-3)">
       <button class="btn-primary" id="saveMetaBtn" type="button" style="flex:1">Salvar Meta</button>
-      <button class="btn-small" id="suggestMetaBtn" type="button">💡 Sugerir automático</button>
+      <button class="btn-small" id="suggestMetaBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-insight"></use></svg> Sugerir automático</button>
     </div>
   </div>`;
 
   container.innerHTML = html;
+  try {
+    const draft = JSON.parse(appStorage.getItem('sistema_meta_rascunho_v1') || 'null');
+    if (draft) for (const [field, id] of Object.entries({ title:'metaTitleInput', type:'metaTypeSelect', metric:'metaMetricSelect', target:'metaTargetInput', setor:'metaSetorSelect', collaborator:'metaColabSelect', period:'metaPeriodSelect' })) {
+      const input = document.getElementById(id); if (input) input.value = draft[field] ?? '';
+    }
+  } catch (_) {}
+
+
+  document.getElementById('newMetaBtn')?.addEventListener('click', () => {
+    const input = document.getElementById('metaTitleInput');
+    input?.focus(); input?.scrollIntoView({ block: 'center' });
+  });
+
+  // Trocar o recorte não deve apagar o formulário ainda não enviado.
+  const fields = { title:'metaTitleInput', type:'metaTypeSelect', metric:'metaMetricSelect', target:'metaTargetInput', setor:'metaSetorSelect', collaborator:'metaColabSelect', period:'metaPeriodSelect' };
+  const preserveDraft = () => {
+    try {
+      const prior = JSON.parse(appStorage.getItem('sistema_meta_rascunho_v1') || 'null');
+      const draft = { id: prior?.id || crypto.randomUUID(), createdAt: prior?.createdAt || new Date().toISOString() };
+      for (const [field, id] of Object.entries(fields)) draft[field] = document.getElementById(id)?.value || '';
+      appStorage.setItem('sistema_meta_rascunho_v1', JSON.stringify(draft));
+    } catch (_) {}
+  };
+  container.querySelectorAll('input,select').forEach(input => { input.addEventListener('input', preserveDraft); input.addEventListener('change', preserveDraft); });
 
   // Bind remove buttons
   container.querySelectorAll('.remove-meta-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (confirm('Excluir esta meta?')) {
-        removeMeta(btn.getAttribute('data-id'));
-      }
+    btn.addEventListener('click', async () => {
+      if (metasSaving || !confirm('Excluir esta meta?')) return;
+      metasSaving = true; btn.disabled = true;
+      try { await removeMeta(btn.getAttribute('data-id')); showToast('Meta excluída.', 'success', 'Meta'); }
+      catch (error) { showToast(error.message || 'Não foi possível excluir a meta.', 'error', 'Meta'); }
+      finally { metasSaving = false; btn.disabled = false; }
     });
   });
 
   // Bind save button
   const saveBtn = document.getElementById('saveMetaBtn');
   if (saveBtn) {
-    saveBtn.addEventListener('click', () => {
+    saveBtn.addEventListener('click', async () => {
+      if (metasSaving) return;
       const title = document.getElementById('metaTitleInput')?.value?.trim() || 'Meta';
       const type = document.getElementById('metaTypeSelect')?.value || 'monthly';
       const metric = document.getElementById('metaMetricSelect')?.value || 'finalizados';
@@ -274,22 +296,35 @@ function suggestAutoMeta() {
         return;
       }
 
-      addMeta({ title, type, metric, target: parseFloat(target), setor, collaborator, period });
-      showToast('Meta cadastrada com sucesso!', 'success', 'Meta');
-      // Reset form fields
-      const titleInput = document.getElementById('metaTitleInput');
-      if (titleInput) titleInput.value = '';
-      const targetInput = document.getElementById('metaTargetInput');
-      if (targetInput) targetInput.value = '';
+      const token = AppDataSession.token();
+      metasSaving = true; saveBtn.disabled = true;
+      try {
+        // ID estável para retentativa mesmo se a resposta da inserção se perder.
+        const draftKey = 'sistema_meta_rascunho_v1';
+        const previous = JSON.parse(appStorage.getItem(draftKey) || 'null');
+        const fields = { title, type, metric, target: parseFloat(target), setor, collaborator, period };
+        const meta = { ...fields, id: previous?.id || crypto.randomUUID(), createdAt: previous?.createdAt || new Date().toISOString() };
+        appStorage.setItem(draftKey, JSON.stringify(meta));
+        const result = await dbMetasSave([meta]);
+        if (!AppDataSession.current(token)) return;
+        if (result?.status !== 'confirmed') throw new Error('Gravação da meta não confirmada.');
+        goals = goals.filter(g => g.id !== meta.id).concat(result.data);
+        appStorage.removeItem(draftKey);
+        showToast('Meta cadastrada com sucesso!', 'success', 'Meta');
+        renderMetas();
+      } catch (error) {
+        showToast(error.message || 'Não foi possível salvar. Os campos foram mantidos para tentar novamente.', 'error', 'Meta');
+      } finally { metasSaving = false; saveBtn.disabled = false; }
     });
   }
 
   // Bind suggest button
   const suggestBtn = document.getElementById('suggestMetaBtn');
-  if (suggestBtn) suggestBtn.addEventListener('click', suggestAutoMeta);
+  if (suggestBtn) suggestBtn.addEventListener('click', () => { suggestAutoMeta(); preserveDraft(); });
 }
 
 // Tab activation hook
 function onMetasTabActivated() {
+  loadMetas();
   renderMetas();
 }

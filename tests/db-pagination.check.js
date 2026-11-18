@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 
 async function load(rows, failAt) {
   const calls = [];
-  const client = { from() { return {
+  const client = { auth: { getUser: async () => ({ data: { user: { id: 'owner', app_metadata: { role: 'admin' } } } }) }, from() { return {
     select() { return this; },
     order(column, options) {
       assert.equal(column, 'id');
@@ -17,6 +17,9 @@ async function load(rows, failAt) {
     }
   }; } };
   const context = { supabase: { createClient: () => client }, console: { warn() {}, error() {} } };
+  const memory = new Map();
+  context.AppDataSession = require('../static/data-runtime.js').create({ storage: { getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k) } });
+  context.RecordsRepository = require('../static/records-repository.js');
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../static/db.js'), 'utf8'), context);
   return { result: await context.dbLoadRecords(), calls };
@@ -29,7 +32,7 @@ async function load(rows, failAt) {
   assert.equal(result[1204]['Mês'], '2026-09');
   assert.equal(result[1204].SCORE, 4.8);
   assert.deepEqual(calls, [[0, 999], [1000, 1999]]);
-  assert.equal((await load(rows, 1000)).result, null);
+  assert.equal((await load(rows, 1000)).result.length, 0);
   assert.equal((await load([])).result.length, 0);
   assert.equal((await load(rows.slice(0, 1000))).calls.length, 2);
   console.log('Leitura completa, setembro após 1.000 registros, página vazia e falha sem restauração parcial verificados.');

@@ -60,7 +60,7 @@ function renderPainelLider() {
   const aliasMap = buildAliasMap(colaboradores);
 
   // Colaboradores com conduta negativa
-  const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+  const colabInfo = JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}');
   const flaggedColabs = new Set();
   Object.entries(colabInfo).forEach(([nm, info]) => {
     if ((info.conduta_negativa === 'true' || info.conduta_negativa === true) && colaboradores.includes(nm))
@@ -123,48 +123,48 @@ function renderPainelLider() {
   </div>`;
 
   // Cards
-  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--s-4);margin-bottom:var(--s-5)">`;
+  html += `<div class="lider-highlights">`;
 
   if (maiorEvol.nome && globalFilters.periodo !== 'all') {
-    html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--accent-soft);text-align:center">
-      <div style="font-size:15px;font-weight:600;color:var(--accent)">${escapeHtml(getDisplayName(maiorEvol.nome, aliasMap))}${condutaBadge(maiorEvol.nome)}</div>
-      <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Maior evolução em finalizações</div>
-      <div style="font-size:20px;font-weight:700;color:var(--success);margin-top:4px">+${maiorEvol.delta} finalizações</div>
+    html += `<div class="lider-highlight">
+      <div class="lider-highlight-name">${escapeHtml(getDisplayName(maiorEvol.nome, aliasMap))}${condutaBadge(maiorEvol.nome)}</div>
+      <div class="lider-highlight-label">Maior evolução em finalizações</div>
+      <div class="lider-growth-value">+${maiorEvol.delta} finalizações</div>
     </div>`;
   }
 
-  html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--warning-soft);text-align:center">
-    <div style="font-size:15px;font-weight:600;color:var(--warning)">${melhorDesempenho ? escapeHtml(getDisplayName(melhorDesempenho[0], aliasMap)) + condutaBadge(melhorDesempenho[0]) : '—'}</div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Mais finalizações</div>
-    <div style="font-size:20px;font-weight:700;color:var(--text-strong);margin-top:4px">${melhorDesempenho ? melhorDesempenho[1].fin.toLocaleString('pt-BR') : '0'} finalizações</div>
+  html += `<div class="lider-highlight-volume">
+    <div class="lider-volume-name">${melhorDesempenho ? escapeHtml(getDisplayName(melhorDesempenho[0], aliasMap)) + condutaBadge(melhorDesempenho[0]) : '—'}</div>
+    <div class="lider-highlight-label">Mais finalizações</div>
+    <div class="lider-highlight-value">${melhorDesempenho ? melhorDesempenho[1].fin.toLocaleString('pt-BR') : '0'} finalizações</div>
   </div>`;
 
-  html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--accent-soft);text-align:center">
-    <div style="font-size:15px;font-weight:600;color:var(--accent)">${melhorScore ? escapeHtml(getDisplayName(melhorScore[0], aliasMap)) + condutaBadge(melhorScore[0]) : '—'}</div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Maior score médio</div>
-    <div style="font-size:20px;font-weight:700;color:var(--text-strong);margin-top:4px">${melhorScore ? melhorScore[1].avgSc.toFixed(2) : '—'}</div>
+  html += `<div class="lider-highlight">
+    <div class="lider-highlight-name">${melhorScore ? escapeHtml(getDisplayName(melhorScore[0], aliasMap)) + condutaBadge(melhorScore[0]) : '—'}</div>
+    <div class="lider-highlight-label">Maior score médio</div>
+    <div class="lider-highlight-value">${melhorScore ? melhorScore[1].avgSc.toFixed(2) : '—'}</div>
   </div>`;
 
   html += `</div>`;
 
   // Pontos de atenção (deduplicados)
   const seen = new Set();
-  html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">🚨 Pontos de Atenção</h3>`;
+  html += `<h3 class="lider-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-attention"></use></svg> Pontos de Atenção</h3>`;
   if (atencao.length) {
-    html += `<div style="display:flex;flex-direction:column;gap:var(--s-2);margin-bottom:var(--s-5)">`;
+    html += `<div class="lider-attention-list">`;
     atencao.filter(a => {
       const key = a.name + a.motivo;
       if (seen.has(key)) return false; seen.add(key); return true;
     }).forEach(item => {
-      html += `<div style="display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);border:1px solid var(--border);border-radius:var(--r-md);background:var(--danger-soft)">
-        <span style="font-size:14px">${item.icon}</span>
-        <span style="font-weight:600;color:var(--text-strong);font-size:13px">${escapeHtml(getDisplayName(item.name, aliasMap))}${condutaBadge(item.name)}</span>
-        <span style="color:var(--text-secondary);font-size:12px">${escapeHtml(item.motivo)}</span>
+      html += `<div class="lider-attention-item">
+        <span class="lider-item-icon">${item.icon}</span>
+        <span class="lider-person-name">${escapeHtml(getDisplayName(item.name, aliasMap))}${condutaBadge(item.name)}</span>
+        <span class="lider-attention-reason">${escapeHtml(item.motivo)}</span>
       </div>`;
     });
     html += `</div>`;
   } else {
-    html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-md);background:var(--success-soft);color:var(--success);font-weight:600;font-size:13px;margin-bottom:var(--s-5)">✅ Nenhum ponto de atenção identificado.</div>`;
+    html += `<div class="lider-clear-attention">✅ Nenhum ponto de atenção identificado.</div>`;
   }
 
   // 💡 Sugestões automáticas (só com período filtrado)
@@ -230,25 +230,25 @@ function renderPainelLider() {
   // Ordenar: quem tem mais sugestões primeiro, depois por nome
   sugestoes.sort((a, b) => b.sugestoes.length - a.sugestoes.length || a.name.localeCompare(b.name));
 
-  html += `<div style="margin-top:var(--s-5);margin-bottom:var(--s-5)">
-    <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">💡 Sugestões por Colaborador</h3>`;
+  html += `<div class="lider-suggestions">
+    <h3 class="lider-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-insight"></use></svg> Sugestões por Colaborador</h3>`;
 
   if (sugestoes.length === 0) {
-    html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-md);background:var(--success-soft);color:var(--success);font-weight:600;font-size:13px">✅ Nenhuma sugestão no momento — time estável.</div>`;
+    html += `<div class="lider-clear-suggestions">✅ Nenhuma sugestão no momento — time estável.</div>`;
   } else {
-    html += `<div style="display:flex;flex-direction:column;gap:var(--s-2)">`;
+    html += `<div class="lider-suggestion-list">`;
     sugestoes.forEach(({ name, sugestoes: sugs }) => {
       const d = byColab[name];
       const hasConduta = flaggedColabs.has(name);
-      html += `<div style="border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-surface);overflow:hidden">
-        <div style="display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);background:var(--bg-subtle);border-bottom:1px solid var(--border)">
-          <span style="font-size:14px">${sugs[0].icon}</span>
-          <strong style="font-size:14px;color:var(--text-strong)">${escapeHtml(getDisplayName(name, aliasMap))}${condutaBadge(name)}</strong>
-          <span style="font-size:12px;color:var(--text-secondary)">${d.fin.toLocaleString('pt-BR')} fin · Score ${d.avgSc > 0 ? d.avgSc.toFixed(2) : '—'} · ${(d.prod * 100).toFixed(0)}% prod</span>
+      html += `<div class="lider-suggestion-card">
+        <div class="lider-suggestion-header">
+          <span class="lider-item-icon">${sugs[0].icon}</span>
+          <strong class="lider-suggestion-name">${escapeHtml(getDisplayName(name, aliasMap))}${condutaBadge(name)}</strong>
+          <span class="lider-person-metrics">${d.fin.toLocaleString('pt-BR')} fin · Score ${d.avgSc > 0 ? d.avgSc.toFixed(2) : '—'} · ${(d.prod * 100).toFixed(0)}% prod</span>
         </div>
-        <div style="padding:var(--s-3);display:flex;flex-direction:column;gap:var(--s-1)">${sugs.map(sg =>
-          `<div style="display:flex;align-items:flex-start;gap:var(--s-2);font-size:13px;color:var(--text-secondary);line-height:1.5">
-            <span style="flex-shrink:0">${sg.icon}</span>
+        <div class="lider-suggestion-body">${sugs.map(sg =>
+          `<div class="lider-suggestion-line">
+            <span class="lider-suggestion-icon">${sg.icon}</span>
             <span>${escapeHtml(sg.texto)}</span>
           </div>`
         ).join('')}</div>
@@ -258,8 +258,8 @@ function renderPainelLider() {
   }
 
   html += `</div>`; }
-  html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📋 Resumo por Colaborador</h3>`;
-  html += `<div style="overflow-x:auto;margin-bottom:var(--s-2)"><table class="ranking-table">
+  html += `<h3 class="lider-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Resumo por Colaborador</h3>`;
+  html += `<div class="lider-summary-table table-wrap" data-scroll-label="Resumo por colaborador da liderança"><table class="ranking-table">
     <thead><tr><th>Colaborador</th><th>Finalizados</th><th>Δ Fin</th><th>Score</th><th>Δ Score</th><th>Prod.</th><th>Meta</th><th>Status</th><th></th></tr></thead>
     <tbody>${Object.entries(byColab).sort((a, b) => b[1].fin - a[1].fin).map(([name, d]) => {
       const status = d.obj > 0 ? (d.fin >= d.obj ? '✅' : '🔴') : '—';
@@ -268,16 +268,16 @@ function renderPainelLider() {
       const deltaSc = d.scAnterior > 0 ? (d.scUltimo - d.scAnterior) : null;
       const finClass = deltaFin !== null ? (deltaFin >= 0 ? 'variation-pos' : 'variation-neg') : '';
       const scClass = deltaSc !== null ? (deltaSc >= 0 ? 'variation-pos' : 'variation-neg') : '';
-      return `<tr${flaggedColabs.has(name) ? ' style="background:var(--danger-soft)"' : ''}>
+      return `<tr${flaggedColabs.has(name) ? ' class="lider-row-flagged"' : ''}>
         <td><strong>${escapeHtml(getDisplayName(name, aliasMap))}${condutaBadge(name)}</strong></td>
         <td>${d.fin.toLocaleString('pt-BR')}</td>
-        <td class="${finClass}" style="font-size:12px">${deltaFin !== null ? (deltaFin >= 0 ? '↑ +' : '↓ ') + deltaFin : '—'}</td>
+        <td class="${finClass} lider-delta">${deltaFin !== null ? (deltaFin >= 0 ? '↑ +' : '↓ ') + deltaFin : '—'}</td>
         <td class="score-cell ${d.avgSc > 0 ? getClasseScore(d.avgSc) : 'score-neutro'}">${d.avgSc > 0 ? d.avgSc.toFixed(2) : '—'}</td>
-        <td class="${scClass}" style="font-size:12px">${deltaSc !== null ? (deltaSc >= 0 ? '↑ +' : '↓ ') + deltaSc.toFixed(2) : '—'}</td>
+        <td class="${scClass} lider-delta">${deltaSc !== null ? (deltaSc >= 0 ? '↑ +' : '↓ ') + deltaSc.toFixed(2) : '—'}</td>
         <td>${(d.prod * 100).toFixed(0)}%</td>
         <td>${metaTxt}</td>
         <td>${status}</td>
-        <td><button class="btn-small colab-info-btn" data-nome="${name}" type="button" title="Ver dados do colaborador" style="font-size:11px">👤</button></td>
+        <td><button class="btn-small colab-info-btn" data-nome="${escapeHtml(name)}" aria-label="Ver dados de ${escapeHtml(getDisplayName(name, aliasMap))}" type="button" title="Ver dados do colaborador">👤</button></td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;

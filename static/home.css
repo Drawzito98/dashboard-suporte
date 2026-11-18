@@ -6,7 +6,7 @@
   margin-bottom: var(--s-5);
 }
 .home-welcome h2 {
-  font-size: 22px;
+  font-size: var(--font-page);
   font-weight: 700;
   color: var(--text-strong);
   letter-spacing: -0.02em;
@@ -44,12 +44,12 @@
   display: block;
   margin-bottom: 3px;
   color: var(--accent);
-  font-size: 10px;
+  font-size: var(--font-caption);
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
-.home-operations-header h3 { margin: 0; color: var(--text-strong); font-size: 15px; }
+.home-operations-header h3 { margin: 0; color: var(--text-strong); font-size: var(--font-card); line-height: 1.4; }
 .home-count-badge {
   min-width: 28px;
   padding: 3px 8px;
@@ -94,7 +94,7 @@
 .home-event-icon { background: var(--bg-subtle); font-size: 14px; }
 .home-operations-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; }
 .home-operations-copy strong { overflow: hidden; color: var(--text-primary); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
-.home-operations-copy small { overflow: hidden; color: var(--text-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.home-operations-copy small { overflow: hidden; color: var(--text-muted); font-size: var(--font-caption); text-overflow: ellipsis; white-space: nowrap; }
 .home-item-arrow { color: var(--text-muted); font-size: 18px; }
 .home-operations-empty {
   display: flex;
@@ -107,7 +107,7 @@
 }
 .home-operations-empty > span { margin-bottom: 6px; color: var(--success); font-size: 24px; }
 .home-operations-empty strong { color: var(--text-primary); font-size: 13px; }
-.home-operations-empty small { margin-top: 2px; font-size: 11px; }
+.home-operations-empty small { margin-top: 2px; font-size: var(--font-caption); }
 .home-operations-summary {
   display: flex;
   flex-wrap: wrap;
@@ -131,7 +131,7 @@
   border-top: 1px solid var(--border);
   cursor: pointer;
   font-family: inherit;
-  font-size: 11.5px;
+  font-size: var(--font-caption);
   font-weight: 600;
 }
 
@@ -150,11 +150,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
-  transition: box-shadow var(--t-fast), transform var(--t-fast), border-color var(--t-fast);
+  transition: border-color var(--t-fast), background-color var(--t-fast);
 }
 .home-kpi:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
   border-color: var(--border-strong);
 }
 .home-kpi-icon {
@@ -174,11 +172,12 @@
   line-height: 1.1;
 }
 .home-kpi-label {
-  font-size: 11px;
+  font-size: var(--font-caption);
   font-weight: 600;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.5;
 }
 
 /* Clickable KPI */
@@ -190,11 +189,9 @@
   border-color: var(--accent);
   box-shadow: 0 4px 16px -4px rgba(37,99,235,0.15);
 }
-.home-kpi-clickable:active {
-  transform: scale(0.98);
-}
+
 .home-kpi-hint {
-  font-size: 11px;
+  font-size: var(--font-caption);
   color: var(--accent);
   font-weight: 500;
   opacity: 0;
@@ -226,7 +223,7 @@
   color: var(--text-primary);
 }
 .home-colab-setor {
-  font-size: 11px;
+  font-size: var(--font-caption);
   color: var(--text-muted);
   text-align: right;
   max-width: 40%;
@@ -401,7 +398,7 @@
   font-weight: 700;
 }
 .home-alert-more {
-  font-size: 11px;
+  font-size: var(--font-caption);
   color: var(--text-muted);
   text-align: center;
   padding-top: 4px;
@@ -445,7 +442,7 @@
   white-space: nowrap;
 }
 .home-activity-time {
-  font-size: 11px;
+  font-size: var(--font-caption);
   color: var(--text-muted);
   white-space: nowrap;
   flex-shrink: 0;
@@ -489,11 +486,11 @@
 .home-daily-briefing.has-attention .home-briefing-symbol { color: var(--warning); background: var(--warning-soft); }
 .home-daily-briefing.is-clear .home-briefing-symbol { color: var(--success); background: var(--success-soft); }
 .home-briefing-copy { flex: 1; min-width: 0; }
-.home-briefing-copy > span { display: block; margin-bottom: 2px; color: var(--accent); font-size: 9px; font-weight: 750; letter-spacing: .11em; text-transform: uppercase; }
+.home-briefing-copy > span { display: block; margin-bottom: 2px; color: var(--accent); font-size: var(--font-caption); font-weight: 750; letter-spacing: .11em; text-transform: uppercase; }
 .home-briefing-copy h3 { margin: 0; color: var(--text-strong); font-size: 14px; letter-spacing: -.015em; }
-.home-briefing-copy p { margin: 3px 0 0; color: var(--text-secondary); font-size: 11.5px; }
+.home-briefing-copy p { margin: 3px 0 0; color: var(--text-secondary); font-size: var(--font-caption); }
 .home-briefing-actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
-.home-briefing-actions button { padding: 7px 10px; color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border)); border-radius: 8px; background: var(--accent-soft); cursor: pointer; font: inherit; font-size: 11px; font-weight: 650; }
+.home-briefing-actions button { padding: 7px 10px; color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border)); border-radius: 8px; background: var(--accent-soft); cursor: pointer; font: inherit; font-size: var(--font-caption); font-weight: 650; }
 .home-briefing-actions button:hover { border-color: var(--accent); }
 @media (max-width: 700px) {
   .home-daily-briefing { align-items: flex-start; flex-wrap: wrap; }

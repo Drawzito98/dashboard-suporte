@@ -1,0 +1,401 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workspace UX — dados simulados</title>
+<style>html,body{margin:0;height:100%}#testResult{white-space:pre-wrap;margin:0;font:12px monospace}iframe{display:block;width:100%;height:calc(100% - 44px);border:0}</style>
+<pre id="testResult">RUNNING: interface completa, somente dados simulados</pre><iframe id="workspace" title="Painel com dados simulados"></iframe>
+<script>
+(async()=>{
+ if(!['localhost','127.0.0.1'].includes(location.hostname))throw Error('Somente servidor local');
+ const assert=(v,m)=>{if(!v)throw Error(m)},wait=async(fn,message)=>{const end=Date.now()+25000;while(Date.now()<end){if(fn())return;await new Promise(r=>setTimeout(r,60))}throw Error(message)};
+ const html=await(await fetch('../index.html',{cache:'no-store'})).text(),doc=new DOMParser().parseFromString(html,'text/html');
+ const seed=()=>{
+  const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(window.__uxDraftQuota&&['sistema_avaliacao_rascunho_v1','sistema_tarefa_rascunho_v1','sistema_anotacao_editando_v1','sistema_tarefa_transicao_v1','sistema_colaborador_rascunho_v1','sistema_bonus_editando_v1','sistema_ferias_rascunho_v1','sistema_ausencia_rascunho_v1','sistema_colab_situacao_pendente_v1','sistema_setor_situacao_pendente_v1','sistema_config_rascunho_scoring_v1','sistema_config_rascunho_alertas_v1','sistema_avaliacao_atend_rascunho_v1','sistema_acomp_diario_rascunho_v1'].some(suffix=>k.endsWith(suffix)))throw Error('Quota simulada');memory.set(k,String(v))},removeItem:k=>memory.delete(k)}});
+  const theme=new URLSearchParams(parent.location.search).get('theme')||'light';localStorage.setItem('theme',theme);
+  const attendanceMode=new URLSearchParams(parent.location.search).has('atendimentos');
+  const settingsMode=new URLSearchParams(parent.location.search).has('settings');
+  const inactiveMode=new URLSearchParams(parent.location.search).has('inativos');
+  const presenceMode=new URLSearchParams(parent.location.search).has('presence');
+  const bonusMode=new URLSearchParams(parent.location.search).has('bonus');
+  const cadastroMode=new URLSearchParams(parent.location.search).has('cadastro');
+  const routineMode=new URLSearchParams(parent.location.search).has('routine');
+  const evaluationsMode=new URLSearchParams(parent.location.search).has('evaluations');
+  const savesMode=new URLSearchParams(parent.location.search).has('saves');
+  const cockpitMode=new URLSearchParams(parent.location.search).has('cockpit');
+  if(cockpitMode){const NativeDate=Date;class TestDate extends NativeDate{constructor(...args){super(...(args.length?args:[new NativeDate(2026,9,28,12).getTime()]))}};window.Date=TestDate;}
+  window.__uxWrites=[];window.__uxReads=[];
+  const user={id:'ux-local-test',email:'teste@local.invalid',app_metadata:{role:'admin'},user_metadata:{name:'Gestão de teste'}};
+  const people=Array.from({length:12},(_,i)=>({nome:`Pessoa de teste ${i+1} com nome extenso para revisão de interface`,setor_atual:i<6?'Financeiro':'Estoque e OS',nivel:i%2?'N1':'N2',user_id:user.id,id:'person-'+i,observacoes:'Contexto de acompanhamento. '.repeat(25)}));
+  const records=people.flatMap((p,i)=>Array.from({length:6},(_,m)=>({id:i*6+m+1,user_id:user.id,Atendente:p.nome,Setor:p.setor_atual,'Mês':`2026-0${m+4}`,Assumidos:150+i,Finalizados:120+i,Transferidos:15,Score:4.8,Total:12,TMA:'00:20:00',TMR:'00:02:00'})));
+  const tables={registros:records,colaboradores_info:people,anotacoes_diarias:[],feedbacks:[],avaliacoes:[],tarefas:[],ferias:[],ausencias:[]};
+  if(cockpitMode){
+    records.find(r=>r.Atendente===people[0].nome&&r['Mês']==='2026-07').Score=4.9;
+    records.find(r=>r.Atendente===people[0].nome&&r['Mês']==='2026-08').Score=4.6;
+    records.find(r=>r.Atendente===people[0].nome&&r['Mês']==='2026-09').Score=4.3;
+    records.find(r=>r.Atendente===people[1].nome&&r['Mês']==='2026-09').Score=null;
+    records.push({...records[0],id:999,'Mês':'2026-10',Score:0});
+    tables.tarefas=[{id:'late',user_id:user.id,titulo:'Conferir amostra <script> não executar',data:'2026-10-27',status:'pendente'},{id:'today',user_id:user.id,titulo:'Feedback de hoje',data:'2026-10-28',status:'andamento'},{id:'done',user_id:user.id,titulo:'Concluída',data:'2026-10-01',status:'concluida'}];
+  }
+  window.__uxResetRecords=()=>{tables.registros=records};window.__uxEmptyRecords=()=>{tables.registros=[]};window.__uxEvaluationRows=()=>tables.avaliacoes.map(row=>({...row}));window.__uxRoutineRows=table=>(tables[table]||[]).map(row=>({...row}));window.__uxSeedOverlap=()=>{tables.ferias=[{id:'701',user_id:user.id,colaborador:people[0].nome,data_inicio:'2026-12-01',data_fim:'2026-12-30'},{id:'702',user_id:user.id,colaborador:people[0].nome,data_inicio:'2026-12-01',data_fim:'2026-12-10'},{id:'703',user_id:user.id,colaborador:people[0].nome,data_inicio:'2026-12-01',data_fim:'2026-12-20'}]};
+  function query(table){let single=false,range=null,filters=[],mode='read',payload,conflict;const q=new Proxy({}, {get(_,key){
+   if(['insert','upsert','update','delete'].includes(key))return(p,options)=>{conflict=options?.onConflict;if(!((attendanceMode&&['avaliacao_atendimentos','acompanhamento_diario'].includes(table))||(settingsMode&&['scoring_config','alertas_config'].includes(table))||(inactiveMode&&['colab_inativos','setor_inativos'].includes(table))||(savesMode&&['feedbacks','metas'].includes(table))||(evaluationsMode&&table==='avaliacoes')||(routineMode&&['tarefas','anotacoes_diarias'].includes(table))||(cadastroMode&&['colaboradores_info','colaborador_fotos','colab_inativos'].includes(table))||(bonusMode&&table==='pontos_extras')||(presenceMode&&['ferias','ausencias','avaliacao_atendimentos','acompanhamento_diario'].includes(table))))throw Error('Teste permite somente leitura: '+table);mode=key;payload=p;return q};
+   if(key==='then')return(resolve,reject)=>Promise.resolve().then(async()=>{window.__uxReads.push(table);if(mode!=='read'){
+     window.__uxWrites.push(table+':'+mode);
+     if(window.__uxSaveDelay)await new Promise(r=>setTimeout(r,120));
+     if(window.__uxSaveError&&(!window.__uxErrorTable||window.__uxErrorTable===table))return{error:{message:'Falha simulada'}};
+     if(mode==='delete'&&window.__uxFailDeleteAt){window.__uxDeleteCount=(window.__uxDeleteCount||0)+1;if(window.__uxDeleteCount===window.__uxFailDeleteAt)return{error:{message:'Falha na exclusão selecionada'}};}
+     let rows;
+     if(mode==='delete'){rows=(tables[table]||[]).filter(r=>filters.every(([k,v])=>r[k]===v));tables[table]=(tables[table]||[]).filter(r=>!rows.includes(r));}
+     else if(mode==='update'){rows=(tables[table]||[]).filter(r=>filters.every(([k,v])=>r[k]===v)).map(r=>({...r,...payload}));for(const row of rows){const at=tables[table].findIndex(r=>r.id===row.id);tables[table][at]=row;}}
+     else{rows=(Array.isArray(payload)?payload:[payload]).map(r=>{const old=conflict==='user_id,nome'?(tables[table]||[]).find(row=>row.user_id===r.user_id&&row.nome===r.nome):(tables[table]||[]).find(row=>row.id===r.id);return{...old,...r,id:old?.id||r.id||(['ferias','ausencias','avaliacao_atendimentos','acompanhamento_diario'].includes(table)?String((window.__uxPresenceSequence=(window.__uxPresenceSequence||0)+1)):crypto.randomUUID()),created_at:r.created_at||old?.created_at||'2026-10-29'}});tables[table]||=[];for(const row of rows){const at=tables[table].findIndex(r=>r.id===row.id);if(at<0)tables[table].push(row);else tables[table][at]=row;}}
+     if(mode==='insert'&&['ferias','ausencias','avaliacao_atendimentos','acompanhamento_diario'].includes(table)&&Object.prototype.hasOwnProperty.call(payload,'id'))throw Error('Teste rejeita identidade fornecida pelo cliente');
+     if(window.__uxSaveLost)throw Error('Resposta perdida após aplicar');
+     return{data:single?rows[0]:rows,error:null};
+    }if(table==='registros'&&window.__uxHoldRecords){window.__uxBlocked=true;await new Promise(r=>window.__uxReleaseRecords=r)}if(table==='registros'&&window.__uxOffline)return{error:{message:'Offline simulado'}};let data=[...(tables[table]||[])];for(const[k,v]of filters)data=data.filter(r=>r[k]===v);if(range)data=data.slice(range[0],range[1]+1);return{data:single?data[0]||null:data,error:null,count:data.length}}).then(resolve,reject);
+   if(key==='eq')return(k,v)=>{filters.push([k,v]);return q};
+   if(key==='range')return(a,b)=>{range=[a,b];return q};
+   if(key==='single'||key==='maybeSingle')return()=>{single=true;return q};
+   return()=>q;
+  }});return q}
+  const client={auth:{getUser:async()=>({data:{user}}),getSession:async()=>({data:{session:{user,access_token:'local-test'}}}),refreshSession:async()=>({data:{session:{user,access_token:'local-test'}}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},from:query,channel:()=>query('channel'),removeChannel(){},storage:{from:()=>({getPublicUrl:()=>({data:{publicUrl:''}})})}};
+  Object.defineProperty(window,'supabase',{get:()=>({createClient:()=>client}),set(){}});
+  Object.defineProperty(navigator,'serviceWorker',{value:{register:async()=>({})}});
+  window.__uxErrors=[];addEventListener('error',e=>{if(e.message)window.__uxErrors.push(e.message)});addEventListener('unhandledrejection',e=>window.__uxErrors.push(String(e.reason)));
+  window.open=()=>({document:{open(){},write(html){window.__uxPrintHTML=html},close(){}}});
+  window.__uxDownloads=[];const click=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(this.download){window.__uxDownloads.push({name:this.download,href:this.href,content:this.href.startsWith('blob:')?fetch(this.href).then(r=>r.text()):null});return}return click.call(this)};
+ };
+ const base=doc.createElement('base');base.href=location.origin+'/';doc.head.prepend(base);
+ const setup=doc.createElement('script');setup.textContent='('+seed.toString()+')()';base.after(setup);
+ doc.querySelectorAll('script[src*="supabase-js"]').forEach(n=>n.remove());
+ const frame=document.getElementById('workspace');if(new URLSearchParams(location.search).has('mobile')){frame.style.width='320px';frame.style.maxWidth='100%';}frame.srcdoc='<!doctype html>'+doc.documentElement.outerHTML;
+ const win=()=>frame.contentWindow,d=()=>frame.contentDocument;
+ await wait(()=>d()?.body?.dataset.workspaceReady==='true'&&d().querySelectorAll('#gfSetor option').length>=3,'Inicialização autenticada');
+ assert(!win().html2canvas&&!win().jspdf&&!win().XLSX,'Exportadores não são carregados na abertura');
+ const click=id=>{const el=d().getElementById(id);assert(el,'Controle ausente: '+id);el.click()};
+ const tab=async name=>{d().querySelector(`[data-tab="${name}"]`).click();await wait(()=>d().body.dataset.activeTab===name,'Aba '+name);await new Promise(r=>setTimeout(r,120))};
+ const bounds=el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=frame.clientWidth+1};
+ if(new URLSearchParams(location.search).has('exports')){
+  const saved=[],realReady=win().ExportTools.ready;
+  win().ExportTools.ready=async(...names)=>{const ready=await realReady(...names);if(ready&&win().XLSX)win().XLSX.writeFile=(book,name)=>saved.push({name,bytes:win().XLSX.write(book,{type:'array',bookType:'xlsx'}).byteLength,sheets:book.SheetNames});if(ready&&win().jspdf)win().jspdf.jsPDF.API.save=function(name){saved.push({name,bytes:this.output('arraybuffer').byteLength});return this;};return ready;};
+  const person='Pessoa de teste 1 com nome extenso para revisão de interface',sample={id:'export-only',colaborador:person,ciclo:'2026-09',scores:{},observacoes_gerais:'Somente teste local'};
+  await win().exportarAvaliacaoXLSX(person,sample.ciclo,sample);assert(saved.some(file=>file.name.endsWith('.xlsx')&&file.bytes>1000),'Excel individual real');assert(!win().jspdf&&!win().html2canvas,'Excel não carrega PDF ou PNG');
+  win().AppState.publish('avaliacoes',[sample]);await win().exportarTodasAvaliacoesXLSX();assert(saved.filter(file=>file.name.endsWith('.xlsx')).length===2,'Excel consolidado real');
+  await tab('mapeamento-time');click('mtExportPdfBtn');await wait(()=>saved.some(file=>file.name.startsWith('mapeamento-time-')),'PDF do mapeamento sob demanda');assert(!win().html2canvas,'PDF textual não carrega capturador PNG');d().querySelector('.mt-card').click();await wait(()=>d().querySelector('.mt-details-export'),'Detalhes do mapeamento');d().querySelector('.mt-details-export').click();await wait(()=>saved.filter(file=>file.name.endsWith('.pdf')).length===2,'PDF individual do mapeamento');
+  assert([...d().querySelectorAll('script[data-export-dependency]')].length===2,'Somente Excel e PDF solicitados uma vez');assert(win().__uxWrites.length===0,'Exportar não escreve no servidor');assert(win().__uxErrors.length===0,'Sem erros: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: início sem exportadores, Excel individual/consolidado reais e PDF coletivo/individual do mapeamento; somente bibliotecas necessárias, sem duplicação nem escrita.';return;
+ }
+ if(new URLSearchParams(location.search).has('presence')){
+  const person='Pessoa de teste 1 com nome extenso para revisão de interface';win().confirm=()=>true;
+  const draft=resource=>win().PresenceEditor.draft(resource),rows=resource=>win().getPresenceList(resource),pending=resource=>win().getPresencePending(resource);
+  const enter=(id,value)=>{d().getElementById(id).value=value;d().getElementById(id).dispatchEvent(new(win().Event)('input',{bubbles:true}));};
+  click('menuBtn');click('feriasBtn');await wait(()=>d().getElementById('feriasSalvarBtn'),'Férias');enter('feriasColabInput',person);enter('feriasInicioInput','2026-11-01');enter('feriasFimInput','2026-10-30');let before=win().__uxWrites.length;click('feriasSalvarBtn');assert(win().__uxWrites.length===before,'Valida ordem de datas');enter('feriasFimInput','2026-11-10');
+  win().__uxDraftQuota=true;click('feriasSalvarBtn');assert(win().__uxWrites.length===before&&!pending('ferias'),'Quota impede envio');win().__uxDraftQuota=false;
+  win().__uxSaveError=true;win().__uxSaveDelay=true;click('feriasSalvarBtn');click('feriasSalvarBtn');await wait(()=>!d().getElementById('feriasSalvarBtn').disabled,'Férias falha');assert(win().__uxWrites.length===before+1&&rows('ferias').length===0&&pending('ferias'),'Falha não publica e não duplica');before=win().__uxWrites.length;click('feriasSalvarBtn');await wait(()=>!d().getElementById('feriasSalvarBtn').disabled,'Bloqueio de reinserção');assert(win().__uxWrites.length===before,'Não repete criação incerta');
+  click('feriasOverlayClose');click('feriasBtn');assert(draft('ferias').data_inicio==='2026-11-01'&&d().getElementById('feriasFimInput').value==='2026-11-10','Retoma férias');win().__uxSaveError=false;before=win().__uxWrites.length;click('feriasLiberarBtn');assert(pending('ferias')&&win().__uxWrites.length===before,'Sem consulta confirmada não libera');click('feriasRefreshBtn');await wait(()=>win().presenceReadConfirmed('ferias')&&!d().getElementById('feriasRefreshBtn').disabled,'Confere servidor vazio');click('feriasLiberarBtn');win().__uxSaveLost=true;click('feriasSalvarBtn');await wait(()=>!d().getElementById('feriasSalvarBtn').disabled,'Resposta férias perdida');assert(rows('ferias').length===0&&pending('ferias'),'Resposta perdida mantém reserva');
+  win().__uxSaveLost=false;click('feriasRefreshBtn');await wait(()=>rows('ferias').length===1&&!d().getElementById('feriasRefreshBtn').disabled,'Consulta servidor');const id=rows('ferias')[0].id;assert(/^\d+$/.test(id),'ID numérico retornado');assert(bounds(d().querySelector('#feriasOverlay .colab-detail-panel'))&&d().querySelector('#feriasOverlay .colab-detail-panel').scrollWidth<=d().querySelector('#feriasOverlay .colab-detail-panel').clientWidth+1,'Férias sem overflow');
+  d().querySelector('#feriasOverlay .presence-link').click();assert(draft('ferias').id===id&&!pending('ferias'),'Vínculo explícito');click('feriasSalvarBtn');await wait(()=>!draft('ferias'),'Férias confirmadas por ID');assert(win().__uxRoutineRows('ferias').length===1,'Sem outra inserção');
+  d().querySelector('.ferias-edit-btn').click();enter('feriasFimInput','2026-11-12');d().querySelector('.ferias-status-btn[data-status="todas"]').click();assert(d().getElementById('feriasFimInput').value==='2026-11-12','Filtro preserva rascunho');win().__uxSaveError=true;click('feriasSalvarBtn');await wait(()=>!d().getElementById('feriasSalvarBtn').disabled,'Edição férias falha');assert(rows('ferias')[0].data_fim==='2026-11-10'&&draft('ferias').data_fim==='2026-11-12','Edição não otimista');win().__uxSaveError=false;click('feriasSalvarBtn');await wait(()=>!draft('ferias'),'Edição confirmada');
+  enter('feriasColabInput',person);enter('feriasInicioInput','2026-11-12');enter('feriasFimInput','2026-11-15');before=win().__uxWrites.length;click('feriasSalvarBtn');assert(win().__uxWrites.length===before,'Sobreposição inclusiva preservada');click('feriasDescartarBtn');
+  d().querySelector('.ferias-edit-btn').click();win().__uxSaveError=true;d().querySelector('.ferias-del-btn').click();await wait(()=>!d().querySelector('.ferias-del-btn').disabled,'Excluir férias falha');assert(rows('ferias').length===1&&draft('ferias'),'Exclusão falha preserva lista/rascunho');win().__uxSaveError=false;win().__uxSaveLost=true;d().querySelector('.ferias-del-btn').click();await wait(()=>!d().querySelector('.ferias-del-btn').disabled,'Exclusão férias perdida');win().__uxSaveLost=false;click('feriasRefreshBtn');await wait(()=>rows('ferias').length===0&&!d().getElementById('feriasRefreshBtn').disabled,'Reconcilia exclusão');assert(draft('ferias').id===id,'Exclusão não apaga edição');click('feriasDescartarBtn');click('feriasOverlayClose');
+  click('ausenciasBtn');await wait(()=>d().getElementById('ausenciaSalvarBtn'),'Ausências');enter('ausenciaColabInput',person);enter('ausenciaDataInput','2026-11-03');enter('ausenciaPeriodoInput','noite');enter('ausenciaMotivoInput','Motivo privado simulado');win().__uxSaveLost=true;before=win().__uxWrites.length;click('ausenciaSalvarBtn');click('ausenciaSalvarBtn');await wait(()=>!d().getElementById('ausenciaSalvarBtn').disabled,'Ausência perdida');assert(rows('ausencias').length===0&&win().__uxWrites.length===before+1&&pending('ausencias'),'Ausência não otimista');win().__uxSaveLost=false;click('ausenciasOverlayClose');click('ausenciasBtn');await wait(()=>rows('ausencias').length===1,'Ausência em leitura');assert(d().getElementById('ausenciaPeriodoInput').value==='noite'&&draft('ausencias').motivo==='Motivo privado simulado','Retoma data/período/motivo');
+  d().querySelector('#ausenciasOverlay .presence-link').click();enter('ausenciaMotivoInput','Motivo revisado');click('ausenciaSalvarBtn');await wait(()=>!draft('ausencias'),'Ausência confirmada por ID');assert(win().__uxRoutineRows('ausencias').length===1&&rows('ausencias')[0].periodo==='noite','ID e período mantidos');
+  enter('ausenciaMotivoInput','Nova edição preservada');win().__uxSaveError=true;d().querySelector('.ausencias-del-btn').click();await wait(()=>!d().querySelector('.ausencias-del-btn').disabled,'Excluir ausência falha');assert(rows('ausencias').length===1&&draft('ausencias'),'Preserva ausência/rascunho');win().__uxSaveError=false;d().querySelector('.ausencias-del-btn').click();await wait(()=>rows('ausencias').length===0,'Ausência excluída');assert(draft('ausencias').motivo==='Nova edição preservada','Exclusão separada do rascunho');click('ausenciasOverlayClose');
+  win().__uxSeedOverlap();await win().dbFeriasLoad();click('feriasBtn');await wait(()=>d().getElementById('feriasResolveDupBtn'),'Sobreposições');before=win().__uxWrites.length;click('feriasResolveDupBtn');await wait(()=>d().getElementById('fGenCancel'),'Confirmação de períodos');click('fGenCancel');await wait(()=>!d().getElementById('feriasResolveDupBtn').disabled,'Cancelamento');assert(win().__uxWrites.length===before,'Cancelar não exclui');
+  win().__uxFailDeleteAt=2;click('feriasResolveDupBtn');await wait(()=>d().getElementById('fGenConfirm'),'Confirmar exclusões');click('fGenConfirm');await wait(()=>!d().getElementById('feriasResolveDupBtn').disabled,'Exclusão parcial');assert(rows('ferias').length===2&&d().querySelector('#feriasOverlayContent .presence-message').textContent.includes('1 exclusão'),'Confirmação parcial explícita');assert(rows('ferias').some(row=>row.id==='701'),'Mantém período mais longo');
+  win().__uxFailDeleteAt=null;click('feriasResolveDupBtn');await wait(()=>d().getElementById('fGenConfirm'),'Confirmar restante');click('fGenConfirm');await wait(()=>rows('ferias').length===1,'Exclui restante');assert(rows('ferias')[0].id==='701','Mantém o mesmo período');
+  assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: férias/ausências reais, datas/sobreposição, rascunhos, quota/falhas, IDs numéricos, envio incerto sem reinserção, consulta/vínculo, edição/exclusão, filtros e exclusão parcial de sobreposições; servidor simulado';return;
+ }
+ if(new URLSearchParams(location.search).has('bonus')){
+  const person='Pessoa de teste 1 com nome extenso para revisão de interface';win().confirm=()=>true;
+  const draft=()=>JSON.parse(win().appStorage.getItem('sistema_bonus_editando_v1')||'null'),list=()=>win().getPontosExtrasLocal(),extra=()=>win().computeScoreForCollaborator(person,[{Atendente:person,'Mês':'2026-09'}]).breakdown.pontos_extras;
+  const enter=(id,value)=>{d().getElementById(id).value=value;d().getElementById(id).dispatchEvent(new(win().Event)('input',{bubbles:true}));};
+  await tab('colaboradores');click('bonusPanelBtn');assert(d().getElementById('bonusOverlay').classList.contains('open'),'Acesso real abre editor');const bonusPanel=d().querySelector('#bonusOverlay .colab-detail-panel');assert(bounds(bonusPanel)&&bonusPanel.scrollWidth<=bonusPanel.clientWidth+1,'Editor sem overflow');
+  enter('bonusColaboradorInput',person);enter('bonusPontosInput','3');enter('bonusDescricaoInput','Auxílio em projeto');enter('bonusMesInput','2026-09');const id=draft().id;
+  win().__uxDraftQuota=true;let before=win().__uxWrites.length;click('bonusAdicionarBtn');assert(win().__uxWrites.length===before&&d().querySelector('.bonus-save-message').textContent.includes('rascunho'),'Quota impede envio');win().__uxDraftQuota=false;
+  win().__uxSaveError=true;win().__uxSaveDelay=true;click('bonusAdicionarBtn');click('bonusAdicionarBtn');await wait(()=>!d().getElementById('bonusAdicionarBtn').disabled,'Falha bônus');assert(list().length===0&&extra()===0&&win().__uxWrites.length===before+1,'Falha não muda pontos e duplo clique bloqueado');
+  before=win().__uxWrites.length;click('bonusRemoverBtn');assert(win().__uxWrites.length===before,'Tentativa não muda o sinal sem descarte');
+  click('bonusOverlayClose');click('bonusPanelBtn');assert(draft().id===id&&d().getElementById('bonusDescricaoInput').value==='Auxílio em projeto'&&d().getElementById('bonusMesInput').value==='2026-09','Reabre com edição completa');
+  win().__uxSaveError=false;win().__uxSaveLost=true;click('bonusAdicionarBtn');await wait(()=>!d().getElementById('bonusAdicionarBtn').disabled,'Resposta bônus perdida');assert(list().length===0&&draft().id===id,'Resposta perdida mantém rascunho');
+  win().__uxSaveLost=false;click('bonusAtualizarBtn');await wait(()=>list().length===1&&!d().getElementById('bonusAtualizarBtn').disabled,'Releitura confirma servidor');assert(list()[0].mes==='2026-09'&&draft().id===id,'Mês e rascunho preservados na leitura');click('bonusAdicionarBtn');await wait(()=>!draft(),'Retentativa confirmada');assert(win().__uxRoutineRows('pontos_extras').length===1&&extra()===3,'Mesmo UUID e mês afetam pontuação');
+  d().querySelector('.bonus-editar-btn').click();assert(d().getElementById('bonusColaboradorInput').disabled,'Edição mantém pessoa');enter('bonusDescricaoInput','Descrição editada');win().__uxSaveError=true;click('bonusSalvarBtn');await wait(()=>!d().getElementById('bonusSalvarBtn').disabled,'Edição falha');assert(list()[0].descricao==='Auxílio em projeto'&&draft().descricao==='Descrição editada','Edição falha preserva original');win().__uxSaveError=false;click('bonusSalvarBtn');await wait(()=>!draft(),'Edição confirmada');assert(list()[0].descricao==='Descrição editada'&&list()[0].mes==='2026-09','Mês mantido após edição');
+  enter('bonusColaboradorInput',person);enter('bonusPontosInput','2');enter('bonusDescricaoInput','Penalidade simulada');enter('bonusMesInput','2026-09');click('bonusRemoverBtn');await wait(()=>list().length===2&&!draft(),'Penalidade confirmada');const negative=list().find(row=>row.pontos<0);assert(extra()===1,'Sinais preservados na fórmula');
+  d().querySelector(`.bonus-editar-btn[data-id="${negative.id}"]`).click();enter('bonusPontosInput','4');click('bonusSalvarBtn');await wait(()=>!draft(),'Edição de penalidade');assert(list().find(row=>row.id===negative.id).pontos===-4&&extra()===-1,'Edição mantém sinal negativo');
+  d().querySelector(`.bonus-editar-btn[data-id="${negative.id}"]`).click();enter('bonusDescricaoInput','Rascunho mantido na exclusão');win().__uxSaveError=true;d().querySelector(`.bonus-excluir-btn[data-id="${negative.id}"]`).click();await wait(()=>!d().querySelector('.bonus-excluir-btn').disabled,'Excluir falha');assert(list().length===2&&draft().descricao==='Rascunho mantido na exclusão','Falha não remove registro/rascunho');
+  win().__uxSaveError=false;win().__uxSaveLost=true;d().querySelector(`.bonus-excluir-btn[data-id="${negative.id}"]`).click();await wait(()=>!d().querySelector('.bonus-excluir-btn').disabled,'Resposta exclusão perdida');assert(list().length===2,'Exclusão sem ID não publica sucesso');win().__uxSaveLost=false;click('bonusAtualizarBtn');await wait(()=>list().length===1&&!d().getElementById('bonusAtualizarBtn').disabled,'Reconciliar exclusão');assert(draft().descricao==='Rascunho mantido na exclusão'&&extra()===3,'Releitura preserva rascunho e atualiza pontos');
+  before=win().__uxWrites.length;d().querySelector('.bonus-excluir-btn').click();d().querySelector('.bonus-excluir-btn').click();await wait(()=>list().length===0,'Exclusão confirmada');assert(win().__uxWrites.length===before+1&&draft(),'Duplo clique bloqueado e rascunho separado');
+  assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: acesso real, bônus/penalidades confirmados, mês/fórmula, quota, falhas, rascunho retomado, UUID e sinal estáveis, duplo clique, edição e exclusão após resposta perdida; servidor simulado';return;
+ }
+ if(new URLSearchParams(location.search).has('atendimentos')){
+  win().confirm=()=>true;const person='Pessoa de teste 1 com nome extenso para revisão de interface',ev='avaliacao_atendimentos',daily='acompanhamento_diario';
+  const draft=r=>win().PresenceEditor.draft(r),pending=r=>win().getPresencePending(r),rows=r=>win().getPresenceList(r),enter=(id,value)=>{const el=d().getElementById(id);el.value=value;el.dispatchEvent(new(win().Event)('input',{bubbles:true}));};
+  click('avaliarAtendimentoBtn');await wait(()=>win().presenceReadConfirmed(ev)&&d().getElementById('avalSalvarBtn'),'Editor avaliações');enter('avalProtocoloInput','#123');enter('avalColaboradorInput',person);enter('avalDataInput','2026-10-30');d().getElementById('avalTeveNotaInput').checked=false;d().getElementById('avalTeveNotaInput').dispatchEvent(new(win().Event)('change',{bubbles:true}));enter('avalResumoInput','Resumo preservado');enter('avalOrientacaoInput','Orientação preservada');
+  const canvas=d().createElement('canvas');canvas.width=canvas.height=2;const blob=await new Promise(r=>canvas.toBlob(r,'image/png')),transfer=new(win().DataTransfer)();transfer.items.add(new(win().File)([blob],'print.png',{type:'image/png'}));d().getElementById('avalImagemInput').files=transfer.files;d().getElementById('avalImagemInput').dispatchEvent(new(win().Event)('change',{bubbles:true}));win().__uxDraftQuota=true;await wait(()=>draft(ev)?.imagem,'Imagem em rascunho');click('avaliarAtendimentoOverlayClose');assert(d().getElementById('avaliarAtendimentoOverlay').classList.contains('open'),'Quota da imagem protege fechamento');win().__uxDraftQuota=false;enter('avalOrientacaoInput','Orientação preservada');const image=draft(ev).imagem;
+  win().__uxDraftQuota=true;let before=win().__uxWrites.length;click('avalSalvarBtn');assert(win().__uxWrites.length===before&&d().getElementById('avalResumoInput').value==='Resumo preservado','Quota impede envio sem apagar campos');win().__uxDraftQuota=false;
+  win().__uxSaveError=true;click('avalSalvarBtn');await wait(()=>!d().getElementById('avalSalvarBtn').disabled,'Falha avaliação');assert(rows(ev).length===0&&pending(ev),'Falha não publica e reserva envio');click('avaliarAtendimentoOverlayClose');click('avaliarAtendimentoBtn');await wait(()=>win().presenceReadConfirmed(ev),'Consulta após falha');assert(draft(ev).imagem===image&&d().getElementById('avalResumoInput').value==='Resumo preservado','Reabre com texto/imagem');
+  win().__uxSaveError=false;click(ev+'LiberarBtn');win().__uxSaveLost=true;click('avalSalvarBtn');await wait(()=>!d().getElementById('avalSalvarBtn').disabled,'Resposta avaliação perdida');assert(rows(ev).length===0&&pending(ev),'Envio incerto não confirma');before=win().__uxWrites.length;click('avalSalvarBtn');await wait(()=>!d().getElementById('avalSalvarBtn').disabled,'Reenvio bloqueado');assert(win().__uxWrites.length===before,'Não repete INSERT incerto');win().__uxSaveLost=false;click('avalRefreshBtn');await wait(()=>rows(ev).length===1&&!d().getElementById('avalRefreshBtn').disabled,'Consulta confirma avaliação');d().querySelector('#avaliarAtendimentoOverlay .presence-link').click();assert(draft(ev).id&&!pending(ev),'Vínculo por ID');click('avalSalvarBtn');await wait(()=>!draft(ev),'Avaliação confirmada');assert(win().__uxRoutineRows(ev).length===1&&rows(ev)[0].imagem===image&&rows(ev)[0].nota===null,'Sem duplicação e imagem/sem nota preservados');d().querySelector('.aval-image-open').click();assert(d().getElementById('atendimentoImagemDialog').open,'Ampliação segura da imagem');d().getElementById('atendimentoImagemDialog').querySelector('button').click();
+  d().querySelector('.aval-edit-btn').click();enter('avalResumoInput','Resumo revisado');before=win().__uxWrites.length;click('avalSalvarBtn');click('avalSalvarBtn');await wait(()=>!draft(ev),'Edição confirmada');assert(win().__uxWrites.length===before+1&&rows(ev)[0].resumo==='Resumo revisado','Duplo clique e edição');d().querySelector('.aval-edit-btn').click();enter('avalResumoInput','Rascunho durante filtro');enter('avalFiltroNotaInput','com');d().getElementById('avalFiltroNotaInput').dispatchEvent(new(win().Event)('change',{bubbles:true}));assert(d().getElementById('avalResumoInput').value==='Rascunho durante filtro'&&draft(ev).imagem===image,'Filtro preserva edição/imagem');enter('avalFiltroNotaInput','');d().getElementById('avalFiltroNotaInput').dispatchEvent(new(win().Event)('change',{bubbles:true}));
+  win().__uxSaveError=true;d().querySelector('.aval-del-btn').click();await wait(()=>!d().querySelector('.aval-del-btn').disabled,'Exclusão avaliação falha');assert(rows(ev).length===1,'Não exclui otimista');win().__uxSaveError=false;d().querySelector('.aval-del-btn').click();await wait(()=>rows(ev).length===0,'Exclusão avaliação confirmada');assert(draft(ev).resumo==='Rascunho durante filtro','Excluir mantém edição');click('avaliarAtendimentoOverlayClose');
+  click('acompDiarioBtn');await wait(()=>win().presenceReadConfirmed(daily)&&d().getElementById('acdSalvarBtn'),'Editor diário');enter('acdColabInput',person);enter('acdDataInput','2026-10-30');enter('acdSetorInput','Financeiro');enter('acdAssumidosInput','10');enter('acdTransferidosInput','2');enter('acdFinalizadosInput','8');enter('acdNotaInput','0');
+  win().__uxSaveLost=true;click('acdSalvarBtn');click('acompDiarioOverlayClose');assert(d().getElementById('acompDiarioOverlay').classList.contains('open'),'Busy protege fechar');await wait(()=>!d().getElementById('acdSalvarBtn').disabled,'Resposta diário perdida');win().__uxSaveLost=false;click('acdRefreshBtn');await wait(()=>rows(daily).length===1&&!d().getElementById('acdRefreshBtn').disabled,'Consulta diário');d().querySelector('#acompDiarioOverlay .presence-link').click();click('acdSalvarBtn');await wait(()=>!draft(daily),'Diário confirmado');assert(win().__uxRoutineRows(daily).length===1&&rows(daily)[0].nota===0,'Sem duplicação e nota zero preservada');
+  const downloads=win().__uxDownloads.length;click('acdExportBtn');await wait(()=>win().__uxDownloads.length>downloads,'CSV diário');assert((await win().__uxDownloads.at(-1).content).includes('"10","2","8","0"'),'CSV com quantidades e nota confirmadas');
+  d().querySelector('.acd-edit-btn').click();enter('acdFinalizadosInput','9');click('acdSalvarBtn');await wait(()=>!draft(daily)&&rows(daily)[0].finalizados===9,'Edição diária');win().__uxSaveLost=true;d().querySelector('.acd-del-btn').click();await wait(()=>!d().querySelector('.acd-del-btn').disabled,'Resposta exclusão perdida');assert(rows(daily).length===1,'Exclusão sem retorno não confirma');win().__uxSaveLost=false;click('acdRefreshBtn');await wait(()=>rows(daily).length===0&&!d().getElementById('acdRefreshBtn').disabled,'Reconciliar exclusão diária');
+  assert(d().getElementById('acompDiarioOverlay').scrollWidth<=frame.clientWidth,'Formulário diário sem overflow horizontal');assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));document.getElementById('testResult').textContent='PASS: avaliações/diário reais, rascunho/imagem, quota, falhas, reserva sem reinserção, vínculo, sem nota/nota zero, filtros, edição, exclusão e CSV; servidor simulado';return;
+ }
+ if(new URLSearchParams(location.search).has('settings')){
+  win().confirm=()=>true;await tab('insights');win().renderAlertas();const host=()=>d().getElementById('alertasContent'),input=()=>host().querySelector('.alert-goal-input[data-id="score_baixo"]'),official=()=>win().getAlertasConfirmedRules().find(r=>r.id==='score_baixo').valor;
+  const before=win().__uxWrites.length;input().value='4.4';input().dispatchEvent(new(win().Event)('input',{bubbles:true}));assert(official()===4.5&&win().__uxWrites.length===before,'Edição sem alterar indicadores/gravar');win().renderAlertas();assert(input().value==='4.4','Render preserva edição');
+  win().__uxSaveError=true;click('alertGoalsSave');await wait(()=>!d().getElementById('alertGoalsSave').disabled,'Falha configuração');assert(official()===4.5&&input().value==='4.4','Falha preserva oficial/rascunho');
+  win().__uxSaveError=false;win().__uxSaveLost=true;click('alertGoalsSave');await wait(()=>!d().getElementById('alertGoalsSave').disabled,'Resposta perdida');assert(official()===4.5,'Não publica resposta perdida');win().__uxSaveLost=false;click('alertGoalsSave');await wait(()=>official()===4.4&&!d().getElementById('alertGoalsSave').disabled,'Confirmação real');assert(win().__uxRoutineRows('alertas_config').length===1,'Mesmo registro de configuração');
+  const count=win().__uxWrites.length;win().resetAlertasConfig();assert(official()===4.4&&win().__uxWrites.length===count,'Reset prepara sem gravar');click('alertGoalsSave');await wait(()=>official()===4.5&&!d().getElementById('alertGoalsSave').disabled,'Padrões confirmados');
+  assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));document.getElementById('testResult').textContent='PASS: configuração real de alertas, motor oficial separado, edição retomada, falha, resposta perdida, UUID, reset explícito e atualização de indicadores; servidor simulado';return;
+ }
+ if(new URLSearchParams(location.search).has('inativos')){
+  win().confirm=()=>true;const person='Pessoa de teste 1 com nome extenso para revisão de interface';
+  await tab('colaboradores');click('manageColabsBtn');await wait(()=>d().getElementById('manageColabsContent').getAttribute('aria-busy')==='false','Lista de colaboradores');
+  const colabOption=()=>[...d().querySelectorAll('#gfColabList option')].some(o=>o.value===person);
+  assert(colabOption(),'Colaborador ativo nos filtros');win().__uxSaveLost=true;
+  let input=d().querySelector('.colab-active-toggle[data-name="'+person+'"]');input.click();await wait(()=>d().querySelector('#manageColabsContent [data-retry]')&&!d().querySelector('#manageColabsContent [data-retry]').disabled,'Resposta perdida');
+  assert(win().isColabActive(person)&&colabOption(),'Sem alteração otimista nos filtros');win().__uxSaveLost=false;d().querySelector('#manageColabsContent [data-retry]').click();await wait(()=>!win().isColabActive(person)&&!d().querySelector('#manageColabsContent [data-retry]'),'Inativação confirmada');assert(!colabOption(),'Filtro remove apenas após confirmação');
+  input=d().querySelector('.colab-active-toggle[data-name="'+person+'"]');input.click();await wait(()=>win().isColabActive(person)&&!d().querySelector('#manageColabsContent [data-retry]'),'Reativação confirmada');assert(colabOption(),'Filtro restaura colaborador');click('manageColabsDoneBtn');
+  win().openManageSetores();await wait(()=>d().getElementById('manageSetoresContent').getAttribute('aria-busy')==='false','Lista setores');const sectorOption=()=>[...d().querySelectorAll('#gfSetor option')].some(o=>o.value==='Financeiro');assert(sectorOption(),'Setor ativo no filtro');
+  win().__uxSaveError=true;d().querySelector('.setor-active-toggle[data-name="Financeiro"]').click();await wait(()=>d().querySelector('#manageSetoresContent [data-retry]')&&!d().querySelector('#manageSetoresContent [data-retry]').disabled,'Falha setor');assert(sectorOption(),'Falha preserva filtro de setor');win().__uxSaveError=false;d().querySelector('#manageSetoresContent [data-retry]').click();await wait(()=>!win().isSetorActive('Financeiro'),'Setor inativo');assert(!sectorOption(),'Setor confirmado removido do filtro');
+  d().querySelector('.setor-active-toggle[data-name="Financeiro"]').click();await wait(()=>win().isSetorActive('Financeiro')&&!d().querySelector('#manageSetoresContent [data-retry]'),'Setor reativado');assert(sectorOption(),'Setor reativado retorna ao filtro');
+  assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: gerenciadores reais, filtros globais após confirmação, resposta perdida, falha, reativação de pessoas/setores e ausência de erros; servidor simulado';return;
+ }
+ if(new URLSearchParams(location.search).has('cadastro')){
+  const person='Pessoa de teste 1 com nome extenso para revisão de interface';win().confirm=()=>true;
+  const draft=()=>JSON.parse(win().appStorage.getItem('sistema_colaborador_rascunho_v1')||'null'),map=()=>win().getColabInfoLocal();
+  const enter=(id,value)=>{d().getElementById(id).value=value;d().getElementById(id).dispatchEvent(new(win().Event)('input',{bubbles:true}));};
+  const photo=async id=>{const canvas=d().createElement('canvas');canvas.width=canvas.height=2;const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));const file=new(win().File)([blob],'foto-teste.png',{type:'image/png'}),transfer=new(win().DataTransfer)();transfer.items.add(file);d().getElementById(id).files=transfer.files;d().getElementById(id).dispatchEvent(new(win().Event)('change',{bubbles:true}));await wait(()=>draft()?.photo,'Foto preparada');};
+  await tab('colaboradores');const originalProfile=map()[person];win().openColabDetailOverlay(person);enter('ciObservacoes','Contexto em rascunho');enter('ciSalario','2345.67');enter('ciNivel','N2');
+  win().__uxDraftQuota=true;let before=win().__uxWrites.length;click('ciSalvarBtn');assert(win().__uxWrites.length===before&&d().querySelector('.colab-save-message').textContent.includes('rascunho'),'Quota impede envio');win().__uxDraftQuota=false;
+  win().__uxSaveError=true;win().__uxSaveDelay=true;click('ciSalvarBtn');click('ciSalvarBtn');await wait(()=>!d().getElementById('ciSalvarBtn').disabled,'Falha cadastro');assert(win().__uxWrites.length===before+1&&map()[person].observacoes===originalProfile.observacoes,'Sem publicação otimista/duplo clique');
+  click('colabDetailClose');win().openColabDetailOverlay(person);assert(d().getElementById('ciObservacoes').value==='Contexto em rascunho'&&d().getElementById('ciSalario').value==='2345.67','Reabre com rascunho');
+  win().confirm=()=>false;win().openColabDetailOverlay('Outra pessoa');assert(draft().name===person,'Não descarta outro rascunho sem confirmação');win().confirm=()=>true;
+  click('ciLimparBtn');await wait(()=>!d().getElementById('ciLimparBtn').disabled,'Limpeza falha');assert(d().getElementById('ciObservacoes').value==='Contexto em rascunho','Limpeza falha preserva campos');
+  win().__uxSaveError=false;win().__uxSaveLost=true;click('ciSalvarBtn');await wait(()=>!d().getElementById('ciSalvarBtn').disabled,'Resposta perdida');assert(draft()&&d().getElementById('colabDetailOverlay').classList.contains('open'),'Resposta perdida mantém editor');
+  win().__uxSaveLost=false;click('ciSalvarBtn');await wait(()=>!draft(),'Cadastro confirmado');assert(map()[person].salario===2345.67&&map()[person].observacoes==='Contexto em rascunho','Projeção confirmada');assert(win().__uxRoutineRows('colaboradores_info').filter(r=>r.nome===person).length===1,'Cadastro não duplica');
+  win().openColabDetailOverlay(person);await photo('ciFoto');enter('ciEmail','teste@local.invalid');win().__uxSaveError=true;win().__uxErrorTable='colaborador_fotos';click('ciSalvarBtn');await wait(()=>!d().getElementById('ciSalvarBtn').disabled,'Foto falha');assert(map()[person].email==='teste@local.invalid'&&draft().photo&&d().querySelector('.colab-save-message').textContent.includes('Cadastro confirmado'),'Confirmação parcial explícita');assert(!win().getColabFoto(person),'Foto não otimista');
+  click('colabDetailClose');win().openColabDetailOverlay(person);assert(draft().photo&&d().getElementById('ciFotoPreview').querySelector('img'),'Foto em rascunho retomada');win().__uxSaveError=false;win().__uxErrorTable=null;click('ciSalvarBtn');await wait(()=>!draft(),'Foto confirmada');assert(win().getColabFoto(person),'Foto confirmada visível');
+  win().openColabDetailOverlay(person);click('ciFotoRemover');win().__uxSaveError=true;win().__uxErrorTable='colaborador_fotos';click('ciSalvarBtn');await wait(()=>!d().getElementById('ciSalvarBtn').disabled,'Remoção de foto falha');assert(win().getColabFoto(person)&&draft().photo==='','Foto confirmada preservada em falha');win().__uxSaveError=false;click('ciSalvarBtn');await wait(()=>!draft(),'Remoção confirmada');assert(!win().getColabFoto(person),'Foto removida após confirmação');
+  click('novoColaboradorBtn');enter('novoColaboradorNome','Nova pessoa de teste');enter('novoColaboradorSetor','Financeiro');win().__uxErrorTable=null;win().__uxSaveError=true;d().getElementById('novoColaboradorForm').requestSubmit();await wait(()=>!d().querySelector('#novoColaboradorForm [type=submit]').disabled,'Criação falha');assert(!map()['Nova pessoa de teste']&&draft().mode==='new','Criação falha preserva edição');
+  click('novoColaboradorFechar');click('novoColaboradorBtn');assert(d().getElementById('novoColaboradorNome').value==='Nova pessoa de teste','Novo cadastro retoma');win().__uxSaveError=false;d().getElementById('novoColaboradorForm').requestSubmit();await wait(()=>map()['Nova pessoa de teste']&&!draft(),'Criação confirmada');assert(!win().__uxWrites.some(write=>write==='colab_inativos:delete'),'Novo cadastro não exclui coleção');
+  enter('ciObservacoes','Texto para preservar na limpeza');click('ciSalvarBtn');await wait(()=>!draft(),'Salva antes de limpar');win().openColabDetailOverlay('Nova pessoa de teste');click('ciLimparBtn');await wait(()=>map()['Nova pessoa de teste'].observacoes==='','Limpeza confirmada');assert(draft().data.observacoes==='Texto para preservar na limpeza','Limpeza preserva edição');
+  assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: cadastro real com servidor simulado, falhas/quota, rascunho e foto retomados, resposta perdida, patch parcial, duplo clique, confirmação parcial explícita, criação e limpeza confirmadas';return;
+ }
+ if(new URLSearchParams(location.search).has('routine')){
+  win().confirm=()=>true;
+  const enter=(id,value)=>{d().getElementById(id).value=value;d().getElementById(id).dispatchEvent(new(win().Event)('input',{bubbles:true}))};
+  const taskDraft=()=>JSON.parse(win().appStorage.getItem('sistema_tarefa_rascunho_v1')||'null'),noteDraft=()=>JSON.parse(win().appStorage.getItem('sistema_anotacao_editando_v1')||'null');
+  const tasks=()=>win().AppState.get('tarefas')||[],notes=()=>win().AppState.get('anotacoes')||[];
+  await tab('tarefas');click('tarefaNovaBtn');enter('tarefaTituloInput','Verificação de rotina');enter('tarefaDescricaoInput','Rascunho com contexto');enter('tarefaDataInput','2026-10-29');
+  d().getElementById('tarefaRotinaAtiva').checked=true;d().getElementById('tarefaRotinaAtiva').dispatchEvent(new(win().Event)('change',{bubbles:true}));
+  const id=taskDraft().id;win().__uxDraftQuota=true;let before=win().__uxWrites.length;click('tarefaSalvarBtn');assert(win().__uxWrites.length===before,'Quota impede envio');win().__uxDraftQuota=false;
+  win().__uxSaveError=true;win().__uxSaveDelay=true;click('tarefaSalvarBtn');click('tarefaSalvarBtn');await wait(()=>!d().getElementById('tarefaSalvarBtn').disabled,'Falha tarefa');
+  assert(tasks().length===0&&taskDraft().id===id&&win().__uxWrites.length===before+1,'Falha não publica e duplo clique bloqueado');
+  await tab('home');await tab('tarefas');assert(d().getElementById('tarefaTituloInput').value==='Verificação de rotina','Retoma ao voltar');
+  d().querySelector('[data-task-view="lista"]').click();assert(taskDraft().id===id&&d().getElementById('tarefaDescricaoInput').value==='Rascunho com contexto','Vista preserva edição');
+  win().__uxSaveError=false;win().__uxSaveLost=true;click('tarefaSalvarBtn');await wait(()=>!d().getElementById('tarefaSalvarBtn').disabled,'Resposta tarefa perdida');assert(taskDraft().id===id&&tasks().length===0,'Resposta perdida preserva rascunho');
+  win().__uxSaveLost=false;click('tarefaSalvarBtn');await wait(()=>tasks().length===1&&!taskDraft(),'Tarefa confirmada');assert(win().__uxRoutineRows('tarefas').length===1,'UUID não duplica');
+  const select=()=>d().querySelector('.tarefa-card-status');win().__uxSaveLost=true;select().value='concluida';select().dispatchEvent(new(win().Event)('change',{bubbles:true}));await wait(()=>d().getElementById('tarefaRetryStatusBtn')&&!select().disabled,'Mudança perdida');assert(tasks()[0].rotinaProximaData==='2026-10-29','Recorrência não otimista');
+  await win().dbTarefasLoad();win().renderTarefas();const next=tasks()[0].rotinaProximaData;win().__uxSaveLost=false;click('tarefaRetryStatusBtn');await wait(()=>!d().getElementById('tarefaRetryStatusBtn'),'Retenta status');assert(tasks()[0].rotinaProximaData===next,'Retentativa não avança novamente');
+  win().__uxSaveError=true;d().querySelector('.tarefa-card-excluir').click();await wait(()=>!d().querySelector('.tarefa-card-excluir').disabled,'Excluir tarefa falha');assert(tasks().length===1,'Não remove tarefa antes da confirmação');win().__uxSaveError=false;
+  click('rotinaAnotacoesBtn');await wait(()=>d().getElementById('anotacaoTextoInput'),'Notas');enter('anotacaoTextoInput','Observação privada preservada');enter('anotacaoTagsInput','processo, reunião');const nid=noteDraft().id;
+  click('anotacoesOverlayClose');click('rotinaAnotacoesBtn');assert(noteDraft().id===nid&&d().getElementById('anotacaoTextoInput').value==='Observação privada preservada','Reabrir preserva nota');
+  enter('anotacaoBusca','inexistente');assert(d().getElementById('anotacaoTextoInput').value==='Observação privada preservada','Busca preserva nota');enter('anotacaoBusca','');
+  win().__uxSaveError=true;click('anotacaoSalvarBtn');await wait(()=>!d().getElementById('anotacaoSalvarBtn').disabled,'Nota falha');assert(notes().length===0&&noteDraft().id===nid,'Nota só após confirmação');
+  win().__uxSaveError=false;win().__uxSaveLost=true;click('anotacaoSalvarBtn');await wait(()=>!d().getElementById('anotacaoSalvarBtn').disabled,'Nota resposta perdida');win().__uxSaveLost=false;click('anotacaoSalvarBtn');await wait(()=>notes().length===1&&!noteDraft(),'Nota confirmada');assert(win().__uxRoutineRows('anotacoes_diarias').length===1,'Nota sem duplicação');
+  win().__uxSaveError=true;d().querySelector('.nota-fav-btn').click();await wait(()=>!d().querySelector('.nota-fav-btn').disabled,'Favorito falha');assert(!notes()[0].favorito,'Favorito não otimista');win().__uxSaveError=false;d().querySelector('.nota-fav-btn').click();await wait(()=>notes()[0].favorito,'Favorito confirmado');
+  d().querySelector('.anotacao-editar-btn').click();enter('anotacaoTextoInput','Edição ainda não enviada');win().__uxSaveError=true;d().querySelector('.anotacao-excluir-btn').click();await wait(()=>!d().querySelector('.anotacao-excluir-btn').disabled,'Excluir nota falha');assert(notes().length===1&&noteDraft().conteudo==='Edição ainda não enviada','Erro preserva registro e edição');
+  win().__uxSaveError=false;d().querySelector('.anotacao-excluir-btn').click();await wait(()=>notes().length===0,'Nota excluída');assert(noteDraft().conteudo==='Edição ainda não enviada','Excluir não apaga edição');
+  assert(win().__uxErrors.length===0,'Sem erros não tratados: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: tarefas/notas reais com servidor simulado, rascunhos/retomada, quota, falhas, UUID estável, duplo clique, recorrência após resposta perdida, favoritos e exclusões confirmadas';return;
+ }
+ if(new URLSearchParams(location.search).has('evaluations')){
+  const person='Pessoa de teste 1 com nome extenso para revisão de interface';
+  const toasts=[],originalToast=win().showToast;win().showToast=(text,type,...rest)=>{toasts.push({text,type});return originalToast(text,type,...rest)};win().confirm=()=>true;
+  const draft=()=>JSON.parse(win().appStorage.getItem('sistema_avaliacao_rascunho_v1')||'null'),confirmed=()=>win().getAvaliacoesLocal();
+  const enter=(id,value)=>{d().getElementById(id).value=value;d().getElementById(id).dispatchEvent(new (win().Event)('input',{bubbles:true}))};
+  await tab('avaliacao');assert(win().openAvaliacaoPerson(person),'Seleciona pessoa');click('avaliacaoNovaBtn');
+  const form=d().getElementById('avaliacaoForm');assert(form,'Formulário real');assert(d().documentElement.scrollWidth<=frame.clientWidth+1,'Avaliação expandida sem overflow global');
+  d().querySelector('#avaliacaoForm input[name="score_1"][value="3"]').click();enter('avaliacaoObsGerais','Evidência original');
+  const comp=d().querySelector('#avaliacaoForm [name="obs_1"]');comp.value='Exemplo específico preservado';comp.dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  enter('avaliacaoNovoComentarioInput','Comentário final preservado');click('avaliacaoAddComentarioBtn');await wait(()=>draft()?.comentarios_finais.length===1,'Rascunho completo');
+  const id=draft().id;assert(/^[a-f0-9-]{36}$/.test(id),'UUID estável antes de enviar');
+  win().__uxDraftQuota=true;let noSend=win().__uxWrites.length;form.requestSubmit();assert(d().getElementById('avaliacaoSaveMessage').textContent.includes('Não foi possível guardar')&&win().__uxWrites.length===noSend,'Falha ao preservar rascunho impede envio');win().__uxDraftQuota=false;
+  win().__uxSaveError=true;win().__uxSaveDelay=true;let before=win().__uxWrites.length;form.requestSubmit();form.requestSubmit();
+  await wait(()=>d().getElementById('avaliacaoSaveMessage')?.textContent.includes('não foi possível')||d().getElementById('avaliacaoSaveMessage')?.textContent.includes('Não foi possível'),'Falha visível');
+  assert(win().__uxWrites.length===before+1,'Duplo envio bloqueado');assert(confirmed().length===0&&!toasts.some(t=>t.type==='success'&&t.text.includes('salva com sucesso')),'Falha não vira sucesso');
+  assert(draft().scores['1']===3&&draft().observacoes_competencias['1']==='Exemplo específico preservado','Notas e evidências no rascunho');
+  click('avaliacaoCancelarBtn');assert(!d().getElementById('avaliacaoForm')&&d().getElementById('avaliacaoResumeDraft'),'Fechar editor mantém retomada');
+  win().__uxSaveError=false;await win().dbAvaliacoesLoad();assert(draft().id===id&&confirmed().length===0,'Servidor vazio não apaga rascunho');
+  if(new URLSearchParams(location.search).has('preview')){document.getElementById('testResult').textContent='PASS: prévia com falha simulada e rascunho preservado, sem gravação no servidor';return;}
+  click('avaliacaoResumeDraft');assert(d().querySelector('#avaliacaoForm input[name="score_1"]:checked')?.value==='3'&&d().querySelector('#avaliacaoForm [name="obs_1"]').value==='Exemplo específico preservado','Retoma notas e evidências');assert(d().getElementById('avaliacaoForm').dataset.id===id&&d().getElementById('avaliacaoObsGerais').value==='Evidência original','Retoma mesmo ID e texto');
+  win().__uxSaveLost=true;d().getElementById('avaliacaoForm').requestSubmit();await wait(()=>d().getElementById('avaliacaoSaveMessage')?.textContent.includes('mantido'),'Resposta perdida');
+  assert(win().__uxEvaluationRows().length===1&&confirmed().length===0,'Resposta perdida mantém apenas rascunho na projeção');
+  win().__uxSaveLost=false;d().getElementById('avaliacaoForm').requestSubmit();await wait(()=>confirmed().length===1&&!draft(),'Gravação confirmada');
+  assert(win().__uxEvaluationRows().length===1&&confirmed()[0].id===id,'Retentativa não duplica');
+  d().querySelector('.avaliacao-editar-btn').click();enter('avaliacaoObsGerais','Nova evidência ainda em rascunho');win().__uxSaveError=true;d().getElementById('avaliacaoForm').requestSubmit();
+  await wait(()=>d().getElementById('avaliacaoSaveMessage')?.textContent.includes('mantido'),'Falha de edição');assert(confirmed()[0].observacoes_gerais==='Evidência original','Falha preserva versão confirmada');click('avaliacaoCancelarBtn');
+  win().__uxSaveError=false;d().querySelector('.avaliacao-status-tag').click();await wait(()=>confirmed()[0].status==='revisado','Status confirmado');
+  assert(win().__uxEvaluationRows()[0].observacoes_gerais==='Evidência original'&&draft().observacoes_gerais==='Nova evidência ainda em rascunho','Status não reenvia texto do rascunho');
+  click('avaliacaoResumeDraft');d().getElementById('avaliacaoForm').requestSubmit();await wait(()=>!draft()&&confirmed()[0].observacoes_gerais==='Nova evidência ainda em rascunho','Edição confirmada');assert(confirmed()[0].status==='revisado','Edição não desfaz status');
+  d().body.dataset.role='viewer';win().renderAvaliacao();assert(d().getElementById('avaliacaoNovaBtn').disabled&&d().querySelector('.avaliacao-status-tag').disabled,'Consulta sem ações de edição');assert(win().renderAvaliacaoForm(person,'Teste',null)===false,'Viewer não abre edição');d().body.dataset.role='admin';win().renderAvaliacao();
+  win().__uxSaveError=true;d().querySelector('.avaliacao-excluir-btn').click();await wait(()=>!d().querySelector('.avaliacao-excluir-btn').disabled,'Erro de exclusão');assert(confirmed().length===1&&win().__uxEvaluationRows().length===1,'Exclusão falha não remove projeção');
+  win().__uxSaveError=false;before=win().__uxWrites.length;d().querySelector('.avaliacao-excluir-btn').click();d().querySelector('.avaliacao-excluir-btn').click();await wait(()=>confirmed().length===0,'Exclusão confirmada');assert(win().__uxWrites.length===before+1,'Duplo clique não duplica exclusão');
+  assert(!win().__uxErrors.length,'Sem exceções: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: avaliação real, falha sem falso sucesso, rascunho completo/retomada, resposta perdida/UUID estável, edição, status isolado, exclusão confirmada e duplo envio; servidor simulado';return;
+ }
+ if(new URLSearchParams(location.search).has('people')){
+  const one='Pessoa de teste 1 com nome extenso para revisão de interface',two='Pessoa de teste 2 com nome extenso para revisão de interface';
+  const profile=()=>d().getElementById('equipe360Dialog');
+  await tab('colaboradores');assert(!d().querySelector('.pdi-profile-btn'),'PDI não duplica ação no cartão');
+  d().querySelector('.colab-360-btn').click();await wait(()=>profile()?.open&&profile().querySelector('[data-e360-action="avaliacao"]'),'Perfil a partir do cartão');
+  await win().openEquipe360(one);assert(bounds(profile())&&profile().scrollWidth<=profile().clientWidth+1,'Perfil cabe na tela com nome extenso');profile().querySelector('[data-e360-action="avaliacao"]').click();await wait(()=>!profile().open&&d().getElementById('avaliacaoColabSelect')?.value===one,'Avaliação com pessoa selecionada');
+  assert(!d().getElementById('avaliacaoForm'),'Acesso não cria avaliação automaticamente');assert(bounds(d().querySelector('#tab-avaliacao [data-e360-back]')),'Retorno da avaliação cabe na tela');
+  d().getElementById('avaliacaoQualitativa').value='Rascunho não salvo';d().getElementById('avaliacaoQualitativa').dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  d().querySelector('#tab-avaliacao [data-e360-back]').click();await wait(()=>profile().open&&profile().querySelector('[data-e360-action="avaliacao"]'),'Voltar ao perfil');
+  profile().querySelector('[data-e360-action="avaliacao"]').click();await wait(()=>!profile().open,'Retomar avaliação da mesma pessoa');assert(d().getElementById('avaliacaoQualitativa').value==='Rascunho não salvo','Mesma pessoa conserva o formulário');
+  await win().openEquipe360(two);win().confirm=()=>false;profile().querySelector('[data-e360-action="avaliacao"]').click();await new Promise(r=>setTimeout(r,100));
+  assert(profile().open&&d().getElementById('avaliacaoQualitativa').value==='Rascunho não salvo','Recusa mantém avaliação anterior');
+  win().confirm=()=>true;profile().querySelector('[data-e360-action="avaliacao"]').click();await wait(()=>!profile().open&&d().getElementById('avaliacaoColabSelect').value===two,'Segunda pessoa exata na avaliação');
+  await win().openEquipe360(two);win().appStorage.setItem('sistema_feedback_editando_v1',JSON.stringify({colaborador:one,feedback_final:'Rascunho da primeira pessoa'}));win().confirm=()=>false;
+  profile().querySelector('[data-e360-action="feedback"]').click();await wait(()=>!profile().querySelector('[data-e360-action="feedback"]').disabled,'Decisão sobre rascunho de feedback');
+  assert(profile().open&&JSON.parse(win().appStorage.getItem('sistema_feedback_editando_v1')).colaborador===one,'Não troca rascunho sem confirmação');
+  win().confirm=()=>true;profile().querySelector('[data-e360-action="feedback"]').click();await wait(()=>!profile().open&&d().getElementById('fbColabSelect')?.value===two,'Feedback da segunda pessoa');
+  assert(bounds(d().querySelector('#feedbacksOverlay [data-e360-back]')),'Retorno do feedback cabe na tela');
+  assert(!d().getElementById('fbFinalTexto').value&&d().getElementById('fbSalvarBtn').disabled,'Não gera nem salva texto automaticamente');
+  d().getElementById('fbFinalTexto').value='Novo rascunho da segunda pessoa';d().getElementById('fbFinalTexto').dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  d().querySelector('#feedbacksOverlay [data-e360-back]').click();await wait(()=>profile().open&&profile().querySelector('[data-e360-action="pdi"]'),'Retorno do feedback ao perfil');
+  profile().querySelector('[data-e360-action="pdi"]').click();await wait(()=>!profile().open&&d().getElementById('pdiPerson')?.value===two,'PDI da pessoa exata');
+  d().getElementById('pdiObjetivo').value='Objetivo ainda não salvo';d().getElementById('pdiObjetivo').dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  d().querySelector('#tab-perfil-pdi [data-e360-back]').click();await wait(()=>profile().open&&profile().querySelector('[data-e360-action="pdi"]'),'Voltar do PDI ao perfil');
+  profile().querySelector('[data-e360-action="pdi"]').click();await wait(()=>!profile().open,'Retomar PDI');assert(d().getElementById('pdiObjetivo').value==='Objetivo ainda não salvo','Mesma pessoa conserva rascunho do PDI');
+  win().confirm=()=>false;d().querySelector('.shell-group-entry').click();assert(d().body.dataset.activeTab==='perfil-pdi'&&d().getElementById('pdiObjetivo').value==='Objetivo ainda não salvo','Recusa mantém PDI e rota ativa');
+  assert(d().querySelector('[data-tab="colaboradores"]').getAttribute('aria-selected')==='true','Shell não muda contexto quando guard cancela');
+  win().confirm=()=>true;d().querySelector('.shell-group-entry').click();assert(d().body.dataset.activeTab==='lider','Gestão coletiva abre explicitamente');
+  assert(win().__uxWrites.length===0,'Navegação não grava dados');assert(!win().__uxErrors.length,'Sem exceções: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: Equipe/gestão coletiva, perfil, avaliação/feedback/PDI com pessoa exata, retorno, rascunhos protegidos, cancelamento coerente e navegação sem escrita';return;
+ }
+ if(new URLSearchParams(location.search).has('saves')){
+  await tab('metas');assert(d().querySelector('#tab-metas.active #metasContent'),'Metas acessíveis pela navegação real');click('newMetaBtn');assert(d().activeElement.id==='metaTitleInput','Nova meta leva ao formulário');
+  d().getElementById('metaTitleInput').value='Meta de teste';d().getElementById('metaTitleInput').dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  d().getElementById('gfSetor').value='Financeiro';d().getElementById('gfSetor').dispatchEvent(new (win().Event)('change',{bubbles:true}));
+  assert(d().getElementById('metaTitleInput').value==='Meta de teste','Troca de filtro preserva formulário');d().getElementById('metaTargetInput').value='100';
+  win().__uxSaveError=true;click('saveMetaBtn');await wait(()=>!d().getElementById('saveMetaBtn').disabled,'Falha de meta concluída');
+  assert(d().getElementById('metaTitleInput').value==='Meta de teste','Campos da meta mantidos');
+  assert(!win().appStorage.getItem('sistema_metas_v1')||JSON.parse(win().appStorage.getItem('sistema_metas_v1')).length===0,'Falha não vira meta confirmada');
+  const metaDraft=JSON.parse(win().appStorage.getItem('sistema_meta_rascunho_v1'));assert(metaDraft.id,'Rascunho de meta com ID');
+  win().renderMetas();assert(d().getElementById('metaTitleInput').value==='Meta de teste','Rascunho restaura após reabrir');
+  win().__uxSaveError=false;win().__uxSaveDelay=true;const count=win().__uxWrites.length;click('saveMetaBtn');click('saveMetaBtn');
+  await wait(()=>d().querySelector('.meta-title')?.textContent==='Meta de teste','Meta confirmada');
+  assert(win().__uxWrites.length===count+1,'Duplo clique não duplica meta');assert(JSON.parse(win().appStorage.getItem('sistema_metas_v1'))[0].id===metaDraft.id,'Meta usa UUID do rascunho');
+  const query=d().getElementById('gfPesquisa');query.value='nenhuma pessoa com este termo';query.dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  await wait(()=>d().getElementById('metasContent').textContent.includes('Sem indicadores neste recorte'),'Recorte vazio nas metas');
+  assert(d().querySelector('.meta-title')?.textContent==='Meta de teste','Recorte vazio não esconde meta');
+  assert(!d().querySelector('.meta-progress')?.getClientRects().length,'Recorte vazio não afirma progresso zero');
+  query.value='';query.dispatchEvent(new (win().Event)('input',{bubbles:true}));await wait(()=>d().querySelector('.meta-progress')?.getClientRects().length,'Progresso reaparece com dados');
+  win().appStorage.setItem('sistema_feedback_editando_v1',JSON.stringify({colaborador:'Pessoa de teste 1 com nome extenso para revisão de interface',mes:'2026-09',feedback_final:'Texto preservado',anotacoes:'Contexto',sugestao_automatica:'Sugestão'}));
+  await win().openFeedbacksOverlay();await wait(()=>d().getElementById('fbSalvarBtn'),'Editor de feedback');win().__uxSaveError=true;
+  click('fbSalvarBtn');await wait(()=>!d().getElementById('fbSalvarBtn').disabled,'Falha de feedback concluída');
+  const draft=JSON.parse(win().appStorage.getItem('sistema_feedback_editando_v1'));assert(draft.feedback_final==='Texto preservado','Rascunho mantido');
+  assert(!win().appStorage.getItem('sistema_feedbacks_v1')||JSON.parse(win().appStorage.getItem('sistema_feedbacks_v1')).length===0,'Sem feedback falsamente confirmado');
+  win().__uxSaveError=false;const before=win().__uxWrites.length;click('fbSalvarBtn');click('fbSalvarBtn');
+  await wait(()=>!win().appStorage.getItem('sistema_feedback_editando_v1'),'Feedback confirmado');
+  const saved=JSON.parse(win().appStorage.getItem('sistema_feedbacks_v1'));assert(saved.length===1&&saved[0].id===draft.id,'Mesmo ID confirmado sem duplicação');assert(win().__uxWrites.length===before+1,'Duplo clique não duplica feedback');
+  d().body.dataset.role='viewer';win().renderMetas();assert(!d().getElementById('saveMetaBtn')&&!d().querySelector('.remove-meta-btn'),'Metas somente leitura para viewer');
+  d().body.dataset.role='admin';win().renderMetas();
+  assert(!win().__uxErrors.length,'Sem exceções: '+win().__uxErrors.join(';'));
+  document.getElementById('testResult').textContent='PASS: formulários reais, falhas explícitas, rascunhos preservados/restaurados, UUID estável, sucesso confirmado e duplo clique bloqueado; somente servidor simulado';return;
+ }
+ if(new URLSearchParams(location.search).has('cockpit')){
+  await wait(()=>d().querySelector('.cockpit-context')?.textContent.includes('2026-09')&&d().querySelector('[data-cockpit-task="0"]'),'Cockpit com fontes carregadas');
+  assert(!d().querySelector('.cockpit-context h3').textContent.includes('2026-10'),'Referência padrão evita mês em andamento');
+  assert(d().querySelector('.cockpit-briefing').textContent.includes('1 sem Score'),'Nota ausente explícita');
+  let model=win().HomeCockpit.model();assert(d().querySelector('#homeVolumeKpi .home-kpi-value').textContent===model.metrics.finished.toLocaleString('pt-BR'),'KPI mostra atendimentos, não linhas de CSV');assert(d().getElementById('homeScoreCoverage').textContent==='11 de 12 pessoas com nota','Cobertura por pessoa explícita');assert(d().querySelector('.cockpit-base').textContent.includes('12 registro(s)'),'Linhas ficam no detalhe da fonte');
+  const teams=d().getElementById('cockpitTeams');assert(!teams.open,'Equipes recolhidas por padrão');teams.open=true;
+  const originalRecords=win().AppState.get('records'),originalRegistry=win().AppState.get('colaboradores'),sample={...model.rows[0],Finalizados:0,SCORE:0,Score:0};
+  win().AppState.publish('records',{...originalRecords,view:[sample]});win().renderHome();assert(d().querySelector('#homeVolumeKpi .home-kpi-value').textContent==='0'&&d().querySelector('#homeScoreKpi .home-kpi-value').textContent==='0,00','Zeros explícitos não viram ausência');assert(d().getElementById('homeScoreCoverage').textContent==='1 de 1 pessoa com nota','Zero conta como nota válida');
+  win().AppState.publish('records',{...originalRecords,view:[{...sample,Finalizados:'',SCORE:null,Score:null}]});win().renderHome();assert(d().querySelector('#homeVolumeKpi .home-kpi-value').textContent==='—'&&d().querySelector('#homeScoreKpi .home-kpi-value').textContent==='—','Ausência não vira zero');
+  win().AppState.publish('records',originalRecords);const birthdayName=model.rows[0].Atendente;win().AppState.publish('colaboradores',{...originalRegistry,[birthdayName]:{...originalRegistry[birthdayName],data_aniversario:'2000-10-28'}});win().renderHome();assert(d().querySelector('.home-operations-card [data-home-action="colaboradores"]')?.textContent.includes(birthdayName),'Agenda usa cadastro confirmado mesmo sem atualizar cache');win().AppState.publish('colaboradores',originalRegistry);win().renderHome();
+
+  assert(d().querySelectorAll('[data-cockpit-person]').length===1,'Um vínculo com evidências');
+  assert(!d().querySelector('.cockpit-item script'),'Título de tarefa escapado');
+  d().querySelector('[data-cockpit-person]').click();await wait(()=>d().getElementById('e360Tab-desempenho')?.getAttribute('aria-selected')==='true','Perfil de desempenho');
+  assert(d().getElementById('e360Title').textContent.startsWith('Pessoa de teste 1 '),'Vínculo exato');d().getElementById('equipe360Dialog').close();
+  d().querySelector('[data-cockpit-task="0"]').click();await wait(()=>d().activeElement?.dataset.tarefaId==='late','Tarefa certa focada');
+  await tab('home');d().querySelector('[data-cockpit-diagnostic]').click();await wait(()=>d().body.dataset.activeTab==='lider','Diagnóstico no período');assert(d().getElementById('gfPeriodo').value==='2026-09','Diagnóstico preserva referência');await tab('home');click('gfClearBtn');
+  const sector=d().getElementById('gfSetor');sector.value='Estoque e OS';sector.dispatchEvent(new (win().Event)('change',{bubbles:true}));
+  await wait(()=>d().querySelectorAll('[data-cockpit-person]').length===0,'Filtro de equipe no cockpit');assert(d().querySelectorAll('[data-cockpit-task]').length===2,'Tarefas da conta mantidas');
+  click('gfClearBtn');const period=d().getElementById('gfPeriodo');period.value='2026-10';period.dispatchEvent(new (win().Event)('change',{bubbles:true}));await wait(()=>d().querySelector('.cockpit-coverage')?.textContent.includes('Período em andamento'),'Período parcial explícito');
+  click('gfClearBtn');
+  const refresh=async()=>{const before=win().__uxReads.filter(t=>t==='registros').length;click('cockpitRefresh');await wait(()=>win().__uxReads.filter(t=>t==='registros').length>before&&!d().getElementById('cockpitRefresh')?.disabled,'Atualização somente leitura')};
+  win().__uxOffline=true;await refresh();assert(d().getElementById('cockpitTeams').open,'Seção aberta é preservada na atualização');await wait(()=>d().querySelector('.cockpit-source').textContent.includes('Cache'),'Cache identificado');
+  win().__uxOffline=false;win().__uxEmptyRecords();await refresh();await wait(()=>d().querySelector('.cockpit-context h3').textContent.includes('Sem período'),'Vazio do servidor respeitado');
+  win().__uxResetRecords();await refresh();await wait(()=>d().querySelector('.cockpit-context h3').textContent.includes('2026-09'),'Referência restaurada da fonte');
+  assert(win().__uxWrites.length===0,'Cockpit não grava: '+win().__uxWrites);assert(win().__uxErrors.length===0,'Erros: '+win().__uxErrors);
+  assert(d().documentElement.scrollWidth<=frame.clientWidth,'Cockpit sem overflow');
+  if(new URLSearchParams(location.search).has('race')){
+    win().__uxHoldRecords=true;click('cockpitRefresh');await wait(()=>win().__uxBlocked,'Consulta bloqueada');win().AppDataSession.invalidate();win().dispatchEvent(new (win().Event)('app-session-invalidated'));win().__uxReleaseRecords();
+    await new Promise(r=>setTimeout(r,150));assert(d().getElementById('appScreen').style.display==='none'&&win().AppState.get('records')===null&&win().HomeCockpit.model().rows.length===0,'Sessão invalidada não reabre cockpit');
+  }
+  document.getElementById('testResult').textContent='PASS: Home com volume/cobertura, zero/ausência, agenda confirmada, seções expansíveis, cockpit, mês fechado/parcial, ausência de nota, evidências, perfil exato, tarefa focada, filtros, cache, vazio e atualização sem escrita';return;
+ }
+ for(const name of ['home','dashboard','relatorio-setorial','saude-operacional','metas','tarefas','regras','ponto','colaboradores','lider','insights','avaliacao','perfil-pdi','mapeamento-time']){
+  await tab(name);if(name==='relatorio-setorial'){assert(!d().getElementById('panoramaSuporteRoot'),'Panorama fora da tela setorial');assert(!d().querySelector('script[src*="panorama-suporte"],link[href*="panorama-suporte"]'),'Relatório não carrega recursos do Panorama');}assert(d().documentElement.scrollWidth<=frame.clientWidth,'Overflow global: '+name);assert(bounds(d().getElementById('appPageTitle')),'Título dentro do cabeçalho: '+name);
+ }
+ await tab('relatorio-setorial');
+ const entry=d().querySelector('.shell-analysis-entry');entry.focus();entry.dispatchEvent(new (win().KeyboardEvent)('keydown',{key:'ArrowRight',bubbles:true}));
+ assert(d().activeElement?.dataset.tab==='metas','Setas navegam no grupo principal');
+ d().activeElement.click();assert(d().querySelector('#tab-metas.active'),'Metas abre pela navegação principal');
+ assert(d().getElementById('shellAnalysisPanel').hidden,'Metas não mantém seletor analítico');
+ entry.click();assert(d().body.dataset.activeTab==='relatorio-setorial','Análises restaura visualização');
+ const firstView=d().querySelector('#shellAnalysisTabs [data-tab="dashboard"]');firstView.focus();firstView.dispatchEvent(new (win().KeyboardEvent)('keydown',{key:'ArrowRight',bubbles:true}));
+ assert(d().activeElement?.dataset.tab==='relatorio-setorial','Setas ficam nas visualizações analíticas');
+ await tab('dashboard');const sector=d().getElementById('gfSetor');sector.value='Financeiro';sector.dispatchEvent(new (win().Event)('change',{bubbles:true}));
+ await wait(()=>win().Chart?.getChart(d().getElementById('mainChart'))?.data.datasets.length,'Chart.js real e gráfico com dados');
+ assert(d().querySelectorAll('#previewTable tbody tr').length>0,'Tabela preenchida');
+ click('exportChartPngBtn');await wait(()=>win().__uxDownloads.some(r=>r.name.endsWith('.png')),'Exportação PNG');
+ const png=win().__uxDownloads.find(r=>r.name.endsWith('.png'));assert(png.href.startsWith('data:image/png;base64,'),'PNG válido');
+ const image=new (win().Image)();image.src=png.href;await image.decode();assert(image.naturalWidth>0&&image.naturalHeight>0,'PNG decodificável');
+ click('generateReportBtn');await wait(()=>d().querySelector('.rs-context'),'Contexto setorial único');
+ assert(!d().getElementById('rsFilterSector')&&!d().getElementById('rsGenerateBtn'),'Sem filtro/geração duplicados');
+ assert(d().querySelector('.rs-context').textContent.includes('Financeiro'),'Relatório segue setor do topo');
+ await wait(()=>d().getElementById('reportText')?.value?.length>100,'Relatório executivo');
+ await tab('relatorio-setorial');await wait(()=>d().querySelector('.rs-context'),'Relatório gerado automaticamente');
+ const period=d().getElementById('gfPeriodo');period.value='__multi__';period.dispatchEvent(new (win().Event)('change',{bubbles:true}));
+ const checks=[...d().querySelectorAll('#gfMonthChecklist input[type="checkbox"]')];
+ for(const box of checks){box.checked=['2026-04','2026-09'].includes(box.value);box.dispatchEvent(new (win().Event)('change',{bubbles:true}));}
+ // Use o estado do filtro como a interface faz; meses não contíguos precisam ficar explícitos no relatório.
+ assert(checks.length>=6,'Seleção de meses disponível');
+ {await wait(()=>d().querySelector('.rs-context')?.textContent.includes('2026-04, 2026-09'),'Recorte não contíguo');assert(!d().querySelector('.rs-context').textContent.includes('2026-05'),'Sem meses implícitos');}
+ period.value='2026-09';period.dispatchEvent(new (win().Event)('change',{bubbles:true}));await wait(()=>d().querySelector('.rs-context')?.textContent.includes('Meses com dados: 2026-09'),'Mês único');assert(!d().getElementById('reportText').value,'Texto de outro recorte não é restaurado');click('refreshReportBtn');await wait(()=>d().getElementById('reportText').value.includes('Meses com dados: 2026-09'),'Texto executivo no mesmo recorte');
+ assert(await win().ExportTools.ready('pdf'),'PDF sob demanda');
+ win().jspdf.jsPDF.API.save=function(name){win().__uxDownloads.push({name,href:this.output('datauristring')});return this};
+ click('rsPdfBtn');await wait(()=>win().__uxDownloads.some(r=>r.name.endsWith('.pdf')),'PDF setorial');assert(win().__uxDownloads.find(r=>r.name.endsWith('.pdf')).href.includes('application/pdf'),'PDF real gerado');
+ click('rsPrintBtn');await wait(()=>win().__uxDownloads.some(r=>r.name.startsWith('relatorio-setorial-2026-09')),'PNG setorial segue mês');
+ period.value='all';period.dispatchEvent(new (win().Event)('change',{bubbles:true}));await wait(()=>d().querySelector('.rs-context')?.textContent.includes('2026-04, 2026-05, 2026-06, 2026-07, 2026-08, 2026-09'),'Todos os meses efetivos');
+ click('refreshReportBtn');await wait(()=>d().getElementById('reportText')?.value?.length>100,'Texto atualizado para exportação');
+ click('exportPdfBtn');assert(win().__uxPrintHTML?.includes('<html'),'HTML de impressão gerado');
+ const printDoc=new DOMParser().parseFromString(win().__uxPrintHTML,'text/html');assert(printDoc.body.textContent.includes('Financeiro'),'Impressão mantém o setor');
+ win().backupCsv();await wait(()=>win().__uxDownloads.some(r=>r.name.endsWith('.csv')),'Backup CSV');const csv=win().__uxDownloads.find(r=>r.name.endsWith('.csv'));assert(csv,'Backup CSV');const text=await csv.content;assert(text.split('\n').length===73,'CSV completo com 72 registros e cabeçalho');
+ // Use the existing close action so the editor stack remains authoritative.
+ d().querySelectorAll('.colab-detail-overlay, .modal-overlay').forEach(overlay=>{if(overlay.getClientRects().length)overlay.querySelector('[aria-label*="Fechar"],.colab-detail-close,.modal-close')?.click()});
+ await tab('colaboradores');win().openNovoColaboradorModal();await wait(()=>d().getElementById('novoColaboradorNome'),'Cadastro');
+ assert(bounds(d().querySelector('.novo-colaborador-modal')),'Cadastro cabe na tela');
+ click('novoColaboradorCancelar');await wait(()=>!d().getElementById('novoColaboradorModal'),'Cancelar cadastro');
+ win().openColabDetailOverlay('Pessoa de teste 1 com nome extenso para revisão de interface');await wait(()=>d().getElementById('ciSalvarBtn'),'Editor de perfil');
+ assert(bounds(d().querySelector('#colabDetailOverlay .colab-detail-panel')),'Editor cabe na tela');
+ d().getElementById('colabDetailOverlay').querySelector('[aria-label*="Fechar"]').click();
+ await tab('mapeamento-time');d().querySelector('.mt-btn-edit').click();await wait(()=>d().querySelector('.mt-modal-overlay.open #mtModalClose'),'Editor de mapeamento');
+ assert(bounds(d().querySelector('.mt-modal')),'Editor de mapeamento cabe na tela');click('mtModalClose');await wait(()=>!d().querySelector('.mt-modal-overlay'),'Fechar editor de mapeamento');
+ await tab('ponto');await wait(()=>d().querySelector('.ponto-card'),'Ponto sob demanda');assert(bounds(d().querySelector('.ponto-card')),'Card Ponto contido');
+ const current=d().querySelector('[data-tab="ponto"]');current.focus();current.dispatchEvent(new (win().KeyboardEvent)('keydown',{key:'ArrowLeft',bubbles:true,cancelable:true}));
+ assert(d().activeElement.dataset.tab==='mapeamento-time','Setas navegam no submenu');assert(bounds(d().activeElement),'Opção focada revelada');
+ click('menuBtn');const historyPanel=d().querySelector('[data-toggle="dataContent"]');if(historyPanel.closest('.panel').classList.contains('collapsed'))historyPanel.click();click('historicoBtn');await wait(()=>d().getElementById('historicoOverlay').classList.contains('open'),'Histórico abre pelo botão real');assert(!d().getElementById('toolsDialog').open,'Ferramentas fecha antes de abrir histórico');assert(d().getElementById('historicoContent').textContent.includes('Envios não confirmados'),'Histórico mostra pendências');click('historicoClose');await wait(()=>!d().getElementById('historicoOverlay').classList.contains('open'),'Histórico fecha pelo botão real');
+ assert(win().__uxErrors.length===0,'Erros: '+win().__uxErrors.join('; '));
+ document.getElementById('testResult').textContent='PASS: 14 destinos, dados extensos, Chart.js real, PNG, CSV, impressão, relatório, cadastro, editores, teclado e Ponto; sem escrita de produção';
+})().catch(error=>{document.getElementById('testResult').textContent='FAIL: '+error.message;console.error(error)});
+</script></html>

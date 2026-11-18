@@ -35,8 +35,9 @@ function findColabFotoUrl(map, name) {
 function getColabFoto(name) {
   if (!name) return '';
   try {
-    const raw = localStorage.getItem(COLAB_FOTOS_KEY);
-    const map = raw ? JSON.parse(raw) : {};
+    const raw = appStorage.getItem(COLAB_FOTOS_KEY);
+    const state=typeof AppState!=='undefined'?AppState.get('fotos'):null;
+    const map = state || (raw ? JSON.parse(raw) : {});
     const url = findColabFotoUrl(map, name);
     return normalizeFotoUrl(url);
   } catch (e) { return ''; }
@@ -51,19 +52,9 @@ function normalizeFotoUrl(url) {
   return url;
 }
 
-function setColabFoto(name, url) {
-  try {
-    const raw = localStorage.getItem(COLAB_FOTOS_KEY);
-    const map = raw ? JSON.parse(raw) : {};
-    if (url) map[name] = normalizeFotoUrl(url);
-    else delete map[name];
-    localStorage.setItem(COLAB_FOTOS_KEY, JSON.stringify(map));
-  } catch (e) { console.warn('[ColabFotos] Erro ao obter URL foto:', e); }
-  if (typeof dbFotoSave === 'function') {
-    const finalUrl = url ? normalizeFotoUrl(url) : '';
-    return dbFotoSave(name, finalUrl);
-  }
-  return Promise.resolve();
+async function setColabFoto(name,url,draftId){
+  if(typeof dbFotoSave!=='function')throw Error('Não foi possível abrir a conexão para salvar a foto.');
+  return dbFotoSave(name,url?normalizeFotoUrl(url):'',draftId);
 }
 
 window.addEventListener('colab-fotos-updated', () => {

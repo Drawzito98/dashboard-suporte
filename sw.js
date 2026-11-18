@@ -4,15 +4,16 @@
    - Estáticos (mesmo domínio + CDNs): stale-while-revalidate
    - /api/* e métodos não-GET: sempre pela rede (nunca cacheia)
 */
-const CACHE = 'painel-suporte-v197';
+const CACHE = 'painel-suporte-320bc59ad157cd59';
 const SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/static/styles.css?v=129',
-  '/static/home.css?v=80',
-  '/static/css/tokens.css?v=80',
-  '/static/css/visual-refresh.css?v=14',
+  '/static/styles.css?v=1380',
+  '/static/home.css?v=1380',
+  '/static/css/tokens.css?v=1401',
+  '/static/css/components.css?v=1394',
+  '/static/css/visual-system.css?v=1401',
   '/static/icons/icon-192.png',
   '/static/icons/icon-512.png'
 ];
@@ -28,7 +29,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('painel-suporte-') && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });

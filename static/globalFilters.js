@@ -17,7 +17,7 @@ function _normalizeName(n) {
 
 function _nivelColaborador(nome) {
   try {
-    const info = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+    const info = (typeof getColabInfoLocal==='function'?getColabInfoLocal():JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}'));
     const alvo = _normalizeName(nome);
     const entry = Object.entries(info).find(([key]) => _normalizeName(key) === alvo);
     return String(entry?.[1]?.nivel || '').trim().toUpperCase();
@@ -129,13 +129,13 @@ const globalFilters = {
         mesInicio: this.mesInicio,
         mesFim: this.mesFim
       };
-      localStorage.setItem(GLOBAL_FILTERS_KEY, JSON.stringify(obj));
+      appStorage.setItem(GLOBAL_FILTERS_KEY, JSON.stringify(obj));
     } catch (e) { console.warn('[GlobalFilters] Erro:', e); }
   },
 
   carregar() {
     try {
-      const raw = localStorage.getItem(GLOBAL_FILTERS_KEY);
+      const raw = appStorage.getItem(GLOBAL_FILTERS_KEY);
       if (raw) {
         const obj = JSON.parse(raw);
         Object.keys(obj).forEach(k => {
@@ -168,8 +168,8 @@ const globalFilters = {
 
     container.innerHTML = `
       <div class="global-filter-inner">
-        <p id="gfFilterHint" class="filter-hint">Os filtros são aplicados automaticamente.</p>
-        <div class="global-filter-row">
+        <div class="filter-disclosure"><p id="gfFilterHint" class="filter-hint">Os filtros são aplicados automaticamente.</p><button id="gfToggleBtn" class="btn-small" type="button" aria-expanded="true" aria-controls="gfFields">Recolher filtros</button></div>
+        <div class="global-filter-row" id="gfFields">
           <label class="global-filter-field gf-performance-filter">
             <span>Período mensal</span>
             <select id="gfPeriodo"><option value="all">Todos</option></select>
@@ -182,7 +182,7 @@ const globalFilters = {
             <span>Nível</span>
             <select id="gfNivel"><option value="all">Todos</option></select>
           </label>
-          <label class="global-filter-field global-filter-field--flex" style="min-width:180px">
+          <label class="global-filter-field global-filter-field--flex">
             <span>Colaborador / Busca</span>
             <input type="text" id="gfPesquisa" placeholder="Buscar nome ou termo..." list="gfColabList" autocomplete="off"/>
             <datalist id="gfColabList"></datalist>
@@ -212,6 +212,13 @@ const globalFilters = {
   },
 
   _bindEvents() {
+    document.getElementById('gfToggleBtn')?.addEventListener('click', event => {
+      const button = event.currentTarget;
+      const compact = document.querySelector('#globalFilterBar .global-filter-inner')?.classList.toggle('is-compact');
+      button.setAttribute('aria-expanded', compact ? 'false' : 'true');
+      button.textContent = compact ? 'Mostrar filtros' : 'Recolher filtros';
+    });
+    if (typeof matchMedia === 'function' && matchMedia('(max-width: 900px)').matches) document.getElementById('gfToggleBtn')?.click();
     const applyBtn = document.getElementById('gfApplyBtn');
     const clearBtn = document.getElementById('gfClearBtn');
 
@@ -419,7 +426,7 @@ const globalFilters = {
     }
     if (this.contextoEquipe()) {
       let info = {};
-      try { info = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (_) {}
+      try { info = (typeof getColabInfoLocal==='function'?getColabInfoLocal():JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}')); } catch (_) {}
       for (const nome of Object.keys(info)) {
         const current = info[nome];
         if (setorVal !== 'all' && current.setor_atual !== setorVal) continue;
@@ -449,7 +456,7 @@ const globalFilters = {
     const records = typeof rawRecords !== 'undefined' ? rawRecords : [];
     const meses = [...new Set(records.filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
     let cadastro = {};
-    try { cadastro = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}'); } catch (_) {}
+    try { cadastro = (typeof getColabInfoLocal==='function'?getColabInfoLocal():JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}')); } catch (_) {}
     const setores = [...new Set([
       ...records.filter(r => r && r['Setor']).map(r => r['Setor']),
       ...Object.values(cadastro).map(info => info?.setor_atual).filter(Boolean)
@@ -481,7 +488,7 @@ const globalFilters = {
     fill('gfSetor', filteredSetores);
     let niveis = [];
     try {
-      const info = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+      const info = (typeof getColabInfoLocal==='function'?getColabInfoLocal():JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}'));
       niveis = [...new Set(Object.values(info).map(item => String(item?.nivel || '').trim().toUpperCase()).filter(Boolean))].sort();
     } catch (_) {}
     fill('gfNivel', niveis);

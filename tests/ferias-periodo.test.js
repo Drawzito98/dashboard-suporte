@@ -23,14 +23,14 @@ module.exports = ({ describe, it, assert }) => {
       assert.equal(getFeriasPeriodo('Ana', ['2026-09'], [{ colaborador: 'Ana', data_inicio: '2026-02-30', data_fim: '2026-09-20' }, { colaborador: 'Ana', data_inicio: '2026-09-10', data_fim: '2026-09-01' }]).dias, 0);
     });
     it('mantém indicação nas observações sem inventar datas', () => {
-      const previous = global.localStorage;
-      global.localStorage = { getItem: () => '[]' };
+      const previous = global.appStorage;
+      global.appStorage = { getItem: () => '[]' };
       try {
         const result = getFeriasResultado('Ana', [{ 'Mês': '2026-09', 'Observações': 'Férias' }]);
         assert.equal(result.esteve, true);
         assert.equal(result.dias, 0);
         assert.ok(result.detalhes.includes('sem datas cadastradas'));
-      } finally { global.localStorage = previous; }
+      } finally { global.appStorage = previous; }
     });
     it('mostra datas e aviso de férias na tabela de resultados individuais', () => {
       const host = { innerHTML: '' };
@@ -41,7 +41,8 @@ module.exports = ({ describe, it, assert }) => {
         window: { addEventListener() {} },
         escapeHtml: value => String(value)
       };
-      vm.createContext(context);
+      context.appStorage = context.localStorage;
+  vm.createContext(context);
       vm.runInContext(fs.readFileSync(require.resolve('../static/ferias-periodo.js'), 'utf8'), context);
       vm.runInContext(fs.readFileSync(require.resolve('../static/saude-operacional.js'), 'utf8'), context);
       context.window.renderOperationalHealth();

@@ -1,0 +1,54 @@
+#lookerDialog {
+  width: min(68rem, calc(100% - 1.5rem));
+  max-height: 90dvh;
+  padding: var(--s-5);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--bg-surface);
+  color: var(--text);
+}
+#lookerDialog::backdrop { background: #0008; }
+#lookerDialog .looker-controls,
+#lookerDialog .looker-totals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+#lookerDialog .field { min-width: 0; }
+#lookerFile { width: min(17rem, 100%); }
+#lookerMinimum { width: 10rem; }
+#lookerDialog .looker-totals > div {
+  flex: 1 1 10rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+#lookerDialog .looker-totals strong { display: block; font-size: 1.35rem; }
+#lookerDialog h3 { margin-top: 1rem; }
+#lookerDialog .looker-table { overflow: auto; margin-block: 0.5rem; }
+#lookerDialog table { border-collapse: collapse; width: 100%; }
+#lookerDialog :is(th, td) {
+  padding: 0.55rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+#lookerDialog :is(select, .looker-table input) { min-width: 10rem; max-width: 17rem; }
+#lookerDialog tfoot { background: var(--bg-subtle); font-weight: 700; }
+
+
+#lookerDialog .looker-controls > .field { flex: 1 1 180px; }
+#lookerDialog .looker-controls :is(input, select) { width: 100%; }
+#lookerDialog .looker-table :is(th, td):nth-child(n+3) { text-align: right; }
+#lookerDialog .looker-table td:first-child { white-space: normal; min-width: 180px; }
+#lookerDialog th { font-size: var(--font-caption); color: var(--text-secondary); background: var(--bg-subtle); }
+#lookerDialog tbody tr:hover { background: var(--bg-inset); }
+#lookerDialog textarea { width: 100%; min-height: 120px; resize: vertical; }
+@media (max-width: 600px) {
+  #lookerDialog { padding: var(--s-4); }
+  #lookerDialog .tools-heading { flex-wrap: wrap; }
+  #lookerDialog .looker-controls > .field { flex-basis: 100%; }
+}

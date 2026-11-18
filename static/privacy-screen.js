@@ -9,12 +9,12 @@
     button.setAttribute('aria-pressed', String(protectedMode));
     button.setAttribute('aria-label', protectedMode ? 'Mostrar dados da tela' : 'Ocultar dados da tela');
     button.title = protectedMode ? 'Mostrar dados da tela' : 'Ocultar dados da tela';
-    localStorage.setItem(storageKey, protectedMode ? '1' : '0');
+    appStorage.setItem(storageKey, protectedMode ? '1' : '0');
   }
 
   button.addEventListener('click', () => {
     setProtected(!document.body.classList.contains('privacy-screen-on'));
   });
 
-  setProtected(localStorage.getItem(storageKey) === '1');
+  setProtected(appStorage.getItem(storageKey) === '1');
 })();

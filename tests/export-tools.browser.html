@@ -1,0 +1,13 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exportações sob demanda — teste local</title><body><p id="testResult">RUNNING</p><div id="capture" style="width:240px;padding:12px;background:#fff;color:#123">Relatório de teste · 0 → 12</div><script src="/static/data-runtime.js"></script><script>AppDataSession.bind({id:'export-test'});function showToast(){}</script><script src="/static/export-tools.js?v=1360"></script><script>
+(async()=>{
+ const assert=(value,message)=>{if(!value)throw Error(message)};
+ const tags=()=>document.querySelectorAll('script[data-export-dependency]').length;
+ assert(tags()===0&&!window.jspdf&&!window.html2canvas&&!window.XLSX,'Sem bibliotecas de exportação na abertura');
+ const first=await Promise.all([ExportTools.ready('image','pdf'),ExportTools.ready('image')]);assert(first.every(Boolean),'Carregamento real concorrente');assert(tags()===2,'Um download por biblioteca');
+ const canvas=await html2canvas(document.getElementById('capture'));assert(canvas.width>0&&canvas.toDataURL('image/png').startsWith('data:image/png'),'PNG real');
+ const pdf=new jspdf.jsPDF();pdf.text('Relatório de teste',10,10);assert(pdf.output('arraybuffer').byteLength>1000,'PDF real');
+ assert(await ExportTools.ready('excel'),'Excel sob demanda');const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,XLSX.utils.aoa_to_sheet([['Pessoa','Nota'],['Teste',0]]),'Dados');const binary=XLSX.write(book,{type:'array',bookType:'xlsx'}),read=XLSX.read(binary,{type:'array'});assert(XLSX.utils.sheet_to_json(read.Sheets.Dados)[0].Nota===0,'XLSX real preserva zero');
+ await ExportTools.ready('image','pdf','excel');assert(tags()===3,'Nenhuma duplicação após repetir');
+ document.getElementById('testResult').textContent='PASS: início sem exportadores; três bibliotecas reais sob demanda; concorrência compartilhada, PNG, PDF e XLSX válidos, zero e reutilização. '+tags()+' downloads solicitados após exportar.';
+})().catch(error=>{document.getElementById('testResult').textContent='FAIL: '+error.message;console.error(error)});
+</script></body></html>

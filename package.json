@@ -2,5 +2,12 @@
   "private": true,
   "dependencies": {
     "nodemailer": "^6.9.0"
+  },
+  "scripts": {
+    "test": "node scripts/test.js",
+    "test:unit": "node tests/runner.js",
+    "test:checks": "node scripts/test.js --checks",
+    "release:check": "node scripts/release.js",
+    "release:cache": "node scripts/release.js --write"
   }
 }

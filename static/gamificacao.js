@@ -149,7 +149,7 @@ function renderGamification() {
   }
 
   // Ranking table
-  html += '<div style="margin-top:var(--s-5)"><h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📋 Ranking Completo</h3>';
+  html += '<div style="margin-top:var(--s-5)"><h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Ranking Completo</h3>';
   html += '<div style="overflow-x:auto"><table class="ranking-table">';
   html += '<thead><tr><th>#</th><th>Colaborador</th><th>Pontuação</th><th>+/-</th><th>Medalhas</th><th>🔥 Sequência</th><th></th></tr></thead><tbody>';
   ranking.forEach((item, i) => {
@@ -244,7 +244,7 @@ function renderGamification() {
 
   // Conquistas section
   if (conquistasHtml) {
-    html += `<div style="margin-top:var(--s-6)"><h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">🏆 Conquistas</h3>${conquistasHtml}</div>`;
+    html += `<div style="margin-top:var(--s-6)"><h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-award"></use></svg> Conquistas</h3>${conquistasHtml}</div>`;
   }
 
   // Heatmap section
@@ -339,15 +339,17 @@ function renderGamification() {
 
   // Bind foto buttons
   container.querySelectorAll('.foto-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!requireAdmin()) return;
+    btn.addEventListener('click', async () => {
+      if (!requireAdmin() || btn.disabled) return;
       const name = btn.getAttribute('data-name');
       if (!name) return;
       const current = typeof getColabFoto === 'function' ? getColabFoto(name) : '';
       const url = prompt(`URL da foto para ${name}${current ? '\n(Deixe vazio para remover)' : ''}`, current);
       if (url === null) return;
-      if (typeof setColabFoto === 'function') setColabFoto(name, url.trim());
-      renderGamification();
+      const token=AppDataSession.token();btn.disabled=true;
+      try{await setColabFoto(name,url.trim());if(AppDataSession.current(token))renderGamification();}
+      catch(error){if(AppDataSession.current(token))showToast(error.message,'error','Foto de perfil');}
+      finally{btn.disabled=false;}
     });
   });
 

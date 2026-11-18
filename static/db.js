@@ -22,70 +22,25 @@ if (!sbClient) {
   console.warn('Supabase client não disponível');
 }
 
-// Chave para registros pendentes de sincronização
-const PENDING_SYNC_KEY = 'sistema_pending_sync';
-
+// Compatibility functions delegate to the session-aware repository.
+let recordsRepository = null;
+function getRecordsRepository() {
+  if (!recordsRepository) recordsRepository = RecordsRepository.create({ client: sbClient, session: AppDataSession });
+  return recordsRepository;
+}
 function notifyPendingSyncChanged() {
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('pending-sync-changed', { detail: { count: getPendingSync().length } }));
 }
-
-function addToPendingSync(record) {
-  try {
-    const raw = localStorage.getItem(PENDING_SYNC_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    const index = arr.findIndex(row => record.id != null ? row.id === record.id :
-      row.id == null && record.Atendente && record['Mês'] && row.Atendente === record.Atendente &&
-      row['Mês'] === record['Mês'] && row.Setor === record.Setor);
-    const pending = { ...record, _pendingAt: Date.now() };
-    if (index >= 0) arr[index] = pending;
-    else arr.push(pending);
-    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(arr));
-    notifyPendingSyncChanged();
-  } catch (e) { console.warn('Erro ao salvar pending sync:', e); }
-}
-
-function getPendingSync() {
-  try {
-    const raw = localStorage.getItem(PENDING_SYNC_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function clearPendingSync() {
-  try { localStorage.removeItem(PENDING_SYNC_KEY); notifyPendingSyncChanged(); } catch {}
-}
-
+function addToPendingSync(record) { const item = getRecordsRepository().enqueue(record); record._pendingId = item.key; notifyPendingSyncChanged(); }
+function getPendingSync() { return getRecordsRepository().pending(); }
+function clearPendingSync() { getRecordsRepository().clearPending(); notifyPendingSyncChanged(); }
 async function syncPendingRecords() {
-  if (!sbClient || !requireAdmin()) return [];
-  const pending = getPendingSync();
-  if (!pending.length) return [];
-  const synced = [];
-  const failed = [];
-
-  const inserts = pending.filter(record => record.id == null);
-  const updates = pending.filter(record => record.id != null);
-  for (const record of updates) {
-    if (await dbUpdateRecord(record.id, record)) synced.push(record);
-    else failed.push(record);
-  }
   try {
-    if (inserts.length) {
-      const { data, error } = await sbClient.from('registros').insert(inserts.map(filterRecordFields)).select();
-      if (error) throw error;
-      synced.push(...inserts);
-    }
-  } catch (e) {
-    console.warn('Falha ao sincronizar pendentes em batch:', e);
-    failed.push(...inserts);
-  }
-
-  if (failed.length) {
-    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(failed));
-    notifyPendingSyncChanged();
-  } else {
-    clearPendingSync();
-  }
-  return synced;
+    const synced = await getRecordsRepository().retry();
+    await getRecordsRepository().load(); notifyPendingSyncChanged();
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('records-sync-complete'));
+    return synced;
+  } catch (_) { return []; }
 }
 
 // Colunas permitidas na tabela (para filtrar o que enviar)
@@ -131,128 +86,29 @@ function filterRecordsFields(records) {
 }
 
 async function dbLoadRecords() {
-  if (!sbClient) { console.warn('dbLoadRecords: sbClient nulo'); return null; }
-  try {
-    // O banco limita cada resposta. Leia todas as páginas para que os
-    // registros mais recentes também sejam restaurados após atualizar.
-    const records = [];
-    const pageSize = 1000;
-    for (let offset = 0; ; offset += pageSize) {
-      const { data, error } = await sbClient.from('registros')
-        .select('*').order('id', { ascending: true }).range(offset, offset + pageSize - 1);
-      if (error) throw error;
-      records.push(...(data || []));
-      if (!data || data.length < pageSize) break;
-    }
-    return records.map(reverseMapRecord);
-  } catch (e) {
-    console.error('[DB] Erro ao carregar do Supabase:', e.message || e);
-    return null;
-  }
+  try { return await getRecordsRepository().load(); } catch (_) { return null; }
 }
-
 async function dbSaveRecords(records) {
-  if (!requireAdmin()) return false;
-  if (!sbClient || !records || !records.length) return false;
-  try {
-    const clean = filterRecordsFields(records);
-    const { data, error } = await sbClient.from('registros').insert(clean).select();
-    if (error) {
-      console.error('Erro Supabase (detalhe):', error);
-      throw error;
-    }
-    return data || true;
-  } catch (e) {
-    console.error('Erro ao salvar no Supabase:', e);
-    return false;
-  }
+  if (!requireAdmin() || !records?.length) return false;
+  try { return await getRecordsRepository().insert(records) || false; } catch (_) { return false; }
 }
-
 async function dbDeleteAll() {
   if (!requireAdmin()) return false;
-  if (!sbClient) return false;
-  try {
-    const { error } = await sbClient.from('registros').delete().neq('id', 0);
-    if (error) throw error;
-    return true;
-  } catch (e) {
-    console.error('Erro ao limpar tabela:', e);
-    return false;
-  }
+  try { return await getRecordsRepository().remove(null); } catch (_) { return false; }
 }
-
 async function dbReplaceAll(records) {
-  if (!requireAdmin()) return false;
-  if (!sbClient) return false;
-  try {
-    const deleted = await dbDeleteAll();
-    if (!deleted) {
-      console.warn('[dbReplaceAll] Falha ao limpar registros antigos, inserindo novos por cima');
-    }
-    return await dbSaveRecords(records);
-  } catch (e) {
-    console.error('Erro ao substituir registros:', e);
-    return false;
-  }
+  if (!requireAdmin() || !Array.isArray(records)) return false;
+  if (!await dbDeleteAll()) return false;
+  return records.length ? dbSaveRecords(records) : true;
 }
-
 async function dbInsertRow(row) {
-  if (!requireAdmin()) return null;
-  if (!sbClient) return null;
-  try {
-    const clean = filterRecordFields(row);
-    const { data, error } = await sbClient
-      .from('registros')
-      .insert(clean)
-      .select();
-    if (error) throw error;
-    return data ? data[0] : null;
-  } catch (e) {
-    console.error('Erro ao inserir registro:', e);
-    return null;
-  }
+  const saved = await dbSaveRecords([row]); return saved ? saved[0] : null;
 }
-
 async function dbUpdateRecord(id, changes) {
   if (!requireAdmin()) return false;
-  if (id == null) return false;
-  if (!sbClient) { addToPendingSync({ ...changes, id }); return false; }
-  try {
-    const clean = filterRecordFields(changes);
-    delete clean.id;
-    delete clean.created_at;
-    delete clean.user_id;
-    let result = await sbClient.from('registros').update(clean).eq('id', id).select('id');
-    // A política dos registros legados permite editar linhas sem dono,
-    // mas exige que o resultado pertença ao usuário autenticado.
-    if (result.error?.code === '42501') {
-      const { data, error: authError } = await sbClient.auth.getUser();
-      if (authError || !data?.user?.id) throw authError || result.error;
-      result = await sbClient.from('registros').update({ ...clean, user_id: data.user.id }).eq('id', id).select('id');
-    }
-    const { data, error } = result;
-    if (error) throw error;
-    if (!data?.length) throw new Error('O banco não confirmou a atualização deste registro.');
-    const pending = getPendingSync().filter(record => record.id !== id);
-    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(pending));
-    notifyPendingSyncChanged();
-    return true;
-  } catch (e) {
-    console.error('Erro ao atualizar registro:', e);
-    addToPendingSync({ ...changes, id });
-    return false;
-  }
+  try { return await getRecordsRepository().update(id, changes); } catch (_) { return false; }
 }
-
 async function dbDeleteRecord(id) {
-  if (!requireAdmin()) return false;
-  if (!sbClient || id == null) return false;
-  try {
-    const { error } = await sbClient.from('registros').delete().eq('id', id);
-    if (error) throw error;
-    return true;
-  } catch (e) {
-    console.error('Erro ao deletar registro:', e);
-    return false;
-  }
+  if (!requireAdmin() || id == null) return false;
+  try { return await getRecordsRepository().remove(id); } catch (_) { return false; }
 }

@@ -19,13 +19,28 @@ function _rsAvgScoreBySetor(rows) {
   const avgs = Object.values(bySetor).filter(a => a.length > 0).map(a => a.reduce((x, y) => x + y, 0) / a.length);
   return avgs.length ? avgs.reduce((x, y) => x + y, 0) / avgs.length : 0;
 }
-function generateAndShowReport(reportScope) {
+// Relatórios executivos abrem o Setorial e usam o mesmo contexto global dessa tela.
+function executiveReportContext() {
+  const f = typeof globalFilters !== 'undefined' ? globalFilters : null;
+  const rows = (f ? f.aplicar(rawRecords || []) : getCurrentFilteredRows()).filter(r => r && !isAggregateName(r['Atendente']) && (typeof isSetorActive !== 'function' || isSetorActive(String(r['Setor'] || '').trim())));
+  const months = [...new Set(rows.map(r => String(r['Mês'] || '')).filter(Boolean))].sort();
+  const scope = ['Setor: ' + (f?.setor && f.setor !== 'all' ? f.setor : 'Todos'), 'Meses com dados: ' + months.join(', ')];
+  if (f?.nivel && f.nivel !== 'all') scope.push('Nível: ' + f.nivel);
+  if (f?.colaborador && f.colaborador !== 'all') scope.push('Pessoa: ' + f.colaborador);
+  if (f?.pesquisa) scope.push('Busca: ' + f.pesquisa);
+  if (typeof presentationMode !== 'undefined' && presentationMode) scope.push('Modo apresentação ativo');
+  return { rows, scope, setor: f?.setor || 'all' };
+}
+
+function generateAndShowReport() {
   // Gera o relatório e garante feedback visual (sem depender do botão "Atualizar")
   try {
     setLoading(true, 'Gerando relatório…');
     const ta = document.getElementById('reportText');
 
-    const text = buildReportText(reportScope);
+    const context = executiveReportContext();
+    const text = buildReportText(context);
+    window.__lastReportContextKey = JSON.stringify(context);
     window.__lastReportText = text;
 
     if (ta) {
@@ -34,12 +49,8 @@ function generateAndShowReport(reportScope) {
     }
 
     // Switch to Relatório Setorial tab
-    if (!reportScope) {
-      const tabBtn = document.querySelector('.tab-btn[data-tab="relatorio-setorial"]');
-      if (tabBtn) tabBtn.click();
-      const activeText = document.getElementById('reportText');
-      if (activeText && activeText !== ta) activeText.value = text;
-    }
+    const tabBtn = document.querySelector('.tab-btn[data-tab="relatorio-setorial"]');
+    if (tabBtn) tabBtn.click();
 
     // rola até o textarea
     if (ta && ta.scrollIntoView) {
@@ -87,6 +98,7 @@ function exportReportToPDF() {
 async function exportPDFcomGrafico() {
   setLoading(true, 'Gerando PDF…');
   try {
+    if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('pdf','image'))return;
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
     const pageW = 190;
@@ -178,9 +190,10 @@ function escapeHtml(str) {
     .replaceAll("'", '&#39;');
 }
 
-function generateIntelReport(reportScope) {
+function generateIntelReport() {
   try {
-    const rows = reportScope ? reportScope.rows : getCurrentFilteredRows();
+    const context = executiveReportContext();
+    const rows = context.rows;
     if (!rows.length) {
       showToast('Sem dados no escopo atual para gerar análise.', 'warn', 'Relatório Inteligente');
       return;
@@ -236,7 +249,7 @@ function generateIntelReport(reportScope) {
     }
 
     // Build report
-    const lines = [];
+    const lines = [context.scope.join(' · ')];
     lines.push(`📊 Análise Inteligente do Período`);
     lines.push('');
     if (leader) {
@@ -307,9 +320,9 @@ function generateIntelReport(reportScope) {
       container.style.display = 'block';
       container.innerHTML = `
         <div class="intel-report-header">
-          <h3>🤖 Relatório Inteligente</h3>
+          <h3><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-suggest"></use></svg> Relatório Inteligente</h3>
           <div style="display:flex;gap:8px">
-            <button class="btn-small" id="copyIntelReportBtn" type="button">📋 Copiar</button>
+            <button class="btn-small" id="copyIntelReportBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
             <button class="btn-small" id="closeIntelReportBtn" type="button">✕</button>
           </div>
         </div>
@@ -590,6 +603,7 @@ async function exportSlides() {
     `));
 
     // Render slides in hidden container, capture with html2canvas, build PDF
+    if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('pdf','image'))return;
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('l', 'mm', 'a4');
     const pageW = 297;
@@ -854,7 +868,11 @@ function buildReportHTML(text) {
   pre.raw { white-space:pre-wrap; word-wrap:break-word; margin:0; font-size:13px; line-height:1.6; color:var(--fg); }
   .footer-meta { color:var(--muted); font-size:11px; text-align:center; margin-top:8px; }
   @media print {
-    body { padding:0; background:#fff; color:#000; }
+    html, body { background:#fff; color:#000; }
+    body { padding:0; min-height:auto; }
+    pre.raw { font-family:inherit; overflow-wrap:anywhere; }
+    .rank li, .setor-card, .kpi { break-inside:avoid; }
+    @page { margin:12mm; }
     .actions, .btn { display:none !important; }
     .card { box-shadow:none; border-color:#ddd; background:#fff; }
     .kpi, .setor-card { background:#fafafa; }

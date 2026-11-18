@@ -195,14 +195,7 @@
 
   if (typeof module !== 'undefined' && module.exports) module.exports = { process, report, time, automaticReport };
   if (typeof document === 'undefined') return;
-  document.addEventListener('DOMContentLoaded', () => {
-    const weeklyRoot = document.getElementById('panoramaWeeklyRoot');
-    if (weeklyRoot && typeof window !== 'undefined' && window === globalThis) {
-      import('./features/panorama/ui.mjs?v=23').then(({ mountWeekly }) => mountWeekly(weeklyRoot)).catch(error => {
-        weeklyRoot.textContent = 'Não foi possível carregar o Panorama semanal.';
-        console.error('Falha ao carregar o Panorama semanal.', error);
-      });
-    }
+  const initFeature = () => {
     const root = document.getElementById('panoramaSuporteRoot');
     if (!root) return;
     root.classList.add('panorama');
@@ -259,7 +252,7 @@
         const parsed = await parseCsvFile(values.get('file'));
         if (requestVersion !== version) return;
         if (parsed.errors?.length) throw new Error('CSV inválido. Verifique delimitadores e quantidade de colunas.');
-        const registry = typeof dbColabInfoLoad === 'function' ? await dbColabInfoLoad() : JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+        const registry = typeof dbColabInfoLoad === 'function' ? await dbColabInfoLoad() : JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}');
         if (requestVersion !== version) return;
         source = { rows: process(parsed.data, parsed.meta.fields), options: { start: values.get('start'), end: values.get('end'), hide: values.get('privacy') === 'hide', order: values.get('order') }, registry, records: typeof rawRecords === 'undefined' ? [] : rawRecords };
         render();
@@ -332,5 +325,7 @@
       link.href = url; link.download = 'panorama-suporte.md'; link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
-  });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFeature);
+  else initFeature();
 })();

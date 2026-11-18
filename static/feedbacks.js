@@ -208,17 +208,18 @@ function renderFeedbacks() {
   const container = document.getElementById('feedbacksOverlayContent') || document.getElementById('feedbacksContent');
   if (!container) return;
 
+  const draftPerson = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || 'null')?.colaborador;
   const data = typeof rawRecords !== 'undefined' ? (rawRecords || []) : _fbData();
-  if ((!data || !data.length) && !AtividadesMes.months().length) {
+  if ((!data || !data.length) && !AtividadesMes.months().length && !draftPerson) {
     container.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado disponível</div><div class="empty-sub">Importe um CSV para começar.</div></div>';
     return;
   }
 
-  const colabs = AtividadesMes.people();
+  const colabs = [...new Set([...AtividadesMes.people(), ...(draftPerson ? [draftPerson] : [])])].sort();
   const meses = [...new Set([..._uniqueMonths(typeof rawRecords !== 'undefined' ? rawRecords : data).map(AtividadesMes.monthKey).filter(Boolean), ...AtividadesMes.months()])].sort();
-  const saved = JSON.parse(localStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
+  const saved = JSON.parse(appStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
 
-  const editingRaw = localStorage.getItem(FB_EDITING_KEY);
+  const editingRaw = appStorage.getItem(FB_EDITING_KEY);
   const editing = editingRaw ? JSON.parse(editingRaw) : null;
 
   let html = '';
@@ -230,7 +231,7 @@ function renderFeedbacks() {
   // ── LEFT: Formulário ──
   html += '<div class="card">';
   html += '<div style="margin-bottom:var(--s-4)">';
-  html += '<h3 style="font-size:15px;font-weight:600;margin-bottom:4px">✏️ Feedback</h3>';
+  html += '<h3 style="font-size:15px;font-weight:600;margin-bottom:4px"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Feedback</h3>';
   html += '<p style="font-size:13px;color:var(--text-secondary)">Selecione colaborador e período, gere uma sugestão e personalize.</p>';
   html += '</div>';
 
@@ -274,8 +275,8 @@ function renderFeedbacks() {
   html += '</div>';
 
   html += '<div style="display:flex;gap:var(--s-3)">';
-  if (editing && editing.id) {
-    html += `<button class="btn-primary" id="fbSalvarBtn" type="button">💾 Atualizar</button>`;
+  if (editing && editing.colaborador) {
+    html += `<button class="btn-primary" id="fbSalvarBtn" type="button">💾 ${editing.id ? 'Atualizar' : 'Salvar'}</button>`;
     html += `<button class="btn-small" id="fbCancelarBtn" type="button">Cancelar</button>`;
   } else {
     html += `<button class="btn-primary" id="fbSalvarBtn" type="button" disabled>💾 Salvar</button>`;
@@ -286,7 +287,7 @@ function renderFeedbacks() {
   // ── RIGHT: Feedbacks Salvos ──
   html += '<div class="card">';
   html += '<div class="card-header">';
-  html += '<div><h3 style="font-size:15px;font-weight:600">📋 Feedbacks Salvos</h3>';
+  html += '<div><h3 style="font-size:15px;font-weight:600"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Feedbacks Salvos</h3>';
   html += `<p style="font-size:13px;color:var(--text-secondary)">${saved.length} registro(s)</p></div>`;
   html += '<div style="display:flex;gap:var(--s-2);align-items:center">';
   html += `<input type="text" id="fbFiltroColab" placeholder="Filtrar por colaborador..." value="${escapeHtml(filtroColab)}" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-card);color:var(--text);width:140px">`;
@@ -305,9 +306,9 @@ function renderFeedbacks() {
       html += '<div style="border:1px solid var(--border);border-radius:var(--r-md);padding:var(--s-3)">';
       html += `<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:var(--s-1)">`;
       html += `<div style="font-size:13px"><strong>${escapeHtml(fb.colaborador)}</strong> <span style="color:var(--text-muted)">· ${escapeHtml(fb.mes)}</span></div>`;
-      html += `<span style="font-size:11px;color:var(--text-muted)">${dateStr}</span>`;
+      html += `<span style="font-size:var(--font-caption);color:var(--text-muted)">${dateStr}</span>`;
       html += '</div>';
-      html += `<pre style="font-size:11px;color:var(--text-secondary);white-space:pre-wrap;margin:var(--s-1) 0;max-height:60px;overflow-y:auto">${escapeHtml(preview)}</pre>`;
+      html += `<pre style="font-size:var(--font-caption);color:var(--text-secondary);white-space:pre-wrap;margin:var(--s-1) 0;max-height:60px;overflow-y:auto">${escapeHtml(preview)}</pre>`;
       html += '<div style="display:flex;gap:var(--s-1);margin-top:var(--s-1)">';
       html += `<button class="btn-small fb-ver-btn" data-id="${fb.id}" type="button">👁️</button>`;
       html += `<button class="btn-small fb-editar-btn" data-id="${fb.id}" type="button">✏️</button>`;
@@ -337,13 +338,16 @@ function bindFbEvents(colabs, meses, saved) {
   const anotacoesTexto = document.getElementById('fbAnotacoesTexto');
   const finalTexto = document.getElementById('fbFinalTexto');
 
-  const editingRaw = localStorage.getItem(FB_EDITING_KEY);
+  const editingRaw = appStorage.getItem(FB_EDITING_KEY);
   const editing = editingRaw ? JSON.parse(editingRaw) : null;
 
   if (colabSel && mesSel && gerarBtn) {
     function updateGerarBtn() {
       gerarBtn.disabled = !colabSel.value;
     }
+    if (editing?.colaborador) colabSel.value = editing.colaborador;
+    if (editing?.mes) mesSel.value = editing.mes;
+    updateGerarBtn();
     colabSel.addEventListener('change', updateGerarBtn);
     mesSel.addEventListener('change', updateGerarBtn);
 
@@ -362,7 +366,7 @@ function bindFbEvents(colabs, meses, saved) {
         fbArea.innerHTML = '<div class="field"><span>Sugestão Automática</span>';
         fbArea.innerHTML += `<textarea id="fbSugestaoTexto" style="width:100%;min-height:180px;font-size:13px;line-height:1.6;white-space:pre-wrap">${escapeHtml(sugestao)}</textarea></div>`;
       }
-      localStorage.setItem(FB_EDITING_KEY, JSON.stringify({
+      appStorage.setItem(FB_EDITING_KEY, JSON.stringify({
         id: null,
         colaborador: colab,
         mes: mes,
@@ -377,39 +381,44 @@ function bindFbEvents(colabs, meses, saved) {
 
   if (anotacoesTexto) {
     anotacoesTexto.addEventListener('input', () => {
-      const cur = JSON.parse(localStorage.getItem(FB_EDITING_KEY) || '{}');
+      const cur = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}');
       cur.anotacoes = anotacoesTexto.value;
-      localStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
+      appStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
     });
   }
 
   if (finalTexto) {
     finalTexto.addEventListener('input', () => {
-      const cur = JSON.parse(localStorage.getItem(FB_EDITING_KEY) || '{}');
+      const cur = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}');
       cur.feedback_final = finalTexto.value;
-      localStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
+      appStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
     });
   }
 
   if (sugerirTexto) {
     sugerirTexto.addEventListener('input', () => {
-      const cur = JSON.parse(localStorage.getItem(FB_EDITING_KEY) || '{}');
+      const cur = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}');
       cur.sugestao_automatica = sugerirTexto.value;
-      localStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
+      appStorage.setItem(FB_EDITING_KEY, JSON.stringify(cur));
     });
   }
 
   if (salvarBtn) {
+    salvarBtn.disabled = !editing?.colaborador || !finalTexto?.value.trim();
+    finalTexto?.addEventListener('input', () => { salvarBtn.disabled = !JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}').colaborador || !finalTexto.value.trim(); });
     salvarBtn.addEventListener('click', async () => {
-      const cur = JSON.parse(localStorage.getItem(FB_EDITING_KEY) || '{}');
+      if (salvarBtn.disabled) return;
+      const cur = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || '{}');
       if (!cur.colaborador) return;
+      const token = AppDataSession.token();
+      salvarBtn.disabled = true;
       if (typeof setLoading === 'function') setLoading(true, 'Salvando feedback…');
       try {
         const final = document.getElementById('fbFinalTexto').value;
         const anotacoes = document.getElementById('fbAnotacoesTexto').value;
         const sugestao = (document.getElementById('fbSugestaoTexto') || {}).value || cur.sugestao_automatica || '';
         const fb = {
-          id: cur.id || Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+          id: _writeUuid(cur.id),
           colaborador: cur.colaborador,
           mes: cur.mes || 'all',
           sugestao_automatica: sugestao,
@@ -417,11 +426,18 @@ function bindFbEvents(colabs, meses, saved) {
           feedback_final: final,
           createdAt: cur.createdAt || new Date().toISOString()
         };
-        await dbFeedbacksSave(fb);
-        localStorage.removeItem(FB_EDITING_KEY);
+        appStorage.setItem(FB_EDITING_KEY, JSON.stringify(fb));
+        const result = await dbFeedbacksSave(fb);
+        if (!AppDataSession.current(token)) return;
+        if (result?.status !== 'confirmed') throw new Error('Gravação não confirmada. Seu rascunho foi mantido.');
+        const unchanged = appStorage.getItem(FB_EDITING_KEY) === JSON.stringify(fb);
+        if (unchanged) appStorage.removeItem(FB_EDITING_KEY);
         showToast('Feedback salvo com sucesso!', 'success', 'Feedbacks');
-        renderFeedbacks();
+        if (unchanged) renderFeedbacks();
+      } catch (error) {
+        showToast(error.message || 'Não foi possível salvar. Seu rascunho foi mantido.', 'error', 'Feedbacks');
       } finally {
+        salvarBtn.disabled = false;
         if (typeof setLoading === 'function') setLoading(false);
       }
     });
@@ -430,7 +446,7 @@ function bindFbEvents(colabs, meses, saved) {
   const cancelarBtn = document.getElementById('fbCancelarBtn');
   if (cancelarBtn) {
     cancelarBtn.addEventListener('click', () => {
-      localStorage.removeItem(FB_EDITING_KEY);
+      appStorage.removeItem(FB_EDITING_KEY);
       renderFeedbacks();
     });
   }
@@ -459,7 +475,7 @@ function bindFbEvents(colabs, meses, saved) {
       const id = btn.dataset.id;
       const fb = saved.find(f => f.id === id);
       if (!fb) return;
-      localStorage.setItem(FB_EDITING_KEY, JSON.stringify({ ...fb, id: fb.id }));
+      appStorage.setItem(FB_EDITING_KEY, JSON.stringify({ ...fb, id: fb.id }));
       renderFeedbacks();
     });
   });
@@ -469,8 +485,10 @@ function bindFbEvents(colabs, meses, saved) {
       const id = btn.dataset.id;
       const fb = saved.find(f => f.id === id);
       if (!fb || !confirm(`Excluir feedback de ${fb.colaborador} (${fb.mes})?`)) return;
-      await dbFeedbacksDelete(id);
-      renderFeedbacks();
+      btn.disabled = true;
+      try { await dbFeedbacksDelete(id); renderFeedbacks(); }
+      catch (error) { showToast(error.message || 'Não foi possível excluir.', 'error', 'Feedbacks'); }
+      finally { btn.disabled = false; }
     });
   });
 
@@ -500,7 +518,7 @@ function verFeedback(fb) {
     <div style="padding:var(--s-5)">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:var(--s-4)">
         <div>
-          <h2 style="font-size:18px;font-weight:700">💬 Feedback</h2>
+          <h2 style="font-size:18px;font-weight:700"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-message"></use></svg> Feedback</h2>
           <p style="font-size:13px;color:var(--text-secondary)">${escapeHtml(fb.colaborador)} · ${escapeHtml(fb.mes)} · ${dateStr}</p>
         </div>
         <button class="btn-small" id="fbViewCloseBtn" type="button">✕ Fechar</button>
@@ -526,25 +544,47 @@ function criarOverlay() {
 
 // ─── Overlay ────────────────────────────────────────────────────
 
-async function openFeedbacksOverlay() {
-  const overlay = document.getElementById('feedbacksOverlay');
-  if (!overlay) return;
-  const content = document.getElementById('feedbacksOverlayContent');
-  if (!content) return;
-  content.innerHTML = '<div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div>';
-  overlay.classList.add('open');
-  try { await AtividadesMes.load(); renderFeedbacks(); }
-  catch { content.textContent = 'Não foi possível carregar as atividades para o feedback. Feche e tente novamente.'; }
+let feedbackOpenVersion = 0;
+async function openFeedbacksOverlay(personName, contextCurrent = () => true) {
+  const name = typeof personName === 'string' ? personName : '';
+  const token = typeof AppDataSession !== 'undefined' ? AppDataSession.token() : null;
+  const current = () => (!token || AppDataSession.current(token)) && contextCurrent();
+  if (name && (typeof requireAdmin !== 'function' || !requireAdmin())) return false;
+  const overlay = document.getElementById('feedbacksOverlay'), content = document.getElementById('feedbacksOverlayContent');
+  if (!overlay || !content) return false;
+  const request = ++feedbackOpenVersion;
+  if (!name) { overlay.querySelectorAll('[data-e360-back]').forEach(button => button.remove()); overlay.classList.add('open'); content.innerHTML = '<p role="status">Carregando feedbacks…</p>'; }
+  // A leitura pode aguardar a rede; o rascunho só é trocado após conferir sessão e consentimento.
+  try {
+    await AtividadesMes.load();
+    if (!current() || request !== feedbackOpenVersion || (!name && !overlay.classList.contains('open'))) return false;
+    if (name) {
+      const draft = JSON.parse(appStorage.getItem(FB_EDITING_KEY) || 'null');
+      const hasContent = draft && (draft.id || [draft.feedback_final, draft.anotacoes, draft.sugestao_automatica].some(value => String(value || '').trim()));
+      if (hasContent && draft.colaborador !== name && !confirm('Há um rascunho de feedback de outra pessoa. Deseja descartá-lo para abrir este colaborador?')) return false;
+      if (!current()) return false;
+      if (!draft || draft.colaborador !== name) appStorage.setItem(FB_EDITING_KEY, JSON.stringify({ id: null, colaborador: name, mes: 'all', feedback_final: '', anotacoes: '', sugestao_automatica: '' }));
+    }
+    overlay.classList.add('open'); renderFeedbacks(); return true;
+  } catch (_) {
+    if (current() && request === feedbackOpenVersion) {
+      if (!name && overlay.classList.contains('open')) content.textContent = 'Não foi possível carregar os feedbacks. Feche e tente novamente.';
+      showToast('Não foi possível abrir os feedbacks. Tente novamente.', 'error', 'Feedbacks');
+    }
+    return false;
+  }
 }
+function openFeedbacksPerson(name, contextCurrent) { return openFeedbacksOverlay(name, contextCurrent); }
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('feedbacksBtn')?.addEventListener('click', openFeedbacksOverlay);
   document.getElementById('feedbacksOverlayClose')?.addEventListener('click', () => {
+    feedbackOpenVersion++;
     document.getElementById('feedbacksOverlay')?.classList.remove('open');
   });
   const overlay = document.getElementById('feedbacksOverlay');
   overlay?.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.classList.remove('open');
+    if (e.target === overlay) { feedbackOpenVersion++; overlay.classList.remove('open'); }
   });
 });
 

@@ -1,6 +1,4 @@
-// db-extra.js — Persistência no Supabase (com fallback para localStorage)
-// Tabelas: metas, comentarios, historico, scoring_config, alertas_config, colaborador_fotos, colab_inativos
-
+// Facade de compatibilidade. Implementações isoladas por domínio e carregadas sob demanda.
 // ─── Helpers internos ────────────────────────────────────────────
 // _uid() e _email() mantidos como fallback; _getUserId/_getUserEmail são usados no resto do arquivo
 
@@ -14,7 +12,9 @@ async function _email() {
 
 async function _getUserId() {
   try {
+    const token = typeof AppDataSession !== 'undefined' ? AppDataSession.token() : null;
     const { data } = await sbClient.auth.getUser();
+    if (token && (!AppDataSession.current(token) || token.owner !== data?.user?.id)) return null;
     return data?.user?.id || null;
   } catch { return null; }
 }
@@ -26,1495 +26,318 @@ async function _getUserEmail() {
   } catch { return ''; }
 }
 
-// ─── METAS ───────────────────────────────────────────────────────
-
-const METAS_LOCAL_KEY = 'sistema_metas_v1';
-
-async function dbMetasLoad() {
-  if (!sbClient) return _fallbackLoad(METAS_LOCAL_KEY, []);
-  try {
-    const uid = await _getUserId();
-    if (!uid) return _fallbackLoad(METAS_LOCAL_KEY, []);
-    const { data } = await sbClient.from('metas').select('*').eq('user_id', uid);
-    if (data && Array.isArray(data) && data.length > 0) {
-      const goals = data.map(r => ({
-        id: r.id,
-        title: r.title,
-        type: r.type,
-        metric: r.metric,
-        target: r.target,
-        setor: r.setor,
-        collaborator: r.collaborator,
-        period: r.period,
-        createdAt: r.created_at
-      }));
-      localStorage.setItem(METAS_LOCAL_KEY, JSON.stringify(goals));
-      return goals;
-    }
-    return _fallbackLoad(METAS_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(METAS_LOCAL_KEY, []);
-  }
-}
-
-async function dbMetasSave(goals) {
-  if (!requireAdmin()) return;
-  localStorage.setItem(METAS_LOCAL_KEY, JSON.stringify(goals));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const { error: delError } = await sbClient.from('metas').delete().eq('user_id', uid);
-    if (delError) return;
-    if (goals.length === 0) return;
-    const rows = goals.filter(g => g && (g.id || g.title)).map(g => ({
-      user_id: uid,
-      title: g.title || 'Meta',
-      type: g.type || 'monthly',
-      metric: g.metric || 'finalizados',
-      target: parseFloat(g.target) || 0,
-      setor: g.setor || 'all',
-      collaborator: g.collaborator || '',
-      period: g.period || 'all'
-    }));
-    await sbClient.from('metas').insert(rows);
-  } catch (e) { console.error('[db-extra] dbMetasSave:', e); }
-}
-
-// ─── COMENTÁRIOS ─────────────────────────────────────────────────
-
-const COMENTARIOS_LOCAL_KEY = 'sistema_comentarios_v1';
-
-async function dbComentariosLoad() {
-  if (!sbClient) return _fallbackLoad(COMENTARIOS_LOCAL_KEY, {});
-  try {
-    const { data } = await sbClient.from('comentarios').select('*').order('created_at', { ascending: true });
-    if (data && Array.isArray(data) && data.length > 0) {
-      const map = {};
-      data.forEach(c => {
-        if (!map[c.mes]) map[c.mes] = [];
-        map[c.mes].push({
-          id: c.id,
-          texto: c.texto,
-          user: c.user_email || 'desconhecido',
-          ts: c.created_at
-        });
-      });
-      localStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
-      return map;
-    }
-    return _fallbackLoad(COMENTARIOS_LOCAL_KEY, {});
-  } catch {
-    return _fallbackLoad(COMENTARIOS_LOCAL_KEY, {});
-  }
-}
-
-async function dbComentarioAdd(mes, texto) {
-  const map = JSON.parse(localStorage.getItem(COMENTARIOS_LOCAL_KEY) || '{}');
-  const email = await _getUserEmail();
-  const entry = {
-    id: Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    texto: texto.trim(),
-    user: email || 'desconhecido',
-    ts: new Date().toISOString()
-  };
-  if (!map[mes]) map[mes] = [];
-  map[mes].push(entry);
-  localStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
-  if (sbClient) {
-    try {
-      await sbClient.from('comentarios').insert({
-        mes,
-        texto: texto.trim(),
-        user_email: email || ''
-      });
-    } catch (e) { console.error('[db-extra]', e); }
-  }
-  return entry;
-}
-
-async function dbComentarioDel(mes, id) {
-  const map = JSON.parse(localStorage.getItem(COMENTARIOS_LOCAL_KEY) || '{}');
-  if (map[mes]) {
-    map[mes] = map[mes].filter(c => c.id !== id);
-    if (!map[mes].length) delete map[mes];
-    localStorage.setItem(COMENTARIOS_LOCAL_KEY, JSON.stringify(map));
-  }
-  if (sbClient) {
-    try {
-      await sbClient.from('comentarios').delete().eq('id', id);
-    } catch {
-      try {
-        await sbClient.from('comentarios').delete().filter('id', 'eq', id);
-      } catch (e) { console.error('[db-extra]', e); }
-    }
-  }
-}
-
-// ─── HISTÓRICO ───────────────────────────────────────────────────
-
-const HISTORICO_LOCAL_KEY = 'sistema_historico_v1';
-
-async function dbHistoricoLoad() {
-  if (!sbClient) return _fallbackLoad(HISTORICO_LOCAL_KEY, []);
-  try {
-    const { data } = await sbClient.from('historico').select('*').order('created_at', { ascending: false }).limit(500);
-    if (data && Array.isArray(data) && data.length > 0) {
-      const log = data.map(r => ({
-        ts: r.created_at,
-        user: r.user_email || '',
-        action: r.action,
-        colaborador: r.colaborador,
-        mes: r.mes,
-        campo: r.campo,
-        before: r.before_value,
-        after: r.after_value,
-        detalhes: r.detalhes
-      }));
-      localStorage.setItem(HISTORICO_LOCAL_KEY, JSON.stringify(log));
-      return log;
-    }
-    return _fallbackLoad(HISTORICO_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(HISTORICO_LOCAL_KEY, []);
-  }
-}
-
-async function dbHistoricoAdd(entry) {
-  const log = JSON.parse(localStorage.getItem(HISTORICO_LOCAL_KEY) || '[]');
-  const email = await _getUserEmail();
-  const enriched = {
-    ts: entry.ts || new Date().toISOString(),
-    user: entry.user || email || '',
-    action: entry.action || '',
-    colaborador: entry.colaborador || '',
-    mes: entry.mes || '',
-    campo: entry.campo || '',
-    before: entry.before || '',
-    after: entry.after || '',
-    detalhes: entry.detalhes || ''
-  };
-  log.push(enriched);
-  if (log.length > 500) log.splice(0, log.length - 500);
-  localStorage.setItem(HISTORICO_LOCAL_KEY, JSON.stringify(log));
-  if (sbClient) {
-    try {
-      await sbClient.from('historico').insert({
-        action: enriched.action,
-        colaborador: enriched.colaborador,
-        mes: enriched.mes,
-        campo: enriched.campo,
-        before_value: enriched.before,
-        after_value: enriched.after,
-        detalhes: enriched.detalhes,
-        user_email: email || ''
-      });
-    } catch (e) { console.error('[db-extra]', e); }
-  }
-}
-
-// ─── SCORING RULES ───────────────────────────────────────────────
-
-const SCORING_LOCAL_KEY = 'sistema_scoring_rules_v1';
-
-async function dbScoringLoad() {
-  if (!sbClient) return null;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return null;
-    const { data } = await sbClient.from('scoring_config').select('rules').eq('user_id', uid).maybeSingle();
-    if (data?.rules && Array.isArray(data.rules)) {
-      localStorage.setItem(SCORING_LOCAL_KEY, JSON.stringify(data.rules));
-      return data.rules;
-    }
-    return null;
-  } catch { return null; }
-}
-
-async function dbScoringSave(rules) {
-  if (!requireAdmin()) return;
-  localStorage.setItem(SCORING_LOCAL_KEY, JSON.stringify(rules));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('scoring_config').select('id').eq('user_id', uid).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('scoring_config').update({ rules, updated_at: new Date().toISOString() }).eq('user_id', uid);
-    } else {
-      await sbClient.from('scoring_config').insert({ user_id: uid, rules });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-// ─── ALERTAS CONFIG ──────────────────────────────────────────────
-
-const ALERTAS_LOCAL_KEY = 'sistema_alertas_config_v1';
-
-async function dbAlertasLoad() {
-  if (!sbClient) return null;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return null;
-    const { data } = await sbClient.from('alertas_config').select('config').eq('user_id', uid).maybeSingle();
-    if (data?.config && Array.isArray(data.config)) {
-      localStorage.setItem(ALERTAS_LOCAL_KEY, JSON.stringify(data.config));
-      return data.config;
-    }
-    return null;
-  } catch { return null; }
-}
-
-async function dbAlertasSave(config) {
-  if (!requireAdmin()) return;
-  localStorage.setItem(ALERTAS_LOCAL_KEY, JSON.stringify(config));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('alertas_config').select('id').eq('user_id', uid).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('alertas_config').update({ config, updated_at: new Date().toISOString() }).eq('user_id', uid);
-    } else {
-      await sbClient.from('alertas_config').insert({ user_id: uid, config });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-// ─── FOTOS ───────────────────────────────────────────────────────
-
-const FOTOS_LOCAL_KEY = 'sistema_colab_fotos_v1';
-
-async function dbFotosLoad() {
-  if (!sbClient) return _fallbackLoad(FOTOS_LOCAL_KEY, {});
-  try {
-    const { data } = await sbClient.from('colaborador_fotos').select('*');
-    if (data && Array.isArray(data) && data.length > 0) {
-      const localMap = _fallbackLoad(FOTOS_LOCAL_KEY, {});
-      const map = localMap && typeof localMap === 'object' ? { ...localMap } : {};
-      data.forEach(f => {
-        if (!f?.nome) return;
-        const normalizedRemoteName = typeof normalizeColabFotoName === 'function'
-          ? normalizeColabFotoName(f.nome)
-          : String(f.nome).trim().toLowerCase();
-        Object.keys(map).forEach(localName => {
-          const normalizedLocalName = typeof normalizeColabFotoName === 'function'
-            ? normalizeColabFotoName(localName)
-            : String(localName).trim().toLowerCase();
-          if (localName !== f.nome && normalizedLocalName === normalizedRemoteName) delete map[localName];
-        });
-        map[f.nome] = f.foto_url || '';
-      });
-      localStorage.setItem(FOTOS_LOCAL_KEY, JSON.stringify(map));
-      window.dispatchEvent(new CustomEvent('colab-fotos-updated'));
-      return map;
-    }
-    return _fallbackLoad(FOTOS_LOCAL_KEY, {});
-  } catch {
-    return _fallbackLoad(FOTOS_LOCAL_KEY, {});
-  }
-}
-
-async function dbFotoSave(nome, url) {
-  if (!requireAdmin()) return;
-  const map = JSON.parse(localStorage.getItem(FOTOS_LOCAL_KEY) || '{}');
-  if (url) map[nome] = url;
-  else delete map[nome];
-  localStorage.setItem(FOTOS_LOCAL_KEY, JSON.stringify(map));
-  if (!sbClient) return;
-  try {
-    const existing = await sbClient.from('colaborador_fotos').select('id').eq('nome', nome).maybeSingle();
-    if (existing?.data?.id) {
-      if (url) {
-        await sbClient.from('colaborador_fotos').update({ foto_url: url, updated_at: new Date().toISOString() }).eq('nome', nome);
-      } else {
-        await sbClient.from('colaborador_fotos').delete().eq('nome', nome);
-      }
-    } else if (url) {
-      await sbClient.from('colaborador_fotos').insert({ nome, foto_url: url });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-// ─── COLABORADORES INATIVOS ──────────────────────────────────────
-
-const INATIVOS_LOCAL_KEY = 'sistema_inactive_colabs_v1';
-
-async function dbInativosLoad() {
-  if (!sbClient) return null;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return null;
-    const { data } = await sbClient.from('colab_inativos').select('nome').eq('user_id', uid);
-    if (data && Array.isArray(data) && data.length > 0) {
-      const names = data.map(r => r.nome);
-      localStorage.setItem(INATIVOS_LOCAL_KEY, JSON.stringify(names));
-      if (typeof window.__inactiveColabs !== 'undefined') {
-        window.__inactiveColabs = new Set(names);
-      }
-      window.dispatchEvent(new CustomEvent('colab-active-state-changed'));
-      return new Set(names);
-    }
-    return null;
-  } catch { return null; }
-}
-
-async function dbInativosSave(names) {
-  if (!requireAdmin()) return;
-  const arr = [...names];
-  localStorage.setItem(INATIVOS_LOCAL_KEY, JSON.stringify(arr));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    await sbClient.from('colab_inativos').delete().eq('user_id', uid);
-    if (arr.length) {
-      await sbClient.from('colab_inativos').insert(arr.map(nome => ({ user_id: uid, nome })));
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-// ─── SETORES INATIVOS ─────────────────────────────────────────
-
-const INATIVOS_SETORES_LOCAL_KEY = 'sistema_inactive_setores_v1';
-
-async function dbSetorInativosLoad() {
-  if (!sbClient) return null;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return null;
-    const { data } = await sbClient.from('setor_inativos').select('nome').eq('user_id', uid);
-    if (data && Array.isArray(data) && data.length > 0) {
-      const names = data.map(r => r.nome);
-      localStorage.setItem(INATIVOS_SETORES_LOCAL_KEY, JSON.stringify(names));
-      if (typeof window.__inactiveSetores !== 'undefined') {
-        names.forEach(n => window.__inactiveSetores.add(n));
-      }
-      return new Set(names);
-    }
-    return null;
-  } catch { return null; }
-}
-
-async function dbSetorInativosSave(names) {
-  if (!requireAdmin()) return;
-  const arr = [...names];
-  localStorage.setItem(INATIVOS_SETORES_LOCAL_KEY, JSON.stringify(arr));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    await sbClient.from('setor_inativos').delete().eq('user_id', uid);
-    if (arr.length) {
-      await sbClient.from('setor_inativos').insert(arr.map(nome => ({ user_id: uid, nome })));
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-// ─── FEEDBACKS ──────────────────────────────────────────────────
-
-const FEEDBACKS_LOCAL_KEY = 'sistema_feedbacks_v1';
-
-async function dbFeedbacksLoad() {
-  if (!sbClient) return _fallbackLoad(FEEDBACKS_LOCAL_KEY, []);
-  try {
-    const uid = await _getUserId();
-    if (!uid) return _fallbackLoad(FEEDBACKS_LOCAL_KEY, []);
-    const { data } = await sbClient.from('feedbacks').select('*').eq('user_id', uid).order('created_at', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
-      const list = data.map(r => ({
-        id: r.id,
-        colaborador: r.colaborador,
-        mes: r.mes,
-        sugestao_automatica: r.sugestao_automatica || '',
-        anotacoes: r.anotacoes || '',
-        feedback_final: r.feedback_final || '',
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
-      localStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(list));
-      return list;
-    }
-    return _fallbackLoad(FEEDBACKS_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(FEEDBACKS_LOCAL_KEY, []);
-  }
-}
-
-async function dbFeedbacksSave(feedback) {
-  const list = JSON.parse(localStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
-  const idx = list.findIndex(f => f.id === feedback.id);
-  if (idx >= 0) list[idx] = feedback;
-  else list.unshift(feedback);
-  localStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(list));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('feedbacks').select('id').eq('id', feedback.id).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('feedbacks').update({
-        colaborador: feedback.colaborador,
-        mes: feedback.mes,
-        sugestao_automatica: feedback.sugestao_automatica || '',
-        anotacoes: feedback.anotacoes || '',
-        feedback_final: feedback.feedback_final || '',
-        updated_at: new Date().toISOString()
-      }).eq('id', feedback.id);
-    } else {
-      await sbClient.from('feedbacks').insert({
-        user_id: uid,
-        colaborador: feedback.colaborador,
-        mes: feedback.mes,
-        sugestao_automatica: feedback.sugestao_automatica || '',
-        anotacoes: feedback.anotacoes || '',
-        feedback_final: feedback.feedback_final || ''
-      });
-    }
-    if (typeof criarNotificacao === 'function') {
-      criarNotificacao('feedback', `Novo feedback para ${feedback.colaborador || 'colaborador'}`, 'avaliacao');
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-async function dbFeedbacksDelete(id) {
-  const list = JSON.parse(localStorage.getItem(FEEDBACKS_LOCAL_KEY) || '[]');
-  const filtered = list.filter(f => f.id !== id);
-  localStorage.setItem(FEEDBACKS_LOCAL_KEY, JSON.stringify(filtered));
-  if (!sbClient) return;
-  try {
-    await sbClient.from('feedbacks').delete().eq('id', id);
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-// ─── ANOTAÇÕES DIÁRIAS ──────────────────────────────────────────
-
-const ANOTACOES_LOCAL_KEY = 'sistema_anotacoes_diarias_v1';
-
-async function dbAnotacoesLoad() {
-  if (!sbClient) return _fallbackLoad(ANOTACOES_LOCAL_KEY, []);
-  try {
-    const uid = await _getUserId();
-    if (!uid) return _fallbackLoad(ANOTACOES_LOCAL_KEY, []);
-    const { data } = await sbClient.from('anotacoes_diarias').select('*').eq('user_id', uid).not('conteudo', 'like', 'atividade-colaborador:v1:%').not('conteudo', 'like', 'panorama-observacao:v1:%').order('data', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
-      const list = data.map(r => ({
-        id: r.id,
-        data: r.data,
-        conteudo: r.conteudo || '',
-        etiquetas: r.etiquetas || '',
-        favorito: Boolean(r.favorito),
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
-      localStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(list));
-      return list;
-    }
-    return _fallbackLoad(ANOTACOES_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(ANOTACOES_LOCAL_KEY, []);
-  }
-}
-
-async function dbAnotacoesSave(anotacao) {
-  const list = JSON.parse(localStorage.getItem(ANOTACOES_LOCAL_KEY) || '[]');
-  const idx = list.findIndex(a => a.id === anotacao.id);
-  if (idx >= 0) list[idx] = anotacao;
-  else list.unshift(anotacao);
-  localStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(list));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('anotacoes_diarias').select('id').eq('id', anotacao.id).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('anotacoes_diarias').update({
-        data: anotacao.data,
-        conteudo: anotacao.conteudo || '',
-        etiquetas: anotacao.etiquetas || '',
-        favorito: Boolean(anotacao.favorito),
-        updated_at: new Date().toISOString()
-      }).eq('id', anotacao.id);
-    } else {
-      await sbClient.from('anotacoes_diarias').insert({
-        id: anotacao.id,
-        user_id: uid,
-        data: anotacao.data,
-        conteudo: anotacao.conteudo || '',
-        etiquetas: anotacao.etiquetas || '',
-        favorito: Boolean(anotacao.favorito)
-      });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-async function dbAnotacoesDelete(id) {
-  const list = JSON.parse(localStorage.getItem(ANOTACOES_LOCAL_KEY) || '[]');
-  const filtered = list.filter(a => a.id !== id);
-  localStorage.setItem(ANOTACOES_LOCAL_KEY, JSON.stringify(filtered));
-  if (!sbClient) return;
-  try {
-    await sbClient.from('anotacoes_diarias').delete().eq('id', id);
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-// ─── TAREFAS / AGENDA ───────────────────────────────────────────
-
-const TAREFAS_LOCAL_KEY = 'sistema_tarefas_v1';
-
-async function dbTarefasLoad() {
-  if (!sbClient) return _fallbackLoad(TAREFAS_LOCAL_KEY, []);
-  try {
-    const uid = await _getUserId();
-    if (!uid) return _fallbackLoad(TAREFAS_LOCAL_KEY, []);
-    const { data } = await sbClient.from('tarefas').select('*').eq('user_id', uid).order('data', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
-      const list = data.map(r => ({
-        id: r.id,
-        titulo: r.titulo,
-        descricao: r.descricao || '',
-        data: r.data,
-        prioridade: r.prioridade,
-        status: r.status,
-        rotinaAtiva: Boolean(r.rotina_ativa),
-        rotinaUnidade: r.rotina_unidade || "dias",
-        rotinaIntervalo: Number(r.rotina_intervalo || 1),
-        rotinaLembreteDias: Number(r.rotina_lembrete_dias || 0),
-        rotinaUltimaConclusao: r.rotina_ultima_conclusao || "",
-        rotinaProximaData: r.rotina_proxima_data || "",
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
-      localStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(list));
-      return list;
-    }
-    return _fallbackLoad(TAREFAS_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(TAREFAS_LOCAL_KEY, []);
-  }
-}
-
-async function dbTarefasSave(tarefa) {
-  const list = JSON.parse(localStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
-  const originalId = tarefa.id;
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(tarefa.id || ''));
-  if (!isUuid) tarefa = { ...tarefa, id: crypto.randomUUID() };
-  const idx = list.findIndex(t => t.id === originalId || t.id === tarefa.id);
-  if (idx >= 0) list[idx] = tarefa;
-  else list.unshift(tarefa);
-  localStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(list));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('tarefas').select('id').eq('id', tarefa.id).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('tarefas').update({
-        titulo: tarefa.titulo,
-        descricao: tarefa.descricao || '',
-        data: tarefa.data,
-        prioridade: tarefa.prioridade,
-        status: tarefa.status,
-        rotina_ativa: Boolean(tarefa.rotinaAtiva),
-        rotina_unidade: tarefa.rotinaUnidade || "dias",
-        rotina_intervalo: Number(tarefa.rotinaIntervalo || 1),
-        rotina_lembrete_dias: Number(tarefa.rotinaLembreteDias || 0),
-        rotina_ultima_conclusao: tarefa.rotinaUltimaConclusao || null,
-        rotina_proxima_data: tarefa.rotinaProximaData || tarefa.data,
-        updated_at: new Date().toISOString()
-      }).eq('id', tarefa.id);
-    } else {
-      await sbClient.from('tarefas').insert({
-        id: tarefa.id,
-        user_id: uid,
-        titulo: tarefa.titulo,
-        descricao: tarefa.descricao || '',
-        data: tarefa.data,
-        prioridade: tarefa.prioridade,
-        status: tarefa.status || 'pendente',
-        rotina_ativa: Boolean(tarefa.rotinaAtiva),
-        rotina_unidade: tarefa.rotinaUnidade || "dias",
-        rotina_intervalo: Number(tarefa.rotinaIntervalo || 1),
-        rotina_lembrete_dias: Number(tarefa.rotinaLembreteDias || 0),
-        rotina_ultima_conclusao: tarefa.rotinaUltimaConclusao || null,
-        rotina_proxima_data: tarefa.rotinaProximaData || tarefa.data
-      });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-async function dbTarefasDelete(id) {
-  const list = JSON.parse(localStorage.getItem(TAREFAS_LOCAL_KEY) || '[]');
-  const filtered = list.filter(t => t.id !== id);
-  localStorage.setItem(TAREFAS_LOCAL_KEY, JSON.stringify(filtered));
-  if (!sbClient) return;
-  try {
-    await sbClient.from('tarefas').delete().eq('id', id);
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-
-// ─── REGRAS ────────────────────────────────────────────────────
-
-const REGRAS_LOCAL_KEY = 'sistema_regras_v1';
-
-async function dbRegrasLoad() {
-  if (!sbClient) return _fallbackLoad(REGRAS_LOCAL_KEY, []);
-  try {
-    const { data, error } = await sbClient.from('regras').select('*').order('posicao', { ascending: true });
-    if (error) throw error;
-    if (Array.isArray(data)) {
-      const list = data.map(r => ({ id: r.id, titulo: r.titulo, descricao: r.descricao || '', categoria: r.categoria || 'Geral', status: r.status || 'vigente', posicao: Number(r.posicao || 0), createdAt: r.created_at, updatedAt: r.updated_at }));
-      localStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(list));
-      return list;
-    }
-  } catch (e) { console.warn('[db-extra] Regras usando armazenamento local:', e.message || e); }
-  return _fallbackLoad(REGRAS_LOCAL_KEY, []);
-}
-
-async function dbRegrasSave(regra) {
-  const list = _fallbackLoad(REGRAS_LOCAL_KEY, []);
-  const index = list.findIndex(r => r.id === regra.id);
-  if (index >= 0) list[index] = regra; else list.push(regra);
-  localStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(list));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    const { error } = await sbClient.from('regras').upsert({ id: regra.id, titulo: regra.titulo, descricao: regra.descricao || '', categoria: regra.categoria || 'Geral', status: regra.status || 'vigente', posicao: Number(regra.posicao || 0), created_at: regra.createdAt || new Date().toISOString(), updated_at: regra.updatedAt || new Date().toISOString(), user_id: uid });
-    if (error) throw error;
-  } catch (e) { console.warn('[db-extra] Regra salva apenas localmente:', e.message || e); }
-}
-
-async function dbRegrasDelete(id) {
-  localStorage.setItem(REGRAS_LOCAL_KEY, JSON.stringify(_fallbackLoad(REGRAS_LOCAL_KEY, []).filter(r => r.id !== id)));
-  if (!sbClient) return;
-  try {
-    const { error } = await sbClient.from('regras').delete().eq('id', id);
-    if (error) throw error;
-  } catch (e) { console.warn('[db-extra] Regra removida apenas localmente:', e.message || e); }
-}
-// ─── PONTOS EXTRAS (Bônus Manuais) ──────────────────────────────
-
-const PONTOS_EXTRAS_LOCAL_KEY = 'sistema_pontos_extras_v1';
-
-async function dbPontosExtrasLoad() {
-  if (!sbClient) return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
-  try {
-    const uid = await _getUserId();
-    if (!uid) return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
-    const { data } = await sbClient.from('pontos_extras').select('*').eq('user_id', uid).order('created_at', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
-      const list = data.map(r => ({
-        id: r.id,
-        colaborador: r.colaborador,
-        descricao: r.descricao || '',
-        pontos: parseFloat(r.pontos) || 0,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
-      localStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(list));
-      return list;
-    }
-    return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(PONTOS_EXTRAS_LOCAL_KEY, []);
-  }
-}
-
-async function dbPontosExtrasSave(bonus) {
-  const list = JSON.parse(localStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
-  const idx = list.findIndex(b => b.id === bonus.id);
-  if (idx >= 0) list[idx] = bonus;
-  else list.unshift(bonus);
-  localStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(list));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('pontos_extras').select('id').eq('id', bonus.id).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('pontos_extras').update({
-        colaborador: bonus.colaborador,
-        descricao: bonus.descricao || '',
-        pontos: parseFloat(bonus.pontos) || 0,
-        mes: bonus.mes || '',
-        updated_at: new Date().toISOString()
-      }).eq('id', bonus.id);
-    } else {
-      await sbClient.from('pontos_extras').insert({
-        user_id: uid,
-        colaborador: bonus.colaborador,
-        descricao: bonus.descricao || '',
-        pontos: parseFloat(bonus.pontos) || 0,
-        mes: bonus.mes || ''
-      });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-async function dbPontosExtrasDelete(id) {
-  const list = JSON.parse(localStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY) || '[]');
-  const filtered = list.filter(b => b.id !== id);
-  localStorage.setItem(PONTOS_EXTRAS_LOCAL_KEY, JSON.stringify(filtered));
-  if (!sbClient) return;
-  try {
-    await sbClient.from('pontos_extras').delete().eq('id', id);
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-// ─── AUSÊNCIAS (Controle de Ponto) ─────────────────────────────
-
-const AUSENCIAS_LOCAL_KEY = 'sistema_ausencias_v1';
-
-function ausenciaFromRow(row) {
-  return {
-    id: row.id,
-    colaborador: row.colaborador,
-    data: row.data,
-    periodo: row.periodo,
-    motivo: row.motivo || '',
-    tipo: row.tipo ?? null,
-    minutos_atraso: row.minutos_atraso ?? null,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  };
-}
-
-async function dbAusenciasLoad() {
-  if (!sbClient) return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
-  try {
-    const uid = await _getUserId();
-    if (!uid) return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
-    const { data } = await sbClient.from('ausencias').select('*').eq('user_id', uid).order('data', { ascending: false });
-    if (data?.length) {
-      const list = data.map(ausenciaFromRow);
-      localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(list));
-      return list;
-    }
-  } catch (error) { console.error('[Ausências]', error); }
-  return _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
-}
-
-function ausenciaForInsert({ colaborador, data, tipo, minutos_atraso, periodo, motivo }) {
-  if (!colaborador || !data) throw new Error('Selecione o colaborador e a data.');
-  if (tipo !== 'falta' && tipo !== 'atraso') throw new Error('Selecione Falta ou Atraso.');
-  if (tipo === 'atraso' && (!Number.isInteger(minutos_atraso) || minutos_atraso < 1 || minutos_atraso > 1440)) {
-    throw new Error('Informe de 1 a 1440 minutos para o atraso.');
-  }
-  if (tipo === 'falta' && !['dia_inteiro', 'manha', 'tarde', 'noite'].includes(periodo)) {
-    throw new Error('Selecione o período da falta.');
-  }
-  return {
-    colaborador, data, tipo, motivo: motivo || '',
-    periodo: tipo === 'falta' ? periodo : 'nao_informado',
-    minutos_atraso: tipo === 'atraso' ? minutos_atraso : null
-  };
-}
-
-async function dbAusenciasSave(ausencia) {
-  const record = ausenciaForInsert(ausencia);
-  const uid = await _getUserId();
-  if (!uid) throw new Error('Entre novamente para registrar a ocorrência.');
-  const { data, error } = await sbClient.from('ausencias').insert({ ...record, user_id: uid }).select('*').single();
-  if (error || !data) throw new Error('Não foi possível registrar a ocorrência. Confira a conexão e tente de novo.');
-  const saved = ausenciaFromRow(data);
-  const list = _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
-  if (!list.some(item => String(item.id) === String(saved.id))) {
-    localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify([saved, ...list]));
-  }
-  return saved;
-}
-
-async function dbAusenciasDelete(id) {
-  // Os registros locais anteriores à sincronização usavam identificadores alfanuméricos.
-  if (/^d+$/.test(String(id))) {
-    const uid = await _getUserId();
-    if (!uid) throw new Error('Entre novamente para excluir o registro.');
-    const { error } = await sbClient.from('ausencias').delete().eq('id', id).eq('user_id', uid);
-    if (error) throw new Error('Não foi possível excluir o registro. Confira a conexão e tente de novo.');
-  }
-  const list = _fallbackLoad(AUSENCIAS_LOCAL_KEY, []);
-  localStorage.setItem(AUSENCIAS_LOCAL_KEY, JSON.stringify(list.filter(item => String(item.id) !== String(id))));
-}
-
-// ─── AVALIAÇÃO DE ATENDIMENTOS ─────────────────────────────
-
-const AVALIACAO_ATEND_LOCAL_KEY = 'sistema_avaliacao_atendimentos_v1';
-
-async function dbAvaliacaoAtendLoad() {
-  if (!sbClient) return _fallbackLoad(AVALIACAO_ATEND_LOCAL_KEY, []);
-  try {
-    const uid = await _getUserId();
-    if (!uid) return _fallbackLoad(AVALIACAO_ATEND_LOCAL_KEY, []);
-    const { data } = await sbClient.from('avaliacao_atendimentos').select('*').eq('user_id', uid).order('created_at', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
-      const list = data.map(r => ({
-        id: r.id,
-        protocolo: r.protocolo,
-        colaborador: r.colaborador,
-        nota: r.nota,
-        teve_nota: r.teve_nota != null ? r.teve_nota : (r.nota != null),
-        justa: r.justa,
-        resumo: r.resumo || '',
-        orientacao: r.orientacao || '',
-        data_atendimento: r.data_atendimento || '',
-        imagem: r.imagem || '',
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
-      localStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(list));
-      return list;
-    }
-    return _fallbackLoad(AVALIACAO_ATEND_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(AVALIACAO_ATEND_LOCAL_KEY, []);
-  }
-}
-
-async function dbAvaliacaoAtendSave(item) {
-  const list = JSON.parse(localStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY) || '[]');
-  const idx = list.findIndex(a => a.id === item.id);
-  if (idx >= 0) list[idx] = item;
-  else list.unshift(item);
-  localStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(list));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('avaliacao_atendimentos').select('id').eq('id', item.id).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('avaliacao_atendimentos').update({
-        protocolo: item.protocolo,
-        colaborador: item.colaborador,
-        nota: item.teve_nota ? item.nota : null,
-        teve_nota: item.teve_nota,
-        justa: item.justa,
-        resumo: item.resumo || '',
-        orientacao: item.orientacao || '',
-        data_atendimento: item.data_atendimento || '',
-        imagem: item.imagem || '',
-        updated_at: new Date().toISOString()
-      }).eq('id', item.id);
-    } else {
-      await sbClient.from('avaliacao_atendimentos').insert({
-        user_id: uid,
-        protocolo: item.protocolo,
-        colaborador: item.colaborador,
-        nota: item.teve_nota ? item.nota : null,
-        teve_nota: item.teve_nota,
-        justa: item.justa,
-        resumo: item.resumo || '',
-        orientacao: item.orientacao || '',
-        data_atendimento: item.data_atendimento || '',
-        imagem: item.imagem || ''
-      });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-async function dbAvaliacaoAtendDelete(id) {
-  const list = JSON.parse(localStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY) || '[]');
-  const filtered = list.filter(a => a.id !== id);
-  localStorage.setItem(AVALIACAO_ATEND_LOCAL_KEY, JSON.stringify(filtered));
-  if (!sbClient) return;
-  try {
-    await sbClient.from('avaliacao_atendimentos').delete().eq('id', id);
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-// ─── FÉRIAS ────────────────────────────────────────────────
-
-const FERIAS_LOCAL_KEY = 'sistema_ferias_v1';
-
-function notifyFeriasUpdated() {
-  window.dispatchEvent(new Event('ferias-updated'));
-}
-
-async function dbFeriasLoad() {
-  if (!sbClient) return _fallbackLoad(FERIAS_LOCAL_KEY, []);
-  try {
-    const uid = await _getUserId();
-    if (!uid) return _fallbackLoad(FERIAS_LOCAL_KEY, []);
-    const { data, error } = await sbClient.from('ferias').select('*').eq('user_id', uid).order('data_inicio', { ascending: false });
-    if (!error && Array.isArray(data)) {
-      const list = data.map(r => ({
-        id: r.id,
-        colaborador: r.colaborador,
-        data_inicio: r.data_inicio,
-        data_fim: r.data_fim,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
-      localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(list));
-      notifyFeriasUpdated();
-      return list;
-    }
-    return _fallbackLoad(FERIAS_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(FERIAS_LOCAL_KEY, []);
-  }
-}
-
-async function dbFeriasSave(item) {
-  const list = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
-  const idx = list.findIndex(f => f.id === item.id);
-  if (idx >= 0) list[idx] = item;
-  else list.unshift(item);
-  localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(list));
-  notifyFeriasUpdated();
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('ferias').select('id').eq('id', item.id).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('ferias').update({
-        colaborador: item.colaborador,
-        data_inicio: item.data_inicio,
-        data_fim: item.data_fim,
-        updated_at: new Date().toISOString()
-      }).eq('id', item.id);
-    } else {
-      await sbClient.from('ferias').insert({
-        user_id: uid,
-        colaborador: item.colaborador,
-        data_inicio: item.data_inicio,
-        data_fim: item.data_fim
-      });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-async function dbFeriasDelete(id) {
-  const list = JSON.parse(localStorage.getItem(FERIAS_LOCAL_KEY) || '[]');
-  const filtered = list.filter(f => String(f.id) !== String(id));
-  localStorage.setItem(FERIAS_LOCAL_KEY, JSON.stringify(filtered));
-  notifyFeriasUpdated();
-  if (!sbClient) return;
-  try {
-    await sbClient.from('ferias').delete().eq('id', id);
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-// ─── ACOMPANHAMENTO DIÁRIO ─────────────────────────────
-
-const ACOMP_DIARIO_LOCAL_KEY = 'sistema_acompanhamento_diario_v1';
-
-async function dbAcompDiarioLoad() {
-  if (!sbClient) return _fallbackLoad(ACOMP_DIARIO_LOCAL_KEY, []);
-  try {
-    const uid = await _getUserId();
-    if (!uid) return _fallbackLoad(ACOMP_DIARIO_LOCAL_KEY, []);
-    const { data } = await sbClient.from('acompanhamento_diario').select('*').eq('user_id', uid).order('data', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
-      const list = data.map(r => ({
-        id: r.id,
-        colaborador: r.colaborador,
-        data: r.data,
-        setor: r.setor || '',
-        assumidos: r.assumidos || 0,
-        transferidos: r.transferidos || 0,
-        finalizados: r.finalizados || 0,
-        nota: r.nota || 0,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
-      localStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(list));
-      return list;
-    }
-    return _fallbackLoad(ACOMP_DIARIO_LOCAL_KEY, []);
-  } catch {
-    return _fallbackLoad(ACOMP_DIARIO_LOCAL_KEY, []);
-  }
-}
-
-async function dbAcompDiarioSave(item) {
-  const list = JSON.parse(localStorage.getItem(ACOMP_DIARIO_LOCAL_KEY) || '[]');
-  const idx = list.findIndex(a => a.id === item.id);
-  if (idx >= 0) list[idx] = item;
-  else list.unshift(item);
-  localStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(list));
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('acompanhamento_diario').select('id').eq('id', item.id).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('acompanhamento_diario').update({
-        colaborador: item.colaborador,
-        data: item.data,
-        setor: item.setor || '',
-        assumidos: item.assumidos || 0,
-        transferidos: item.transferidos || 0,
-        finalizados: item.finalizados || 0,
-        nota: item.nota || 0,
-        updated_at: new Date().toISOString()
-      }).eq('id', item.id);
-    } else {
-      await sbClient.from('acompanhamento_diario').insert({
-        user_id: uid,
-        colaborador: item.colaborador,
-        data: item.data,
-        setor: item.setor || '',
-        assumidos: item.assumidos || 0,
-        transferidos: item.transferidos || 0,
-        finalizados: item.finalizados || 0,
-        nota: item.nota || 0
-      });
-    }
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-async function dbAcompDiarioDelete(id) {
-  const list = JSON.parse(localStorage.getItem(ACOMP_DIARIO_LOCAL_KEY) || '[]');
-  const filtered = list.filter(a => a.id !== id);
-  localStorage.setItem(ACOMP_DIARIO_LOCAL_KEY, JSON.stringify(filtered));
-  if (!sbClient) return;
-  try {
-    await sbClient.from('acompanhamento_diario').delete().eq('id', id);
-  } catch (e) { console.error('[db-extra]', e); }
-}
-
-// ─── COLABORADORES INFO (Cadastro) ─────────────────────────────
-
-const COLAB_INFO_LOCAL_KEY = 'sistema_colaboradores_info_v1';
-
-async function dbColabInfoLoad() {
-  if (!sbClient) return _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
-  try {
-    const uid = await _getUserId();
-    if (!uid) return _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
-    const { data } = await sbClient.from('colaboradores_info').select('*').eq('user_id', uid);
-    if (data && Array.isArray(data) && data.length > 0) {
-      const localMap = _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
-      const map = { ...localMap };
-      data.forEach(r => {
-        const remoteInfo = {
-          id: r.id,
-          data_aniversario: r.data_aniversario || '',
-          data_admissao: r.data_admissao || '',
-          email: r.email || '',
-          setor_atual: r.setor_atual || '',
-          tarefas_desempenhadas: r.tarefas_desempenhadas || '',
-          objetivos_futuros: r.objetivos_futuros || '',
-          observacoes: r.observacoes || '',
-          conduta_negativa: r.conduta_negativa || '',
-          conduta_motivo: r.conduta_motivo || '',
-          feito_relevante: r.feito_relevante || '',
-          feito_descricao: r.feito_descricao || '',
-          nivel: r.nivel || '',
-          salario: Object.prototype.hasOwnProperty.call(r, 'salario')
-            ? (r.salario == null ? null : Number(r.salario))
-            : (localMap[r.nome]?.salario ?? null),
-          updatedAt: r.updated_at
-        };
-        const localInfo = localMap[r.nome] || {};
-        const localTime = Date.parse(localInfo.updatedAt || '') || 0;
-        const remoteTime = Date.parse(r.updated_at || '') || 0;
-        const achievementColumnsMissing = !Object.prototype.hasOwnProperty.call(r, 'feito_relevante') || !Object.prototype.hasOwnProperty.call(r, 'feito_descricao');
-        map[r.nome] = localTime > remoteTime
-          ? { ...remoteInfo, ...localInfo, id: r.id }
-          : { ...remoteInfo,
-              ...(achievementColumnsMissing ? {
-                feito_relevante: localInfo.feito_relevante || '',
-                feito_descricao: localInfo.feito_descricao || ''
-              } : {}) };
-      });
-      localStorage.setItem(COLAB_INFO_LOCAL_KEY, JSON.stringify(map));
-      return map;
-    }
-    return _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
-  } catch {
-    return _fallbackLoad(COLAB_INFO_LOCAL_KEY, {});
-  }
-}
-
-async function dbColabInfoSave(nome, data) {
-  if (!requireAdmin()) return false;
-  const map = JSON.parse(localStorage.getItem(COLAB_INFO_LOCAL_KEY) || '{}');
-  map[nome] = { ...(map[nome] || {}), ...data, updatedAt: new Date().toISOString() };
-  localStorage.setItem(COLAB_INFO_LOCAL_KEY, JSON.stringify(map));
-  if (!sbClient) return false;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return false;
-    const existing = await sbClient.from('colaboradores_info').select('id').eq('user_id', uid).eq('nome', nome).maybeSingle();
-    if (existing?.error) throw existing.error;
-    const payload = {
-      data_aniversario: data.data_aniversario || null,
-      data_admissao: data.data_admissao || null,
-      email: data.email || '',
-      setor_atual: data.setor_atual || '',
-      tarefas_desempenhadas: data.tarefas_desempenhadas || '',
-      objetivos_futuros: data.objetivos_futuros || '',
-      observacoes: data.observacoes || '',
-      conduta_negativa: data.conduta_negativa || '',
-      conduta_motivo: data.conduta_motivo || '',
-      feito_relevante: data.feito_relevante || '',
-      feito_descricao: data.feito_descricao || '',
-      nivel: data.nivel || '',
-      salario: data.salario == null || data.salario === '' ? null : Number(data.salario),
-      updated_at: new Date().toISOString()
-    };
-    const persist = values => existing?.data?.id
-      ? sbClient.from('colaboradores_info').update(values).eq('id', existing.data.id)
-      : sbClient.from('colaboradores_info').insert({ user_id: uid, nome, ...values });
-    let result = await persist(payload);
-    // Compatibilidade enquanto a migration_v45 ainda não foi aplicada.
-    if (result?.error && ['PGRST204', '42703'].includes(result.error.code)
-        && /salario/i.test(result.error.message || '')) {
-      const { salario, ...withoutSalary } = payload;
-      result = await persist(withoutSalary);
-      if (result?.error) throw result.error;
-      return salario == null;
-    }
-    if (result?.error) throw result.error;
-    return true;
-  } catch (e) {
-    console.error('[db-extra] Perfil mantido localmente; sincronização pendente:', e);
-    return false;
-  }
-}
 
 // ─── FALLBACK ────────────────────────────────────────────────────
 
 function _fallbackLoad(key, defaultVal) {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = appStorage.getItem(key);
     return raw ? JSON.parse(raw) : defaultVal;
   } catch { return defaultVal; }
 }
 
-// ─── MIGRAÇÃO ÚNICA localStorage → Supabase ──────────────────────
-// Executa uma vez para migrar dados antigos que estão apenas no localStorage
+
+// Serializa mutações locais e impede respostas de uma sessão encerrada de publicar dados.
+const _confirmedWrites = new Map();
+const _confirmedRevisions = new Map();
+function _confirmedWrite(resource, operation) {
+  const token = AppDataSession.token();
+  _confirmedRevisions.set(resource, (_confirmedRevisions.get(resource) || 0) + 1);
+  const key = token.owner + ':' + token.epoch + ':' + resource;
+  const check = () => {
+    if (!AppDataSession.current(token)) throw new Error('Sessão alterada. Reabra a tela.');
+  };
+  const run = async () => {
+    check();
+    if (!sbClient) throw new Error('Sem conexão com o servidor. Tente novamente.');
+    const uid = await _getUserId();
+    check();
+    if (!uid || uid !== token.owner) throw new Error('Confirme sua sessão antes de salvar.');
+    return operation({ uid, check, request: async build => {
+      check();
+      const result = await build();
+      check();
+      if (result?.error) throw new Error('O servidor não confirmou a operação. Tente novamente.');
+      return result?.data;
+    }});
+  };
+  const pending = (_confirmedWrites.get(key) || Promise.resolve()).catch(() => {}).then(run);
+  _confirmedWrites.set(key, pending);
+  pending.finally(() => { _confirmedRevisions.set(resource, (_confirmedRevisions.get(resource) || 0) + 1); if (_confirmedWrites.get(key) === pending) _confirmedWrites.delete(key); }).catch(() => {});
+  return pending;
+}
+function _confirmedList(key) {
+  const data = _fallbackLoad(key, []);
+  return Array.isArray(data) ? data.filter(item => item && typeof item === 'object') : [];
+}
+function _confirmedCache(key, data) {
+  // A confirmação remota continua válida se o navegador não puder atualizar seu cache.
+  try { appStorage.setItem(key, JSON.stringify(data)); } catch (error) { console.warn('Cache indisponível após confirmação.', error); }
+}
+function _writeUuid(id) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || '') ? id : crypto.randomUUID();
+}
+
+const METAS_LOCAL_KEY = 'sistema_metas_v1';
+const SCORING_LOCAL_KEY = 'sistema_scoring_rules_v1';
+const ALERTAS_LOCAL_KEY = 'sistema_alertas_config_v1';
+const PONTOS_EXTRAS_LOCAL_KEY = 'sistema_pontos_extras_v1';
+const FOTOS_LOCAL_KEY = 'sistema_colab_fotos_v1';
+const INATIVOS_LOCAL_KEY = 'sistema_inactive_colabs_v1';
+const INATIVOS_SETORES_LOCAL_KEY = 'sistema_inactive_setores_v1';
+const COLAB_INFO_LOCAL_KEY = 'sistema_colaboradores_info_v1';
+const FEEDBACKS_LOCAL_KEY = 'sistema_feedbacks_v1';
+const ANOTACOES_LOCAL_KEY = 'sistema_anotacoes_diarias_v1';
+const TAREFAS_LOCAL_KEY = 'sistema_tarefas_v1';
+const REGRAS_LOCAL_KEY = 'sistema_regras_v1';
+const AUSENCIAS_LOCAL_KEY = 'sistema_ausencias_v1';
+const AVALIACAO_ATEND_LOCAL_KEY = 'sistema_avaliacao_atendimentos_v1';
+const FERIAS_LOCAL_KEY = 'sistema_ferias_v1';
+const ACOMP_DIARIO_LOCAL_KEY = 'sistema_acompanhamento_diario_v1';
+const COMENTARIOS_LOCAL_KEY = 'sistema_comentarios_v1';
+const HISTORICO_LOCAL_KEY = 'sistema_historico_v1';
 const MIGRATION_FLAG_KEY = 'sistema_migrated_to_supabase_v1';
 
-async function migrateLocalToSupabase() {
-  if (!sbClient) return;
-  try {
-    if (localStorage.getItem(MIGRATION_FLAG_KEY)) return;
-    const uid = await _getUserId();
-    if (!uid) return;
+// A chamada pertence à sessão que a iniciou, inclusive durante o download do domínio.
+async function _loadDataDomain(name) {
+  const token = typeof AppDataSession !== 'undefined' ? AppDataSession.token() : null;
+  await FeatureLoader.ensure(name);
+  if (token && !AppDataSession.current(token)) throw new Error('Sessão alterada durante o carregamento.');
+}
 
-    // Metas
-    const metasRaw = localStorage.getItem(METAS_LOCAL_KEY);
-    if (metasRaw) {
-      const metas = JSON.parse(metasRaw);
-      if (Array.isArray(metas) && metas.length > 0) {
-        const { data: existing } = await sbClient.from('metas').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          await dbMetasSave(metas);
-        }
-      }
-    }
-
-    // Comentários
-    const comRaw = localStorage.getItem(COMENTARIOS_LOCAL_KEY);
-    if (comRaw) {
-      const com = JSON.parse(comRaw);
-      if (typeof com === 'object' && Object.keys(com).length > 0) {
-        const { data: existing } = await sbClient.from('comentarios').select('id').limit(1);
-        if (!existing || existing.length === 0) {
-          const rows = [];
-          for (const mes of Object.keys(com)) {
-            for (const c of com[mes]) {
-              rows.push({ mes, texto: c.texto, user_email: c.user || '' });
-            }
-          }
-          if (rows.length) await sbClient.from('comentarios').insert(rows);
-        }
-      }
-    }
-
-    // Histórico
-    const histRaw = localStorage.getItem(HISTORICO_LOCAL_KEY);
-    if (histRaw) {
-      const hist = JSON.parse(histRaw);
-      if (Array.isArray(hist) && hist.length > 0) {
-        const { data: existing } = await sbClient.from('historico').select('id').limit(1);
-        if (!existing || existing.length === 0) {
-          const rows = hist.map(h => ({
-            action: h.action || '',
-            colaborador: h.colaborador || '',
-            mes: h.mes || '',
-            campo: h.campo || '',
-            before_value: h.before || '',
-            after_value: h.after || '',
-            detalhes: h.detalhes || '',
-            user_email: h.user || ''
-          }));
-          if (rows.length) await sbClient.from('historico').insert(rows);
-        }
-      }
-    }
-
-    // Scoring rules
-    const scoreRaw = localStorage.getItem(SCORING_LOCAL_KEY);
-    if (scoreRaw) {
-      const rules = JSON.parse(scoreRaw);
-      if (Array.isArray(rules) && rules.length > 0) {
-        const { data: existing } = await sbClient.from('scoring_config').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          await dbScoringSave(rules);
-        }
-      }
-    }
-
-    // Alertas config
-    const alertRaw = localStorage.getItem(ALERTAS_LOCAL_KEY);
-    if (alertRaw) {
-      const config = JSON.parse(alertRaw);
-      if (Array.isArray(config) && config.length > 0) {
-        const { data: existing } = await sbClient.from('alertas_config').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          await dbAlertasSave(config);
-        }
-      }
-    }
-
-    // Fotos
-    const fotosRaw = localStorage.getItem(FOTOS_LOCAL_KEY);
-    if (fotosRaw) {
-      const fotos = JSON.parse(fotosRaw);
-      if (typeof fotos === 'object' && Object.keys(fotos).length > 0) {
-        const { data: existing } = await sbClient.from('colaborador_fotos').select('id').limit(1);
-        if (!existing || existing.length === 0) {
-          for (const nome of Object.keys(fotos)) {
-            if (fotos[nome]) {
-              await sbClient.from('colaborador_fotos').insert({ nome, foto_url: fotos[nome] });
-            }
-          }
-        }
-      }
-    }
-
-    // Inativos
-    const inatRaw = localStorage.getItem(INATIVOS_LOCAL_KEY);
-    if (inatRaw) {
-      const names = JSON.parse(inatRaw);
-      if (Array.isArray(names) && names.length > 0) {
-        const { data: existing } = await sbClient.from('colab_inativos').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          await dbInativosSave(new Set(names));
-        }
-      }
-    }
-
-    // Setores inativos
-    const setorInatRaw = localStorage.getItem(INATIVOS_SETORES_LOCAL_KEY);
-    if (setorInatRaw) {
-      const names = JSON.parse(setorInatRaw);
-      if (Array.isArray(names) && names.length > 0) {
-        const { data: existing } = await sbClient.from('setor_inativos').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          await dbSetorInativosSave(new Set(names));
-        }
-      }
-    }
-
-    // Feedbacks
-    const fbRaw = localStorage.getItem(FEEDBACKS_LOCAL_KEY);
-    if (fbRaw) {
-      const fb = JSON.parse(fbRaw);
-      if (Array.isArray(fb) && fb.length > 0) {
-        const { data: existing } = await sbClient.from('feedbacks').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          for (const f of fb) {
-            await sbClient.from('feedbacks').insert({
-              user_id: uid,
-              colaborador: f.colaborador || '',
-              mes: f.mes || '',
-              sugestao_automatica: f.sugestao_automatica || '',
-              anotacoes: f.anotacoes || '',
-              feedback_final: f.feedback_final || ''
-            });
-          }
-        }
-      }
-    }
-
-    // Anotações diárias
-    const anotRaw = localStorage.getItem(ANOTACOES_LOCAL_KEY);
-    if (anotRaw) {
-      const anot = JSON.parse(anotRaw);
-      if (Array.isArray(anot) && anot.length > 0) {
-        const { data: existing } = await sbClient.from('anotacoes_diarias').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          for (const a of anot) {
-            await sbClient.from('anotacoes_diarias').insert({
-              user_id: uid,
-              data: a.data || '',
-              conteudo: a.conteudo || ''
-            });
-          }
-        }
-      }
-    }
-
-    // Tarefas
-    const tarefasRaw = localStorage.getItem(TAREFAS_LOCAL_KEY);
-    if (tarefasRaw) {
-      const tarefas = JSON.parse(tarefasRaw);
-      if (Array.isArray(tarefas) && tarefas.length > 0) {
-        const { data: existing } = await sbClient.from('tarefas').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          for (const t of tarefas) {
-            await sbClient.from('tarefas').insert({
-              user_id: uid,
-              titulo: t.titulo || '',
-              descricao: t.descricao || '',
-              data: t.data || '',
-              prioridade: t.prioridade || 'media',
-              status: t.status || 'pendente'
-            });
-          }
-        }
-      }
-    }
-
-    // Pontos Extras
-    const peRaw = localStorage.getItem(PONTOS_EXTRAS_LOCAL_KEY);
-    if (peRaw) {
-      const pe = JSON.parse(peRaw);
-      if (Array.isArray(pe) && pe.length > 0) {
-        const { data: existing } = await sbClient.from('pontos_extras').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          for (const b of pe) {
-            await sbClient.from('pontos_extras').insert({
-              user_id: uid,
-              colaborador: b.colaborador || '',
-              descricao: b.descricao || '',
-              pontos: parseFloat(b.pontos) || 0
-            });
-          }
-        }
-      }
-    }
-
-    // Colaboradores Info
-    const ciRaw = localStorage.getItem(COLAB_INFO_LOCAL_KEY);
-    if (ciRaw) {
-      const ci = JSON.parse(ciRaw);
-      if (typeof ci === 'object' && Object.keys(ci).length > 0) {
-        const { data: existing } = await sbClient.from('colaboradores_info').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          for (const [nome, info] of Object.entries(ci)) {
-            await sbClient.from('colaboradores_info').insert({
-              user_id: uid,
-              nome,
-              data_aniversario: info.data_aniversario || null,
-              data_admissao: info.data_admissao || null,
-              email: info.email || '',
-              setor_atual: info.setor_atual || '',
-              tarefas_desempenhadas: info.tarefas_desempenhadas || '',
-              objetivos_futuros: info.objetivos_futuros || '',
-              observacoes: info.observacoes || '',
-              conduta_negativa: info.conduta_negativa || '',
-              conduta_motivo: info.conduta_motivo || '',
-              feito_relevante: info.feito_relevante || '',
-              feito_descricao: info.feito_descricao || '',
-              nivel: info.nivel || '',
-              ...(info.salario == null || info.salario === '' ? {} : { salario: Number(info.salario) })
-            });
-          }
-        }
-      }
-    }
-
-    // Ausências
-    const ausRaw = localStorage.getItem(AUSENCIAS_LOCAL_KEY);
-    if (ausRaw) {
-      const aus = JSON.parse(ausRaw);
-      if (Array.isArray(aus) && aus.length > 0) {
-        const { data: existing } = await sbClient.from('ausencias').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          for (const a of aus) {
-            await sbClient.from('ausencias').insert({
-              user_id: uid,
-              colaborador: a.colaborador || '',
-              data: a.data || '',
-              periodo: a.periodo || 'dia_inteiro',
-              motivo: a.motivo || ''
-            });
-          }
-        }
-      }
-    }
-
-    // Avaliação de Atendimentos
-    const avRaw = localStorage.getItem(AVALIACAO_ATEND_LOCAL_KEY);
-    if (avRaw) {
-      const av = JSON.parse(avRaw);
-      if (Array.isArray(av) && av.length > 0) {
-        const { data: existing } = await sbClient.from('avaliacao_atendimentos').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          for (const a of av) {
-            await sbClient.from('avaliacao_atendimentos').insert({
-              user_id: uid,
-              protocolo: a.protocolo || '',
-              colaborador: a.colaborador || '',
-              nota: parseFloat(a.nota) || 5,
-              justa: a.justa !== false,
-              resumo: a.resumo || '',
-              imagem: a.imagem || ''
-            });
-          }
-        }
-      }
-    }
-
-    // Férias
-    const ferRaw = localStorage.getItem(FERIAS_LOCAL_KEY);
-    if (ferRaw) {
-      const fer = JSON.parse(ferRaw);
-      if (Array.isArray(fer) && fer.length > 0) {
-        const { data: existing } = await sbClient.from('ferias').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          for (const f of fer) {
-            await sbClient.from('ferias').insert({
-              user_id: uid,
-              colaborador: f.colaborador || '',
-              data_inicio: f.data_inicio || '',
-              data_fim: f.data_fim || ''
-            });
-          }
-        }
-      }
-    }
-
-    // Acompanhamento Diário
-    const adRaw = localStorage.getItem(ACOMP_DIARIO_LOCAL_KEY);
-    if (adRaw) {
-      const ad = JSON.parse(adRaw);
-      if (Array.isArray(ad) && ad.length > 0) {
-        const { data: existing } = await sbClient.from('acompanhamento_diario').select('id').eq('user_id', uid).limit(1);
-        if (!existing || existing.length === 0) {
-          for (const a of ad) {
-            await sbClient.from('acompanhamento_diario').insert({
-              user_id: uid,
-              colaborador: a.colaborador || '',
-              data: a.data || '',
-              setor: a.setor || '',
-              assumidos: a.assumidos || 0,
-              transferidos: a.transferidos || 0,
-              finalizados: a.finalizados || 0,
-              nota: a.nota || 0
-            });
-          }
-        }
-      }
-    }
-
-    localStorage.setItem(MIGRATION_FLAG_KEY, '1');
-  } catch (e) { console.warn('[db-extra] migrateLocalToSupabase error:', e); }
+async function dbMetasLoad(...args) {
+  await _loadDataDomain("data-performance");
+  return AppRepositories.performance.dbMetasLoad(...args);
+}
+async function dbMetasSave(...args) {
+  await _loadDataDomain("data-performance");
+  return AppRepositories.performance.dbMetasSave(...args);
+}
+async function dbMetasDelete(...args) {
+  await _loadDataDomain("data-performance");
+  return AppRepositories.performance.dbMetasDelete(...args);
+}
+function getSettingsConfirmed(kind){
+  const value=typeof AppState!=='undefined'?AppState.get('settings:'+kind):null;
+  if(value)return value;
+  return _fallbackLoad(kind==='scoring'?'sistema_scoring_confirmado_v1':'sistema_alertas_confirmado_v1',null);
+}
+async function dbScoringLoad(...args) {
+  await _loadDataDomain("data-performance");
+  return AppRepositories.performance.dbScoringLoad(...args);
+}
+async function dbScoringSave(...args) {
+  await _loadDataDomain("data-performance");
+  return AppRepositories.performance.dbScoringSave(...args);
+}
+async function dbAlertasLoad(...args) {
+  await _loadDataDomain("data-performance");
+  return AppRepositories.performance.dbAlertasLoad(...args);
+}
+async function dbAlertasSave(...args) {
+  await _loadDataDomain("data-performance");
+  return AppRepositories.performance.dbAlertasSave(...args);
+}
+async function dbPontosExtrasLoad(...args) {
+  await _loadDataDomain("data-performance");
+  return AppRepositories.performance.dbPontosExtrasLoad(...args);
+}
+async function dbPontosExtrasSave(...args) {
+  await _loadDataDomain("data-performance");
+  return AppRepositories.performance.dbPontosExtrasSave(...args);
+}
+async function dbPontosExtrasDelete(...args) {
+  await _loadDataDomain("data-performance");
+  return AppRepositories.performance.dbPontosExtrasDelete(...args);
+}
+async function dbFotosLoad(...args) {
+  await _loadDataDomain("data-people");
+  return AppRepositories.people.dbFotosLoad(...args);
+}
+async function dbFotoSave(...args) {
+  await _loadDataDomain("data-people");
+  return AppRepositories.people.dbFotoSave(...args);
+}
+async function dbInativosLoad(...args) {
+  await _loadDataDomain("data-people");
+  return AppRepositories.people.dbInativosLoad(...args);
+}
+async function dbInativosSave(...args) {
+  await _loadDataDomain("data-people");
+  return AppRepositories.people.dbInativosSave(...args);
+}
+async function dbSetorInativosLoad(...args) {
+  await _loadDataDomain("data-people");
+  return AppRepositories.people.dbSetorInativosLoad(...args);
+}
+async function dbSetorInativosSave(...args) {
+  await _loadDataDomain("data-people");
+  return AppRepositories.people.dbSetorInativosSave(...args);
+}
+async function dbColabInfoLoad(...args) {
+  await _loadDataDomain("data-people");
+  return AppRepositories.people.dbColabInfoLoad(...args);
+}
+async function dbColabInfoSave(...args) {
+  await _loadDataDomain("data-people");
+  return AppRepositories.people.dbColabInfoSave(...args);
+}
+async function dbAvaliacoesLoad(...args) {
+  await _loadDataDomain('data-development');
+  return AppRepositories.development.dbAvaliacoesLoad(...args);
+}
+async function dbAvaliacaoSave(...args) {
+  await _loadDataDomain('data-development');
+  return AppRepositories.development.dbAvaliacaoSave(...args);
+}
+async function dbAvaliacaoStatus(...args) {
+  await _loadDataDomain('data-development');
+  return AppRepositories.development.dbAvaliacaoStatus(...args);
+}
+async function dbAvaliacaoDelete(...args) {
+  await _loadDataDomain('data-development');
+  return AppRepositories.development.dbAvaliacaoDelete(...args);
+}
+async function dbFeedbacksLoad(...args) {
+  await _loadDataDomain("data-development");
+  return AppRepositories.development.dbFeedbacksLoad(...args);
+}
+async function dbFeedbacksSave(...args) {
+  await _loadDataDomain("data-development");
+  return AppRepositories.development.dbFeedbacksSave(...args);
+}
+async function dbFeedbacksDelete(...args) {
+  await _loadDataDomain("data-development");
+  return AppRepositories.development.dbFeedbacksDelete(...args);
+}
+async function dbAnotacoesLoad(...args) {
+  await _loadDataDomain("data-routine");
+  return AppRepositories.routine.dbAnotacoesLoad(...args);
+}
+async function dbAnotacoesSave(...args) {
+  await _loadDataDomain("data-routine");
+  return AppRepositories.routine.dbAnotacoesSave(...args);
+}
+async function dbAnotacoesDelete(...args) {
+  await _loadDataDomain("data-routine");
+  return AppRepositories.routine.dbAnotacoesDelete(...args);
+}
+async function dbTarefasLoad(...args) {
+  await _loadDataDomain("data-routine");
+  return AppRepositories.routine.dbTarefasLoad(...args);
+}
+async function dbTarefasSave(...args) {
+  await _loadDataDomain("data-routine");
+  return AppRepositories.routine.dbTarefasSave(...args);
+}
+async function dbTarefasDelete(...args) {
+  await _loadDataDomain("data-routine");
+  return AppRepositories.routine.dbTarefasDelete(...args);
+}
+async function dbRegrasLoad(...args) {
+  await _loadDataDomain("data-routine");
+  return AppRepositories.routine.dbRegrasLoad(...args);
+}
+async function dbRegrasSave(...args) {
+  await _loadDataDomain("data-routine");
+  return AppRepositories.routine.dbRegrasSave(...args);
+}
+async function dbRegraMove(...args) {
+  await _loadDataDomain("data-routine");
+  return AppRepositories.routine.dbRegraMove(...args);
+}
+function getRegrasConfirmadas() {
+  const rows = typeof AppState !== 'undefined' ? AppState.get('regras') : null;
+  return Array.isArray(rows) ? rows : _confirmedList('sistema_regras_confirmadas_v1');
+}
+async function dbRegrasDelete(...args) {
+  await _loadDataDomain("data-routine");
+  return AppRepositories.routine.dbRegrasDelete(...args);
+}
+async function dbAusenciasLoad(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbAusenciasLoad(...args);
+}
+async function dbAusenciasSave(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbAusenciasSave(...args);
+}
+async function dbAusenciasDelete(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbAusenciasDelete(...args);
+}
+async function dbAvaliacaoAtendLoad(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbAvaliacaoAtendLoad(...args);
+}
+async function dbAvaliacaoAtendSave(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbAvaliacaoAtendSave(...args);
+}
+async function dbAvaliacaoAtendDelete(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbAvaliacaoAtendDelete(...args);
+}
+async function dbFeriasLoad(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbFeriasLoad(...args);
+}
+async function dbFeriasSave(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbFeriasSave(...args);
+}
+async function dbFeriasDelete(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbFeriasDelete(...args);
+}
+async function dbAcompDiarioLoad(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbAcompDiarioLoad(...args);
+}
+async function dbAcompDiarioSave(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbAcompDiarioSave(...args);
+}
+async function dbAcompDiarioDelete(...args) {
+  await _loadDataDomain("data-attendance");
+  return AppRepositories.attendance.dbAcompDiarioDelete(...args);
+}
+function getComentariosConfirmados() {
+  const rows=typeof AppState!=='undefined'?AppState.get('comentarios'):null;
+  return Array.isArray(rows)?rows:_confirmedList('sistema_comentarios_confirmados_v1');
+}
+async function dbComentariosLoad(...args) {
+  await _loadDataDomain("data-audit");
+  return AppRepositories.audit.dbComentariosLoad(...args);
+}
+async function dbComentarioAdd(...args) {
+  await _loadDataDomain("data-audit");
+  return AppRepositories.audit.dbComentarioAdd(...args);
+}
+async function dbComentarioDel(...args) {
+  await _loadDataDomain("data-audit");
+  return AppRepositories.audit.dbComentarioDel(...args);
+}
+async function dbHistoricoLoad(...args) {
+  await _loadDataDomain("data-audit");
+  return AppRepositories.audit.dbHistoricoLoad(...args);
+}
+async function dbHistoricoAdd(...args) {
+  await _loadDataDomain("data-audit");
+  return AppRepositories.audit.dbHistoricoAdd(...args);
+}
+async function migrateLocalToSupabase(...args) {
+  await _loadDataDomain("data-legacy");
+  return AppRepositories.legacy.migrateLocalToSupabase(...args);
 }
 
 // ─── INIT ────────────────────────────────────────────────────────
 // Chamado pelo app.js no DOMContentLoaded para carregar dados do Supabase
 async function initDbExtra() {
   if (!sbClient) return;
+  const token = typeof AppDataSession !== 'undefined' ? AppDataSession.token() : null;
   try {
-    await migrateLocalToSupabase();
+    // Unowned historical browser data is preserved, never uploaded automatically.
     await Promise.allSettled([
       dbMetasLoad(),
       dbComentariosLoad(),
@@ -1537,5 +360,21 @@ async function initDbExtra() {
       dbFeriasLoad(),
       dbAcompDiarioLoad()
     ]);
+    if (!token || AppDataSession.current(token)) window.dispatchEvent?.(new Event('app-extra-data-loaded'));
   } catch (e) { console.error('[db-extra]', e); }
 }
+
+async function dbTarefaStatus(...args) { await _loadDataDomain('data-routine'); return AppRepositories.routine.dbTarefaStatus(...args); }
+async function dbAnotacaoFavorito(...args) { await _loadDataDomain('data-routine'); return AppRepositories.routine.dbAnotacaoFavorito(...args); }
+
+function getColabInfoLocal(){const state=typeof AppState!=='undefined'?AppState.get('colaboradores'):null;return state||_fallbackLoad(COLAB_INFO_LOCAL_KEY,{});}
+async function dbColabActivate(...args){await _loadDataDomain('data-people');return AppRepositories.people.dbColabActivate(...args);}
+
+function getPontosExtrasLocal(){const state=typeof AppState!=='undefined'?AppState.get('pontosExtras'):null;return Array.isArray(state)?state:_confirmedList(PONTOS_EXTRAS_LOCAL_KEY);}
+
+const PRESENCE_KEYS={ferias:'sistema_ferias_v1',ausencias:'sistema_ausencias_v1',avaliacao_atendimentos:'sistema_avaliacao_atendimentos_confirmados_v1',acompanhamento_diario:'sistema_acompanhamento_diario_confirmado_v1'};
+function getPresenceList(resource){if(!PRESENCE_KEYS[resource])throw Error('Recurso inválido.');const state=typeof AppState!=='undefined'?AppState.get(resource):null;return Array.isArray(state)?state:_confirmedList(PRESENCE_KEYS[resource]);}
+function getPresencePending(resource){if(!PRESENCE_KEYS[resource])throw Error('Recurso inválido.');return _fallbackLoad('sistema_presenca_pendente_'+resource+'_v1',null);}
+function clearPresencePending(resource){if(!PRESENCE_KEYS[resource]||!requireAdmin()||!AppDataSession.current(AppDataSession.token()))throw Error('Confirme sua sessão.');appStorage.removeItem('sistema_presenca_pendente_'+resource+'_v1');}
+
+function presenceReadConfirmed(resource){const state=typeof AppState!=='undefined'?AppState.get('presencaLeitura:'+resource):null;return Boolean(state?.confirmed)&&state.revision===_confirmedRevisions.get(resource);}

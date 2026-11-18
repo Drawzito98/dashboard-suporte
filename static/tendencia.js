@@ -86,7 +86,7 @@ function renderProjecoes() {
 
   // Projeções individuais
   html += `<div style="margin-top:var(--s-4)">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📊 Projeções Individuais</h3>
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Projeções Individuais</h3>
     <div style="overflow-x:auto"><table class="ranking-table">
       <thead><tr><th>Colaborador</th><th>Média Finalizações</th><th>Projeção</th><th>Tendência</th><th>Score previsto</th></tr></thead>
       <tbody>${cols.sort().map(name => {

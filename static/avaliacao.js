@@ -36,7 +36,9 @@ function sugerirCiclo() {
 
 function getAvaliacoesLocal() {
   try {
-    return JSON.parse(localStorage.getItem(AVALIACAO_KEY) || '[]');
+    const state = typeof AppState !== 'undefined' ? AppState.get('avaliacoes') : null;
+    const list = state || JSON.parse(appStorage.getItem(AVALIACAO_KEY) || '[]');
+    return Array.isArray(list) ? list : [];
   } catch { return []; }
 }
 
@@ -47,105 +49,54 @@ function getAvaliacoesAtivas() {
   );
 }
 
-function saveAvaliacoesLocal(list) {
-  localStorage.setItem(AVALIACAO_KEY, JSON.stringify(list));
+const AVALIACAO_DRAFT_KEY = 'sistema_avaliacao_rascunho_v1';
+let evaluationSaving = false;
+const evaluationCanEdit = () => document.body.dataset.role === 'admin' && typeof isAdmin === 'function' && isAdmin();
+function evaluationDraft() {
+  try { const draft = JSON.parse(appStorage.getItem(AVALIACAO_DRAFT_KEY) || 'null'); return draft?.id && draft.colaborador ? draft : null; } catch (_) { return null; }
 }
-
-async function dbAvaliacoesLoad() {
-  if (!sbClient) return getAvaliacoesLocal();
-  try {
-    const uid = await _getUserId();
-    if (!uid) return getAvaliacoesLocal();
-    const { data } = await sbClient.from('avaliacoes').select('*').eq('user_id', uid).order('created_at', { ascending: false });
-    if (data && Array.isArray(data) && data.length > 0) {
-      const localData = getAvaliacoesLocal();
-      const list = data.map(r => {
-        const local = localData.find(l => l.id === r.id);
-        return {
-          id: r.id,
-          colaborador: r.colaborador,
-          ciclo: r.ciclo,
-          scores: r.scores,
-          observacoes_gerais: r.observacoes_gerais || '',
-          observacoes_competencias: r.observacoes_competencias || {},
-          comentarios_ia: r.comentarios_ia || [],
-          comentarios_finais: r.comentarios_finais || [],
-          avaliacao_qualitativa: r.avaliacao_qualitativa || '',
-          status: r.status != null ? r.status : (local?.status || 'pendente'),
-          createdAt: r.created_at,
-          updatedAt: r.updated_at
-        };
-      });
-      saveAvaliacoesLocal(list);
-      return list;
-    }
-    return getAvaliacoesLocal();
-  } catch {
-    return getAvaliacoesLocal();
-  }
+function discardEvaluationDraft(id) {
+  try { if (!id || evaluationDraft()?.id === id) appStorage.removeItem(AVALIACAO_DRAFT_KEY); } catch (_) {}
 }
-
-async function dbAvaliacaoSave(avaliacao) {
-  const list = getAvaliacoesLocal();
-  const idx = list.findIndex(a => a.id === avaliacao.id);
-  if (idx >= 0) list[idx] = avaliacao;
-  else list.unshift(avaliacao);
-  saveAvaliacoesLocal(list);
-  if (!sbClient) return;
-  try {
-    const uid = await _getUserId();
-    if (!uid) return;
-    const existing = await sbClient.from('avaliacoes').select('id').eq('id', avaliacao.id).maybeSingle();
-    if (existing?.data?.id) {
-      await sbClient.from('avaliacoes').update({
-        colaborador: avaliacao.colaborador,
-        ciclo: avaliacao.ciclo,
-        scores: avaliacao.scores,
-        observacoes_gerais: avaliacao.observacoes_gerais || '',
-        observacoes_competencias: avaliacao.observacoes_competencias || {},
-        comentarios_ia: avaliacao.comentarios_ia || [],
-        comentarios_finais: avaliacao.comentarios_finais || [],
-        avaliacao_qualitativa: avaliacao.avaliacao_qualitativa || '',
-        status: avaliacao.status || 'pendente',
-        updated_at: new Date().toISOString()
-      }).eq('id', avaliacao.id);
-    } else {
-      await sbClient.from('avaliacoes').insert({
-        user_id: uid,
-        colaborador: avaliacao.colaborador,
-        ciclo: avaliacao.ciclo,
-        scores: avaliacao.scores,
-        observacoes_gerais: avaliacao.observacoes_gerais || '',
-        observacoes_competencias: avaliacao.observacoes_competencias || {},
-        comentarios_ia: avaliacao.comentarios_ia || [],
-        comentarios_finais: avaliacao.comentarios_finais || [],
-        avaliacao_qualitativa: avaliacao.avaliacao_qualitativa || '',
-        status: avaliacao.status || 'pendente'
-      }).then(result => {
-        if (result.data && result.data[0]) {
-          avaliacao.id = result.data[0].id;
-          const refreshed = getAvaliacoesLocal();
-          const ri = refreshed.findIndex(a => a.id === avaliacao.id || a.id === 'new_' + avaliacao.id);
-          if (ri >= 0) refreshed[ri].id = result.data[0].id;
-          else refreshed.unshift(avaliacao);
-          saveAvaliacoesLocal(refreshed);
-        }
-      });
-    }
-    if (typeof criarNotificacao === 'function') {
-      criarNotificacao('avaliacao', `Nova avaliação para ${avaliacao.colaborador || 'colaborador'} (${avaliacao.ciclo || 'sem ciclo'})`, 'avaliacao');
-    }
-  } catch (e) { console.error('[avaliacao] dbAvaliacaoSave:', e); }
+function captureEvaluation() {
+  const form = document.getElementById('avaliacaoForm'); if (!form) return null;
+  const scores = {}, observacoes_competencias = {};
+  getCompetencias().forEach(comp => {
+    const radio = form.querySelector(`input[name="score_${comp.id}"]:checked`);
+    scores[comp.id] = radio ? parseInt(radio.value) : null;
+    const value = form.querySelector(`[name="obs_${comp.id}"]`)?.value.trim();
+    if (value) observacoes_competencias[comp.id] = value;
+  });
+  const comments = selector => [...document.querySelectorAll(selector + ' .avaliacao-comentario-item')].map(item => item.querySelector('textarea')?.value || item.querySelector('.avaliacao-comentario-texto')?.textContent || '').filter(Boolean);
+  return { id: form.dataset.id, _localId: form.dataset.localId || '', _draftNew: form.dataset.draftNew === 'true',
+    colaborador: form.dataset.colaborador, ciclo: document.getElementById('avaliacaoCicloInput')?.value.trim() || '', scores,
+    observacoes_gerais: document.getElementById('avaliacaoObsGerais')?.value.trim() || '', observacoes_competencias,
+    comentarios_ia: comments('#avaliacaoComentariosIaList'), comentarios_finais: comments('#avaliacaoComentariosFinaisList'),
+    avaliacao_qualitativa: document.getElementById('avaliacaoQualitativa')?.value.trim() || '',
+    _pendingComment: document.getElementById('avaliacaoNovoComentarioInput')?.value || '', status: form.dataset.status || 'pendente', createdAt: form.dataset.createdAt };
 }
-
-async function dbAvaliacaoDelete(id) {
-  const list = getAvaliacoesLocal();
-  const filtered = list.filter(a => a.id !== id);
-  saveAvaliacoesLocal(filtered);
-  if (!sbClient) return;
-  try {
-    await sbClient.from('avaliacoes').delete().eq('id', id);
-  } catch (e) { console.error('[avaliacao] dbAvaliacaoDelete:', e); }
+function preserveEvaluationDraft() {
+  const draft = captureEvaluation();
+  if (!draft || !AppDataSession.current(AppDataSession.token())) return;
+  appStorage.setItem(AVALIACAO_DRAFT_KEY, JSON.stringify(draft));
+  document.getElementById('avaliacaoContent').dataset.personDirty = 'true';
+}
+function evaluationMessage(text, tone = 'error') {
+  const message = document.getElementById('avaliacaoSaveMessage');
+  if (message) { message.textContent = text; message.dataset.tone = tone; }
+}
+function bindEvaluationDraftBanner() {
+  document.getElementById('avaliacaoResumeDraft')?.addEventListener('click', () => {
+    const draft = evaluationDraft(); if (!draft || evaluationSaving) return;
+    const select = document.getElementById('avaliacaoColabSelect');
+    if (select && ![...select.options].some(option => option.value === draft.colaborador)) select.add(new Option(draft.colaborador, draft.colaborador));
+    if (select) select.value = draft.colaborador;
+    renderAvaliacaoForm(draft.colaborador, draft.ciclo, draft, true);
+  });
+  document.getElementById('avaliacaoDiscardDraft')?.addEventListener('click', () => {
+    if (evaluationSaving || !confirm('Descartar o rascunho local da avaliação? Nenhum registro do servidor será excluído.')) return;
+    discardEvaluationDraft(); renderAvaliacao();
+  });
 }
 
 function isGuidance(c) { return c.type === 'guidance'; }
@@ -156,6 +107,7 @@ function renderAvaliacao() {
   const container = document.getElementById('avaliacaoContent');
   if (!container) return;
 
+  container.dataset.personDirty = 'false';
   const avaliacoes = getAvaliacoesLocal();
   const colabs = [...new Set((rawRecords || []).filter(r => r && r['Atendente'] && !isAggregateName(r['Atendente']) && isColabActive(r['Atendente'])).map(r => r['Atendente']))].sort();
 
@@ -164,8 +116,8 @@ function renderAvaliacao() {
       <div class="avaliacao-form-card">
         <div class="card-header">
           <div>
-            <h2>Nova avaliação</h2>
-            <p>Selecione a pessoa e o período para abrir as 11 competências C1.</p>
+            <h2><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Avaliação de Desempenho</h2>
+            <p>Avalie um colaborador nas 11 competências C1</p>
           </div>
         </div>
         <div class="avaliacao-form-controls">
@@ -178,21 +130,21 @@ function renderAvaliacao() {
           </label>
           <label class="field">
             <span>Período</span>
-            <div style="display:flex;gap:6px;align-items:center">
-              <select id="avaliacaoMesInicio" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"></select>
-              <span style="font-size:13px;color:var(--text-secondary)">até</span>
-              <select id="avaliacaoMesFim" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"></select>
+            <div class="avaliacao-period-range">
+              <select id="avaliacaoMesInicio" aria-label="Mês inicial da avaliação" class="avaliacao-period-select"></select>
+              <span class="avaliacao-secondary">até</span>
+              <select id="avaliacaoMesFim" aria-label="Mês final da avaliação" class="avaliacao-period-select"></select>
             </div>
           </label>
-          <div style="display:flex;gap:var(--s-2);margin-top:var(--s-2);flex-wrap:wrap">
-            <button class="btn-primary" id="avaliacaoNovaBtn" type="button">Abrir avaliação</button>
-            <button class="btn-small" id="avaliacaoSugerirNotasBtn" type="button">Sugerir notas</button>
+          <div class="avaliacao-start-actions">
+            <button class="btn-small" id="avaliacaoNovaBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-plus"></use></svg> Nova avaliação</button>
+            <button class="btn-primary avaliacao-suggest-action" id="avaliacaoSugerirNotasBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-target"></use></svg> Sugerir Notas Inteligentes</button>
           </div>
         </div>
-        <div style="margin:var(--s-3) var(--s-4) var(--s-3)">
+        <div class="avaliacao-qualitative">
           <label class="field">
-            <span>📝 Avaliação qualitativa <span style="font-size:11px;color:var(--text-muted)">(opcional — usado nas sugestões)</span></span>
-            <textarea id="avaliacaoQualitativa" rows="3" placeholder="Ex: Colaborador proativo, mas precisa melhorar organização e pontualidade..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px;resize:vertical;font-family:inherit;line-height:1.5"></textarea>
+            <span>📝 Avaliação qualitativa <span class="avaliacao-caption">(opcional — usado nas sugestões)</span></span>
+            <textarea id="avaliacaoQualitativa" rows="3" placeholder="Ex: Colaborador proativo, mas precisa melhorar organização e pontualidade..." class="avaliacao-qualitative-input"></textarea>
           </label>
         </div>
       </div>
@@ -202,7 +154,7 @@ function renderAvaliacao() {
       <div class="avaliacao-historico-card">
         <div class="card-header">
           <div>
-            <h2>Histórico de avaliações</h2>
+            <h2><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Histórico de Avaliações</h2>
             <p>Visualize avaliações salvas por colaborador e ciclo</p>
           </div>
         </div>
@@ -214,7 +166,7 @@ function renderAvaliacao() {
               ${colabs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
             </select>
           </label>
-          <label class="field" style="min-width:130px">
+          <label class="field avaliacao-status-field">
             <span>Status</span>
             <select id="avaliacaoStatusFilter">
               <option value="">Todos</option>
@@ -233,17 +185,20 @@ function renderAvaliacao() {
               <option value="nome-desc">Nome Z-A</option>
             </select>
           </label>
-          <button class="btn-primary" id="avaliacaoCarregarBtn" type="button" disabled style="align-self:flex-end">📋 Carregar selecionada</button>
-          <button class="btn-small" id="avaliacaoRankingBtn" type="button" style="align-self:flex-end">🏆 Ranking</button>
-          <button class="btn-small" id="avaliacaoConsolidadoViewBtn" type="button" style="align-self:flex-end">👁️ Consolidado</button>
-          <button class="btn-small" id="avaliacaoExportAllBtn" type="button" style="align-self:flex-end">📊 Exportar</button>
+          <button class="btn-primary avaliacao-history-action" id="avaliacaoCarregarBtn" type="button" disabled><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Carregar selecionada</button>
+          <button class="btn-small avaliacao-history-action" id="avaliacaoRankingBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-award"></use></svg> Ranking</button>
+          <button class="btn-small avaliacao-history-action" id="avaliacaoConsolidadoViewBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-eye"></use></svg> Consolidado</button>
+          <button class="btn-small avaliacao-history-action" id="avaliacaoExportAllBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Exportar</button>
         </div>
         <div id="avaliacaoHistoricoLista"></div>
       </div>
     </div>
   `;
 
-  container.innerHTML = html;
+  const draft = evaluationDraft();
+  const draftHtml = draft && evaluationCanEdit() ? `<div class="ui-message" data-tone="info"><p>Rascunho neste navegador: <strong>${escapeHtml(draft.colaborador)}</strong> · ${escapeHtml(draft.ciclo || 'Período não definido')}. Ainda não confirmado no servidor.</p><button id="avaliacaoResumeDraft" class="btn-small" type="button">Retomar rascunho</button> <button id="avaliacaoDiscardDraft" class="btn-small" type="button">Descartar rascunho</button></div>` : '';
+  container.innerHTML = draftHtml + html;
+  bindEvaluationDraftBanner();
 
   const allMonths = [...new Set((rawRecords || []).filter(r => r && r['Mês']).map(r => r['Mês']))].sort();
   const mesInicio = document.getElementById('avaliacaoMesInicio');
@@ -319,19 +274,30 @@ function renderAvaliacao() {
   if (exportAllBtn) exportAllBtn.addEventListener('click', exportarTodasAvaliacoesXLSX);
 
   renderHistoricoAvaliacoes();
+  if (!evaluationCanEdit()) {
+    for (const id of ['avaliacaoNovaBtn', 'avaliacaoSugerirNotasBtn']) { const button = document.getElementById(id); if (button) button.disabled = true; }
+    const text = document.getElementById('avaliacaoQualitativa'); if (text) text.readOnly = true;
+  }
 }
 
-function renderAvaliacaoForm(colaborador, ciclo, existing) {
+function renderAvaliacaoForm(colaborador, ciclo, existing, resume = false) {
   const container = document.getElementById('avaliacaoFormContainer');
-  if (!container) return;
+  if (!container || evaluationSaving || !evaluationCanEdit()) return false;
+  const draft = evaluationDraft();
+  if (draft && !resume) {
+    const same = draft.colaborador === colaborador && (existing ? existing.id === draft.id || existing.id === draft._localId : draft.ciclo === ciclo);
+    if (same) { existing = draft; ciclo = draft.ciclo; }
+    else { if (!confirm('Há um rascunho de outra avaliação. Deseja descartá-lo para abrir esta edição?')) return false; discardEvaluationDraft(); }
+  }
 
+  document.getElementById('avaliacaoContent').dataset.personDirty = String(Boolean(existing && draft?.id === existing.id));
   const scores = existing ? existing.scores : {};
   const obsGerais = existing ? (existing.observacoes_gerais || '') : '';
   const obsComp = existing ? (existing.observacoes_competencias || {}) : {};
   const comentariosIa = existing ? (existing.comentarios_ia || []) : [];
   const comentariosFinais = existing ? (existing.comentarios_finais || []) : [];
   const qualitativa = existing ? (existing.avaliacao_qualitativa || '') : '';
-  const isEdit = !!existing;
+  const isEdit = !!existing && !existing._draftNew;
 
   let html = `
     <div class="card avaliacao-form-card avaliacao-form-expanded">
@@ -340,15 +306,15 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
           <h2>${isEdit ? '✏️' : '➕'} ${isEdit ? 'Editar' : 'Nova'} Avaliação</h2>
           <p><strong>${escapeHtml(colaborador)}</strong></p>
         </div>
-        <div style="display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap;padding:0 var(--s-4)">
-          <label class="field" style="margin:0;flex:1;min-width:200px">
+        <div class="avaliacao-editor-context">
+          <label class="field avaliacao-cycle-field">
             <span>Período</span>
-            <input type="text" id="avaliacaoCicloInput" value="${escapeHtml(ciclo)}" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px"/>
+            <input type="text" id="avaliacaoCicloInput" value="${escapeHtml(ciclo)}" class="avaliacao-cycle-input"/>
           </label>
-          ${isEdit ? `<span style="font-size:12px;color:var(--text-muted)">Última atualização: ${existing.updatedAt ? new Date(existing.updatedAt).toLocaleString('pt-BR') : '—'}</span>` : ''}
+          ${isEdit ? `<span class="avaliacao-caption">Última atualização: ${existing.updatedAt ? new Date(existing.updatedAt).toLocaleString('pt-BR') : '—'}</span>` : ''}
         </div>
       </div>
-      <form id="avaliacaoForm" class="avaliacao-form" data-colaborador="${escapeHtml(colaborador)}" data-id="${isEdit ? existing.id : ''}">
+      <form id="avaliacaoForm" class="avaliacao-form" data-colaborador="${escapeHtml(colaborador)}" data-id="${escapeHtml(_writeUuid(existing?.id))}">
         ${COMPETENCIAS.map(comp => {
           if (isGuidance(comp)) {
             return `
@@ -401,11 +367,11 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
         <div class="avaliacao-comentarios-ia-section">
           <div class="avaliacao-comentarios-ia-header">
             <div>
-              <h3 style="font-size:15px;font-weight:600;color:var(--text-strong)">💬 Comentários da Avaliação</h3>
-              <p style="font-size:12.5px;color:var(--text-secondary)">É obrigatório registrar pelo menos um comentário antes de concluir ou publicar a avaliação.</p>
+              <h3 class="avaliacao-comment-heading"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-message"></use></svg> Comentários da Avaliação</h3>
+              <p class="avaliacao-comment-description">É obrigatório registrar pelo menos um comentário antes de concluir ou publicar a avaliação.</p>
             </div>
-            <div style="display:flex;gap:var(--s-2);flex-wrap:wrap;align-items:center">
-              <button class="btn-primary" id="avaliacaoGerarIaBtn" type="button" style="font-size:12px;padding:6px 12px">🤖 Gerar Sugestões com IA</button>
+            <div class="avaliacao-comment-toolbar">
+              <button class="btn-primary avaliacao-comment-generate" id="avaliacaoGerarIaBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-suggest"></use></svg> Gerar Sugestões com IA</button>
             </div>
           </div>
           <div id="avaliacaoComentariosIaList" class="avaliacao-comentarios-list">
@@ -415,15 +381,16 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
             ${renderComentariosFinais(comentariosFinais)}
           </div>
           <div class="avaliacao-comentarios-add">
-            <textarea id="avaliacaoNovoComentarioInput" rows="2" placeholder="Digite um comentário personalizado..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px;resize:vertical"></textarea>
-            <button class="btn-small" id="avaliacaoAddComentarioBtn" type="button" style="margin-top:6px">➕ Adicionar comentário</button>
+            <textarea id="avaliacaoNovoComentarioInput" rows="2" placeholder="Digite um comentário personalizado..." class="avaliacao-comment-input"></textarea>
+            <button class="btn-small avaliacao-comment-add" id="avaliacaoAddComentarioBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-plus"></use></svg> Adicionar comentário</button>
           </div>
         </div>
 
         <div class="avaliacao-form-actions">
+          <p id="avaliacaoSaveMessage" class="ui-message" role="status" aria-live="polite">Edição ainda não confirmada no servidor.</p>
           <button class="btn-primary" type="submit">💾 Salvar avaliação</button>
-          <button class="btn-small" type="button" id="avaliacaoExportXlsxBtn">📊 Exportar para Excel</button>
-          <button class="btn-small" type="button" id="avaliacaoCancelarBtn">Cancelar</button>
+          <button class="btn-small" type="button" id="avaliacaoExportXlsxBtn"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Exportar para Excel</button>
+          <button class="btn-small" type="button" id="avaliacaoCancelarBtn">Fechar edição</button>
         </div>
       </form>
     </div>
@@ -431,20 +398,25 @@ function renderAvaliacaoForm(colaborador, ciclo, existing) {
 
   container.innerHTML = html;
   const qualField = document.getElementById('avaliacaoQualitativa');
-  if (qualField && qualitativa) qualField.value = qualitativa;
+  if (qualField && existing) qualField.value = qualitativa;
+  const form = document.getElementById('avaliacaoForm');
+  form.dataset.createdAt = existing?.createdAt || new Date().toISOString(); form.dataset.status = existing?.status || 'pendente';
+  form.dataset.localId = existing?._localId || existing?.id || ''; form.dataset.draftNew = String(!existing || existing._draftNew === true);
+  if (existing?._pendingComment) document.getElementById('avaliacaoNovoComentarioInput').value = existing._pendingComment;
   bindAvaliacaoFormEvents(colaborador, ciclo, existing);
+  if (!existing && document.getElementById('avaliacaoQualitativa')?.value.trim()) { try { preserveEvaluationDraft(); } catch (_) {} }
 }
 
 function renderComentariosIa(comentariosIa, comentariosFinais) {
-  if (!comentariosIa || !comentariosIa.length) return '<p style="font-size:13px;color:var(--text-muted);padding:var(--s-3) 0">Clique em "Gerar Sugestões com IA" para obter recomendações.</p>';
+  if (!comentariosIa || !comentariosIa.length) return '<p class="avaliacao-empty-hint">Clique em "Gerar Sugestões com IA" para obter recomendações.</p>';
   return comentariosIa.map((c, i) => `
     <div class="avaliacao-comentario-item ia" data-index="${i}">
       <div class="avaliacao-comentario-tag">🤖 Sugestão IA</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
-        <button class="btn-small av-usar-btn" type="button" title="Usar como comentário final" style="font-size:11px;padding:3px 8px">➕ Usar</button>
-        <button class="btn-small av-regenerar-btn" type="button" title="Regenerar" style="font-size:11px;padding:3px 8px">🔄 Regenerar</button>
+        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
+        <button class="btn-small av-usar-btn avaliacao-comment-action" type="button" title="Usar como comentário final"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-plus"></use></svg> Usar</button>
+        <button class="btn-small av-regenerar-btn avaliacao-comment-action" type="button" title="Regenerar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-refresh"></use></svg> Regenerar</button>
       </div>
     </div>
   `).join('');
@@ -457,9 +429,9 @@ function renderComentariosFinais(comentariosFinais) {
       <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:11px;padding:3px 8px">✏️ Editar</button>
-        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
-        <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:11px;padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
+        <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Editar</button>
+        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
+        <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-trash"></use></svg> Excluir</button>
       </div>
     </div>
   `).join('');
@@ -477,78 +449,46 @@ function getComentariosState() {
 }
 
 function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
-  const isEdit = !!existing;
   const container = document.getElementById('avaliacaoFormContainer');
 
   document.getElementById('avaliacaoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.target;
-    const colab = form.dataset.colaborador;
-    const cicloInput = document.getElementById('avaliacaoCicloInput');
-    const cicloForm = cicloInput ? cicloInput.value.trim() : form.dataset.ciclo;
-    const existingId = form.dataset.id;
-    const { comentarios_ia, comentarios_finais } = getComentariosState();
-
-    if (!comentarios_finais.length) {
-      showToast('Adicione pelo menos um comentário antes de salvar.', 'error');
-      return;
-    }
-
-    const scores = {};
-    const observacoes_competencias = {};
-    let hasScore = false;
-
-    getCompetencias().forEach(comp => {
-      const radio = form.querySelector(`input[name="score_${comp.id}"]:checked`);
-      if (radio) {
-        scores[comp.id] = parseInt(radio.value);
-        hasScore = true;
-      } else {
-        scores[comp.id] = null;
-      }
-      const obsInput = form.querySelector(`[name="obs_${comp.id}"]`);
-      if (obsInput && obsInput.value.trim()) {
-        observacoes_competencias[comp.id] = obsInput.value.trim();
-      }
-    });
-
-    if (!hasScore) {
-      showToast('Selecione pelo menos uma nota.', 'error');
-      return;
-    }
-
-    const observacoes_gerais = document.getElementById('avaliacaoObsGerais').value.trim();
-    const avaliacao_qualitativa = document.getElementById('avaliacaoQualitativa')?.value.trim() || '';
-
-    const avaliacaoData = {
-      id: existingId || 'new_' + Date.now(),
-      colaborador: colab,
-      ciclo: cicloForm,
-      scores,
-      observacoes_gerais,
-      observacoes_competencias,
-      comentarios_ia,
-      comentarios_finais,
-      avaliacao_qualitativa,
-      updatedAt: new Date().toISOString()
-    };
-
-    if (!existingId) {
-      avaliacaoData.createdAt = new Date().toISOString();
-    }
-
+    if (evaluationSaving || !evaluationCanEdit()) return;
+    const token = AppDataSession.token(), draft = captureEvaluation();
+    try {
+      preserveEvaluationDraft();
+      if (!draft.ciclo) { evaluationMessage('Informe o período da avaliação.'); return; }
+      if (!draft.comentarios_finais.length) { evaluationMessage('Adicione pelo menos um comentário antes de salvar.'); return; }
+      if (!Object.values(draft.scores).some(value => value !== null)) { evaluationMessage('Selecione pelo menos uma nota.'); return; }
+      if (draft._pendingComment.trim()) { evaluationMessage('Adicione o comentário digitado à lista antes de salvar.'); return; }
+    } catch (_) { evaluationMessage('Não foi possível guardar o rascunho neste navegador. Os campos continuam nesta tela.'); return; }
+    evaluationSaving = true; form.setAttribute('aria-busy', 'true');
+    const controls = [...document.querySelectorAll('#avaliacaoContent input, #avaliacaoContent textarea, #avaliacaoContent select, #avaliacaoContent button')].map(element => [element, element.disabled]);
+    controls.forEach(([element]) => element.disabled = true);
+    evaluationMessage('Aguardando confirmação do servidor…', 'info');
     if (typeof setLoading === 'function') setLoading(true, 'Salvando avaliação…');
     try {
-      await dbAvaliacaoSave(avaliacaoData);
-      showToast(`Avaliação de ${escapeHtml(colab)} salva com sucesso!`, 'success', 'Avaliação');
+      const result = await dbAvaliacaoSave(draft);
+      if (!AppDataSession.current(token)) return;
+      if (result?.status !== 'confirmed') throw new Error('Gravação não confirmada.');
+      discardEvaluationDraft(draft.id);
+      showToast(`Avaliação de ${draft.colaborador} salva com sucesso!`, 'success', 'Avaliação');
       renderAvaliacao();
+    } catch (_) {
+      if (AppDataSession.current(token)) evaluationMessage('Não foi possível confirmar o salvamento. Seu rascunho foi mantido; tente novamente.');
     } finally {
+      evaluationSaving = false; form.removeAttribute('aria-busy'); controls.forEach(([element, disabled]) => element.disabled = disabled);
       if (typeof setLoading === 'function') setLoading(false);
     }
   });
 
   document.getElementById('avaliacaoCancelarBtn').addEventListener('click', () => {
-    container.innerHTML = '';
+    if (evaluationSaving) return;
+    if (document.getElementById('avaliacaoContent').dataset.personDirty === 'true' || evaluationDraft()?.id === document.getElementById('avaliacaoForm')?.dataset.id) {
+      try { preserveEvaluationDraft(); } catch (_) { evaluationMessage('Não foi possível guardar o rascunho. Mantenha a edição aberta.'); return; }
+    }
+    renderAvaliacao();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
@@ -585,9 +525,9 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
       <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(texto)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:11px;padding:3px 8px">✏️ Editar</button>
-        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
-        <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:11px;padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
+        <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Editar</button>
+        <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
+        <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-trash"></use></svg> Excluir</button>
       </div>
     `;
     list.appendChild(div);
@@ -638,9 +578,9 @@ function handleUsar(e) {
     <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
     <div class="avaliacao-comentario-texto">${escapeHtml(texto)}</div>
     <div class="avaliacao-comentario-actions">
-      <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:11px;padding:3px 8px">✏️ Editar</button>
-      <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
-      <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:11px;padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
+      <button class="btn-small av-editar-comentario-btn avaliacao-comment-action" type="button" title="Editar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Editar</button>
+      <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
+      <button class="btn-small av-excluir-comentario-btn avaliacao-comment-delete" type="button" title="Excluir"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-trash"></use></svg> Excluir</button>
     </div>
   `;
   list.appendChild(div);
@@ -675,7 +615,7 @@ function handleEditar(e) {
   const salvarBtn = document.createElement('button');
   salvarBtn.className = 'btn-small';
   salvarBtn.type = 'button';
-  salvarBtn.style.cssText = 'font-size:11px;padding:3px 8px';
+  salvarBtn.style.cssText = 'font-size:var(--font-caption);padding:3px 8px';
   salvarBtn.textContent = '💾 Salvar';
   salvarBtn.addEventListener('click', () => {
     const novoTexto = input.value.trim();
@@ -693,6 +633,7 @@ function handleEditar(e) {
 function handleExcluir(e) {
   const item = e.target.closest('.avaliacao-comentario-item');
   item.remove();
+  try { preserveEvaluationDraft(); } catch (_) { evaluationMessage('Não foi possível guardar o rascunho neste navegador. Os campos continuam nesta tela.'); }
   showToast('Comentário excluído.', 'success');
 }
 
@@ -778,9 +719,9 @@ function gerarSugestoesIA(colaborador, ciclo, existing, replaceIndex) {
         <div class="avaliacao-comentario-tag">🤖 Sugestão IA</div>
         <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
         <div class="avaliacao-comentario-actions">
-          <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
-          <button class="btn-small av-usar-btn" type="button" title="Usar como comentário final" style="font-size:11px;padding:3px 8px">➕ Usar</button>
-          <button class="btn-small av-regenerar-btn" type="button" title="Regenerar" style="font-size:11px;padding:3px 8px">🔄 Regenerar</button>
+          <button class="btn-small av-copiar-btn avaliacao-comment-action" type="button" title="Copiar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar</button>
+          <button class="btn-small av-usar-btn avaliacao-comment-action" type="button" title="Usar como comentário final"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-plus"></use></svg> Usar</button>
+          <button class="btn-small av-regenerar-btn avaliacao-comment-action" type="button" title="Regenerar"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-refresh"></use></svg> Regenerar</button>
         </div>
       </div>
     `).join('');
@@ -946,7 +887,7 @@ function sugerirNotasInteligentes(colaborador) {
   showToast(`🎯 Notas e observações sugeridas${ext} Os textos podem ser editados.`, 'success');
 }
 
-function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
+async function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
   const scores = existing ? existing.scores : {};
   const obsComp = existing ? (existing.observacoes_competencias || {}) : {};
   const obsGerais = existing ? (existing.observacoes_gerais || '') : '';
@@ -991,6 +932,7 @@ function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
     rows.push([], ['Observações Gerais', obsGerais]);
   }
 
+  if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('excel'))return;
   if (typeof XLSX === 'undefined') {
     showToast('Biblioteca XLSX não carregada. Tente novamente.', 'error');
     return;
@@ -1013,12 +955,13 @@ function exportarAvaliacaoXLSX(colaborador, ciclo, existing) {
   showToast('Planilha exportada com sucesso!', 'success');
 }
 
-function exportarTodasAvaliacoesXLSX() {
+async function exportarTodasAvaliacoesXLSX() {
   const avaliacoes = getAvaliacoesAtivas();
   if (!avaliacoes.length) {
     showToast('Nenhuma avaliação salva para exportar.', 'error');
     return;
   }
+  if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('excel'))return;
   if (typeof XLSX === 'undefined') {
     showToast('Biblioteca XLSX não carregada.', 'error');
     return;
@@ -1071,23 +1014,23 @@ function mostrarRankingAvaliacoes() {
   const overlay = document.createElement('div');
   overlay.className = 'colab-detail-overlay open';
   overlay.innerHTML = `
-    <div class="colab-detail-panel" style="max-width:800px">
-      <button class="colab-detail-close" type="button">✕</button>
-      <div style="padding:var(--s-5)">
-        <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">🏆 Ranking de Avaliações</h2>
-        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--s-4)">Ranking por período — ordenado por média</p>
+    <div class="colab-detail-panel avaliacao-ranking-panel">
+      <button class="colab-detail-close" type="button" aria-label="Fechar relatório">✕</button>
+      <div class="avaliacao-report-body">
+        <h2 class="avaliacao-report-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-award"></use></svg> Ranking de Avaliações</h2>
+        <p class="avaliacao-report-description">Ranking por período — ordenado por média</p>
 
-        <div style="margin-bottom:var(--s-4);display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap">
-          <label class="field" style="margin:0;flex:1;min-width:200px">
+        <div class="avaliacao-report-filters">
+          <label class="field avaliacao-cycle-field">
             <span>Período</span>
-            <select id="rankingCicloSelect" style="width:100%">
+            <select id="rankingCicloSelect" class="avaliacao-full-width">
               ${ciclos.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
             </select>
           </label>
-          <span style="font-size:13px;color:var(--text-muted)" id="rankingCount"></span>
+          <span id="rankingCount" class="avaliacao-report-count"></span>
         </div>
 
-        <div id="rankingTableContainer" style="overflow-x:auto"></div>
+        <div id="rankingTableContainer" class="avaliacao-report-scroll table-wrap"></div>
       </div>
     </div>
   `;
@@ -1115,17 +1058,17 @@ function mostrarRankingAvaliacoes() {
 
     const container = document.getElementById('rankingTableContainer');
     if (!ranked.length) {
-      container.innerHTML = '<div style="text-align:center;padding:var(--s-8);color:var(--text-muted)">Nenhuma avaliação neste período.</div>';
+      container.innerHTML = '<div class="avaliacao-report-empty">Nenhuma avaliação neste período.</div>';
       return;
     }
 
-    let html = `<table style="width:100%;border-collapse:collapse;font-size:14px">
+    let html = `<table class="avaliacao-report-table">
       <thead>
-        <tr style="background:var(--bg-subtle)">
-          <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--border);width:60px">#</th>
-          <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Colaborador</th>
-          <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--border);width:100px">Média</th>
-          <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--border);width:100px">Total</th>
+        <tr class="avaliacao-report-head">
+          <th class="avaliacao-position-heading">#</th>
+          <th class="avaliacao-name-heading">Colaborador</th>
+          <th class="avaliacao-number-heading">Média</th>
+          <th class="avaliacao-number-heading">Total</th>
         </tr>
       </thead>
       <tbody>`;
@@ -1133,11 +1076,11 @@ function mostrarRankingAvaliacoes() {
       const pos = i + 1;
       const cor = av.media >= 3 ? 'var(--success)' : av.media >= 2 ? 'var(--warning)' : 'var(--danger)';
       const medalha = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}.`;
-      html += `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:10px 12px;text-align:center;font-weight:600;font-size:16px">${medalha}</td>
-        <td style="padding:10px 12px"><strong>${escapeHtml(av.colaborador)}</strong></td>
-        <td style="padding:10px 12px;text-align:center;font-weight:700;color:${cor};font-size:16px">${av.media.toFixed(2)}</td>
-        <td style="padding:10px 12px;text-align:center">${av.total}/${comps.length * 4}</td>
+      html += `<tr class="avaliacao-report-row">
+        <td class="avaliacao-position-cell">${medalha}</td>
+        <td class="avaliacao-report-cell"><strong>${escapeHtml(av.colaborador)}</strong></td>
+        <td class="avaliacao-score-cell" style="--evaluation-score-color:${cor}">${av.media.toFixed(2)}</td>
+        <td class="avaliacao-number-cell">${av.total}/${comps.length * 4}</td>
       </tr>`;
     });
     html += '</tbody></table>';
@@ -1161,25 +1104,25 @@ function mostrarConsolidado() {
   overlay.className = 'colab-detail-overlay open';
   overlay.style.zIndex = '2000';
   overlay.innerHTML = `
-    <div class="colab-detail-panel" style="max-width:1200px;max-height:90vh;display:flex;flex-direction:column">
-      <button class="colab-detail-close" type="button">✕</button>
-      <div style="padding:var(--s-5);flex:1;display:flex;flex-direction:column;min-height:0">
-        <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">👁️ Consolidado de Avaliações</h2>
-        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--s-4)">Todas as avaliações em uma única tabela — clique nos cabeçalhos para ordenar</p>
+    <div class="colab-detail-panel avaliacao-consolidated-panel">
+      <button class="colab-detail-close" type="button" aria-label="Fechar relatório">✕</button>
+      <div class="avaliacao-consolidated-body">
+        <h2 class="avaliacao-report-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-eye"></use></svg> Consolidado de Avaliações</h2>
+        <p class="avaliacao-report-description">Todas as avaliações em uma única tabela — clique nos cabeçalhos para ordenar</p>
 
-        <div style="margin-bottom:var(--s-4);display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap">
-          <label class="field" style="margin:0;min-width:200px">
+        <div class="avaliacao-report-filters">
+          <label class="field avaliacao-report-period">
             <span>Período</span>
-            <select id="consolidadoCicloSelect" style="width:100%">
+            <select id="consolidadoCicloSelect" class="avaliacao-full-width">
               <option value="">Todos os períodos</option>
               ${ciclos.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
             </select>
           </label>
-          <span style="font-size:13px;color:var(--text-muted)" id="consolidadoCount"></span>
+          <span id="consolidadoCount" class="avaliacao-report-count"></span>
         </div>
 
-        <div id="consolidadoTableWrapper" style="overflow:auto;flex:1;border:1px solid var(--border);border-radius:var(--r-md)">
-          <table id="consolidadoTable" style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
+        <div id="consolidadoTableWrapper" class="avaliacao-consolidated-scroll table-wrap">
+          <table id="consolidadoTable" class="avaliacao-consolidated-table">
             <thead id="consolidadoThead"></thead>
             <tbody id="consolidadoTbody"></tbody>
           </table>
@@ -1225,6 +1168,7 @@ function mostrarConsolidado() {
     if (sortField === field) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
     else { sortField = field; sortDir = 'asc'; }
     render();
+    document.querySelector('#consolidadoThead button[data-field="' + field + '"]')?.focus({ preventScroll: true });
   }
 
   function render() {
@@ -1238,34 +1182,34 @@ function mostrarConsolidado() {
     function th(label, field, w) {
       const isActive = sortField === field;
       const arrow = isActive ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
-      return `<th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);cursor:pointer;white-space:nowrap;min-width:${w};user-select:none;background:var(--bg-subtle);position:sticky;top:0;z-index:1" data-field="${field}">${escapeHtml(label)}${arrow}</th>`;
+      return `<th class="avaliacao-sort-heading" scope="col" aria-sort="${isActive ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}" style="--evaluation-column-width:${w}"><button type="button" data-field="${field}">${escapeHtml(label)}${arrow}</button></th>`;
     }
 
     thead.innerHTML = `<tr>${th('Colaborador', 'colaborador', '180px')}${th('Período', 'ciclo', '160px')}${comps.map(c => th(c.nome, String(c.id), '140px')).join('')}${th('Média', 'media', '80px')}${th('Total', 'total', '80px')}</tr>`;
 
     if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="' + (2 + comps.length + 2) + '" style="text-align:center;padding:var(--s-8);color:var(--text-muted)">Nenhuma avaliação neste período.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="' + (2 + comps.length + 2) + '" class="avaliacao-report-empty">Nenhuma avaliação neste período.</td></tr>';
       return;
     }
 
     tbody.innerHTML = data.map(av => {
       const cor = av.media >= 3 ? 'var(--success)' : av.media >= 2 ? 'var(--warning)' : 'var(--danger)';
-      return `<tr style="border-bottom:1px solid var(--border)">` +
-        `<td style="padding:8px 10px;font-weight:600">${escapeHtml(av.colaborador)}</td>` +
-        `<td style="padding:8px 10px;color:var(--text-secondary)">${escapeHtml(av.ciclo)}</td>` +
+      return `<tr class="avaliacao-report-row">` +
+        `<td class="avaliacao-person-cell">${escapeHtml(av.colaborador)}</td>` +
+        `<td class="avaliacao-cycle-cell">${escapeHtml(av.ciclo)}</td>` +
         comps.map(c => {
           const score = av.scores?.[c.id];
           const obs = av.observacoes_competencias?.[c.id] || '';
-          if (score == null && !obs) return `<td style="padding:8px 10px;text-align:center;color:var(--text-muted)">—</td>`;
+          if (score == null && !obs) return `<td class="avaliacao-missing-cell">—</td>`;
           const txt = score != null ? (obs ? `${score} — ${obs}` : String(score)) : obs;
-          return `<td style="padding:8px 10px;max-width:300px;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(txt)}">${escapeHtml(txt)}</td>`;
+          return `<td title="${escapeHtml(txt)}" class="avaliacao-observation-cell">${escapeHtml(txt)}</td>`;
         }).join('') +
-        `<td style="padding:8px 10px;text-align:center;font-weight:700;color:${cor}">${av.media.toFixed(2)}</td>` +
-        `<td style="padding:8px 10px;text-align:center">${av.total}/${comps.length * 4}</td>` +
+        `<td class="avaliacao-score-cell" style="--evaluation-score-color:${cor}">${av.media.toFixed(2)}</td>` +
+        `<td class="avaliacao-number-cell">${av.total}/${comps.length * 4}</td>` +
         `</tr>`;
     }).join('');
 
-    thead.querySelectorAll('th[data-field]').forEach(th => {
+    thead.querySelectorAll('button[data-field]').forEach(th => {
       th.addEventListener('click', () => setSort(th.dataset.field));
     });
   }
@@ -1305,7 +1249,7 @@ function renderHistoricoAvaliacoes() {
   });
 
   if (!filtered.length) {
-    container.innerHTML = '<div class="empty-state" style="border:none"><div class="empty-title">Nenhuma avaliação encontrada</div><div class="empty-sub">As avaliações salvas aparecerão aqui.</div></div>';
+    container.innerHTML = '<div class="empty-state avaliacao-guidance-form"><div class="empty-title">Nenhuma avaliação encontrada</div><div class="empty-sub">As avaliações salvas aparecerão aqui.</div></div>';
     return;
   }
 
@@ -1317,33 +1261,34 @@ function renderHistoricoAvaliacoes() {
     const corMedia = media !== '—' ? (media >= 3 ? 'var(--success)' : media >= 2 ? 'var(--warning)' : 'var(--danger)') : 'var(--text-muted)';
 
     const status = av.status || 'pendente';
-    const statusLabel = status === 'revisado' ? 'Revisado' : 'Pendente';
-    const statusCor = status === 'revisado' ? 'var(--success)' : 'var(--warning)';
+    const statusLabel = status === 'revisado' ? '✅ Revisado' : '⏳ Pendente';
 
     html += `
       <div class="avaliacao-historico-item" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}">
         <div class="avaliacao-historico-header">
           <strong>${escapeHtml(av.colaborador)}</strong>
           <span class="avaliacao-historico-ciclo">${escapeHtml(av.ciclo)}</span>
-          <button class="avaliacao-status-tag" type="button" data-id="${av.id}" style="--avaliacao-status-color:${statusCor}" aria-label="Status: ${statusLabel}. Alternar revisão" title="Alternar status de revisão">${statusLabel}</button>
+          <button type="button" class="btn-small avaliacao-status-tag" data-id="${av.id}" data-status="${status === 'revisado' ? 'revisado' : 'pendente'}">${statusLabel}</button>
         </div>
         <div class="avaliacao-historico-stats">
-          <span class="avaliacao-media">Média <strong style="color:${corMedia}">${media}</strong></span>
           <span>Notas: <strong>${scoresArray.length}/${comps.length}</strong></span>
           <span>Total: <strong>${total}</strong></span>
+          <span>Média: <strong style="color:${corMedia}">${media}</strong></span>
           <span>Comentários: <strong>${(av.comentarios_finais || []).length}</strong></span>
         </div>
         <div class="avaliacao-historico-mini-radar" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}"></div>
         <div class="avaliacao-historico-actions">
-          <button class="btn-small avaliacao-ver-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button">Ver detalhes</button>
-          <button class="btn-small avaliacao-editar-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button">Editar</button>
-          <button class="btn-small avaliacao-excluir-btn" data-id="${av.id}" type="button" style="color:var(--danger)">🗑️</button>
+          <button class="btn-small avaliacao-ver-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-eye"></use></svg> Ver</button>
+          <button class="btn-small avaliacao-editar-btn" data-colab="${escapeHtml(av.colaborador)}" data-ciclo="${escapeHtml(av.ciclo)}" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Editar</button>
+          <button class="btn-small avaliacao-excluir-btn avaliacao-danger-action" data-id="${av.id}" type="button">🗑️</button>
         </div>
       </div>
     `;
   });
   html += '</div>';
   container.innerHTML = html;
+
+  if (!evaluationCanEdit()) container.querySelectorAll('.avaliacao-editar-btn, .avaliacao-excluir-btn, .avaliacao-status-tag').forEach(button => button.disabled = true);
 
   container.querySelectorAll('.avaliacao-ver-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1364,23 +1309,34 @@ function renderHistoricoAvaliacoes() {
 
   container.querySelectorAll('.avaliacao-excluir-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('Tem certeza que deseja excluir esta avaliação?')) return;
-      await dbAvaliacaoDelete(btn.dataset.id);
-      showToast('Avaliação excluída.', 'success');
-      renderAvaliacao();
+      if (!evaluationCanEdit() || evaluationSaving || !confirm('Tem certeza que deseja excluir esta avaliação?')) return;
+      const token = AppDataSession.token(); evaluationSaving = true; btn.disabled = true;
+      try {
+        const result = await dbAvaliacaoDelete(btn.dataset.id);
+        if (!AppDataSession.current(token)) return;
+        if (result?.status !== 'confirmed') throw new Error('Exclusão não confirmada.');
+        showToast('Avaliação excluída.', 'success');
+        renderHistoricoAvaliacoes();
+      } catch (_) { if (AppDataSession.current(token)) showToast('Exclusão não confirmada. A avaliação foi mantida na lista; tente novamente.', 'error'); }
+      finally { evaluationSaving = false; btn.disabled = false; }
     });
   });
 
   container.querySelectorAll('.avaliacao-status-tag').forEach(tag => {
     tag.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const id = tag.dataset.id;
-      const list = getAvaliacoesLocal();
-      const av = list.find(a => a.id === id);
-      if (!av) return;
-      av.status = av.status === 'revisado' ? 'pendente' : 'revisado';
-      await dbAvaliacaoSave(av);
-      renderHistoricoAvaliacoes();
+      if (!evaluationCanEdit() || evaluationSaving) return;
+      const token = AppDataSession.token(), id = tag.dataset.id;
+      const av = getAvaliacoesLocal().find(item => item.id === id); if (!av) return;
+      const nextStatus = av.status === 'revisado' ? 'pendente' : 'revisado';
+      evaluationSaving = true; tag.disabled = true; tag.setAttribute('aria-busy', 'true'); tag.setAttribute('aria-disabled', 'true');
+      try {
+        const result = await dbAvaliacaoStatus(id, nextStatus);
+        if (!AppDataSession.current(token)) return;
+        if (result?.status !== 'confirmed') throw new Error('Status não confirmado.');
+        renderHistoricoAvaliacoes();
+      } catch (_) { if (AppDataSession.current(token)) showToast('O servidor não confirmou a alteração de status. Tente novamente.', 'error'); }
+      finally { evaluationSaving = false; tag.disabled = false; tag.removeAttribute('aria-busy'); tag.removeAttribute('aria-disabled'); }
     });
   });
 
@@ -1412,7 +1368,7 @@ function renderMiniRadars(avaliacoes) {
       return (v !== null && v !== undefined) ? v : null;
     });
     const hasData = scores.some(s => s !== null);
-    if (!hasData) { container.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">Sem dados</span>'; return; }
+    if (!hasData) { container.innerHTML = '<span class="avaliacao-caption">Sem dados</span>'; return; }
 
     const w = 110, h = 110, cx = w / 2, cy = h / 2, r = 42;
     const angleStep = (2 * Math.PI) / comps.length;
@@ -1466,31 +1422,32 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
   const overlay = document.createElement('div');
   overlay.className = 'colab-detail-overlay open';
   overlay.innerHTML = `
-    <div class="colab-detail-panel" style="max-width:960px">
-      <button class="colab-detail-close" type="button">✕</button>
-      <div style="padding:var(--s-5)">
-        <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">📋 Avaliação: ${escapeHtml(av.colaborador)}</h2>
-        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--s-4)">Ciclo <strong>${escapeHtml(av.ciclo)}</strong> · Média: <strong style="color:${media !== '—' ? (parseFloat(media) >= 3 ? 'var(--success)' : parseFloat(media) >= 2 ? 'var(--warning)' : 'var(--danger)') : 'var(--text-muted)'}">${media}</strong> · Total: <strong>${total}/${comps.length * 4}</strong></p>
+    <div class="colab-detail-panel avaliacao-detail-panel">
+      <button class="colab-detail-close" type="button" aria-label="Fechar relatório">✕</button>
+      <div class="avaliacao-report-body">
+        <h2 class="avaliacao-report-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Avaliação: ${escapeHtml(av.colaborador)}</h2>
+        <p class="avaliacao-report-description">Ciclo <strong>${escapeHtml(av.ciclo)}</strong> · Média: <strong style="color:${media !== '—' ? (parseFloat(media) >= 3 ? 'var(--success)' : parseFloat(media) >= 2 ? 'var(--warning)' : 'var(--danger)') : 'var(--text-muted)'}">${media}</strong> · Total: <strong>${total}/${comps.length * 4}</strong></p>
 
-        <div style="display:flex;gap:var(--s-6);flex-wrap:wrap;margin-bottom:var(--s-5)">
-          <div style="flex:0 0 420px">
-            <div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--s-4)">
-              <div style="position:relative;width:360px;height:360px;margin:0 auto">
-                <canvas id="avaliacaoRadarDetail" width="360" height="360"></canvas>
+        <div class="avaliacao-detail-grid">
+          <div class="avaliacao-detail-chart-column">
+            <div class="avaliacao-detail-surface">
+              <p class="avaliacao-chart-key">Os números do gráfico correspondem às competências da tabela.</p>
+              <div class="avaliacao-detail-chart">
+                <canvas id="avaliacaoRadarDetail" width="360" height="360" role="img" aria-label="Distribuição das notas por competência. Os mesmos valores estão na tabela de pontuação."></canvas>
               </div>
             </div>
           </div>
-          <div style="flex:1;min-width:280px">
-            <h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3)">📊 Pontuação por competência</h3>
-            <div style="overflow-x:auto">
+          <div class="avaliacao-detail-content">
+            <h3 class="avaliacao-detail-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Pontuação por competência</h3>
+            <div class="avaliacao-report-scroll table-wrap">
               <table class="avaliacao-detail-table">
                 <thead><tr><th>Competência</th><th>Nota</th><th>Observação</th></tr></thead>
                 <tbody>
-                  ${scores.map(s => `
+                  ${scores.map((s, index) => `
                     <tr>
-                      <td><strong>${escapeHtml(s.nome)}</strong></td>
-                      <td style="text-align:center;font-weight:600">${s.nota !== null ? s.nota : '—'}</td>
-                      <td style="font-size:12px;color:var(--text-secondary);max-width:250px">${s.obs ? escapeHtml(s.obs) : '<span style="color:var(--text-muted)">—</span>'}</td>
+                      <td><strong>${index + 1}. ${escapeHtml(s.nome)}</strong></td>
+                      <td class="avaliacao-detail-score">${s.nota !== null ? s.nota : '—'}</td>
+                      <td class="avaliacao-detail-observation">${s.obs ? escapeHtml(s.obs) : '<span class="avaliacao-muted">—</span>'}</td>
                     </tr>
                   `).join('')}
                 </tbody>
@@ -1500,23 +1457,23 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
         </div>
 
         ${obsGerais ? `
-          <div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--s-4);margin-bottom:var(--s-4)">
-            <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-2)">📝 Observações gerais</h3>
-            <p style="font-size:13px;color:var(--text-secondary);white-space:pre-wrap">${escapeHtml(obsGerais)}</p>
+          <div class="avaliacao-detail-notes">
+            <h3 class="avaliacao-notes-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-note"></use></svg> Observações gerais</h3>
+            <p class="avaliacao-note-text">${escapeHtml(obsGerais)}</p>
           </div>
         ` : ''}
 
         ${comentariosFinais.length ? `
-          <div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--s-4);margin-bottom:var(--s-4)">
-            <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-2)">💬 Comentários da Avaliação</h3>
-            ${comentariosFinais.map(c => `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5">${escapeHtml(c)}</div>`).join('')}
-            ${comentariosIa.length ? `<details style="margin-top:var(--s-2)"><summary style="font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer">🤖 Ver sugestões da IA (${comentariosIa.length})</summary>${comentariosIa.map(c => `<div style="padding:6px 0;font-size:12px;color:var(--text-muted);white-space:pre-wrap">${escapeHtml(c)}</div>`).join('')}</details>` : ''}
+          <div class="avaliacao-detail-notes">
+            <h3 class="avaliacao-notes-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-message"></use></svg> Comentários da Avaliação</h3>
+            ${comentariosFinais.map(c => `<div class="avaliacao-final-note">${escapeHtml(c)}</div>`).join('')}
+            ${comentariosIa.length ? `<details class="avaliacao-suggestion-details"><summary class="avaliacao-suggestion-summary">🤖 Ver sugestões da IA (${comentariosIa.length})</summary>${comentariosIa.map(c => `<div class="avaliacao-suggestion-note">${escapeHtml(c)}</div>`).join('')}</details>` : ''}
           </div>
         ` : ''}
 
-        <div style="display:flex;gap:var(--s-3);justify-content:flex-end;flex-wrap:wrap">
-          <button class="btn-small" id="avaliacaoDetailEditar" type="button">✏️ Editar</button>
-          <button class="btn-small" id="avaliacaoDetailExportarXlsx" type="button">📊 Exportar Excel</button>
+        <div class="avaliacao-report-actions">
+          <button class="btn-small" id="avaliacaoDetailEditar" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-edit"></use></svg> Editar</button>
+          <button class="btn-small" id="avaliacaoDetailExportarXlsx" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Exportar Excel</button>
           <button class="btn-small" id="avaliacaoDetailExportar" type="button">📄 Exportar texto</button>
         </div>
       </div>
@@ -1591,9 +1548,10 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
             grid: { color: ChartTheme.border() },
             angleLines: { color: ChartTheme.border() },
             pointLabels: {
+              callback: (_label, index) => String(index + 1),
               color: ChartTheme.text(),
-              font: { size: 11, weight: '500' },
-              padding: 18
+              font: { size: 12, weight: '500' },
+              padding: 8
             }
           }
         },
@@ -1620,9 +1578,50 @@ function mostrarDetalheAvaliacao(colaborador, ciclo) {
 }
 
 function onAvaliacaoTabActivated() {
+  if (document.getElementById('avaliacaoContent')?.dataset.personDirty === 'true') return;
   renderAvaliacao();
 }
 
 window.addEventListener('colab-active-state-changed', () => {
   if (document.getElementById('avaliacaoContent')) renderAvaliacao();
+});
+
+// Entrada contextual: seleciona a pessoa, sem gerar uma avaliação nem escolher notas/ciclo.
+function openAvaliacaoPerson(name) {
+  if (evaluationSaving) return false;
+  if (typeof name !== 'string' || !name || typeof requireAdmin !== 'function' || !requireAdmin()) return false;
+  const host = document.getElementById('avaliacaoContent');
+  if (host?.dataset.personDirty === 'true' && document.body.dataset.activeTab === 'avaliacao' && document.getElementById('avaliacaoColabSelect')?.value === name && (!document.getElementById('avaliacaoForm') || document.getElementById('avaliacaoForm').dataset.colaborador === name)) return true;
+  if (host?.dataset.personDirty === 'true' && !confirm('Descartar alterações não salvas da avaliação para abrir esta pessoa?')) return false;
+  if (host?.dataset.personDirty === 'true') discardEvaluationDraft();
+  if (host) host.dataset.personDirty = 'false';
+  document.querySelector('[data-tab="avaliacao"]')?.click();
+  if (document.body.dataset.activeTab !== 'avaliacao') return false;
+  for (const id of ['avaliacaoColabSelect', 'avaliacaoHistSelect']) {
+    const select = document.getElementById(id); if (!select) continue;
+    if (![...select.options].some(option => option.value === name)) select.add(new Option(name, name));
+    select.value = name; select.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  return true;
+}
+document.addEventListener('input', event => {
+  if (event.target.closest?.('#avaliacaoForm, #avaliacaoQualitativa')) document.getElementById('avaliacaoContent').dataset.personDirty = 'true';
+});
+document.addEventListener('change', event => {
+  if (event.target.closest?.('#avaliacaoForm')) document.getElementById('avaliacaoContent').dataset.personDirty = 'true';
+});
+document.getElementById('tabBar')?.addEventListener('click', event => {
+  if (!event.target.closest('.tab-btn')) return;
+  if (evaluationSaving) { event.preventDefault(); event.stopImmediatePropagation(); return; }
+  const host = document.getElementById('avaliacaoContent');
+  if (document.body.dataset.activeTab !== 'avaliacao' || host?.dataset.personDirty !== 'true') return;
+  if (!confirm('Há alterações não salvas na avaliação. Deseja sair e descartá-las?')) { event.preventDefault(); event.stopImmediatePropagation(); return; }
+  discardEvaluationDraft(); host.dataset.personDirty = 'false';
+}, true);
+
+for (const type of ['input', 'change', 'click']) document.addEventListener(type, event => {
+  if (!event.target.closest?.('#avaliacaoContent')) return;
+  if (type === 'click' && !event.target.closest('.avaliacao-nota-radio, .avaliacao-nota-label, #avaliacaoAddComentarioBtn, #avaliacaoGerarIaBtn, .av-usar-btn, .av-regenerar-btn, .av-editar-comentario-btn')) return;
+  if (type !== 'click' && !event.target.closest('#avaliacaoForm, #avaliacaoQualitativa, #avaliacaoCicloInput')) return;
+  queueMicrotask(() => { try { preserveEvaluationDraft(); } catch (_) { evaluationMessage('Não foi possível guardar o rascunho neste navegador. Os campos continuam nesta tela.'); } });
 });

@@ -111,6 +111,7 @@
       btn.innerHTML = '<span class="export-spinner"></span> Gerando...';
 
       try {
+        if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('image'))return;
         // Use html2canvas if available, otherwise fallback to simple approach
         if (typeof html2canvas !== 'undefined') {
           const dashboardPanel = document.querySelector('[data-tab-content="dashboard"]') || document.querySelector('.main-content');
@@ -433,7 +434,7 @@
 
     // Tarefas pending
     try {
-      const raw = localStorage.getItem('sistema_tarefas_v1');
+      const raw = appStorage.getItem('sistema_tarefas_v1');
       if (raw) {
         const tasks = JSON.parse(raw);
         const pending = tasks.filter(t => t.status !== 'concluida');
@@ -457,7 +458,7 @@
         <div style="padding:20px 24px">
           <pre class="summary-text">${escapeH(text)}</pre>
           <div style="display:flex;gap:8px;margin-top:16px">
-            <button class="btn summary-copy-btn" style="flex:1">📋 Copiar texto</button>
+            <button class="btn summary-copy-btn" style="flex:1"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Copiar texto</button>
             <button class="btn summary-close-go" style="flex:1;background:var(--border);color:var(--text)">Fechar</button>
           </div>
         </div>

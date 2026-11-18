@@ -51,9 +51,9 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 | `notificacoes` | Notificações audit trail | `notificacoes.js` |
 
 ## Arquitetura de Dados
-- **Leitura:** localStorage primeiro (síncrono), Supabase atualiza em background
-- **Escrita:** localStorage + Supabase em paralelo (app nunca quebra se Supabase offline)
-- **Migração:** `migrateLocalToSupabase()` executa uma vez na primeira carga (flag `sistema_migrated_to_supabase_v1`)
+- Indicadores: RecordsRepository/AppState, servidor como fonte oficial, cache privado e fila por revisão; resposta vazia é autoritativa.
+- Complementares: fachada db-extra e repositories por domínio, com confirmação/fila ainda não uniformes; ver docs/data-architecture.md.
+- Sem migração automática de dados legados sem dono. PDI continua local por conta/dispositivo.
 
 ## Funcionalidades Implementadas
 
@@ -95,33 +95,118 @@ auth.js → db.js → db-extra.js → perfis.js → globalFilters.js → scoring
 - **Colaboradores inativos:** mesmo padrão via `isColabActive()`
 
 ## Migrations
-- `migration.sql` — tabela `registros` + RLS
-- `migration_v2.sql` — 7 tabelas base (metas, comentarios, historico, scoring_config, alertas_config, colaborador_fotos, colab_inativos) + RLS
-- `migration_v3.sql` — tabela `feedbacks`
-- `migration_v4.sql` — tabela `anotacoes_diarias`
-- `migration_v5.sql` — tabela `tarefas`
-- `migration_v6.sql` — tabela `pontos_extras`
-- `migration_v7.sql` — tabela `colaboradores_info`
-- `migration_v8.sql` — colunas `conduta_negativa` e `conduta_motivo` em `colaboradores_info`
-- `migration_v9.sql` — coluna `mes` em `pontos_extras`
-- `migration_v10.sql` — tabela `setor_inativos` + RLS
-- `migration_v11.sql` — tabela `notificacoes` + RLS
-- `migration_v12.sql` — tabela `avaliacoes` + RLS
+
+Consulte `docs/migrations.md` para a sequência até v49. Não presumir aplicação em produção pela existência do arquivo. A antiga lista parcial foi substituída pelo catálogo baseado no conteúdo dos SQLs.
 
 ## Observações
-- **Migrations v10-v12:** já executadas no Supabase
-- **Regra de scoring `pontos_extras`:** lê do localStorage `sistema_pontos_extras_v1`; defaultValue na config (padrão 1x) multiplica os pontos lançados
-- **Integração gamificação:** ao salvar/excluir bônus, `renderGamification()` é chamado automaticamente
+
+- A regra `pontos_extras` usa configuração e persistência existentes; não alterar durante estabilização.
+- Ao salvar/excluir bônus, a integração atual atualiza a gamificação.
 
 ## Comandos Úteis
 ```bash
-# Deploy
-git add -A && git commit -m "mensagem" && git push && npx vercel --prod
+# Publicação somente com autorização explícita; nunca encadear push com deploy.
 
 # Testes
-node tests/runner.js
+npm test
 
 # Ver status
 git status
 git log --oneline -5
 ```
+
+## Baseline e continuidade (28/10/2026)
+
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.42.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+
+## Fase 2 — Navegação
+
+Consulte `docs/navigation.md`. `shell.js` organiza as quatro áreas e ferramentas; `app.js` mantém callbacks de ativação. Preserve IDs/data-tab e restrições por papel. Não reintroduzir os antigos organizadores de sidebar/menu mobile. Antes de mudar o shell, execute também a fixture `tests/shell.browser.html` em desktop e celular. CSS legado ainda existe e será consolidado na Fase 6.
+
+## Fase 3 — Equipe 360º
+
+Leia `docs/equipe-360.md` antes de alterar perfis. `equipe360-data.js` é somente leitura, paginado, com sessão e identidade exatas; `equipe360.js` apresenta as fontes e usa os editores atuais. Não adicionar fallback de caches privados globais nem unir variantes de nome automaticamente. PDI permanece local e por usuário. Execute `npm test` e a fixture `tests/equipe360.browser.html` (desktop/celular); mudanças em Ponto/PDI/Atividades também exigem as fixtures desses módulos.
+
+## Fase 4 — Dados
+
+Leia `docs/data-architecture.md`. Use `appStorage` nos módulos; localStorage nativo fica restrito ao runtime (ou preferências públicas antes do bootstrap). Nunca adotar automaticamente chaves antigas sem dono. Indicadores usam RecordsRepository/AppState; resposta vazia do servidor é válida. Invalide operações na troca de sessão. Não reintroduza upload automático na inicialização ou DELETE durante deduplicação de leitura. A fila durável por revisão cobre indicadores; migre outros módulos gradualmente com confirmação explícita de escrita. Rode npm test e `tests/data-lifecycle.browser.html` para mudanças de dados/sessão.
+
+## Fase 5 — Modularização
+
+Leia `docs/modularization.md`. O manifest declara dependências, estilos e exports das áreas sob demanda; preserve as pontes públicas e a inicialização após DOMContentLoaded. Funções de persistência permanecem na fachada db-extra, com implementações em repositories por domínio. Não adicionar migração automática. Execute npm test, a fixture lazy-modules.browser.html e as fixtures das áreas afetadas; regenere o cache incluindo assets dinâmicos.
+
+## Fase 6 — Base visual e continuidade
+
+Leia docs/design-system.md antes de retomar. Fase concluída em 1.19.1; o cockpit da Fase 7 está documentado abaixo. A conclusão 1.19.1 foi publicada com autorização antes da Fase 7. Tokens/componentes compartilhados ficam em css/tokens.css e css/components.css; navegação em shell.css. ui-accessibility.js é o proprietário de teclado/foco dos overlays. Preserve guards, close handlers e semântica de tabelas. Rode npm test e fixtures de design-system, shell, workspace-ux e áreas afetadas em desktop/celular. A validação de contraste é amostral.
+
+## Fase 7 — Cockpit gerencial
+
+Leia docs/cockpit.md. HomeCockpit usa AppState/appStorage da conta e CockpitEngine, que reutiliza DiagnosticoEngine. Período padrão é o último mês encerrado com registros; filtros explícitos prevalecem. Ausência não é zero; não ponderar Score por volume nem rankear níveis por produtividade. Tarefas/agenda são da conta e de hoje, separadas do filtro temporal dos indicadores. Atualizar dados é somente leitura; preserve a proteção de sessão e os editores originais. Execute npm test e workspace-ux.browser.html?cockpit=1 (também &race=1), além das regressões em desktop/celular. O roadmap de sete fases está entregue nos escopos documentados; adoção gradual e limites continuam registrados.
+
+## Revisão 1.20.1 — Panorama e continuidade
+
+Leia docs/revisao-pos-roadmap.md. Panorama parcial foi retirado do HTML e dos recursos do bundle interno panorama, que agora serve apenas o Relatório Setorial. Preserve os arquivos/testes isolados para eventual realocação após definir o CSV. Não reativar automaticamente esse bloco. As sete entregas não encerram toda a consolidação: confirmar escritas dos complementares, reduzir carga inicial/globais e unificar contexto de análise são prioridades. Merge continua dependendo de autorização explícita.
+
+## Continuação 1.21.0
+
+Leia docs/confirmacao-e-contexto.md. Feedbacks/metas exigem IDs confirmados, UUID estável do rascunho e sessão atual; não reintroduzir salvamento otimista nem DELETE da coleção de metas. dbMetasSave faz upsert somente dos itens enviados, dbMetasDelete exclui por ID. A serialização é local; não alegar trava entre dispositivos/fila automática. Relatório Setorial usa apenas globalFilters e os meses presentes no recorte, sem filtros locais nem truncamento silencioso. Rode npm test, workspace-ux.browser.html (também ?saves=1), lazy-modules e data-lifecycle em desktop/celular. O editor de metas ainda não tem destino no shell; não adicioná-lo silenciosamente como parte de correções de persistência.
+
+## Continuação 1.22.0 — Operação e Metas
+
+Leia docs/operacao-e-metas.md. Operação tem Visão geral, Análises e Metas; as três visualizações analíticas mantêm os data-tab antigos. shellPrimaryTabs e shellAnalysisTabs são grupos de teclado independentes dentro do contêiner tabBar; preserve delegação/rotas/atalhos e o proxy Análises. Metas agora tem destino real, admin edita e demais papéis permitidos consultam. Preserve rascunhos na troca de filtro, contratos confirmados e ausência de progresso quando não há dados. Rode npm test e shell/workspace-ux (também ?saves=1), design-system e lazy-modules em desktop/celular; sem testes de escrita em produção ou merge sem autorização.
+
+## Continuação 1.23.0 — Pessoas
+
+Leia docs/pessoas-equipe360.md. Equipe é a entrada individual e Gestão coletiva reúne lider/mapeamento-time/ponto. Rotas antigas avaliacao/perfil-pdi continuam nos tabs contextuais individuais; preserve data-tab e o estado real após guards cancelados. openAvaliacaoPerson/openFeedbacksPerson/openPerfilPdi recebem nomes exatos, não criam/salvam registros automaticamente e preservam edição da mesma pessoa. Não apagar rascunho de outra pessoa sem confirmação nem ampliar acesso ao perfil privado. A persistência de avaliações continua legada; não alegar confirmação remota nova. Execute npm test e fixtures shell, workspace (?people=1 e ?saves=1), Equipe360, PDI, Atividades, Ponto, design-system e lazy-modules em desktop/celular.
+
+## Continuação 1.24.0 — Avaliações
+
+Leia docs/avaliacoes-confirmadas.md. Persistência de avaliações fica no repository development e fachada db-extra; UI não publica dados otimistas. AppState.avaliacoes/cache contêm confirmados; rascunho privado usa sistema_avaliacao_rascunho_v1 e UUID estável. dbAvaliacaoStatus atualiza apenas status, nunca reenvia notas/textos. Exigir retorno de ID/proprietário, preservar rascunho em falha e conferir sessão. Não introduzir envio automático nem alegar trava entre dispositivos. Rode npm test e workspace (?evaluations=1, ?people=1, ?saves=1), data-lifecycle, Equipe360, PDI, lazy-modules e design-system em desktop/celular; sem escrita de testes em produção ou merge sem autorização.
+
+## Continuação 1.25.0 — Rotina
+
+Leia docs/rotina-confirmada.md. Tarefas/notas usam confirmação no repository routine, rascunhos privados e UUID estável. Status/favorito são patches isolados; recorrência preserva o mesmo destino na retentativa manual. Não apagar rascunhos ao abrir/alternar a tela, nem tocar atividades com prefixo atividade-colaborador:v1: pela API de notas. UI pertence a rotina-cards.js; os arquivos antigos mantêm apenas helpers/overlays. Não alegar fila automática ou trava entre dispositivos. Rode npm test e workspace (?routine=1 e cockpit/race), data-lifecycle, lazy-modules, design-system e atividades-mes; sem escrita de teste em produção ou merge sem autorização.
+
+## Continuação 1.26.0 — Cadastro
+
+Leia docs/cadastro-confirmado.md. Cadastro usa confirmação por user_id,nome e patch dos campos enviados; não reintroduzir mescla por timestamp local nem fallback que omite salário. AppState.colaboradores/getColabInfoLocal alimentam consumidores. Rascunho privado em sistema_colaborador_rascunho_v1, cópia anterior em sistema_colaboradores_backup_v1 sem envio automático. Fotos mantêm o escopo compartilhado do esquema; cadastro/foto/reativação não são transação única, exibir falhas parciais. dbColabActivate atua apenas nos IDs da pessoa; gerenciadores gerais de inativos continuam pendentes. Rode npm test e workspace (?cadastro=1 e ?people=1), Equipe360, Ponto, PDI, data-lifecycle, lazy-modules e design-system em desktop/celular. Sem SQL/testes de escrita em produção ou merge sem autorização.
+
+## Continuação 1.27.0 — Bônus
+
+Leia docs/bonus-confirmados.md. Bônus usam UUID/conta confirmados e AppState.pontosExtras/getPontosExtrasLocal, incluindo mes após a leitura. Não reintroduzir cache otimista, geração de outro ID na retentativa ou exclusão de coleção. Rascunho privado em sistema_bonus_editando_v1; sinal reservado após tentativa nova, edição mantém pessoa/sinal. Acesso é Pessoas → Equipe, não reativar Gamificação como tela. Preservar fórmula/multiplicadores/filtros e cópia privada anterior. Rode npm test e workspace (?bonus=1, completo e ?people=1), Equipe360, data-lifecycle, lazy-modules e design-system em desktop/celular; sem SQL/testes de escrita em produção ou merge sem autorização.
+
+## Continuação 1.28.0 — Presença
+
+Leia docs/presenca-confirmada.md. Férias/ausências usam BIGINT identity; não enviar UUID como ID nem repetir INSERT incerto automaticamente. PresenceEditor preserva rascunhos; reservas e recibos são privados, sem fila automática. Nova tentativa incerta exige consulta confirmada e decisão explícita; vínculo ao registro é manual. Exclusões e eventos exigem confirmação; resolução de sobreposições é manual e informa resultado parcial. Preserve regras de datas/grupos e não aplique SQL. Rode npm test e workspace ?presence=1, cockpit/race, Equipe360, data-lifecycle, lazy-modules e design-system. Pendências visuais e demais domínios estão no documento; merge exige autorização explícita.
+
+## Continuação 1.29.0 — Regras
+
+Leia docs/regras-confirmadas.md. O quadro é compartilhado pela política existente: não filtrar por user_id nem transferir autoria ao editar. Regras usam UUID estável no rascunho; mover envia apenas status/posição, editar texto preserva coluna/autoria, exclusão exige ID retornado. AppState/getRegrasConfirmadas e cache novo sistema_regras_confirmadas_v1 contêm confirmações; cache antigo permanece sem adoção automática. Rode npm test, regras.browser.html em desktop/320px, workspace completo, data-lifecycle e lazy-modules. Comentários e gerenciadores de inativos continuam pendentes; sem SQL, testes de escrita em produção ou merge sem autorização.
+
+## Continuação 1.30.0 — Comentários
+
+Leia docs/comentarios-confirmados.md. Comentários mantêm compartilhamento autenticado existente; não adicionar user_id/filtro de proprietário ou depender de UPDATE. INSERT usa UUID estável do rascunho, consulta o mesmo ID antes de retentar e exige conteúdo/período/autor retornados. Não sobrescrever o texto de um envio incerto. AppState/getComentariosConfirmados e cache novo contêm confirmações; cache antigo permanece preservado sem adoção. Rode npm test, comentarios.browser.html em desktop/320px, workspace, data-lifecycle e lazy-modules. Gerenciadores de inativos e demais gravações legadas continuam pendentes; sem SQL/teste de escrita em produção ou merge sem autorização.
+
+## Continuação 1.31.0 — Ativos/inativos
+
+Leia docs/inativos-confirmados.md. Gerenciadores enviam alteração individual {name,active,id} à fachada/repository people; nunca DELETE da coleção. Colaboradores mantêm equivalência histórica de nomes; setores usam igualdade exata. UUID estável para inativação; reativação confirma cada ID/proprietário e informa parcial. AppState e novos caches confirmados alimentam filtros; vazio do servidor substitui a lista. Escolhas pendentes são privadas e não têm envio automático. Rode npm test, inativos.browser.html e workspace ?inativos=1 em desktop/320px, cadastro, data-lifecycle e lazy-modules. Configurações e demais gravações legadas continuam pendentes; sem SQL/teste de escrita em produção ou merge sem autorização.
+
+## Continuação 1.32.0 — Configurações
+
+Leia docs/configuracoes-confirmadas.md. Pontuação/alertas usam snapshots confirmados settings:scoring/settings:alertas e rascunhos privados separados por SettingsDrafts. Não salvar durante load/render/reset; presets e reset preparam edição, Salvar confirma. INSERT usa UUID estável e UPDATE exige ID/conta/valores retornados; erro ao consultar não pode virar INSERT. Preservar fórmulas e neutralidade de transferências; não reintroduzir Gamificação como destino. Configs múltiplas por conta exigem revisão, não limpeza automática. Rode npm test, settings.browser.html e workspace ?settings=1 em desktop/320px, workspace completo, data-lifecycle, lazy-modules e design-system. Demais gravações legadas continuam pendentes; sem SQL/teste de escrita em produção ou merge sem autorização.
+
+## Continuação 1.33.0 — Atendimentos
+
+Leia docs/atendimentos-confirmados.md. Avaliação de atendimentos e acompanhamento diário usam BIGINT identity e o contrato confirmado de attendance/PresenceEditor. Não fornecer UUID como ID nem repetir INSERT incerto automaticamente. Rascunhos privados preservam texto/imagem; vínculo é manual e liberar outra criação exige consulta confirmada. Preservar escalas de nota, filtros, rankings e CSV. Imagens novas: PNG/JPEG/WebP/GIF até 5 MB, preparação com sessão/versão verificadas; nunca gerar onclick com imagem do banco. Rode npm test e workspace ?atendimentos=1 e ?presence=1 em desktop/320px, workspace completo, Equipe360, data-lifecycle, lazy-modules e design-system. Sem SQL/testes de escrita em produção ou merge sem autorização.
+
+## Continuação 1.34.0 — Home e pendências atuais
+
+Leia docs/pendencias-atuais.md. Home destaca volume finalizado e cobertura de notas; linhas de indicadores ficam nas fontes. Equipes usa details nativo com expansão preservada durante atualização. Agenda consulta getColabInfoLocal. Não alterar média simples, ausência versus zero, filtros ou critérios dos alertas. Rode npm test e workspace ?cockpit=1 (também mobile/race), workspace completo, data-lifecycle, lazy-modules e design-system. As sete fases estão entregues nos limites documentados; histórico/notificações, carga inicial e CSS continuam em consolidação. Sem SQL, testes de escrita em produção ou merge sem autorização.
+
+## Continuação 1.35.0 — Histórico e notificações
+
+Leia docs/historico-notificacoes-confirmados.md. Histórico usa UUID estável, confirmação por ID/conteúdo, cache novo e pendência privada antes de INSERT; não adotar cache legado nem reenviar automaticamente. A trilha é independente dos indicadores e não é auditoria transacional. Notificações administrativas só marcam IDs com lida:true retornados; parcial/erro deve permanecer visível. INSERT de autor não-admin não deve exigir SELECT proibido pela RLS. Preserve isolamento de sessão, recortes de 500/50 e semântica de compartilhamento. Rode npm test, audit-notifications.browser.html e audit-notifications-mobile.browser.html, comentários, workspace desktop/mobile, data-lifecycle, lazy-modules e design-system. Sem SQL ou testes de escrita em produção; merge exige autorização explícita.
+
+## Continuação 1.36.0 — Exportadores sob demanda
+
+Leia docs/carregamento-inicial.md. export-tools.js tem catálogo fechado das mesmas CDNs e não baixa nada antes de exportar; não reintroduzir html2canvas/jsPDF/XLSX no HTML inicial. Cada exportação aguarda ready dos formatos necessários e cancela quando a sessão é invalidada. Não condicionar vínculo do botão PNG à biblioteca já existir. Rode npm test, export-tools.browser.html, workspace geral e ?exports=1 (desktop/320px), lazy-modules e data-lifecycle. Medições são bytes descompactados/inventário, não tempo nem tráfego comprimido. Cache novo inclui o catálogo; não prometer primeira exportação offline. Sem SQL ou escrita de testes em produção; merge exige autorização explícita.

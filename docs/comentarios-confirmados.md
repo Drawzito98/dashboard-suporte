@@ -1,0 +1,17 @@
+# Comentários por período confirmados — 1.30.0
+
+A interface deixava duas cópias locais ao adicionar um comentário, enquanto o ID do banco era diferente. Interface e repository audit agora publicam somente dados confirmados por meio da fachada db-extra. Os consumidores de getComentarios, inclusive o relatório de feedback, preservam o mapa por mês e os campos id/texto/user/ts.
+
+A tabela de migration_v2.sql usa UUID, não possui user_id e suas políticas legadas permitem SELECT/INSERT/DELETE a autenticados, sem UPDATE. Esse compartilhamento foi preservado, sem aplicar SQL ou alterar permissões. O email exibido é atribuição, não uma fronteira de autorização. Não foi adicionada edição de comentários publicados.
+
+O rascunho privado sistema_comentario_rascunho_v1 reserva UUID antes do envio e mantém período/texto ao fechar, trocar filtros e reabrir. Falha de armazenamento impede envio e protege fechamento; durante rede, controles e fechamento ficam bloqueados. Abrir outro período ou descartar requer decisão explícita. Após tentativa, o texto fica somente leitura: confirmar repete o mesmo pedido; para outro texto, é preciso descartar, com aviso de que o envio anterior pode ter sido aplicado.
+
+Inserção consulta primeiro o UUID. Se já existir, exige mesmo ID, mês, texto e email; se não existir, faz INSERT com aquele ID e exige resposta correspondente. Não usa upsert/UPDATE nem outro UUID na retentativa. Uma corrida entre abas pode terminar em conflito da chave primária; a retentativa manual consulta o ID sem duplicar. Se alguém excluir o registro entre tentativas, uma nova tentativa com o mesmo UUID ainda pode recriá-lo: não há tombstone, transação, fila automática ou trava entre dispositivos. A UI bloqueia excluir o próprio envio pendente até confirmar/descartar o rascunho.
+
+Leitura compartilhada completa em páginas de 500, com ordem created_at/id e proteção de sessão/revisão, publica AppState.comentarios e sistema_comentarios_confirmados_v1. Vazio confirmado é autoritativo; erro mantém a última lista, sem publicar páginas parciais. O cache antigo sistema_comentarios_v1 permanece preservado sem união ou envio automático, pois podia conter entradas não confirmadas/duplicadas. Recuperar essas entradas exige revisão explícita. A consulta manual informa que, em falha, a lista confirmada anterior é mantida.
+
+Exclusão exige o ID retornado e filtra ID/período; não presume sucesso por ausência de erro. Resposta de exclusão perdida pode ser reconciliada consultando a lista. Excluir outros registros mantém a edição aberta. Cache indisponível após confirmação não desfaz o resultado oficial em memória. Troca de sessão invalida publicação tardia.
+
+Validação: npm test; casos simulados de RLS/rede, resposta sem confirmação, UUID, autoria, resposta perdida, envio simultâneo, ausência de UPDATE, compartilhamento, exclusão, paginação, cache e sessão. comentarios.browser.html usa runtime, fachada, repository e editor reais com servidor simulado: reabertura, filtros, quota, fechamento, clique duplo, envio incerto, reconhecimento do mesmo UUID e exclusão reconciliada. Aprovado em desktop e 320px. Regressões de workspace completo, data-lifecycle e lazy-modules. Sem escrita em produção ou comprovação das políticas publicadas/concorrência entre dispositivos.
+
+Continuidade: gerenciadores gerais de ativos/inativos, configurações de pontuação/alertas e outras gravações legadas, revisão visual ampla e consolidação de scripts/globais/CSS. Panorama segue desativado aguardando CSV. Merge exige autorização explícita.

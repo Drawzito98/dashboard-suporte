@@ -23,6 +23,7 @@ function createApp(info = {}, records = []) {
     isColabActive: () => true, isAggregateName: () => false,
     escapeHtml: value => String(value),
   };
+  context.appStorage = context.localStorage;
   vm.createContext(context);
   for (const file of ['globalFilters.js', 'tempo-empresa.js', 'colaboradores.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../static', file), 'utf8'), context);

@@ -1,31 +1,28 @@
 // Relatório Setorial — visão completa por setor, mês a mês
 
-const _rsName = row => String(row?.Atendente ?? '').trim();
-const _rsSector = row => String(row?.Setor ?? '').trim() || '(sem setor)';
-const _rsLevel = row => typeof _nivelColaborador === 'function' ? _nivelColaborador(_rsName(row)) : '';
-
 function _rsData() {
-  return (typeof rawRecords === 'undefined' ? [] : (rawRecords || [])).filter(row => row &&
-    _rsName(row) && !isAggregateName(_rsName(row)) &&
-    (typeof isSetorActive !== 'function' || isSetorActive(String(row.Setor ?? '').trim())));
+  let data;
+  if (typeof globalFilters !== 'undefined' && globalFilters) data = globalFilters.aplicar(rawRecords || []);
+  else if (typeof getCurrentFilteredRows === 'function') data = getCurrentFilteredRows();
+  else if (typeof getDataFiltered === 'function') data = getDataFiltered();
+  else data = rawRecords || [];
+  if (typeof isSetorActive === 'function') {
+    data = data.filter(r => r && isSetorActive(String(r['Setor'] || '').trim()));
+  }
+  return data;
 }
 
-function _rsMonths(rows) {
-  return [...new Set(rows.map(row => String(row['Mês'] ?? '')))].filter(month => /^\d{4}-(0[1-9]|1[0-2])$/.test(month)).sort();
+function getFilteredMeses(rows) {
+  return [...new Set((rows || []).filter(r => r && r['Mês']).map(r => String(r['Mês'])))].sort();
 }
 
-function _rsPopulation(rows, filters) {
-  return rows.filter(row => (!filters.person || _rsName(row) === filters.person) &&
-    (!filters.sector || _rsSector(row) === filters.sector) &&
-    (!filters.level || _rsLevel(row) === filters.level));
-}
-
-function _rsPeriod(rows, filters) {
-  const months = _rsMonths(rows);
-  const selected = filters.monthStart && filters.monthEnd
-    ? months.filter(month => month >= filters.monthStart && month <= filters.monthEnd) : months.slice(-6);
-  const scope = new Set(selected);
-  return { months: selected, rows: rows.filter(row => scope.has(String(row['Mês']))) };
+function _rsContextLabel({ privateNames = true } = {}) {
+  const f = typeof globalFilters !== 'undefined' ? globalFilters : {};
+  const parts = ['Setor: ' + (f.setor && f.setor !== 'all' ? f.setor : 'Todos')];
+  if (f.nivel && f.nivel !== 'all') parts.push('Nível: ' + f.nivel);
+  if (f.colaborador && f.colaborador !== 'all') parts.push(privateNames ? 'Pessoa: ' + f.colaborador : 'Filtro individual aplicado');
+  if (f.pesquisa) parts.push(privateNames ? 'Busca: ' + f.pesquisa : 'Busca aplicada');
+  return parts.join(' · ');
 }
 
 function _calcDeltaPct(prev, curr) {
@@ -38,7 +35,7 @@ function _deltaHtml(delta) {
   const abs = Math.abs(delta);
   const cls = delta > 0 ? 'trend-up' : (delta < 0 ? 'trend-down' : 'trend-neutral');
   const arrow = delta > 0 ? '\u25B2' : (delta < 0 ? '\u25BC' : '\u2192');
-  return ` <span class="${cls}" style="font-size:11px;white-space:nowrap" title="Variação vs mês anterior">${arrow} ${abs.toFixed(1)}%</span>`;
+  return ` <span class="${cls} rs-delta-label" title="Variação vs mês anterior">${arrow} ${abs.toFixed(1)}%</span>`;
 }
 
 function _avgDuration(rows, key) {
@@ -77,89 +74,30 @@ function _avgScoreBySetor(rows) {
   return avgs.length ? avgs.reduce((x, y) => x + y, 0) / avgs.length : 0;
 }
 
-// ── Filtros do relatório setorial ──
-const _rsEmptyFilters = () => ({ person: '', sector: '', level: '', monthStart: '', monthEnd: '', generated: false });
-let __rsFilterState = _rsEmptyFilters();
-let __rsScopedReport = '';
-
-function _renderFilterBar(rows, months) {
-  const options = values => [...new Set(values)].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  const monthLabel = value => typeof formatMesLabel === 'function' ? formatMesLabel(value) : value;
-  const fields = [
-    ['person', 'Pessoa', 'Todas as pessoas', options(rows.map(_rsName))],
-    ['sector', 'Setor', 'Todos os setores', options(rows.map(_rsSector))],
-    ['level', 'Nível', 'Todos os níveis', options(rows.map(_rsLevel))],
-    ['monthStart', 'De', 'Selecionar', months, monthLabel],
-    ['monthEnd', 'Até', 'Selecionar', months, monthLabel]
-  ];
-  const selects = fields.map(([key, label, first, values, format = value => value]) =>
-    `<label class="rs-filter-group"><span>${label}</span><select name="${key}">
-      <option value="">${first}</option>
-      ${values.map(value => `<option value="${escapeHtml(value)}"${__rsFilterState[key] === value ? ' selected' : ''}>${escapeHtml(format(value))}</option>`).join('')}
-    </select></label>`).join('');
-  return `<form class="rs-filter-bar" aria-label="Filtros do Relatório Setorial">${selects}
-    <div class="rs-filter-actions">
-      <button id="rsGenerateBtn" type="submit" class="btn-primary">${__rsFilterState.generated ? 'Aplicar filtros' : 'Gerar relatório'}</button>
-      <button id="rsClearBtn" type="button" class="btn-small">Limpar filtros</button>
-    </div>
-  </form>`;
-}
-
-function __bindFilterEvents(container) {
-  const form = container.querySelector('.rs-filter-bar');
-  form.addEventListener('submit', event => {
-    event.preventDefault();
-    const { person, sector, level, monthStart, monthEnd } = Object.fromEntries(new FormData(form));
-    if (Boolean(monthStart) !== Boolean(monthEnd)) {
-      if (typeof showToast === 'function') showToast('Selecione o período completo (De e Até).', 'warning');
-      return;
-    }
-    if (monthStart && monthStart > monthEnd) {
-      if (typeof showToast === 'function') showToast('A data inicial deve ser anterior ou igual à final.', 'warning');
-      return;
-    }
-    const next = { person, sector, level, monthStart, monthEnd, generated: true };
-    if (Object.keys(next).some(key => next[key] !== __rsFilterState[key])) __rsScopedReport = '';
-    __rsFilterState = next;
-    renderRelatorioSetorial();
-  });
-  form.querySelector('#rsClearBtn').addEventListener('click', () => {
-    __rsFilterState = { ..._rsEmptyFilters(), generated: __rsFilterState.generated };
-    __rsScopedReport = '';
-    renderRelatorioSetorial();
-  });
-}
-
 function renderRelatorioSetorial() {
   const container = document.getElementById('relatorioSetorialContent');
   if (!container) return;
   container.classList.add('rs-container');
+  Object.values(window.__rsCharts || {}).forEach(chart => { try { chart.destroy(); } catch (_) {} });
+  window.__rsCharts = {};
   const data = _rsData();
   if (!data || !data.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-title">Nenhum dado carregado</div><div class="empty-sub">Importe dados para gerar o relatório setorial.</div></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-title">Sem dados neste recorte</div><div class="empty-sub">Revise os filtros do topo ou importe os indicadores.</div></div>';
     return;
   }
 
-  const allMeses = _rsMonths(data);
+  const rows = data.filter(r => r && !isAggregateName(r['Atendente']));
+  const allMeses = getFilteredMeses(rows);
   if (!allMeses.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-title">Sem períodos</div><div class="empty-sub">Nenhum mês válido foi encontrado nos registros.</div></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-title">Sem períodos</div><div class="empty-sub">Nenhum mês encontrado no filtro atual.</div></div>';
     return;
   }
 
-  const filterBarHtml = _renderFilterBar(data, allMeses);
-  if (!__rsFilterState.generated) {
-    container.innerHTML = filterBarHtml + '<div class="empty-state"><div class="empty-title">Selecione o recorte do relatório</div><div class="empty-sub">Use pessoa, setor, nível e período conforme precisar. Sem datas, o relatório usa até os seis meses mais recentes no recorte.</div></div>';
-    __bindFilterEvents(container);
-    return;
-  }
-
-  const population = _rsPopulation(data, __rsFilterState);
-  const { rows, months: meses } = _rsPeriod(population, __rsFilterState);
-  if (!rows.length) {
-    container.innerHTML = filterBarHtml + '<div class="empty-state"><div class="empty-title">Sem dados para os filtros selecionados</div><div class="empty-sub">Ajuste os filtros acima ou clique em Limpar filtros.</div></div>';
-    __bindFilterEvents(container);
-    return;
-  }
+  const meses = allMeses;
+  const contextHtml = `<div class="rs-context rs-context-description" role="status">
+    <p>Este relatório usa os filtros do topo. As alterações são aplicadas automaticamente.</p>
+    <p>${escapeHtml(_rsContextLabel())} · Meses com dados: ${escapeHtml(meses.join(', '))}</p>
+  </div>`;
 
   const bySetor = {};
   rows.forEach(r => {
@@ -210,33 +148,31 @@ function renderRelatorioSetorial() {
   const hasTmr = tmrGeral !== null;
   const hasDur = hasTma || hasTmr;
 
-  let html = filterBarHtml;
+  let html = contextHtml;
 
   // ── Header ──
-  const periodLabel = month => typeof formatMesLabel === 'function' ? formatMesLabel(month) : month;
-  const activeScope = [__rsFilterState.person, __rsFilterState.sector, __rsFilterState.level].filter(Boolean);
-  html += `<div class="rs-report-heading">
+  html += `<div class="rs-page-heading">
     <div>
-      <h2>Resultados do período</h2>
-      <p>${escapeHtml(periodLabel(__rsFilterState.monthStart || meses[0]))} a ${escapeHtml(periodLabel(__rsFilterState.monthEnd || meses.at(-1)))} · ${escapeHtml(activeScope.join(' · ') || 'Todos os setores')} · ${totalAtendentes} pessoas</p>
+      <h2 class="rs-page-title">\uD83D\uDCCA Relatório Setorial</h2>
+      <p class="rs-page-description">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 Rankings, análise setorial, tendências e relatório executivo</p>
     </div>
-    <div class="rs-report-actions">
-      <span id="rsPresentationModeIndicator" style="font-size:12px;color:var(--text-muted);display:none">\uD83D\uDCF1 Modo apresentação</span>
-      <button id="rsPresentationToggle" class="btn-small" type="button" title="Ocultar botões de ação para captura de tela">\uD83D\uDCF1 Apresentação</button>
-      <button class="btn-primary" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
-      <button class="btn-primary" id="rsPdfBtn" type="button">\uD83D\uDCC4 PDF (equipe)</button>
+    <div class="rs-page-actions">
+      <span id="rsPresentationModeIndicator" class="rs-presentation-indicator">\uD83D\uDCF1 Modo apresentação</span>
+      <button id="rsPresentationToggle" class="btn-small rs-presentation-action" type="button" title="Ocultar botões de ação para captura de tela">\uD83D\uDCF1 Apresentação</button>
+      <button class="btn-primary rs-export-action" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
+      <button class="btn-primary rs-export-action" id="rsPdfBtn" type="button">\uD83D\uDCC4 PDF (equipe)</button>
     </div>
   </div>`;
 
   // ── KPI cards com variação vs período anterior ──
-  const comparisonMonths = __rsFilterState.monthStart ? allMeses.filter(month =>
-    month >= __rsFilterState.monthStart && month <= __rsFilterState.monthEnd) : meses;
+  const baseData = _rsData();
   let prevRange = [];
   if (meses.length) {
-    const firstIdx = allMeses.indexOf(comparisonMonths[0]);
-    if (firstIdx > 0) prevRange = allMeses.slice(Math.max(0, firstIdx - comparisonMonths.length), firstIdx);
+    const firstIdx = allMeses.indexOf(meses[0]);
+    if (firstIdx > 0) prevRange = allMeses.slice(Math.max(0, firstIdx - meses.length), firstIdx);
   }
-  const prevRows = population.filter(r => prevRange.includes(String(r['Mês'] || '')));
+  const prevRows = baseData.filter(r => r && !isAggregateName(r['Atendente']))
+      .filter(r => prevRange.indexOf(String(r['Mês'] || '')) >= 0);
   const prevFin = prevRows.reduce((s, r) => s + (parseInt(r['Finalizados']) || 0), 0);
   const prevAss = prevRows.reduce((s, r) => s + (parseInt(r['Assumidos']) || 0), 0);
   const prevTra = prevRows.reduce((s, r) => s + (parseInt(r['Transferidos']) || 0), 0);
@@ -270,17 +206,17 @@ function renderRelatorioSetorial() {
     return `<span class="${cls}">${arrow} ${d > 0 ? '+' : ''}${Math.abs(d).toFixed(1).replace('.', ',')}%</span>`;
   };
   const kpiCards = [
-    { label: 'Finalizados', value: fmtNum(totalFin), sub: _deltaSpan(_calcDeltaPct(prevFin, totalFin)) },
-    { label: 'Score médio', value: fmtScore(avgScore), sub: _deltaSpan(_calcDeltaPct(prevAvg, avgScore)) },
-    { label: 'Produtividade', value: fmtPct(prodGeral), sub: _deltaSpan(_calcDeltaPct(prevProd, prodGeral)) },
     { label: 'Assumidos', value: fmtNum(totalAss), sub: _deltaSpan(_calcDeltaPct(prevAss, totalAss)) },
     { label: 'Transferidos', value: fmtNum(totalTra), sub: _deltaSpan(_calcDeltaPct(prevTra, totalTra), true) },
+    { label: 'Finalizados', value: fmtNum(totalFin), sub: _deltaSpan(_calcDeltaPct(prevFin, totalFin)) },
+    { label: 'Score médio', value: fmtScore(avgScore), sub: _deltaSpan(_calcDeltaPct(prevAvg, avgScore)), score: true },
+    { label: 'Produtividade', value: fmtPct(prodGeral), sub: _deltaSpan(_calcDeltaPct(prevProd, prodGeral)) },
     { label: 'Taxa Transferência', value: fmtPct(traGeral), sub: _deltaSpan(_calcDeltaPct(prevTraG, traGeral), true) }
   ];
   if (hasTma) kpiCards.push({ label: 'TMA médio', value: _fmtDuration(tmaGeral), sub: '<span class="trend-neutral">Tempo médio de atendimento</span>' });
   if (hasTmr) kpiCards.push({ label: 'TMR médio', value: _fmtDuration(tmrGeral), sub: '<span class="trend-neutral">Tempo médio de resposta</span>' });
-  html += `<div class="kpi-grid rs-report-kpis">
-    ${kpiCards.map((c, index) => `<div class="kpi${index < 2 ? ' rs-kpi-primary' : ''}"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
+  html += `<div class="kpi-grid rs-summary-kpis">
+    ${kpiCards.map(c => `<div class="kpi${c.score ? ' kpi-drill rs-score-trigger-card' : ''}"${c.score ? ' data-rs-score="all" role="button" tabindex="0" title="Ver scores por setor"' : ''}><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
   </div>`;
 
   // ── Top 3 Rankings ──
@@ -309,37 +245,37 @@ function renderRelatorioSetorial() {
 
   html += `<div class="rs-section">
     <h2 class="rs-section-title">\uD83C\uDFC6 Top 3 Rankings</h2>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--s-4)">
-      <div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD1D Melhores Finaliza\u00E7\u00F5es</h3>
-        ${topFin.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
-          <span style="font-weight:700;color:var(--accent);min-width:18px">${i + 1}\u00BA</span>
-          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
-          <span style="font-weight:600;color:var(--text-strong)">${fmtNum(c.fin)}</span>
+    <div class="rs-rank-grid">
+      <div class="card rs-rank-card">
+        <h3 class="rs-rank-title">\uD83D\uDD1D Melhores Finaliza\u00E7\u00F5es</h3>
+        ${topFin.map((c, i) => `<div class="rs-rank-row">
+          <span class="rs-rank-position">${i + 1}\u00BA</span>
+          <span class="rs-rank-name">${escapeHtml(c.nome)}</span>
+          <span class="rs-rank-value">${fmtNum(c.fin)}</span>
         </div>`).join('')}
       </div>
-      <div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD1D Melhores Score</h3>
-        ${topScore.length ? topScore.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
-          <span style="font-weight:700;color:var(--accent);min-width:18px">${i + 1}\u00BA</span>
-          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
-          <span style="font-weight:600;color:var(--text-strong);font-family:monospace">${fmtScore(c.score)}</span>
-        </div>`).join('') : '<div style="font-size:12px;color:var(--text-muted)">Nenhum dado de score</div>'}
+      <div class="card rs-rank-card">
+        <h3 class="rs-rank-title">\uD83D\uDD1D Melhores Score</h3>
+        ${topScore.length ? topScore.map((c, i) => `<div class="rs-rank-row">
+          <span class="rs-rank-position">${i + 1}\u00BA</span>
+          <span class="rs-rank-name">${escapeHtml(c.nome)}</span>
+          <span class="rs-rank-number">${fmtScore(c.score)}</span>
+        </div>`).join('') : '<div class="rs-caption">Nenhum dado de score</div>'}
       </div>
-      <div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD3B Menores Scores</h3>
-        ${bottomScore.length ? bottomScore.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
-          <span style="font-weight:700;color:var(--danger);min-width:18px">${i + 1}\u00BA</span>
-          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
-          <span style="font-weight:600;color:var(--danger);font-family:monospace">${fmtScore(c.score)}</span>
-        </div>`).join('') : '<div style="font-size:12px;color:var(--text-muted)">Nenhum dado de score</div>'}
+      <div class="card rs-rank-card">
+        <h3 class="rs-rank-title">\uD83D\uDD3B Menores Scores</h3>
+        ${bottomScore.length ? bottomScore.map((c, i) => `<div class="rs-rank-row">
+          <span class="rs-attention-position">${i + 1}\u00BA</span>
+          <span class="rs-rank-name">${escapeHtml(c.nome)}</span>
+          <span class="rs-attention-number">${fmtScore(c.score)}</span>
+        </div>`).join('') : '<div class="rs-caption">Nenhum dado de score</div>'}
       </div>
-      <div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD3B Menores Finaliza\u00E7\u00F5es</h3>
-        ${bottomFin.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
-          <span style="font-weight:700;color:var(--danger);min-width:18px">${i + 1}\u00BA</span>
-          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
-          <span style="font-weight:600;color:var(--danger)">${fmtNum(c.fin)}</span>
+      <div class="card rs-rank-card">
+        <h3 class="rs-rank-title">\uD83D\uDD3B Menores Finaliza\u00E7\u00F5es</h3>
+        ${bottomFin.map((c, i) => `<div class="rs-rank-row">
+          <span class="rs-attention-position">${i + 1}\u00BA</span>
+          <span class="rs-rank-name">${escapeHtml(c.nome)}</span>
+          <span class="rs-attention-value">${fmtNum(c.fin)}</span>
         </div>`).join('')}
       </div>
     </div>
@@ -451,14 +387,14 @@ function renderRelatorioSetorial() {
     return { setor: s.nome, priority, score, prazo, sample: s.ass < 30 ? 'Amostra reduzida' : `${fmtNum(s.ass)} assumidos`, issues };
   }).sort((a, b) => b.score - a.score || a.setor.localeCompare(b.setor, 'pt-BR'));
 
-  const visibleActions = actionItems.slice(0, __rsFilterState.sector ? actionItems.length : 6);
+  const visibleActions = actionItems.slice(0, setores.length === 1 ? actionItems.length : 6);
   const criticalCount = actionItems.filter(item => item.priority === 'critical').length;
   const highCount = actionItems.filter(item => item.priority === 'high').length;
   const priorityLabels = { critical: 'Urgente', high: 'Prioridade alta', attention: 'Atenção', monitor: 'Manutenção' };
 
   html += `<div class="rs-section rs-action-section">
     <div class="rs-action-heading">
-      <div><h2 class="rs-section-title">📋 Próximos Passos e Plano de Ação</h2><p>Recomendações calculadas para os filtros atuais${hasPrev ? ` e comparadas com ${escapeHtml(_prevLabel.replace('vs ', ''))}` : ''}.</p></div>
+      <div><h2 class="rs-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Próximos Passos e Plano de Ação</h2><p>Recomendações calculadas para os filtros atuais${hasPrev ? ` e comparadas com ${escapeHtml(_prevLabel.replace('vs ', ''))}` : ''}.</p></div>
       <div class="rs-action-summary"><span class="critical">${criticalCount} urgente(s)</span><span class="high">${highCount} prioridade(s) alta(s)</span></div>
     </div>
     <div class="rs-action-grid">
@@ -472,26 +408,26 @@ function renderRelatorioSetorial() {
     ${actionItems.length > visibleActions.length ? `<p class="rs-action-overflow">Exibindo as 6 maiores prioridades entre ${actionItems.length} setores para manter a leitura executiva.</p>` : ''}
   </div>`;
   // ── Gráfico de pizza — distribuição de finalizados por setor ──
-  html += `<div style="display:flex;gap:var(--s-5);align-items:stretch;margin-bottom:var(--s-5);flex-wrap:wrap">
-    <div class="card" style="flex:1;min-width:280px;padding:var(--s-4)">
-      <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83D\uDCCA Distribuição por Setor</h3>
-      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:var(--s-3)">Participação de cada setor no total de finalizados</p>
-      <div style="height:280px;position:relative"><canvas id="rsPieChart"></canvas></div>
+  html += `<div class="rs-charts-grid">
+    <div class="card rs-evolution-card">
+      <h3 class="rs-chart-title">\uD83D\uDCCA Distribuição por Setor</h3>
+      <p class="rs-chart-description">Participação de cada setor no total de finalizados</p>
+      <div class="rs-evolution-chart"><canvas id="rsPieChart"></canvas></div>
     </div>
-    <div class="card" style="flex:1;min-width:220px;padding:var(--s-4);display:flex;flex-direction:column;gap:var(--s-2)">
-      <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-1)">${setorMetrics.length} setor(es)</h3>
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:var(--s-2)">
+    <div class="card rs-distribution-card">
+      <h3 class="rs-distribution-title">${setorMetrics.length} setor(es)</h3>
+      <div class="rs-distribution-list">
       ${setorMetrics.slice().sort((a, b) => b.fin - a.fin).map((s, i) => {
         const pct = totalFin > 0 ? ((s.fin / totalFin) * 100).toFixed(1) : 0;
         const sorted = [...setorMetrics].sort((a, b) => b.fin - a.fin);
         const idx = sorted.indexOf(s);
         const neutralColors = typeof ChartTheme !== 'undefined' ? ChartTheme.neutralPalette(setorMetrics.length) : ['#2563eb','#059669','#d97706','#7c3aed','#ea580c','#0891b2','#e11d48','#8b5cf6','#16a34a','#f97316'];
         const cor = totalFin > 0 ? (neutralColors[idx] || '#94a3b8') : '#94a3b8';
-        return `<div style="display:flex;align-items:center;gap:var(--s-3);font-size:13px">
-          <span style="width:12px;height:12px;border-radius:3px;background:${cor};flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.2)"></span>
-          <span style="flex:1;font-weight:500;color:var(--text-primary)">${escapeHtml(s.nome)}</span>
-          <span style="color:var(--text-secondary);font-size:12px">${fmtNum(s.fin)}</span>
-          <span style="font-weight:700;color:var(--text-strong);min-width:48px;text-align:right;font-size:13px">${pct}%</span>
+        return `<div class="rs-distribution-row">
+          <span class="rs-distribution-swatch" style="--sector-color:${cor}"></span>
+          <span class="rs-distribution-name">${escapeHtml(s.nome)}</span>
+          <span class="rs-distribution-meta">${fmtNum(s.fin)}</span>
+          <span class="rs-distribution-value">${pct}%</span>
         </div>`;
       }).join('')}
       </div>
@@ -499,8 +435,8 @@ function renderRelatorioSetorial() {
   </div>`;
 
   // ── Tabela comparativa entre setores ──
-  html += `<h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83D\uDD01 Comparativo entre Setores</h3>`;
-  html += `<div style="overflow-x:auto;margin-bottom:var(--s-5)"><table class="ranking-table">
+  html += `<h3 class="rs-table-title">\uD83D\uDD01 Comparativo entre Setores</h3>`;
+  html += `<div class="rs-table-region table-wrap"><table class="ranking-table">
     <thead><tr><th>Setor</th><th>Finalizados</th><th>Assumidos</th><th>Transferidos</th><th>Score</th><th>Prod.</th>${hasTma ? '<th>TMA</th>' : ''}${hasTmr ? '<th>TMR</th>' : ''}<th>Colabs</th></tr></thead>
     <tbody>${setorMetrics.map(s => {
       const classeSc = s.scAvg > 0 ? getClasseScore(s.scAvg) : '';
@@ -509,7 +445,7 @@ function renderRelatorioSetorial() {
         <td>${fmtNum(s.fin)}</td>
         <td>${fmtNum(s.ass)}</td>
         <td>${fmtNum(s.tra)}</td>
-        <td class="score-cell ${classeSc}">${fmtScore(s.scAvg)}</td>
+        <td class="score-cell ${classeSc}"><button type="button" class="rs-score-trigger" data-rs-score="setor" data-rs-score-setor="${escapeHtml(s.nome)}" aria-label="Ver scores individuais de ${escapeHtml(s.nome)}">${fmtScore(s.scAvg)}</button></td>
         <td>${fmtPct(s.prod)}</td>
         ${hasTma ? `<td>${s.tma !== null ? _fmtDuration(s.tma) : '\u2014'}</td>` : ''}
         ${hasTmr ? `<td>${s.tmr !== null ? _fmtDuration(s.tmr) : '\u2014'}</td>` : ''}
@@ -519,7 +455,7 @@ function renderRelatorioSetorial() {
   </table></div>`;
 
   // ── Detalhamento por setor — mês a mês ──
-  html += `<h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83D\uDCCB Detalhamento por Setor</h3>`;
+  html += `<h3 class="rs-table-title">\uD83D\uDCCB Detalhamento por Setor</h3>`;
 
   setores.forEach((s, setorIdx) => {
     const recs = bySetor[s];
@@ -542,27 +478,27 @@ function renderRelatorioSetorial() {
       return { mes: m, fin: mFin, ass: mAss, tra: mTra, scAvg: mScAvg, prod: mProd, cols: mCols, hasData: mRecs.length > 0, tma: _avgDuration(mRecs, 'TMA'), tmr: _avgDuration(mRecs, 'TMR') };
     });
 
-    html += `<div class="card" style="margin-bottom:var(--s-4);padding:var(--s-5)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-4);flex-wrap:wrap;gap:var(--s-2)">
+    html += `<div class="card rs-sector-section">
+      <div class="rs-sector-heading">
         <div>
-          <h3 style="font-size:16px;font-weight:700;color:var(--text-strong);margin:0">${escapeHtml(s)}</h3>
-          <span style="font-size:12px;color:var(--text-secondary)">Total: ${fmtNum(fin)} fin \u00B7 Score ${fmtScore(scAvg)} \u00B7 Prod ${fmtPct(prod)}</span>
+          <h3 class="rs-sector-title">${escapeHtml(s)}</h3>
+          <span class="rs-sector-meta">Total: ${fmtNum(fin)} fin \u00B7 Score ${fmtScore(scAvg)} \u00B7 Prod ${fmtPct(prod)}</span>
         </div>
       </div>
-      <div style="overflow-x:auto"><table class="ranking-table" style="min-width:680px">
+      <div class="rs-sector-table-region table-wrap"><table class="ranking-table rs-sector-table">
         <thead><tr>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Mês</th>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Assumidos</th>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Transferidos</th>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Finalizados</th>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Score</th>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Prod.</th>
-          ${hasTma ? '<th style="position:sticky;top:0;background:var(--bg-elevated)">TMA</th>' : ''}
-          ${hasTmr ? '<th style="position:sticky;top:0;background:var(--bg-elevated)">TMR</th>' : ''}
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Colabs</th>
+          <th class="rs-sector-table-head">Mês</th>
+          <th class="rs-sector-table-head">Assumidos</th>
+          <th class="rs-sector-table-head">Transferidos</th>
+          <th class="rs-sector-table-head">Finalizados</th>
+          <th class="rs-sector-table-head">Score</th>
+          <th class="rs-sector-table-head">Prod.</th>
+          ${hasTma ? '<th class="rs-sector-table-head">TMA</th>' : ''}
+          ${hasTmr ? '<th class="rs-sector-table-head">TMR</th>' : ''}
+          <th class="rs-sector-table-head">Colabs</th>
         </tr></thead>
         <tbody>${monthData.map((md, mi) => {
-          if (!md.hasData) return `<tr><td><strong>${md.mes}</strong></td><td colspan="${6 + (hasTma ? 1 : 0) + (hasTmr ? 1 : 0)}" style="color:var(--text-muted);font-size:12px">Sem dados</td></tr>`;
+          if (!md.hasData) return `<tr><td><strong>${md.mes}</strong></td><td colspan="${6 + (hasTma ? 1 : 0) + (hasTmr ? 1 : 0)}" class="rs-missing-value">Sem dados</td></tr>`;
           const cls = md.scAvg > 0 ? getClasseScore(md.scAvg) : '';
           const prev = mi > 0 ? monthData[mi - 1] : null;
           const dFin = prev && prev.hasData ? _deltaHtml(_calcDeltaPct(prev.fin, md.fin)) : '';
@@ -575,7 +511,7 @@ function renderRelatorioSetorial() {
             <td>${fmtNum(md.ass)}${dAss}</td>
             <td>${fmtNum(md.tra)}${dTra}</td>
             <td>${fmtNum(md.fin)}${dFin}</td>
-            <td class="score-cell ${cls}">${fmtScore(md.scAvg)}${dSc}</td>
+            <td class="score-cell ${cls}"><button type="button" class="rs-score-trigger" data-rs-score="setor" data-rs-score-setor="${escapeHtml(s)}" data-rs-score-mes="${escapeHtml(md.mes)}" aria-label="Ver scores individuais de ${escapeHtml(s)} em ${escapeHtml(md.mes)}">${fmtScore(md.scAvg)}${dSc}</button></td>
             <td>${fmtPct(md.prod)}${dProd}</td>
             ${hasTma ? `<td>${md.tma !== null ? _fmtDuration(md.tma) : '\u2014'}</td>` : ''}
             ${hasTmr ? `<td>${md.tmr !== null ? _fmtDuration(md.tmr) : '\u2014'}</td>` : ''}
@@ -583,7 +519,7 @@ function renderRelatorioSetorial() {
           </tr>`;
         }).join('')}</tbody>
       </table></div>
-      <div style="margin-top:var(--s-4);height:220px">
+      <div class="rs-sector-chart">
         <canvas id="rsChart_${setorIdx}"></canvas>
       </div>
     </div>`;
@@ -593,24 +529,24 @@ function renderRelatorioSetorial() {
 
 
   // ── Relatório Executivo ──
-  html += `<div class="reportBox" style="margin-top:var(--s-6)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-3);flex-wrap:wrap;gap:var(--s-2)">
-      <h3 style="font-size:14px;font-weight:600;color:var(--text-strong);margin:0">📝 Relatório Executivo</h3>
-      <div style="display:flex;gap:var(--s-2);flex-wrap:wrap">
+  html += `<div class="reportBox rs-executive-section">
+    <div class="rs-executive-heading">
+      <h3 class="rs-executive-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-note"></use></svg> Relatório Executivo</h3>
+      <div class="rs-executive-actions">
         <button id="copyReportBtn" type="button" class="btn-small">Copiar relatório</button>
         <button id="exportPdfBtn" type="button" class="btn-small">Exportar PDF</button>
         <button id="refreshReportBtn" type="button" class="btn-small">Atualizar</button>
-        <button id="intelReportBtn" type="button" class="btn-small">🤖 Relatório Inteligente</button>
+        <button id="intelReportBtn" type="button" class="btn-small"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-suggest"></use></svg> Relatório Inteligente</button>
         <button id="deleteReportBtn" type="button" class="btn-small btn-danger">Apagar</button>
       </div>
     </div>
-    <textarea id="reportText" class="reportText" placeholder="Clique em “Gerar relatório executivo” no menu lateral para montar o texto automaticamente…"></textarea>
+    <textarea id="reportText" class="reportText" placeholder="Clique em Atualizar para gerar o texto para os filtros atuais…"></textarea>
   </div>`;
 
   container.innerHTML = html;
 
   // ── Bind dos botões do relatório executivo ──
-  __bindFilterEvents(container);
+
   const copyBtn = document.getElementById('copyReportBtn');
   const exportPdfBtn = document.getElementById('exportPdfBtn');
   const refreshBtn = document.getElementById('refreshReportBtn');
@@ -618,31 +554,18 @@ function renderRelatorioSetorial() {
   const delBtn = document.getElementById('deleteReportBtn');
   if (copyBtn && typeof copyReportToClipboard === 'function') copyBtn.addEventListener('click', () => copyReportToClipboard());
   if (exportPdfBtn && typeof exportReportToPDF === 'function') exportPdfBtn.addEventListener('click', () => exportReportToPDF());
-  const reportScope = { rows, sector: __rsFilterState.sector, labels: [
-    __rsFilterState.person && 'Pessoa: ' + __rsFilterState.person,
-    __rsFilterState.sector && 'Setor: ' + __rsFilterState.sector,
-    __rsFilterState.level && 'Nível: ' + __rsFilterState.level,
-    'Período: ' + (__rsFilterState.monthStart || meses[0]) + ' a ' + (__rsFilterState.monthEnd || meses.at(-1))
-  ].filter(Boolean) };
-  const textarea = document.getElementById('reportText');
-  if (textarea) {
-    textarea.value = __rsScopedReport;
-    textarea.addEventListener('input', () => { __rsScopedReport = textarea.value; });
+  if (intelBtn && typeof generateIntelReport === 'function') intelBtn.addEventListener('click', () => generateIntelReport());
+  if (refreshBtn && typeof generateAndShowReport === 'function') refreshBtn.addEventListener('click', () => generateAndShowReport());
+  if (delBtn && typeof clearReportTextOnly === 'function') delBtn.addEventListener('click', () => clearReportTextOnly());
+  // Preenche relatório se já existir
+  if (window.__lastReportText && typeof executiveReportContext === 'function' && window.__lastReportContextKey === JSON.stringify(executiveReportContext())) {
+    const ta = document.getElementById('reportText');
+    if (ta && !ta.value) ta.value = window.__lastReportText;
   }
-  if (intelBtn && typeof generateIntelReport === 'function') intelBtn.addEventListener('click', () => generateIntelReport(reportScope));
-  if (refreshBtn && typeof generateAndShowReport === 'function') refreshBtn.addEventListener('click', () => {
-    generateAndShowReport(reportScope);
-    __rsScopedReport = textarea?.value || '';
-  });
-  if (delBtn && typeof clearReportTextOnly === 'function') delBtn.addEventListener('click', () => {
-    clearReportTextOnly();
-    __rsScopedReport = textarea?.value || '';
-  });
 
   // ── Renderizar gráficos ──
   if (typeof Chart !== 'undefined') {
     if (!window.__rsCharts) window.__rsCharts = {};
-    Object.values(window.__rsCharts).forEach(c => { try { c.destroy(); } catch (e) { console.warn('[RelatorioSetorial] Erro ao destruir chart:', e); } });
     window.__rsCharts = {};
 
     // Pie chart — distribuição por setor
@@ -650,9 +573,6 @@ function renderRelatorioSetorial() {
     if (pieCanvas) {
       const sorted = setorMetrics.slice().sort((a, b) => b.fin - a.fin);
       const totalPie = sorted.reduce((s, x) => s + x.fin, 0);
-      if (typeof ChartDataLabels !== 'undefined') {
-        Chart.register(ChartDataLabels);
-      }
       const neutralColors = typeof ChartTheme !== 'undefined'
         ? ChartTheme.neutralPalette(sorted.length)
         : ['#2563eb','#059669','#d97706','#7c3aed','#ea580c','#0891b2','#e11d48','#8b5cf6','#16a34a','#f97316'];
@@ -662,6 +582,7 @@ function renderRelatorioSetorial() {
         return c + '60';
       });
       window.__rsCharts.pieChart = new Chart(pieCanvas.getContext('2d'), {
+        plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : [],
         type: 'doughnut',
         data: {
           labels: sorted.map(s => s.nome),
@@ -745,6 +666,7 @@ function renderRelatorioSetorial() {
 
       const barColor = typeof ChartTheme !== 'undefined' ? ChartTheme.blue() : (_isDark ? 'rgba(96,165,250,0.8)' : 'rgba(37,99,235,0.8)');
       window.__rsCharts[`chart_${setorIdx}`] = new Chart(ctx, {
+        plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : [],
         type: 'bar',
         data: {
           labels: monthData.map(d => d.label),
@@ -849,8 +771,9 @@ function renderRelatorioSetorial() {
 
   // ── Exportar PNG ──
   const printBtn = document.getElementById('rsPrintBtn');
-  if (printBtn && typeof html2canvas !== 'undefined') {
-    printBtn.addEventListener('click', () => {
+  if (printBtn) {
+    printBtn.addEventListener('click', async () => {
+      if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('image'))return;
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       html2canvas(container, {
         scale: 3,
@@ -860,7 +783,24 @@ function renderRelatorioSetorial() {
         logging: false,
         onclone: function(doc) {
           const cloned = doc.querySelector('.rs-container');
-          if (cloned) cloned.style.background = isDark ? '#0f172a' : '#ffffff';
+          if (cloned) {
+            cloned.style.background = isDark ? '#0f172a' : '#ffffff';
+            // html2canvas 1.x não interpreta color(srgb), produzido por color-mix.
+            // Converter somente a cópia da captura, preservando as cores da tela.
+            const pixel = doc.createElement('canvas'); pixel.width = pixel.height = 1;
+            const ctx = pixel.getContext('2d');
+            const properties = ['color', 'background-color', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color', 'outline-color', 'text-decoration-color'];
+            for (const element of [cloned, ...cloned.querySelectorAll('*')]) {
+              const style = doc.defaultView.getComputedStyle(element);
+              for (const property of properties) {
+                const color = style.getPropertyValue(property);
+                if (!/color\(|oklch\(|oklab\(|lab\(|lch\(/.test(color)) continue;
+                ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = color; ctx.fillRect(0, 0, 1, 1);
+                const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+                element.style.setProperty(property, `rgba(${r},${g},${b},${a / 255})`, 'important');
+              }
+            }
+          }
         }
       }).then(canvas => {
         const link = document.createElement('a');
@@ -868,7 +808,8 @@ function renderRelatorioSetorial() {
         link.href = canvas.toDataURL('image/png');
         link.click();
         if (typeof showToast === 'function') showToast('PNG exportado com sucesso!', 'success');
-      }).catch(() => {
+      }).catch(error => {
+        console.warn('[RelatorioSetorial] Erro ao exportar PNG:', error);
         if (typeof showToast === 'function') showToast('Erro ao exportar. Tente novamente.', 'error');
       });
     });
@@ -878,7 +819,30 @@ function renderRelatorioSetorial() {
   const pdfBtn = document.getElementById('rsPdfBtn');
   if (pdfBtn) {
     pdfBtn.addEventListener('click', () => {
-      exportSetorPdf(setorMetrics, meses, { avgScore, prodGeral, traGeral, totalAtendentes, totalAss, totalFin, totalTra, hasPrev, prevLabel: prevRange.length ? prevRange[0] + (prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : '') : '', setorMetricsPrev: prevSetorMap, totalFinPrev: prevFin, totalAssPrev: prevAss, totalTraPrev: prevTra, avgScorePrev: prevAvg, prodGeralPrev: prevProd, traGeralPrev: prevTraG, hasTma, hasTmr, tmaGeral, tmrGeral });
+      exportSetorPdf(setorMetrics, meses, { contextLabel: _rsContextLabel({ privateNames: false }), avgScore, prodGeral, traGeral, totalAtendentes, totalAss, totalTra, totalFin, hasPrev, prevLabel: prevRange.length ? prevRange[0] + (prevRange.length > 1 ? '\u2013' + prevRange[prevRange.length - 1] : '') : '', setorMetricsPrev: prevSetorMap, totalFinPrev: prevFin, totalAssPrev: prevAss, totalTraPrev: prevTra, avgScorePrev: prevAvg, prodGeralPrev: prevProd, traGeralPrev: prevTraG, hasTma, hasTmr, tmaGeral, tmrGeral });
+    });
+  }
+
+  container.__rsScoreData = { rows, bySetor, setores, meses, fmtScore };
+  if (!container.dataset.rsScoreBound) {
+    container.dataset.rsScoreBound = '1';
+    container.addEventListener('click', event => {
+      const trigger = event.target.closest('[data-rs-score]');
+      if (!trigger || !container.contains(trigger)) return;
+      const source = container.__rsScoreData;
+      if (!source) return;
+      _rsShowScoreBreakdown(source, {
+        all: trigger.dataset.rsScore === 'all',
+        setor: trigger.dataset.rsScoreSetor || '',
+        mes: trigger.dataset.rsScoreMes || ''
+      });
+    });
+    container.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const trigger = event.target.closest('[data-rs-score]');
+      if (!trigger || !container.contains(trigger)) return;
+      event.preventDefault();
+      trigger.click();
     });
   }
 }
@@ -908,12 +872,88 @@ function _showModalAtendentes(nomes) {
   document.body.appendChild(overlay);
 }
 
+function _rsShowScoreBreakdown(source, options) {
+  document.querySelector('.rs-score-overlay')?.remove();
+  const previousFocus = document.activeElement;
+  const numeric = row => {
+    const value = row && row['SCORE'];
+    if (value === null || value === undefined || value === '' || isNaN(Number(value))) return null;
+    return Number(value);
+  };
+  const fmt = source.fmtScore;
+  const table = (headers, body) => `<div class="rs-score-table-wrap"><table class="rs-score-table"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body || `<tr><td colspan="${headers.length}" class="rs-score-empty">Sem scores válidos neste recorte.</td></tr>`}</tbody></table></div>`;
+  let title, subtitle, content;
+
+  if (options.all) {
+    const sectors = source.setores.map(name => {
+      const values = (source.bySetor[name] || []).map(numeric).filter(v => v !== null);
+      return { name, count: values.length, value: values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0 };
+    });
+    const values = sectors.filter(s => s.value > 0).map(s => s.value);
+    const total = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+    title = 'Scores por setor';
+    subtitle = `Média simples de ${values.length} setor(es) com score: ${fmt(total)}`;
+    content = `<div class="rs-score-total"><span>Média geral</span><strong>${fmt(total)}</strong></div>` + table(
+      ['Setor', 'Avaliações', 'Score do setor'],
+      sectors.map(s => `<tr><td>${escapeHtml(s.name)}</td><td>${s.count}</td><td><strong>${fmt(s.value)}</strong></td></tr>`).join('')
+    );
+  } else {
+    const setor = options.setor;
+    const mes = options.mes;
+    let recs = source.bySetor[setor] || [];
+    if (mes) recs = recs.filter(row => String(row['Mês'] || '') === mes);
+    const entries = recs.map(row => ({
+      nome: String(row['Atendente'] || '').trim() || '(sem atendente)',
+      mes: String(row['Mês'] || '').trim() || '—',
+      score: numeric(row)
+    })).filter(entry => entry.score !== null);
+    const total = entries.length ? entries.reduce((sum, entry) => sum + entry.score, 0) / entries.length : 0;
+    const byPerson = new Map();
+    entries.forEach(entry => {
+      if (!byPerson.has(entry.nome)) byPerson.set(entry.nome, []);
+      byPerson.get(entry.nome).push(entry.score);
+    });
+    const people = [...byPerson.entries()].map(([nome, scores]) => ({
+      nome,
+      count: scores.length,
+      value: scores.reduce((a, b) => a + b, 0) / scores.length
+    })).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    title = mes ? `Scores de ${setor} · ${mes}` : `Scores individuais · ${setor}`;
+    subtitle = `Média de ${entries.length} avaliação(ões): ${fmt(total)}`;
+    content = `<div class="rs-score-total"><span>Score do setor</span><strong>${fmt(total)}</strong></div>` +
+      `<h4 class="rs-score-subtitle">Média por pessoa</h4>` + table(
+        ['Colaborador', 'Avaliações', 'Média'],
+        people.map(person => `<tr><td>${escapeHtml(person.nome)}</td><td>${person.count}</td><td><strong>${fmt(person.value)}</strong></td></tr>`).join('')
+      ) +
+      `<h4 class="rs-score-subtitle">Avaliações consideradas</h4>` + table(
+        ['Colaborador', 'Mês', 'Score'],
+        entries.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR') || a.mes.localeCompare(b.mes)).map(entry => `<tr><td>${escapeHtml(entry.nome)}</td><td>${escapeHtml(entry.mes)}</td><td><strong>${fmt(entry.score)}</strong></td></tr>`).join('')
+      );
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'rs-modal-overlay rs-score-overlay';
+  overlay.innerHTML = `<div class="rs-modal-box rs-score-modal" role="dialog" aria-modal="true" aria-labelledby="rsScoreTitle">
+    <div class="rs-modal-header">
+      <div><h3 class="rs-modal-title" id="rsScoreTitle">${escapeHtml(title)}</h3><p class="rs-score-subtitle">${escapeHtml(subtitle)}</p></div>
+      <button type="button" class="rs-modal-close" data-close aria-label="Fechar">×</button>
+    </div>
+    <div class="rs-modal-body">${content}</div>
+  </div>`;
+  const close = () => { overlay.remove(); previousFocus?.focus?.(); };
+  overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+  overlay.querySelector('.rs-modal-close').addEventListener('click', close);
+  document.body.appendChild(overlay);
+  overlay.querySelector('.rs-modal-close').focus();
+}
+
 function onRelatorioSetorialTabActivated() {
   renderRelatorioSetorial();
 }
 
 // Exporta PDF em paisagem A4 com métricas agregadas por setor (sem nomes de colaboradores).
-function exportSetorPdf(setorMetrics, meses, opts) {
+async function exportSetorPdf(setorMetrics, meses, opts) {
+  if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('pdf'))return;
   if (typeof window.jspdf === 'undefined') {
     if (typeof showToast === 'function') showToast('Biblioteca de PDF não carregada.', 'error');
     return;
@@ -955,7 +995,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   const border = C.border;
   const white = C.white;
 
-  const period = meses && meses.length ? (meses.length === 1 ? String(meses[0]) : `${meses[0]} \u2013 ${meses[meses.length - 1]}`) : '—';
+  const period = meses && meses.length ? meses.join(', ') : '—';
   const now = new Date().toLocaleString('pt-BR', { hour12: false });
   const fmtInt = n => (Number(n) || 0).toLocaleString('pt-BR');
   const fmtScore = n => n > 0 ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2014';
@@ -975,7 +1015,7 @@ function exportSetorPdf(setorMetrics, meses, opts) {
     doc.setTextColor(white);
     setFont('bold', 17); doc.text('Resumo por Setor', M, 11);
     setFont('normal', 10); doc.text('IXC CG \u00B7 Painel de Suporte', M, 18.5);
-    setFont('bold', 11); doc.text(`Período: ${period}`, pageW - M, 11, { align: 'right' });
+    setFont('bold', 8); doc.text(doc.splitTextToSize(`Meses: ${period}`, 130), pageW - M, 9, { align: 'right' });
     setFont('normal', 9); doc.text(`Gerado em ${now}`, pageW - M, 18.5, { align: 'right' });
     return y;
   }
@@ -1064,6 +1104,11 @@ function exportSetorPdf(setorMetrics, meses, opts) {
   const cardW = (pageW - M * 2 - gap * (kpis.length - 1)) / kpis.length;
   const cardH = 28;
   y = 34;
+  if (opts.contextLabel) {
+    doc.setTextColor(muted); setFont('normal', 9);
+    const lines = doc.splitTextToSize(opts.contextLabel, pageW - 2 * M);
+    doc.text(lines, M, y); y += lines.length * 4 + 4;
+  }
   kpis.forEach((k, i) => {
     const x = M + i * (cardW + gap);
     doc.setFillColor(light);

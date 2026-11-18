@@ -13,6 +13,7 @@ function openColabDetail(name) {
 }
 
 function closeColabDetail() {
+  if(document.getElementById('colabInfoForm')&&typeof canCloseColabEditor==='function'&&!canCloseColabEditor())return false;
   const overlay = document.getElementById("colabDetailOverlay");
   if (overlay) {
     overlay.classList.remove("open");
@@ -20,6 +21,7 @@ function closeColabDetail() {
     overlay.setAttribute("aria-hidden", "true");
   }
   currentColabDetail = null;
+  return true;
 }
 
 function renderColabDetail(name) {
@@ -45,7 +47,7 @@ function renderColabDetail(name) {
   // Get setor
   const setores = [...new Set(records.map(r => r['Setor']))].filter(Boolean);
   const perfilLink = getPerfilDocsLink(name);
-  const cadastro = JSON.parse(localStorage.getItem("sistema_colaboradores_info_v1") || "{}")[name] || {};
+  const cadastro = (typeof getColabInfoLocal==='function'?getColabInfoLocal():JSON.parse(appStorage.getItem("sistema_colaboradores_info_v1") || "{}"))[name] || {};
 
   // Month-over-month evolution
   const monthlyData = meses.map(m => {
@@ -106,7 +108,7 @@ function renderColabDetail(name) {
 
 
   // Monthly data table
-  html += `<h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">📋 Histórico Detalhado</h3>
+  html += `<h3 style="font-size:13px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Histórico Detalhado</h3>
   <div style="overflow-x:auto"><table class="ranking-table">
     <thead><tr><th>Período</th><th>Assumidos</th><th>Finalizados</th><th>Transferidos</th><th>Score</th></tr></thead>
     <tbody>
@@ -146,11 +148,11 @@ async function renderColab360Extras(name, container) {
   const normalize = value => String(value || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
   const key = normalize(name);
   const readList = storageKey => {
-    try { const value = JSON.parse(localStorage.getItem(storageKey) || '[]'); return Array.isArray(value) ? value : []; }
+    try { const value = JSON.parse(appStorage.getItem(storageKey) || '[]'); return Array.isArray(value) ? value : []; }
     catch (_) { return []; }
   };
   const feedbacks = readList('sistema_feedbacks_v1').filter(item => normalize(item.colaborador) === key);
-  const bonuses = readList('sistema_pontos_extras_v1').filter(item => normalize(item.colaborador) === key);
+  const bonuses = (typeof getPontosExtrasLocal==='function'?getPontosExtrasLocal():readList('sistema_pontos_extras_v1')).filter(item => normalize(item.colaborador) === key);
   const evaluations = readList('sistema_avaliacoes_v1').filter(item => normalize(item.colaborador) === key);
   const bonusTotal = bonuses.reduce((sum, item) => sum + (Number(item.pontos) || 0), 0);
   let activity = [];

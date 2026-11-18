@@ -2,20 +2,76 @@
 
 App de dashboard para análise de indicadores de suporte, com autenticação Supabase, gestão de usuários com papéis (admin/viewer), gamificação, relatórios inteligentes, e deploy no Vercel.
 
-**Versão atual:** `1.7.2` (constante `APP_VERSION` em `static/app.js`)
-
-## Panorama semanal
-
-A aba Panorama do Suporte aceita o ZIP semanal do Looker/Opa! e mostra a prévia de KPIs e validações. Consulte o [catálogo dos CSVs e o roadmap](docs/panorama-semanal.md).
+**Versão atual:** `1.42.0` (constante `APP_VERSION` em `static/app.js`)
 
 ## Diagnóstico gerencial
 
 A auditoria, metodologia, limitações e validação da nova seção estão em [docs/diagnostico-gerencial.md](docs/diagnostico-gerencial.md). A migração aditiva `migration_v49.sql` foi aplicada ao banco de produção em 22/10/2026, habilitando revisões privadas sincronizadas.
 
+## Avaliações: confirmação e recuperação
+
+Avaliações só entram na lista após confirmação do servidor. Falhas mantêm o rascunho privado com notas e comentários; Retomar permite continuar com o mesmo identificador. Status e exclusão também exigem confirmação. [Contratos e limites](docs/avaliacoes-confirmadas.md).
+
+## Pessoas e Equipe 360º
+
+Pessoas reúne Equipe e Gestão coletiva. O perfil oferece avaliações, feedbacks e PDI para a pessoa selecionada, com retorno e proteção dos rascunhos. [Mapa e limites](docs/pessoas-equipe360.md).
+
+## Operação e metas
+
+Operação reúne Visão geral, Análises e Metas. As visualizações analíticas existentes permanecem acessíveis dentro de Análises; metas têm tela própria com controles conforme o papel. [Mapa e validação](docs/operacao-e-metas.md).
+
+## Salvamento e análises
+
+Feedbacks/metas exigem confirmação do servidor; falhas preservam rascunhos. Relatório Setorial usa somente os filtros do topo, com meses e contexto explícitos nas exportações. [Contratos e limites](docs/confirmacao-e-contexto.md).
+
+## Revisão após o roadmap
+
+Panorama parcial retirado do Relatório Setorial, com implementação preservada para possível realocação após definir o CSV. Pendências técnicas e prioridades de interface estão em [revisao-pos-roadmap.md](docs/revisao-pos-roadmap.md).
+
+## Cockpit gerencial — Fase 7
+
+A Home reúne referência mensal explícita, tarefas acionáveis, diagnóstico com evidências, equipes por nível e avisos de cobertura/fontes. Veja [comportamento, regras e validação](docs/cockpit.md).
+
+## Design System / UX — Fase 6
+
+Base compartilhada de componentes, temas, estados vazios, tabelas e teclado de modais. Fase concluída com navegação compacta no celular, filtros legíveis e revisão dos gráficos e editores. Contratos e limites estão em [design-system.md](docs/design-system.md).
+
+## Modularização — Fase 5
+
+Gráficos, relatório, administração e interface foram extraídos do núcleo. Persistência foi dividida por domínio; Ponto, PDI, Equipe 360º e Panorama carregam no primeiro acesso. Veja [estrutura, contratos e limites](docs/modularization.md).
+
+## Arquitetura de dados — Fase 4
+
+AppState/eventos, armazenamento por conta e repository de indicadores separam fonte oficial, cache e pendências. Respostas vazias não restauram dados antigos; troca de sessão invalida o estado. A adoção pelos módulos é gradual. Veja [contratos, recuperação e validação](docs/data-architecture.md).
+
+## Equipe 360º — Fase 3
+
+O perfil central da pessoa reúne cadastro, desempenho, avaliações, feedbacks, PDI, férias, ausências, ponto e histórico. Fontes, vínculos e limitações ficam explícitos; os editores existentes são preservados. Veja [comportamento e validação](docs/equipe-360.md).
+
+## Navegação por áreas — Fase 2
+
+Início, Operação, Pessoas e Rotina organizam as 13 telas existentes. Ferramentas ficam em um painel sob demanda; filtros podem ser recolhidos. Veja [comportamento e validação](docs/navigation.md).
+
+## Foundation / Estabilização
+
+Baseline e continuidade: [arquitetura](docs/architecture.md), [inventário atual](docs/feature-inventory.md), [roadmap](docs/roadmap.md), [testes e cache](docs/testing-release.md), [catálogo de migrations](docs/migrations.md). Esses documentos atualizam as descrições históricas de módulos, abas e migrations abaixo. A Fase 1 não altera regras de negócio ou o banco.
+
 ## Changelog
 
 | Versão | Data | Alterações |
 |--------|------|------------|
+| 1.24.0 | 29/10/2026 | Avaliações com confirmação remota, rascunho separado/retomada, retentativa por UUID e status/exclusão sem sucesso otimista. |
+| 1.23.0 | 29/10/2026 | Pessoas organizada em Equipe/Gestão coletiva, ações individuais contextualizadas e retorno ao perfil sem substituir rascunhos silenciosamente. |
+| 1.22.0 | 29/10/2026 | Operação organizada em Visão geral, Análises e Metas; acesso próprio a metas e rascunhos preservados ao filtrar. |
+| 1.21.0 | 29/10/2026 | Confirmação de feedbacks/metas, rascunhos para retentativa, metas por item e contexto único no Relatório Setorial. |
+| 1.20.1 | 28/10/2026 | Retirada do Panorama parcial da tela setorial e revisão das pendências do roadmap e da interface. |
+| 1.20.0 | 28/10/2026 | Cockpit gerencial: período encerrado por padrão, evidências e ações vinculadas, notas ausentes explícitas e atualização somente leitura por conta. |
+| 1.19.1 | 28/10/2026 | Conclusão da Fase 6: submenu móvel com rolagem, filtros/cabeçalho responsivos, limpeza da sidebar, ciclo de gráficos e leitura de metas sem regravação. |
+| 1.19.0 | 28/10/2026 | Base de componentes e tokens, tabelas acessíveis por teclado, foco de modais e consistência de temas; refinamentos da Fase 6 documentados. |
+| 1.18.0 | 28/10/2026 | Extração dos módulos centrais, persistência por domínio e carregamento sob demanda com retentativa e proteção de sessão. |
+| 1.17.0 | 28/10/2026 | Estado/eventos e repository de indicadores; cache por conta, sessão invalidável, vazios autoritativos e confirmação de pendências por revisão. |
+| 1.16.0 | 28/10/2026 | Perfil Equipe 360º com fontes explícitas, histórico integrado, vínculos exatos e acesso aos editores existentes. |
+| 1.15.0 | 28/10/2026 | Shell por áreas, submenu contextual, ferramentas sob demanda e filtros recolhíveis; mantém destinos, handlers e regras existentes. |
 | 1.7.2 | 24/07/2026 | Performance: `defer` em 45 scripts do body. Visual: font-sizes `9px/10px` → `11px` mínimo, `transition: all` substituída por transições específicas (8 ocorrências), cores hardcoded no dark theme → tokens `--overlay`/`--overlay-soft`/`--overlay-table`, seletores frágeis `[style*]` substituídos por classes CSS (`.grid-2col`, `.global-filter-field--flex`). |
 | 1.7.1 | 24/07/2026 | CSS: contraste `--text-muted` corrigido (WCAG AA), `@keyframes spin` duplicado removido, `var(--radius)`/`var(--surface)` indefinidos corrigidos, `transition: all` substituída por específicas, auth padronizado de `rem` para `px`. HTML: `aria-label="Fechar"` em 17 overlays, `<meta robots>`, typos corrigidos (acentos). |
 | 1.7.0 | 24/07/2026 | CSS: fontes aumentadas ~1-2px em todo o app para legibilidade em Full HD (root 14→15px, KPIs 24→26px, labels 10→11px, badges 11→12px, tabs 12→13px, forms/btns 13→14px) |
@@ -24,7 +80,7 @@ A auditoria, metodologia, limitações e validação da nova seção estão em [
 
 ## Stack
 
-- **Frontend:** HTML/CSS/JS vanilla (SPA, 29 módulos, sem build step)
+- **Frontend:** HTML/CSS/JS vanilla (SPA, módulos globais, sem build step)
 - **Backend:** Supabase (Auth, PostgreSQL, RLS, REST API)
 - **Deploy:** Vercel (static + serverless functions)
 - **Charts:** Chart.js (CDN)
@@ -37,7 +93,7 @@ A auditoria, metodologia, limitações e validação da nova seção estão em [
 - **Vercel project:** `andre-tavares/dashboard-suporte`
 - **Git remote:** `origin` → `https://github.com/Drawzito98/dashboard-suporte`
 - **Branch:** `main`
-- **Deploy manual:** `git push origin main && npx vercel deploy --prod --yes`
+- **Publicação:** merge e deploy somente com autorização explícita. Consulte [validação e release](docs/testing-release.md).
 
 ## Supabase
 
@@ -69,22 +125,9 @@ A auditoria, metodologia, limitações e validação da nova seção estão em [
 | `avaliacoes` | Avaliações de desempenho (14 competências) | Por `user_id` |
 | `notificacoes` | Notificações de audit trail | Authenticated |
 
-### Migrations (executar no SQL Editor do Supabase)
+### Migrations
 
-| Migration | Conteúdo |
-|---|---|
-| `migration.sql` | Tabela `registros` + RLS |
-| `migration_v2.sql` | 7 tabelas extras + RLS (19/06) |
-| `migration_v3.sql` | Tabela `feedbacks` + RLS |
-| `migration_v4.sql` | Tabela `anotacoes_diarias` + RLS |
-| `migration_v5.sql` | Tabela `tarefas` + RLS |
-| `migration_v6.sql` | Tabela `pontos_extras` + RLS |
-| `migration_v7.sql` | Tabela `colaboradores_info` + RLS |
-| `migration_v8.sql` | Colunas `conduta_negativa` / `conduta_motivo` em `colaboradores_info` |
-| `migration_v9.sql` | Coluna `mes` em `pontos_extras` |
-| `migration_v10.sql` | Tabela `setor_inativos` + RLS |
-| `migration_v11.sql` | Tabela `notificacoes` + RLS |
-| `migration_v12.sql` | Tabela `avaliacoes` + RLS |
+Consulte o [catálogo completo e procedimento](docs/migrations.md), que cobre a sequência até v49. A antiga tabela resumida não correspondia ao conteúdo de alguns arquivos e foi substituída por esse catálogo. Não executar SQL como parte de testes ou push.
 
 ### RLS Policies
 
@@ -188,17 +231,16 @@ usuarios.js → csv-import.js → reports.js → app.js
 3. Login usa `sbClient.auth.signInWithPassword()`
 4. Cadastro usa `sbClient.auth.signUp()` (sem confirmação de email)
 5. Logout usa `sbClient.auth.signOut()` + reload
-6. Admin é definido automaticamente via API quando papel está ausente
+6. Autorizações dependem dos metadados protegidos e das verificações do servidor; consulte `auth-policy.js` e `api/users.js`.
 
 ## Fluxo de dados
 
-1. **DOMContentLoaded** em `app.js`:
-   - `initAuth()` → verifica sessão
-   - `initDbExtra()` (background) → migra localStorage → Supabase, carrega dados extras
-   - `dbLoadRecords()` → carrega registros do Supabase (`importacoes`)
-2. Dados de CSV passam por RLS (filtrados por `user_id` ou nulos)
-3. Dados extras (metas, fotos, etc.) usam **localStorage como fallback** se Supabase offline
-4. Escrita é **síncrona no localStorage** + **assíncrona no Supabase**
+1. A autenticação vincula a conta antes de carregar dados.
+2. Indicadores vêm da tabela registros via RecordsRepository/AppState, com cache por conta e fila de alterações por revisão. Resposta vazia do servidor é válida.
+3. Módulos complementares usam a fachada db-extra e repositories por domínio, com contratos de escrita ainda heterogêneos. Nem todos têm confirmação remota/fila durável como os indicadores.
+4. Migração automática de chaves legadas sem dono não é executada. PDI permanece local por conta/dispositivo.
+
+Detalhes em [data-architecture.md](docs/data-architecture.md) e pendências em [revisao-pos-roadmap.md](docs/revisao-pos-roadmap.md).
 
 ## Papéis
 
@@ -208,19 +250,14 @@ usuarios.js → csv-import.js → reports.js → app.js
 ## Riscos conhecidos
 
 1. ~~**Service Role Key exposta** em `api/users.js`~~ ✅ **Corrigido** — lê de `process.env.SERVICE_ROLE_KEY` no Vercel
-2. **Sem build step** — sem typecheck, sem linter, sem testes automatizados
-3. **`app.js` ~3031 linhas** — monolítico, difícil de manter
+2. **Sem build step** — sem typecheck ou linter; testes locais disponíveis via `npm test`
+3. **`app.js` concentra responsabilidades** — monolítico, difícil de manter
 
 ## Comandos úteis
 
 ```bash
-# Deploy completo
-git add -A && git commit -m "mensagem" && git push origin main && npx vercel deploy --prod --yes
-
-# Apenas deploy (se já commitado)
-npx vercel deploy --prod --yes
-
-# Git
+npm test
+npm run release:check
 git status
 git log --oneline -10
 ```

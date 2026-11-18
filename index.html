@@ -6,25 +6,22 @@
   <title>Painel de Suporte</title>
   <meta name="description" content="Painel executivo para análise de indicadores de suporte e atendimento."/>
   <meta name="robots" content="noindex, nofollow"/>
-  <meta name="theme-color" content="#10383c"/>
+  <meta name="theme-color" content="#115d66"/>
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
   <meta name="apple-mobile-web-app-title" content="Painel de Suporte"/>
   <link rel="manifest" href="manifest.json"/>
-  <link href="static/css/tokens.css?v=80" rel="stylesheet"/>
-  <link href="static/styles.css?v=129" rel="stylesheet"/>
-  <link href="static/panorama-suporte.css?v=18" rel="stylesheet"/>
-  <link href="static/projecao.css?v=3" rel="stylesheet"/>
-  <link href="static/ponto.css?v=2" rel="stylesheet"/>
-  <link href="static/home.css?v=80" rel="stylesheet"/>
-  <link href="static/css/visual-refresh.css?v=14" rel="stylesheet"/>
+  <link href="static/css/tokens.css?v=1401" rel="stylesheet"/>
+  <link href="static/styles.css?v=1380" rel="stylesheet"/>
+  <link href="static/projecao.css?v=1380" rel="stylesheet"/>
+  <link href="static/home.css?v=1380" rel="stylesheet"/>
   <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
   <link rel="icon" type="image/png" sizes="192x192" href="static/icons/icon-192.png"/>
   <link rel="apple-touch-icon" sizes="180x180" href="static/icons/apple-touch-icon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
   <script>
     (function(){
       try {
@@ -38,15 +35,22 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="static/icons.js"></script>
   <script src="static/chart-theme.js"></script>
-<link rel="stylesheet" href="static/perfil-pdi.css?v=1">
-<link rel="stylesheet" href="static/diagnostico.css?v=1">
+<link rel="stylesheet" href="static/diagnostico.css?v=1380">
+<link rel="stylesheet" href="static/shell.css?v=1380">
+<link rel="stylesheet" href="static/module-loader.css?v=1">
+<link rel="stylesheet" href="static/css/components.css?v=1394">
+<link rel="stylesheet" href="static/css/people-workspace.css?v=1391">
+<link rel="stylesheet" href="static/css/analysis-workspace.css?v=1391">
+<link rel="stylesheet" href="static/css/administration.css?v=1392">
+<link rel="stylesheet" href="static/cockpit.css?v=1380">
+<link rel="stylesheet" href="static/css/visual-system.css?v=1401">
 </head>
 <body>
+<svg class="ui-icon-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><symbol id="ui-icon-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6"/></symbol><symbol id="ui-icon-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10h4v10M10 20V4h4v16M16 20V8h4v12M2 20h20"/></symbol><symbol id="ui-icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="ui-icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m15 4 5 5M4 20l5-1L21 7a2 2 0 0 0-5-5L4 14v6Z"/></symbol><symbol id="ui-icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M4 12h16"/></symbol><symbol id="ui-icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></symbol><symbol id="ui-icon-message" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a3 3 0 0 1-3 3H8l-5 4V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z"/></symbol><symbol id="ui-icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3v6h-6M3 21v-6h6M20 9A8 8 0 0 0 6 5L3 9M4 15a8 8 0 0 0 14 4l3-4"/></symbol><symbol id="ui-icon-insight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M9 21h6M8 14a6 6 0 1 1 8 0l-1 2H9l-1-2Z"/></symbol><symbol id="ui-icon-attention" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v5M12 17h.01"/></symbol><symbol id="ui-icon-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H4v20h16V8l-6-6Z"/><path d="M14 2v6h6M8 12h8M8 16h6"/></symbol><symbol id="ui-icon-award" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8v6a4 4 0 0 1-8 0V3ZM8 5H3v3a4 4 0 0 0 5 4M16 5h5v3a4 4 0 0 1-5 4M12 13v6M8 22h8M9 19h6"/></symbol><symbol id="ui-icon-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol><symbol id="ui-icon-suggest" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="14" rx="3"/><path d="M12 2v4M8 16h8M1 10v6M23 10v6M8 11h.01M16 11h.01"/></symbol></defs></svg>
+
+<a class="skip-link" href="#workspaceContent">Ir para o conteúdo</a>
 
 <!-- ========== AUTH OVERLAY ========== -->
 <div id="authOverlay" class="auth-overlay">
@@ -153,7 +157,7 @@
     
     <!-- Top Bar -->
     <header class="topbar">
-      <button class="menu-btn" id="menuBtn" type="button" aria-label="Abrir menu" aria-expanded="false">
+      <button class="menu-btn" id="menuBtn" type="button" aria-label="Abrir ferramentas" aria-haspopup="dialog" aria-controls="toolsDialog">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <button class="presentation-exit-btn" id="presentationExitBtn" type="button">
@@ -169,11 +173,20 @@
         </div>
       </div>
       <div class="topbar-right">
-        <button class="sync-status" id="syncStatusBtn" type="button" title="Estado da sincronização"><span class="sync-status-dot"></span><span>Sem pendências</span></button>
+        <button class="sync-status" id="syncStatusBtn" type="button" title="Estado da sincronização"><span class="sync-status-dot"></span><span>Sincronizado</span></button>
         <div class="user-menu-wrapper" id="userMenuWrapper">
           <button id="currentUserDisplay" class="current-user user-menu-trigger" type="button" aria-haspopup="true" aria-expanded="false"></button>
           <div class="user-dropdown" id="userDropdown" style="display:none">
             <div class="user-dropdown-header" id="userDropdownEmail"></div>
+            <label class="user-dropdown-field" for="accentSelect">
+              <span>Cor de destaque</span>
+              <select id="accentSelect" aria-label="Cor de destaque">
+                <option value="padrao">Padrão</option>
+                <option value="azul">Azul</option>
+                <option value="violeta">Violeta</option>
+                <option value="ambar">Âmbar</option>
+              </select>
+            </label>
             <button class="user-dropdown-item" id="editNameBtn" type="button">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               Editar nome
@@ -225,10 +238,11 @@
       </div>
     </div>
 
+    <!-- Navegação por domínio -->
+    <nav id="domainNav" class="domain-nav" aria-label="Áreas do painel"></nav>
     <!-- Tab Navigation -->
-    <div class="shell-navigation" role="navigation" aria-label="Navegação e ferramentas">
+    <div class="shell-navigation" role="navigation" aria-label="Telas da área">
     <div class="tab-bar" id="tabBar" role="tablist" aria-label="Navegação principal">
-      <span class="nav-section-label" role="presentation">Visão geral</span>
       <button class="tab-btn active" data-tab="home" role="tab" aria-selected="true">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span> Início
       </button>
@@ -238,42 +252,33 @@
       <button class="tab-btn" data-tab="relatorio-setorial" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="8" y="13" width="3" height="4"/><rect x="13" y="11" width="3" height="6"/></svg></span> Relatório Setorial
       </button>
-      <button class="tab-btn" id="panoramaWeeklyTab" data-tab="panorama-semanal" role="tab" aria-controls="tab-panorama-semanal" aria-selected="false">
-        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 10h18m-13 7h2m4-3h2"/></svg></span> Panorama semanal
-      </button>
       <button class="tab-btn" data-tab="saude-operacional" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span> Saúde Operacional
       </button>
-      <button class="nav-section-label nav-section-toggle" id="equipeGestaoToggle" type="button" aria-expanded="true" aria-controls="equipeGestaoNav">
-        <span>Equipe e gestão</span>
-        <svg class="nav-section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      <button class="tab-btn" data-tab="insights" role="tab" aria-selected="false">
+        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg></span> Análises avançadas
       </button>
-      <div class="nav-section-items" id="equipeGestaoNav" role="presentation">
-      <button class="tab-btn" data-tab="tarefas" role="tab" aria-selected="false">
-        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Rotina<span class="tab-badge" id="tarefasBadge"></span>
-      </button>
-      <button class="tab-btn" data-tab="regras" role="tab" aria-selected="false">
-        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span> Regras
-      </button>
-      <button class="tab-btn" data-tab="ponto" role="tab" aria-selected="false"><span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span> Auditoria de Ponto</button>
+      <button class="tab-btn" data-tab="metas" role="tab" aria-selected="false"><span class="tab-icon" aria-hidden="true">◎</span> Metas</button>
       <button class="tab-btn" data-tab="colaboradores" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Equipe
       </button>
       <button class="tab-btn" data-tab="lider" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span> Acompanhamento da equipe
       </button>
-      <button class="tab-btn" data-tab="insights" role="tab" aria-selected="false">
-        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg></span> Análises avançadas
-      </button>
       <button class="tab-btn" data-tab="avaliacao" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg></span> Avaliação de desempenho
       </button>
-
       <button class="tab-btn" data-tab="perfil-pdi" role="tab" aria-selected="false"><span class="tab-icon" aria-hidden="true">◎</span> Análise de perfil e PDI</button>
       <button class="tab-btn tab-btn-featured" data-tab="mapeamento-time" role="tab" aria-selected="false">
         <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Mapeamento de Time
       </button>
-      </div>
+      <button class="tab-btn" data-tab="ponto" role="tab" aria-selected="false"><span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span> Auditoria de Ponto</button>
+      <button class="tab-btn" data-tab="tarefas" role="tab" aria-selected="false">
+        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Rotina<span class="tab-badge" id="tarefasBadge"></span>
+      </button>
+      <button class="tab-btn" data-tab="regras" role="tab" aria-selected="false">
+        <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span> Regras
+      </button>
     </div>
     </div>
 
@@ -281,7 +286,9 @@
     <div class="layout">
       
       <!-- Sidebar -->
-      <aside class="sidebar">
+      <dialog id="toolsDialog" aria-labelledby="toolsTitle">
+        <header class="tools-heading"><div><h2 id="toolsTitle">Ferramentas</h2><p>Ações de dados, equipe e administração</p></div><button id="closeToolsBtn" class="btn-small" type="button" aria-label="Fechar ferramentas">Fechar</button></header>
+        <aside class="sidebar">
         
         <!-- Panel: Dados -->
         <section class="panel panel-collapsible collapsed">
@@ -291,13 +298,14 @@
           </div>
           <div class="form-stack" id="dataContent">
             <div class="btn-row">
+              <button class="btn-small" id="lookerOpen" type="button" aria-haspopup="dialog" aria-controls="lookerDialog">Relatório semanal (Looker)</button>
               <button class="btn-small" id="addRowTopBtn" type="button" title="Adicionar um novo registro mensal manualmente"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo registro</button>
               <button class="btn-small btn-danger-subtle" id="cleanDupBtn" type="button" title="Remove registros duplicados da base"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l6-6"/><path d="M9 9l6 6"/><path d="M12 6l6 6"/><path d="M15 3l6 6"/><line x1="3" y1="21" x2="21" y2="3"/></svg> Limpar duplicatas</button>
               <button class="btn-small" id="historicoBtn" type="button" title="Histórico de alterações feitas nos dados"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Histórico</button>
               <button class="btn-small" id="comentariosBtn" type="button" title="Ver e gerenciar comentários por período"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Comentários</button>
             </div>
             <div class="btn-row" style="margin-top:4px">
-              <button class="btn-small" id="backupCsvBtn" type="button" title="Exportar registros de indicadores em CSV"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Backup dos indicadores</button>
+              <button class="btn-small" id="backupCsvBtn" type="button" title="Exportar todos os dados como CSV para backup"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Backup completo</button>
             <label class="field" id="compareLabel" style="display:none;margin-top:8px">
               <span>Comparar atendentes</span>
               <div class="compare-row">
@@ -358,12 +366,44 @@
 
         <div id="appVersion" class="app-version"></div>
       </aside>
-
-      <!-- Backdrop da gaveta lateral (mobile) -->
-      <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+      </dialog>
+      <dialog id="lookerDialog" aria-labelledby="lookerTitle">
+        <header class="tools-heading">
+          <div><h2 id="lookerTitle">Relatório semanal do Looker</h2><p>Importe Performance por colaborador para preparar o relatório da gestão.</p></div>
+          <form method="dialog"><button class="btn-small">Fechar</button></form>
+        </header>
+        <div class="looker-controls">
+          <label class="field"><span>CSV do Looker</span><input id="lookerFile" type="file" accept=".csv,text/csv"></label>
+          <label class="field"><span>Período do relatório</span><input id="lookerPeriod" type="text" maxlength="60" placeholder="Ex.: 02 a 08/11/2026"></label>
+          <label class="field"><span>Mínimo de finalizados</span><input id="lookerMinimum" type="number" min="0" step="1" value="0"></label>
+          <label class="field"><span>Filtrar setor</span><select id="lookerSector"><option value="">Todos os setores</option></select></label>
+          <button class="btn-small" id="lookerExport" type="button" disabled>Exportar Excel</button>
+        </div>
+        <details>
+          <summary>Equipe por setor</summary>
+          <p>Cole um nome por linha no formato Nome — Setor. A lista prevalece no relatório. Nomes sem correspondência ficam sem setor. Para voltar ao cadastro do painel, apague a lista e salve.</p>
+          <label class="field"><span>Lista de nomes e setores</span><textarea id="lookerRosterText" rows="5"></textarea></label>
+          <button class="btn-small" type="button" id="lookerRosterSave">Salvar lista de setores</button>
+          <p id="lookerRosterStatus" role="status"></p>
+        </details>
+        <p id="lookerStatus" role="status"></p>
+        <div id="lookerReport" hidden>
+          <div class="looker-totals" id="lookerTotals" aria-live="polite"></div>
+          <h3>Resumo por setor</h3>
+          <p>O mínimo de finalizados define quem entra nas tabelas e nas médias. CSAT, TMA, TMI e TMR usam a média simples dos valores disponíveis por atendente. Clique no setor para ver os atendentes usados no cálculo. A lista de equipe e as correções individuais são guardadas neste navegador.</p>
+          <div class="looker-table" tabindex="0" role="region" aria-label="Resumo por setor">
+            <table><thead><tr><th>Setor</th><th>Atendentes</th><th>Total finalizados</th><th>Média por pessoa</th><th>CSAT médio</th><th>TMA médio</th><th>TMI médio</th><th>TMR médio</th><th>Com nota</th></tr></thead><tbody id="lookerSectors"></tbody><tfoot id="lookerOverall"></tfoot></table>
+          </div>
+          <h3 id="lookerPeopleTitle" tabindex="-1">Atendentes no cálculo</h3>
+          <button class="btn-small" id="lookerClearSector" type="button" hidden>Mostrar todos os setores</button>
+          <div class="looker-table" tabindex="0" role="region" aria-labelledby="lookerPeopleTitle">
+            <table><thead><tr><th>Atendente</th><th>Setor</th><th>Nível</th><th>Finalizados</th><th>CSAT</th><th>TMA</th><th>TMI</th><th>TMR</th></tr></thead><tbody id="lookerPeople"></tbody></table><datalist id="lookerSectorChoices"></datalist>
+          </div>
+        </div>
+      </dialog>
 
       <!-- Content Area -->
-      <section class="content">
+      <section class="content" id="workspaceContent" tabindex="-1" aria-label="Conteúdo principal">
 
         <!-- ===== TAB: HOME ===== -->
         <div class="tab-content active" id="tab-home" role="tabpanel">
@@ -405,8 +445,8 @@
           <section class="card chart-card" id="chartCard">
             <div class="card-header">
               <div>
-                <h2>Desempenho no período</h2>
-                <p>Use a legenda para exibir ou ocultar séries.</p>
+                <h2>Gráfico de Desempenho</h2>
+                <p>Clique na legenda para ocultar/mostrar series</p>
               </div>
               <div class="chart-toolbar">
                 <button id="exportChartPngBtn" type="button" class="btn-small">
@@ -438,7 +478,7 @@
           <section class="card preview" id="previewCard">
             <div class="card-header">
               <div>
-                <h2>Registros do período</h2>
+                <h2>Dados Detalhados</h2>
                 <p>Visualize e edite os registros importados</p>
               </div>
               <details class="preview-columns-control" id="previewColumnsControl" hidden>
@@ -540,7 +580,7 @@
         <div class="tab-content" id="tab-ponto" role="tabpanel"><div id="pontoRoot"></div></div>
         <div class="tab-content" id="tab-colaboradores" role="tabpanel">
           <section class="card">
-            <div class="team-management-actions admin-only-panel"><button class="btn-small" id="manageColabsBtn" type="button" title="Ativar/desativar colaboradores"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Gerenciar ativos e inativos</button></div>
+            <div class="team-management-actions admin-only-panel"><button class="btn-small" id="bonusPanelBtn" type="button">Bônus e penalidades</button><button class="btn-small" id="manageColabsBtn" type="button" title="Ativar/desativar colaboradores"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Gerenciar ativos e inativos</button></div>
             <div id="colaboradoresContent"></div>
           </section>
         </div>
@@ -550,26 +590,20 @@
           <div id="saudeOperacionalContent"></div>
         </div>
 
+        <div class="tab-content" id="tab-metas" role="tabpanel">
+          <section class="card"><h2>Metas da operação</h2><p class="text-muted">Acompanhe objetivos de volume, qualidade e produtividade. O progresso usa os filtros do topo.</p><div id="metasContent"></div></section>
+        </div>
+
         <!-- ===== TAB: RELATÓRIO SETORIAL ===== -->
         <div class="tab-content" id="tab-relatorio-setorial" role="tabpanel">
           <section class="card">
             <div id="relatorioSetorialContent"></div>
           </section>
-          <details class="card panorama-weekly-details" id="rsLegacyPanorama">
-            <summary>Gerar panorama por CSV de colaborador</summary>
-            <section id="panoramaSuporteRoot"></section>
-          </details>
-        </div>
-
-        <div class="tab-content" id="tab-panorama-semanal" role="tabpanel" aria-labelledby="panoramaWeeklyTab">
-          <div class="panorama-workspace">
-            <section class="panorama" id="panoramaWeeklyRoot" aria-label="Análise por ZIP do Looker"></section>
-          </div>
         </div>
 
         <!-- ===== TAB: AVALIAÇÃO DE DESEMPENHO ===== -->
         <div class="tab-content" id="tab-avaliacao" role="tabpanel">
-          <section class="card">
+          <section aria-label="Avaliações da equipe">
             <div id="avaliacaoContent"></div>
           </section>
 
@@ -769,74 +803,84 @@
 <!-- Scripts -->
 <script defer src="static/dom-helpers.js"></script>
 <script defer src="static/helpers.js"></script>
-<script defer src="static/inactive-state.js"></script>
+<script defer src="static/inactive-state.js?v=131"></script>
+<script defer src="static/data-runtime.js?v=1"></script>
+<script defer src="static/export-tools.js?v=1360"></script>
+<script defer src="static/module-manifest.js?v=1391"></script>
+<script defer src="static/module-loader.js?v=1"></script>
+<script defer src="static/records-repository.js?v=1"></script>
 <script defer src="static/auth-policy.js?v=1"></script>
-<script defer src="static/colab-fotos.js?v=1"></script>
+<script defer src="static/colab-fotos.js?v=3"></script>
 <script defer src="static/ux-helpers.js"></script>
 <script defer src="static/month-filters.js"></script>
-<script defer src="static/auth.js?v=61"></script>
-<script defer src="static/db.js?v=84"></script>
+<script defer src="static/auth.js?v=62"></script>
+<script defer src="static/db.js?v=85"></script>
 <script defer src="static/sync-status.js?v=2"></script>
-<script defer src="static/db-extra.js?v=127"></script>
+<script defer src="static/db-extra.js?v=133"></script>
 <script defer src="static/perfis.js"></script>
-<script defer src="static/globalFilters.js?v=128"></script>
-<script defer src="static/scoring.js"></script>
+<script defer src="static/globalFilters.js?v=130"></script>
+<script defer src="static/settings-drafts.js?v=132"></script>
+<script defer src="static/scoring.js?v=132"></script>
 <script defer src="static/gamificacao.js"></script>
-<script defer src="static/metas.js"></script>
+<script defer src="static/metas.js?v=1390"></script>
 <script defer src="static/comparativos.js"></script>
 <script defer src="static/tempo-empresa.js?v=1"></script>
-<script defer src="static/colab-detail.js?v=81"></script>
-<script defer src="static/links-importantes.js"></script>
-<script defer src="static/ausencias.js?v=1"></script>
-<script defer src="static/avaliacao-atendimento.js"></script>
-<script defer src="static/ferias-periodo.js?v=1"></script>
-<script defer src="static/ferias.js"></script>
-<script defer src="static/acompanhamento-diario.js"></script>
-<script defer src="static/painelLider.js"></script>
+<script defer src="static/colab-detail.js?v=1390"></script>
+<script defer src="static/links-importantes.js?v=1"></script>
+<script defer src="static/presence-editor.js?v=133"></script>
+<script defer src="static/ausencias.js?v=2"></script>
+<script defer src="static/avaliacao-atendimento.js?v=1331"></script>
+<script defer src="static/ferias-periodo.js?v=3"></script>
+<script defer src="static/ferias.js?v=2"></script>
+<script defer src="static/acompanhamento-diario.js?v=1390"></script>
+<script defer src="static/painelLider.js?v=1390"></script>
 <script defer src="static/insights.js"></script>
-<script defer src="static/alertas.js"></script>
+<script defer src="static/alertas.js?v=132"></script>
 <script defer src="static/advanced-analysis-v2.js?v=87"></script>
-<script defer src="static/alert-goals-editor.js?v=92"></script>
+<script defer src="static/alert-goals-editor.js?v=132"></script>
 <script defer src="static/indicator-health-v3.js?v=94"></script>
 <script defer src="static/saude-operacional.js?v=7"></script>
 <script defer src="static/conquistas.js"></script>
-<script defer src="static/projecao.js?v=8"></script>
-<script defer src="static/historico.js"></script>
-<script defer src="static/comentarios.js"></script>
-<script defer src="static/notificacoes.js"></script>
-<script defer src="static/atividades-mes.js?v=123"></script>
-<script defer src="static/feedbacks.js?v=123"></script>
-<script defer src="static/anotacoes.js?v=82"></script>
-<script defer src="static/people-profile-notes-v2.js?v=92"></script>
-<script defer src="static/tarefas.js?v=3"></script>
-<script defer src="static/rotina-cards.js?v=1"></script>
-<script defer src="static/regras.js?v=1"></script>
-<script defer src="static/bonus.js?v=1"></script>
-<script defer src="static/relatorio-setorial.js?v=88"></script>
-<script defer src="static/panorama-suporte.js?v=34"></script>
-<script defer src="static/avaliacao.js?v=2"></script>
-<script defer src="static/relatorio-feedback.js?v=123"></script>
-<script defer src="static/colaboradores.js?v=133"></script>
-<script defer src="static/mapeamento-time.js?v=2"></script>
-<script defer src="static/perfil-pdi-engine.js?v=1"></script>
-<script defer src="static/perfil-pdi.js?v=3"></script>
-<script defer src="static/usuarios.js?v=82"></script>
+<script defer src="static/projecao.js?v=1390"></script>
+<script defer src="static/historico.js?v=136"></script>
+<script defer src="static/comentarios.js?v=1390"></script>
+<script defer src="static/notificacoes.js?v=135"></script>
+<script defer src="static/atividades-mes.js?v=125"></script>
+<script defer src="static/feedbacks.js?v=1390"></script>
+<script defer src="static/anotacoes.js?v=84"></script>
+<script defer src="static/people-profile-notes-v2.js?v=94"></script>
+<script defer src="static/tarefas.js?v=5"></script>
+<script defer src="static/rotina-cards.js?v=1390"></script>
+<script defer src="static/regras.js?v=1390"></script>
+<script defer src="static/bonus.js?v=1390"></script>
+<script defer src="static/avaliacao.js?v=1390"></script>
+<script defer src="static/relatorio-feedback.js?v=1392"></script>
+<script defer src="static/colaboradores.js?v=1391"></script>
+<script defer src="static/mapeamento-time.js?v=1380"></script>
+<script defer src="static/usuarios.js?v=1392"></script>
 <script defer src="static/csv-validator.js?v=80"></script>
 <script defer src="static/csv-import.js?v=80"></script>
-<script defer src="static/reports.js?v=2"></script>
+<script defer src="static/reports.js?v=1390"></script>
 <script defer src="static/db-reportes.js"></script>
-<script defer src="static/reportes.js"></script>
-<script defer src="static/home.js?v=128"></script>
-<script defer src="static/ponto-engine.js?v=4"></script>
-<script defer src="static/ponto.js?v=7"></script>
-<script defer src="static/preview-columns.js?v=1"></script>
-<script defer src="static/app.js?v=136"></script>
-<script defer src="static/manage-colabs-v2.js?v=95"></script>
-<script defer src="static/features.js"></script>
-<script defer src="static/privacy-screen.js?v=84"></script>
+<script defer src="static/reportes.js?v=1392"></script>
 <script defer src="static/diagnostico-engine.js?v=1"></script>
+<script defer src="static/cockpit-engine.js?v=1"></script>
+<script defer src="static/cockpit.js?v=134"></script>
+<script defer src="static/home.js?v=1390"></script>
+<script defer src="static/preview-columns.js?v=2"></script>
+<script defer src="static/shell.js?v=1380"></script>
+<script defer src="static/dashboard-charts.js?v=1"></script>
+<script defer src="static/dashboard-report.js?v=2"></script>
+<script defer src="static/app.js?v=1392"></script>
+<script defer src="static/app-admin.js?v=135"></script>
+<script defer src="static/ui-accessibility.js?v=2"></script>
+<script defer src="static/app-interface.js?v=1380"></script>
+<script defer src="static/manage-colabs-v2.js?v=131"></script>
+<script defer src="static/features.js?v=1390"></script>
+<script defer src="static/privacy-screen.js?v=85"></script>
 <script defer src="static/diagnostico-store.js?v=1"></script>
-<script defer src="static/diagnostico-ui.js?v=1"></script>
+<script defer src="static/diagnostico-ui.js?v=2"></script>
+<script defer src="static/feature-bridges.js?v=2"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

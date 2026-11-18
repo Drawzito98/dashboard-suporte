@@ -1,3 +1,56 @@
+// Um rascunho privado para o editor cadastral; nunca é parte do cadastro confirmado.
+const COLAB_DRAFT_KEY='sistema_colaborador_rascunho_v1';
+const colabEditor={token:null,mode:null,name:null,busy:false,photoPreparing:false,photoError:false,draftFailed:false};
+const colabFieldIds={data_aniversario:'ciAniversario',data_admissao:'ciAdmissao',email:'ciEmail',setor_atual:'ciSetorAtual',tarefas_desempenhadas:'ciTarefas',objetivos_futuros:'ciObjetivos',observacoes:'ciObservacoes',conduta_motivo:'ciCondutaMotivo',feito_descricao:'ciFeitoDescricao',nivel:'ciNivel',salario:'ciSalario'};
+function colabDraft(){try{return JSON.parse(appStorage.getItem(COLAB_DRAFT_KEY)||'null');}catch(_){return null;}}
+function colabMessage(message){const host=document.getElementById(colabEditor.mode==='new'?'novoColaboradorForm':'colabInfoForm');if(host){let el=host.querySelector('.colab-save-message');if(!el){el=document.createElement('p');el.className='ui-message colab-save-message';el.setAttribute('role','alert');host.prepend(el);}el.textContent=message;}}
+function storeColabDraft(value){try{appStorage.setItem(COLAB_DRAFT_KEY,JSON.stringify(value));colabEditor.draftFailed=false;return true;}catch(_){colabEditor.draftFailed=true;colabMessage('Não foi possível guardar o rascunho neste dispositivo. Mantenha esta tela aberta.');return false;}}
+function captureColabDraft(){
+  if(!AppDataSession.current(colabEditor.token))return false;
+  const previous=colabDraft(),draft=previous&&previous.mode===colabEditor.mode&&previous.name===colabEditor.name?{...previous}:{mode:colabEditor.mode,name:colabEditor.name,photoId:crypto.randomUUID()};
+  if(colabEditor.mode==='new'){
+    const input=document.getElementById('novoColaboradorNome');if(!input)return true;
+    draft.inputName=input.value;draft.data={setor_atual:document.getElementById('novoColaboradorSetor').value};
+  }else{
+    if(!document.getElementById('colabInfoForm'))return true;draft.data={};
+    for(const [field,id]of Object.entries(colabFieldIds))draft.data[field]=document.getElementById(id).value;
+    draft.data.conduta_negativa=document.getElementById('ciCondutaToggle').checked?'true':'';
+    draft.data.feito_relevante=document.getElementById('ciFeitoToggle').checked?'true':'';
+    draft.data.salario=draft.data.salario===''?null:Number(draft.data.salario);
+  }
+  return storeColabDraft(draft);
+}
+function beginColabEditor(mode,name){
+  if(colabEditor.busy||colabEditor.photoPreparing||colabEditor.draftFailed)return false;
+  const draft=colabDraft();
+  if(draft&&(draft.mode!==mode||draft.name!==name)){
+    if(!confirm('Descartar o rascunho do outro cadastro e abrir esta edição?'))return false;
+    appStorage.removeItem(COLAB_DRAFT_KEY);
+  }
+  colabEditor.token=AppDataSession.token();colabEditor.mode=mode;colabEditor.name=name;colabEditor.photoError=false;return true;
+}
+function canCloseColabEditor(){return !colabEditor.busy&&!colabEditor.photoPreparing&&!colabEditor.draftFailed;}
+async function runColabSave(operation,done){
+  if(colabEditor.busy||colabEditor.photoPreparing)return;
+  if(colabEditor.photoError){colabMessage('Selecione a foto novamente ou remova a alteração de foto antes de salvar.');return;}
+  const token=colabEditor.token;colabEditor.busy=true;
+  const controls=[...document.querySelectorAll('#colabInfoForm input,#colabInfoForm select,#colabInfoForm textarea,#colabInfoForm button,#novoColaboradorForm input,#novoColaboradorForm select,#novoColaboradorForm button')];
+  const disabled=controls.map(el=>el.disabled);controls.forEach(el=>el.disabled=true);
+  colabMessage('Aguardando confirmação do servidor…');
+  try{await operation();if(AppDataSession.current(token)){colabEditor.busy=false;done?.();}}
+  catch(error){if(AppDataSession.current(token)){colabMessage(error.message||'O servidor não confirmou. Seu rascunho foi mantido.');showToast(error.message,'error','Colaboradores');}}
+  finally{colabEditor.busy=false;controls.forEach((el,i)=>el.disabled=disabled[i]);}
+}
+
+async function saveColabParts(nome,data,draft,activate=false){
+  await dbColabInfoSave(nome,data);
+  if(draft.photo!==undefined){
+    try{await setColabFoto(nome,draft.photo,draft.photoId);}
+    catch(error){throw Error('Cadastro confirmado, mas a foto ainda não foi confirmada. O rascunho foi mantido. '+error.message);}
+  }
+  if(activate){try{await dbColabActivate(nome);}catch(error){throw Error('Cadastro confirmado, mas a reativação ainda não foi confirmada. Tente novamente. '+error.message);}}
+}
+
 function getColabSetoresDisponiveis(colabInfo, setorAtual = '') {
   const labels = new Map();
   [setorAtual, ...(rawRecords || []).map(row => row && row.Setor), ...Object.values(colabInfo || {}).map(info => info && info.setor_atual)].forEach(value => {
@@ -14,7 +67,7 @@ function renderColaboradores() {
   const container = document.getElementById('colaboradoresContent');
   if (!container) return;
 
-  const colabInfo = JSON.parse(localStorage.getItem('sistema_colaboradores_info_v1') || '{}');
+  const colabInfo = (typeof getColabInfoLocal==='function'?getColabInfoLocal():JSON.parse(appStorage.getItem('sistema_colaboradores_info_v1') || '{}'));
   const recordNames = (rawRecords || [])
     .filter(r => r && r["Atendente"] && !isAggregateName(r["Atendente"]))
     .map(r => String(r["Atendente"]).trim());
@@ -37,51 +90,61 @@ function renderColaboradores() {
 
   let html = '';
 
-  html += `<div class="colab-list-header"><div><h3>Cadastro da equipe</h3><p>${colabs.length} exibidos · ${Object.keys(colabInfo).length} com cadastro</p></div><button class="btn-primary" id="novoColaboradorBtn" type="button">+ Novo colaborador</button></div>`;
+  html += `<div class="colab-list-header"><div><h3>Equipe</h3><p>${colabs.length} colaborador(es) exibidos · ${Object.keys(colabInfo).length} com cadastro</p></div><button class="btn-primary" id="novoColaboradorBtn" type="button">+ Novo colaborador</button></div>`;
 
   if (!colabs.length) {
     const filtroAtivo = typeof globalFilters !== 'undefined' && (globalFilters.nivel !== 'all' || globalFilters.setor !== 'all' || globalFilters.colaborador !== 'all' || globalFilters.pesquisa);
-    html += `<div class="empty-state" style="padding:var(--s-5)"><div class="empty-title">${filtroAtivo ? 'Nenhum colaborador encontrado' : 'Nenhum colaborador'}</div><div class="empty-sub">${filtroAtivo ? 'Altere a busca ou limpe os filtros para ver a equipe.' : 'Cadastre um colaborador ou importe um CSV para começar.'}</div></div>`;
+    html += `<div class="empty-state colab-content-padding"><div class="empty-title">${filtroAtivo ? 'Nenhum colaborador encontrado' : 'Nenhum colaborador'}</div><div class="empty-sub">${filtroAtivo ? 'Altere a busca ou limpe os filtros para ver a equipe.' : 'Cadastre um colaborador ou importe um CSV para começar.'}</div></div>`;
     container.innerHTML = html;
     document.getElementById("novoColaboradorBtn")?.addEventListener("click", openNovoColaboradorModal);
     return;
   }
 
-  html += '<div class="colab-card-grid">';
+  html += '<p class="text-muted">' + (document.body.dataset.role === 'admin' ? 'Abra o Perfil 360º para consultar desempenho, avaliações, feedbacks e PDI de cada pessoa.' : 'Abra o perfil para consultar as informações disponíveis para seu acesso.') + ' As visões coletivas ficam em Gestão coletiva.</p><div class="colab-cards-grid">';
   for (const nome of colabs) {
     const info = colabInfo[nome] || {};
     const hasData = info.salario != null || info.setor_atual || info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa || info.feito_relevante;
     const conduta = info.conduta_negativa === 'true' || info.conduta_negativa === true;
     const feito = info.feito_relevante === 'true' || info.feito_relevante === true;
+    html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''} colab-profile-card" data-nome="${escapeHtml(nome)}" title="Abrir perfil 360º">`;
+    html += '<div class="colab-card-heading">';
+    html += `<div class="colab-card-avatar">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 64) : '👤'}</div>`;
+    html += '<div class="colab-card-identity">';
+    html += `<div class="colab-card-name">${escapeHtml(nome)}${feito ? '<span class="feito-badge" title="Possui feito relevante">🏆</span>' : ''}${conduta ? '<span class="conduta-badge" title="Possui ponto detrator">🚩</span>' : ''}</div>`;
+    if (info.nivel) {
+      html += `<div class="colab-card-level">${escapeHtml(info.nivel)}</div>`;
+    }
+    if (info.salario != null && info.salario !== '') {
+      html += `<div class="colab-card-detail">Salário: ${escapeHtml(Number(info.salario).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))}</div>`;
+    }
     const setores = setorMap[nome];
     const setorExibido = info.setor_atual || (setores && setores.size ? [...setores].join(', ') : '');
-    const meta = [setorExibido, info.nivel].filter(Boolean).map(escapeHtml).join(' · ');
-    const photo = typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 88) : '👤';
-    const dateLabel = value => String(value).split('-').reverse().join('/');
-    const details = [
-      ['Salário', info.salario != null && info.salario !== '' ?
-        Number(info.salario).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''],
-      ['Admissão', info.data_admissao ? dateLabel(info.data_admissao) : ''],
-      ['Tempo de empresa', getTempoEmpresa(info.data_admissao)],
-      ['Aniversário', info.data_aniversario ? dateLabel(info.data_aniversario).slice(0, 5) : ''],
-      ['E-mail', info.email]
-    ];
-    html += `<article class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''}" data-nome="${escapeHtml(nome)}">
-      <header class="colab-card-identity">
-        <div class="colab-card-photo" aria-hidden="true">${photo}</div>
-        <div class="colab-card-title">
-          <h4>${escapeHtml(nome)}</h4>
-          ${meta ? '<p>' + meta + '</p>' : ''}
-          ${feito ? '<span class="feito-badge" title="Possui feito relevante">🏆</span>' : ''}
-          ${conduta ? '<span class="conduta-badge" title="Possui ponto detrator">🚩</span>' : ''}
-          ${!hasData ? '<p>Cadastro incompleto</p>' : ''}
-        </div>
-      </header>
-      <dl class="colab-card-data">${details.filter(([, value]) => value).map(([label, value]) =>
-        `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>
-      ${info.observacoes ? '<p class="colab-card-note"><strong>Observações</strong> ' + escapeHtml(info.observacoes) + '</p>' : ''}`;
-    html += `<div class="colab-card-actions"><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button><button type="button" class="btn-small pdi-profile-btn">Preparar PDI</button></div>`;
-    html += '</article>';
+    if (setorExibido) {
+      html += `<div class="colab-card-sector">🏢 ${escapeHtml(setorExibido)}</div>`;
+    }
+    if (info.data_aniversario) {
+      const [a,m,d] = info.data_aniversario.split('-');
+      html += `<div class="colab-card-detail">🎂 ${d}/${m}</div>`;
+    }
+    if (info.data_admissao) {
+      const [a,m,d] = info.data_admissao.split('-');
+      html += `<div class="colab-card-meta">📅 Admissão: ${d}/${m}/${a}</div>`;
+    }
+    html += `<div class="colab-card-meta">Tempo de empresa: ${escapeHtml(getTempoEmpresa(info.data_admissao))}</div>`;
+    if (info.email) {
+      html += `<div class="colab-card-meta">✉️ ${escapeHtml(info.email)}</div>`;
+    }
+    if (info.observacoes) {
+      html += `<div class="colab-card-observation">📝 ${escapeHtml(info.observacoes)}</div>`;
+    }
+    if (!hasData) {
+      html += `<div class="colab-card-hint">Abra o perfil para consultar ou completar o cadastro</div>`;
+    }
+    html += '</div>';
+    html += `<div class="colab-card-completeness">${hasData ? '✅' : '➕'}</div>`;
+    html += '</div>';
+    html += `<div class="colab-card-actions"><button type="button" class="btn-primary colab-360-btn">Perfil 360º</button><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button></div>`;
+    html += '</div>';
   }
   html += '</div>';
 
@@ -89,18 +152,14 @@ function renderColaboradores() {
 
   document.getElementById("novoColaboradorBtn")?.addEventListener("click", openNovoColaboradorModal);
 
-  container.querySelectorAll(".pdi-profile-btn").forEach(button => {
-    button.addEventListener("click", event => {
-      event.stopPropagation();
-      if (typeof openPerfilPdi === "function") openPerfilPdi(button.closest(".colab-card").dataset.nome);
-    });
-  });
-
-  // Click to open overlay
+  container.querySelectorAll('.colab-edit-btn').forEach(button => button.addEventListener('click', event => {
+    event.stopPropagation(); openColabDetailOverlay(button.closest('.colab-card').dataset.nome);
+  }));
+  // A entrada principal reúne o perfil; edição continua explícita.
   container.querySelectorAll('.colab-card').forEach(card => {
     card.addEventListener('click', () => {
       const nome = card.dataset.nome;
-      openColabDetailOverlay(nome);
+      openColabDetail(nome);
     });
   });
 }
@@ -133,65 +192,56 @@ async function prepareColabProfilePhoto(file) {
 }
 
 function openNovoColaboradorModal() {
-  if (!requireAdmin()) return;
+  if (!requireAdmin()||!beginColabEditor('new',null)) return;
+  const draft=colabDraft();
   document.getElementById("novoColaboradorModal")?.remove();
-  const colabInfo = JSON.parse(localStorage.getItem("sistema_colaboradores_info_v1") || "{}");
+  const colabInfo = (typeof getColabInfoLocal==='function'?getColabInfoLocal():JSON.parse(appStorage.getItem("sistema_colaboradores_info_v1") || "{}"));
   const setoresDisponiveis = getColabSetoresDisponiveis(colabInfo);
   const modal = document.createElement("div");
   modal.id = "novoColaboradorModal";
   modal.className = "modal-overlay";
   modal.innerHTML = `<div class="modal-box novo-colaborador-modal" role="dialog" aria-modal="true" aria-labelledby="novoColaboradorTitulo">
     <div class="novo-colaborador-header"><div><span>Novo cadastro</span><h3 id="novoColaboradorTitulo">Adicionar colaborador</h3><p>Defina os dados principais para criar o perfil da pessoa.</p></div><button class="btn-small" id="novoColaboradorFechar" type="button" aria-label="Fechar">✕</button></div>
-    <form id="novoColaboradorForm">
+    <form id="novoColaboradorForm"><p class="hint">Ao fechar, sua edição fica como rascunho neste dispositivo.</p>
       <div class="novo-colaborador-photo-row"><div class="novo-colaborador-photo-preview" id="novoColaboradorFotoPreview">👤</div><label class="field"><span>Foto de perfil</span><input type="file" id="novoColaboradorFoto" accept="image/*"><small>JPG, PNG ou WebP · máximo 8 MB</small></label></div>
-      <label class="field"><span>Nome completo</span><input type="text" id="novoColaboradorNome" autocomplete="off" maxlength="120" placeholder="Digite o nome do colaborador" required></label>
+      <button class="btn-small" id="novoColaboradorRemoverFoto" type="button">Remover foto selecionada</button><label class="field"><span>Nome completo</span><input type="text" id="novoColaboradorNome" autocomplete="off" maxlength="120" placeholder="Digite o nome do colaborador" required></label>
       <label class="field"><span>Setor atual</span><select id="novoColaboradorSetor" required><option value="">Selecione o setor...</option>${setoresDisponiveis.map(setor => `<option value="${escapeHtml(setor)}">${escapeHtml(setor)}</option>`).join("")}</select><small>Escolha o setor em que a pessoa trabalha atualmente.</small></label>
-      <div class="modal-actions"><button class="btn-small" id="novoColaboradorCancelar" type="button">Cancelar</button><button class="btn-primary" type="submit">Criar e completar perfil</button></div>
+      <div class="modal-actions"><button class="btn-small" id="novoColaboradorDescartar" type="button">Descartar rascunho</button><button class="btn-small" id="novoColaboradorCancelar" type="button">Cancelar</button><button class="btn-primary" type="submit">Criar e completar perfil</button></div>
     </form>
   </div>`;
   document.body.appendChild(modal);
-  let previewUrl = '';
-  const close = () => { if (previewUrl) URL.revokeObjectURL(previewUrl); modal.remove(); };
+  let photoVersion=0;
+  const close = () => { if(!canCloseColabEditor())return; modal.remove(); };
   document.getElementById("novoColaboradorFechar").addEventListener("click", close);
   document.getElementById("novoColaboradorCancelar").addEventListener("click", close);
   modal.addEventListener("click", event => { if (event.target === modal) close(); });
   const photoInput = document.getElementById("novoColaboradorFoto");
-  photoInput.addEventListener("change", () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    const file = photoInput.files?.[0];
-    previewUrl = file ? URL.createObjectURL(file) : '';
-    document.getElementById("novoColaboradorFotoPreview").innerHTML = previewUrl ? `<img src="${previewUrl}" alt="Prévia da foto">` : '👤';
+  if(draft){document.getElementById('novoColaboradorNome').value=draft.inputName||'';document.getElementById('novoColaboradorSetor').value=draft.data?.setor_atual||'';if(draft.photo){const image=document.createElement('img');image.src=draft.photo;image.alt='Prévia da foto';document.getElementById('novoColaboradorFotoPreview').replaceChildren(image);}}
+  modal.querySelectorAll('input:not([type=file]),select').forEach(el=>el.addEventListener('input',captureColabDraft));
+  document.getElementById('novoColaboradorDescartar').onclick=()=>{if(!canCloseColabEditor()||!confirm('Descartar o rascunho deste cadastro?'))return;appStorage.removeItem(COLAB_DRAFT_KEY);close();openNovoColaboradorModal();};
+  document.getElementById('novoColaboradorRemoverFoto').onclick=()=>{if(colabEditor.busy)return;photoVersion++;colabEditor.photoPreparing=false;colabEditor.photoError=false;if(!captureColabDraft()||!storeColabDraft({...colabDraft(),photo:undefined}))return;photoInput.value='';document.getElementById('novoColaboradorFotoPreview').textContent='👤';};
+  photoInput.addEventListener('change',async()=>{
+    const file=photoInput.files?.[0];if(!file)return;
+    const request=++photoVersion;colabEditor.photoPreparing=true;colabEditor.photoError=true;
+    try{const prepared=await prepareColabProfilePhoto(file);if(request!==photoVersion||!AppDataSession.current(colabEditor.token)||!modal.isConnected)return;
+      if(!captureColabDraft())return;if(!storeColabDraft({...colabDraft(),photo:prepared}))return;colabEditor.photoError=false;
+      const image=document.createElement('img');image.src=prepared;image.alt='Prévia da foto';document.getElementById('novoColaboradorFotoPreview').replaceChildren(image);
+    }catch(error){colabMessage(error.message);}finally{if(request===photoVersion)colabEditor.photoPreparing=false;}
   });
-  document.getElementById("novoColaboradorNome").focus();
-  document.getElementById("novoColaboradorForm").addEventListener("submit", async event => {
-    event.preventDefault();
-    const input = document.getElementById("novoColaboradorNome");
-    const sectorInput = document.getElementById("novoColaboradorSetor");
-    const nome = input.value.trim().replace(/\s+/g, " ");
-    const setorAtual = sectorInput.value.trim().replace(/\s+/g, " ");
-    if (nome.length < 2) { showToast("Informe um nome válido.", "error", "Colaboradores"); input.focus(); return; }
-    if (setorAtual.length < 2) { showToast("Informe o setor atual.", "error", "Colaboradores"); sectorInput.focus(); return; }
-    const submit = event.submitter || event.currentTarget.querySelector('[type="submit"]');
-    submit.disabled = true;
-    submit.textContent = "Salvando...";
-    try {
-      const photoData = await prepareColabProfilePhoto(photoInput.files?.[0]);
-      const recordNames = (rawRecords || []).map(r => r && r["Atendente"]).filter(Boolean).map(String);
-      const existingName = [...recordNames, ...Object.keys(colabInfo)].find(item => item.trim().localeCompare(nome, "pt-BR", { sensitivity: "base" }) === 0);
-      const savedName = existingName || nome;
-      const existingInfo = colabInfo[savedName] || {};
-      setColabActive(savedName, true);
-      const synced = await dbColabInfoSave(savedName, { ...existingInfo, setor_atual: setorAtual });
-      if (photoData) await setColabFoto(savedName, photoData);
-      close();
-      renderColaboradores();
-      openColabDetailOverlay(savedName);
-      showToast(existingName ? "Cadastro existente atualizado." : (synced ? `${savedName} foi adicionado!` : `${savedName} foi salvo neste dispositivo; sincronização pendente.`), synced ? "success" : "warning", "Colaboradores");
-    } catch (error) {
-      submit.disabled = false;
-      submit.textContent = "Criar e completar perfil";
-      showToast(error.message || "Não foi possível criar o colaborador.", "error", "Colaboradores");
-    }
+  document.getElementById('novoColaboradorNome').focus();
+  document.getElementById('novoColaboradorForm').addEventListener('submit',event=>{
+    event.preventDefault();if(!requireAdmin()||colabEditor.busy||colabEditor.photoPreparing)return;
+    if(!captureColabDraft())return;const editing=colabDraft();
+    const nome=editing.inputName.trim().replace(/\s+/g,' '),setorAtual=editing.data.setor_atual.trim();
+    if(nome.length<2||setorAtual.length<2){colabMessage('Informe nome e setor válidos.');return;}
+    const recordNames=(rawRecords||[]).map(r=>r&&r.Atendente).filter(Boolean).map(String);
+    const existingName=[...recordNames,...Object.keys(getColabInfoLocal())].find(item=>item.trim().localeCompare(nome,'pt-BR',{sensitivity:'base'})===0);
+    const savedName=existingName||nome;
+    runColabSave(()=>saveColabParts(savedName,{setor_atual:setorAtual},editing,true),()=>{
+      appStorage.removeItem(COLAB_DRAFT_KEY);close();renderColaboradores();
+      if(typeof globalFilters!=='undefined')globalFilters.popularOptions();
+      openColabDetailOverlay(savedName);showToast('Cadastro confirmado.','success','Colaboradores');
+    });
   });
 }
 
@@ -254,7 +304,7 @@ function openColabReport(nome) {
   // Build report
   let html = '';
   html += '<div class="report-header">';
-  html += `<div style="display:flex;align-items:center;gap:var(--s-3)"><div style="font-size:40px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 48) : '👤'}</div><div><h2 style="font-size:22px;font-weight:700;margin:0">${escapeHtml(nome)}</h2><p style="font-size:14px;color:var(--text-secondary);margin:2px 0 0">📅 ${escapeHtml(periodLabel)}</p></div></div>`;
+  html += `<div class="colab-report-heading"><div class="colab-report-avatar">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 48) : '👤'}</div><div><h2 class="colab-report-title">${escapeHtml(nome)}</h2><p class="colab-report-period">📅 ${escapeHtml(periodLabel)}</p></div></div>`;
   html += '</div>';
 
   // ── Metric cards ──
@@ -271,8 +321,8 @@ function openColabReport(nome) {
   ];
   for (const m of metrics) {
     const borderColor = m.good ? 'var(--success)' : 'var(--danger)';
-    html += `<div class="report-metric-card" style="border-top:3px solid ${borderColor}">`;
-    html += `<div class="report-metric-value" style="color:${m.good ? 'var(--success)' : 'var(--danger)'}">${m.value}</div>`;
+    html += `<div class="report-metric-card colab-report-metric" style="--metric-border:${borderColor}">`;
+    html += `<div class="report-metric-value colab-report-metric-value" style="--metric-color:${m.good ? 'var(--success)' : 'var(--danger)'}">${m.value}</div>`;
     html += `<div class="report-metric-label">${m.label}</div>`;
     if (m.var !== null) {
       const varCls = m.var >= 0 ? 'variation-pos' : 'variation-neg';
@@ -315,7 +365,7 @@ function openColabReport(nome) {
     for (const h of highlights) html += `<div class="report-item report-item-good">${h}</div>`;
     html += '</div>';
   } else {
-    html += '<div style="font-size:13px;color:var(--text-muted);padding:var(--s-2) 0">Nenhum destaque neste período.</div>';
+    html += '<div class="colab-report-empty">Nenhum destaque neste período.</div>';
   }
   html += '</div>';
 
@@ -325,12 +375,12 @@ function openColabReport(nome) {
     for (const l of lowlights) html += `<div class="report-item report-item-bad">${l}</div>`;
     html += '</div>';
   } else {
-    html += '<div style="font-size:13px;color:var(--text-muted);padding:var(--s-2) 0">Nenhum ponto de atenção neste período. 🎉</div>';
+    html += '<div class="colab-report-empty">Nenhum ponto de atenção neste período. 🎉</div>';
   }
   html += '</div>';
 
   // ── Detailed table ──
-  html += '<div class="report-section"><h3 class="report-section-title">📋 Métricas Detalhadas</h3>';
+  html += '<div class="report-section"><h3 class="report-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-clipboard"></use></svg> Métricas Detalhadas</h3>';
   html += '<div class="report-grid">';
   const detRows = [
     { label: 'Finalizados', value: fmtInt(fin), team: fmtInt(teamFin), var: finVar },
@@ -360,12 +410,14 @@ function openColabReport(nome) {
 }
 
 function openColabDetailOverlay(nome) {
+  if(!beginColabEditor('edit',nome))return false;
+  const draft=colabDraft();
   const overlay = document.getElementById("colabDetailOverlay");
   const content = document.getElementById("colabDetailContent");
   if (!overlay || !content) return;
 
-  const colabInfo = JSON.parse(localStorage.getItem("sistema_colaboradores_info_v1") || "{}");
-  const info = colabInfo[nome] || {};
+  const colabInfo = (typeof getColabInfoLocal==='function'?getColabInfoLocal():JSON.parse(appStorage.getItem("sistema_colaboradores_info_v1") || "{}"));
+  const info = {...(colabInfo[nome]||{}),...(draft?.data||{})};
   const setores = [...new Set((rawRecords || [])
     .filter(r => r && r["Atendente"] === nome && r["Setor"])
     .map(r => String(r["Setor"]).trim()))];
@@ -451,7 +503,7 @@ function openColabDetailOverlay(nome) {
     <label class="field"><textarea id="ciObservacoes" rows="4" placeholder="Registre observações gerais sobre o colaborador...">${escapeHtml(info.observacoes || "")}</textarea></label>
   </section>`;
 
-  const allBonus = JSON.parse(localStorage.getItem("sistema_pontos_extras_v1") || "[]");
+  const allBonus = (typeof getPontosExtrasLocal==='function'?getPontosExtrasLocal():JSON.parse(appStorage.getItem("sistema_pontos_extras_v1") || "[]"));
   const penalties = allBonus.filter(b => String(b.colaborador) === nome && (parseFloat(b.pontos) || 0) < 0);
   if (penalties.length) {
     html += `<section class="ci-form-section"><div class="ci-form-section-title"><div><strong>Histórico de penalidades</strong><small>${penalties.length} registro(s)</small></div></div><div class="ci-penalty-list">`;
@@ -482,7 +534,11 @@ function openColabDetailOverlay(nome) {
     document.getElementById("ciTempoEmpresa").textContent = `Tempo de empresa: ${getTempoEmpresa(event.target.value)}`;
   });
 
-  let photoDraft;
+  let photoDraft=draft?.photo;
+  document.getElementById('colabInfoForm').querySelectorAll('input:not([type=file]),select,textarea').forEach(el=>{el.addEventListener('input',captureColabDraft);el.addEventListener('change',captureColabDraft);});
+  const discard=document.createElement('button');discard.type='button';discard.className='btn-small';discard.id='ciDescartarBtn';discard.textContent='Descartar rascunho';
+  discard.onclick=()=>{if(!canCloseColabEditor()||!confirm('Descartar o rascunho e carregar o cadastro confirmado?'))return;appStorage.removeItem(COLAB_DRAFT_KEY);openColabDetailOverlay(nome);};
+  document.querySelector('.ci-dialog-actions').prepend(discard);
   let photoVersion = 0;
   const photoInput = document.getElementById('ciFoto');
   const photoPreview = document.getElementById('ciFotoPreview');
@@ -494,12 +550,14 @@ function openColabDetailOverlay(nome) {
     const file = photoInput.files?.[0];
     if (!file) return;
     const request = ++photoVersion;
+    colabEditor.photoPreparing=true;colabEditor.photoError=true;
     saveButton.disabled = true;
     photoStatus.textContent = 'Preparando foto…';
     try {
       const prepared = await prepareColabProfilePhoto(file);
       if (request !== photoVersion || !photoPreview.isConnected) return;
-      photoDraft = prepared;
+      if(!AppDataSession.current(colabEditor.token)||!captureColabDraft()||!storeColabDraft({...colabDraft(),photo:prepared}))return;
+      colabEditor.photoError=false;photoDraft = prepared;
       const image = document.createElement('img'); image.src = prepared; image.alt = `Prévia da foto de ${nome}`;
       photoPreview.replaceChildren(image);
       photoStatus.textContent = 'Nova foto selecionada. Clique em Salvar alterações para aplicar.';
@@ -508,17 +566,20 @@ function openColabDetailOverlay(nome) {
       photoInput.value = '';
       photoStatus.textContent = error.message;
       showToast(error.message, 'error', 'Foto de perfil');
-    } finally { if (request === photoVersion) saveButton.disabled = false; }
+    } finally { if (request === photoVersion){colabEditor.photoPreparing=false;saveButton.disabled = false;} }
   });
   photoRemove.addEventListener('click', () => {
     if (!requireAdmin()) return;
-    photoVersion++;
+    photoVersion++;colabEditor.photoPreparing=false;colabEditor.photoError=false;
+    if(!captureColabDraft()||!storeColabDraft({...colabDraft(),photo:''}))return;
     photoDraft = '';
     photoInput.value = '';
     photoPreview.textContent = nome.split(/\s+/).filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
     photoStatus.textContent = 'Foto preparada para remoção. Clique em Salvar alterações para aplicar.';
     saveButton.disabled = false;
   });
+
+  if(photoDraft!==undefined){if(photoDraft){const image=document.createElement('img');image.src=photoDraft;image.alt='Prévia da foto';photoPreview.replaceChildren(image);}else photoPreview.textContent='👤';photoStatus.textContent='Alteração de foto em rascunho.';}
 
   const pontoProfile = document.getElementById("ciPontoJornada");
   if (pontoProfile && typeof window.renderPontoProfile === "function") window.renderPontoProfile(nome, pontoProfile);
@@ -556,33 +617,27 @@ function openColabDetailOverlay(nome) {
       nivel: document.getElementById("ciNivel").value,
       salario: salarioInput.value === '' ? null : Number(salarioInput.value)
     };
-    saveButton.disabled = true;
-    photoInput.disabled = true;
-    photoRemove.disabled = true;
-    try {
-      const synced = await dbColabInfoSave(nome, data);
-      if (photoDraft !== undefined) await setColabFoto(nome, photoDraft);
-      showToast(synced ? `Dados de ${nome} salvos!` : `Dados de ${nome} preservados neste dispositivo. A sincronização com o banco está pendente.`, synced ? "success" : "warning", "Colaboradores");
-      closeColabDetail();
-      renderColaboradores();
-      if (typeof globalFilters !== 'undefined') globalFilters.popularOptions();
-    } catch (error) { showToast(error.message || 'Não foi possível salvar as alterações.', 'error', 'Colaboradores'); }
-    finally { saveButton.disabled = false; photoInput.disabled = false; photoRemove.disabled = false; }
+    if(!captureColabDraft())return;
+    const editing=colabDraft();
+    runColabSave(()=>saveColabParts(nome,data,editing),()=>{
+      appStorage.removeItem(COLAB_DRAFT_KEY);closeColabDetail();renderColaboradores();
+      if(typeof globalFilters!=='undefined')globalFilters.popularOptions();
+      showToast(`Dados de ${nome} confirmados!`,'success','Colaboradores');
+      window.dispatchEvent(new CustomEvent('colab-profile-saved',{detail:{name:nome,synced:true}}));
+    });
   });
 
-  document.getElementById("ciLimparBtn").addEventListener("click", async () => {
-    if (!requireAdmin()) return;
-    if (!confirm(`Limpar todos os dados cadastrais de ${nome}?`)) return;
-    await dbColabInfoSave(nome, {
-      data_aniversario: "", data_admissao: "", email: "", setor_atual: "", nivel: "", salario: null,
-      tarefas_desempenhadas: "", objetivos_futuros: "", observacoes: "",
-      conduta_negativa: "", conduta_motivo: "", feito_relevante: "", feito_descricao: ""
+  document.getElementById('ciLimparBtn').addEventListener('click',()=>{
+    if(!requireAdmin()||colabEditor.busy||!confirm(`Limpar todos os dados cadastrais de ${nome}?`))return;
+    if(!captureColabDraft())return;
+    const empty={};for(const field of Object.keys(colabFieldIds))empty[field]=field==='salario'?null:'';
+    empty.conduta_negativa='';empty.feito_relevante='';
+    runColabSave(()=>dbColabInfoSave(nome,empty),()=>{
+      closeColabDetail();renderColaboradores();if(typeof globalFilters!=='undefined')globalFilters.popularOptions();
+      showToast('Limpeza confirmada. A edição anterior continua como rascunho.','success','Colaboradores');
     });
-    showToast(`Dados de ${nome} removidos!`, "success", "Colaboradores");
-    closeColabDetail();
-    renderColaboradores();
-    if (typeof globalFilters !== 'undefined') globalFilters.popularOptions();
   });
+  return true;
 }
 
 // Report overlay close button
@@ -596,6 +651,7 @@ document.getElementById('colabReportPrint')?.addEventListener('click', async () 
   showToast('Capturando relatório…', 'ok');
   try {
     const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-surface').trim() || '#1e293b';
+    if(typeof ExportTools!=='undefined'&&!await ExportTools.ready('image'))return;
     content.style.padding = 'var(--s-6)';
     const canvas = await html2canvas(content, { scale: 2, useCORS: true, backgroundColor: bg });
     content.style.padding = '';
@@ -612,6 +668,6 @@ document.getElementById('colabReportPrint')?.addEventListener('click', async () 
 function onColaboradoresTabActivated() {
   const container = document.getElementById('colaboradoresContent');
   if (!container) return;
-  container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s-3);padding:var(--s-4)"><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div></div>';
+  container.innerHTML = '<div class="colab-cards-grid colab-cards-skeleton"><div class="card colab-content-padding"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card colab-content-padding"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card colab-content-padding"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div></div>';
   setTimeout(() => renderColaboradores(), 50);
 }

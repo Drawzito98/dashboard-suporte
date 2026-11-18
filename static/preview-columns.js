@@ -4,7 +4,7 @@
   const storageKey = 'sistema_preview_hidden_columns_v1';
   let hidden = new Set();
   try {
-    const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    const saved = JSON.parse(appStorage.getItem(storageKey) || '[]');
     if (Array.isArray(saved)) hidden = new Set(saved.filter(value => typeof value === 'string'));
   } catch (_) {}
   document.addEventListener('click', event => {
@@ -26,6 +26,7 @@
     return columns;
   }
   window.applyPreviewColumns = function (tableRoot, keys) {
+    try { const saved = JSON.parse(appStorage.getItem(storageKey) || '[]'); if (Array.isArray(saved)) hidden = new Set(saved); } catch (_) {}
     const control = document.getElementById('previewColumnsControl');
     const list = document.getElementById('previewColumnsList');
     const count = document.getElementById('previewColumnsCount');
@@ -39,7 +40,7 @@
     tableRoot.querySelectorAll('tr').forEach(row => {
       [...row.cells].forEach((cell, index) => { if (columns[index]) cell.dataset.previewColumn = columns[index].id; });
     });
-    function persist() { try { localStorage.setItem(storageKey, JSON.stringify([...hidden])); } catch (_) {} }
+    function persist() { try { appStorage.setItem(storageKey, JSON.stringify([...hidden])); } catch (_) {} }
     function apply() {
       tableRoot.querySelectorAll('[data-preview-column]').forEach(cell => { cell.hidden = hidden.has(cell.dataset.previewColumn); });
       const visible = columns.filter(column => !hidden.has(column.id)).length;
