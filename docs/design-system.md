@@ -63,3 +63,7 @@ A conclusão 1.19.1 (c4c782a) foi publicada em 28/10/2026, após autorização e
 ## Ajuste 1.36.1 — Campos do registro mensal
 
 Campos numéricos de Novo registro ampliados para 8rem, tempos para 13rem e observações para 15rem, com fonte de 16px e algarismos tabulares. Nome do colaborador quebra linha; a primeira coluna acompanha a rolagem para não cobrir os campos. Sem alteração de valores, validações ou salvamento. Verificação visual com números de oito dígitos, notas decimais e tempos extensos em desktop e 320px; npm test e regressão workspace/design-system.
+
+## Ajuste 1.40.0 — Refresh visual da casca
+
+Palette, raios, tipografia e elevação revisados nos tokens compartilhados. A casca ganha topbar com profundidade suave, domínios em pílula, abas ativas com limite explícito, filtros e cards com borda mais definida e KPIs com faixa superior. Login e tela de importação usam o mesmo acento institucional, com `theme-color` e manifest alinhados. Nenhum ID, dado, regra de cálculo ou handler foi alterado. Assets versionados em `?v=1394`; validar npm test, release:check e fixtures de design-system/shell/workspace em claro/escuro, desktop e celular.

@@ -223,3 +223,119 @@
 @media screen {
   .colab-detail-overlay { z-index: 1200; }
 }
+
+@media screen {
+  body.shell-v2 .topbar {
+    background: color-mix(in srgb, var(--bg-surface) 94%, var(--bg-subtle));
+    border-bottom-color: color-mix(in srgb, var(--border) 72%, var(--accent));
+    box-shadow: 0 12px 30px -26px rgba(var(--accent-rgb), .55);
+  }
+  body.shell-v2 .domain-nav {
+    gap: 4px;
+    background: color-mix(in srgb, var(--bg-app) 92%, var(--bg-subtle));
+    border-bottom-color: var(--border);
+  }
+  .domain-nav button,
+  body.shell-v2 #tabBar .shell-analysis-entry,
+  body.shell-v2 #tabBar .shell-group-entry {
+    border: 1px solid transparent;
+    border-radius: 10px;
+  }
+  body.shell-v2 .domain-nav button[aria-current="page"] {
+    background: var(--bg-surface);
+    border-color: var(--border);
+    box-shadow: var(--shadow-xs);
+  }
+  body.shell-v2 .shell-navigation #tabBar .tab-btn.active,
+  body.shell-v2 #tabBar .shell-analysis-entry.active,
+  body.shell-v2 #tabBar .shell-group-entry.active,
+  body.shell-v2 #tabBar .shell-parent-selected {
+    border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+    box-shadow: inset 0 -2px 0 var(--accent), 0 6px 14px -12px rgba(var(--accent-rgb), .9);
+  }
+  .global-filter-bar {
+    background: var(--bg-surface);
+    border-color: color-mix(in srgb, var(--border) 82%, var(--accent));
+  }
+  :is(.card, .panel, .kpi, .home-operations-card, .home-kpi) {
+    border-color: color-mix(in srgb, var(--border) 86%, var(--accent));
+  }
+  :is(.card, .panel):hover {
+    border-color: color-mix(in srgb, var(--border) 55%, var(--accent));
+  }
+  .card-header h2 { letter-spacing: -.025em; }
+  .kpi::before {
+    top: 0; right: 0; bottom: auto; left: 0;
+    width: auto; height: 3px;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background: linear-gradient(90deg, var(--accent), var(--success));
+    opacity: .9;
+  }
+  .kpi .value { letter-spacing: -.035em; }
+  .home-kpi {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--r-lg);
+  }
+  .home-kpi::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--success));
+  }
+  .home-kpi-value { font-size: var(--font-value); letter-spacing: -.035em; }
+  .btn-primary { box-shadow: 0 8px 18px -12px rgba(var(--accent-rgb), .95); }
+  .btn-primary:hover { box-shadow: 0 10px 24px -12px rgba(var(--accent-rgb), .95); }
+  :is(.btn-small, .btn-secondary, .fileButton) {
+    background: color-mix(in srgb, var(--bg-surface) 92%, var(--bg-subtle));
+  }
+  .empty-state {
+    border-color: color-mix(in srgb, var(--border-strong) 62%, var(--accent));
+    background-color: var(--bg-inset);
+    background-image: linear-gradient(180deg, var(--bg-inset), var(--bg-surface));
+  }
+  :is(#previewTable, .so-table, .ranking-table) tbody tr:nth-child(even) {
+    background: color-mix(in srgb, var(--bg-inset) 72%, var(--bg-surface));
+  }
+  #toolsDialog { box-shadow: -24px 0 64px -32px rgba(0, 0, 0, .5); }
+  .tools-heading {
+    padding-bottom: var(--s-4);
+    border-bottom: 1px solid var(--border);
+  }
+  .auth-overlay {
+    background:
+      radial-gradient(circle at 8% 6%, rgba(var(--accent-rgb), .16), transparent 34%),
+      radial-gradient(circle at 92% 90%, rgba(var(--success-rgb), .10), transparent 30%),
+      var(--bg-app);
+  }
+  .auth-shell {
+    border-radius: 26px;
+    box-shadow: 0 32px 90px -34px rgba(var(--accent-rgb), .45);
+  }
+  .auth-showcase {
+    background:
+      radial-gradient(circle at 82% 12%, rgba(143, 224, 212, .16), transparent 34%),
+      linear-gradient(145deg, #0c2c31 0%, #12484d 55%, #0b3438 100%);
+  }
+  .auth-shell .auth-card {
+    background-image: linear-gradient(180deg, var(--accent-selected-soft), transparent 220px);
+  }
+  .auth-shell .auth-form .field input {
+    background: var(--bg-inset);
+    border-color: var(--border);
+  }
+  .home-screen {
+    background:
+      radial-gradient(circle at 50% -10%, rgba(var(--accent-rgb), .12), transparent 46%),
+      var(--bg-app);
+  }
+  .home-card {
+    max-width: 460px;
+    padding: 40px;
+    background-image: linear-gradient(180deg, var(--accent-selected-soft), transparent 200px);
+    box-shadow: var(--shadow-lg);
+  }
+  .home-logo { height: 40px; margin-bottom: var(--s-4); }
+  .home-title h1 { font-size: 24px; }
+}
