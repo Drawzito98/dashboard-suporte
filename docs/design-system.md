@@ -67,3 +67,7 @@ Campos numéricos de Novo registro ampliados para 8rem, tempos para 13rem e obse
 ## Ajuste 1.40.0 — Refresh visual da casca
 
 Palette, raios, tipografia e elevação revisados nos tokens compartilhados. A casca ganha topbar com profundidade suave, domínios em pílula, abas ativas com limite explícito, filtros e cards com borda mais definida e KPIs com faixa superior. Login e tela de importação usam o mesmo acento institucional, com `theme-color` e manifest alinhados. Nenhum ID, dado, regra de cálculo ou handler foi alterado. Assets versionados em `?v=1394`; validar npm test, release:check e fixtures de design-system/shell/workspace em claro/escuro, desktop e celular.
+
+## Ajuste 1.41.0 — Sistema visual de trabalho
+
+Camada isolada em `static/css/visual-system.css`, carregada por último. A casca passa a usar hierarquia editorial com Plus Jakarta Sans em títulos e Inter em dados, topbar translúcida, navegação por áreas em segmentos, submenus em trilho único, barra de filtros elevada e conteúdo centralizado com largura máxima. Cards, KPIs, tabelas, botões, campos, diálogos, login e importação compartilham raios, superfícies, sombras e estados de foco coerentes. O tema escuro usa superfícies profundas e brilho contido; movimento respeita `prefers-reduced-motion`. Referências: Linear, Vercel/Geist, Stripe, Attio e Raycast. IDs, atributos ARIA, delegação de eventos, regras de negócio e persistência permanecem intactos. Assets versionados em `?v=1400`; validar npm test, release:check e fixtures de design-system/shell/workspace em claro/escuro, desktop e celular.
