@@ -385,6 +385,12 @@
    d().querySelector('#atividadesMesOverlay .colab-detail-close').click();
    d().body.dataset.role='viewer';win().renderPainelLider();assert(!panel(),'Ranking oculto para viewer');
    d().body.dataset.role='admin';win().renderPainelLider();assert(panel(),'Ranking disponível para admin');
+   const accent=d().getElementById('accentSelect');accent.value='violeta';accent.dispatchEvent(new(win().Event)('change',{bubbles:true}));
+   await wait(()=>d().documentElement.getAttribute('data-accent')==='violeta','Cor de destaque aplicada');
+   assert(getComputedStyle(d().documentElement).getPropertyValue('--accent').trim()==='#6d28d9','Token da cor de destaque');
+   assert(d().querySelector('meta[name="theme-color"]').content==='#6d28d9','theme-color segue o destaque');
+   assert(win().appStorage.getItem('sistema_accent_v1')==='violeta','Preferência de destaque salva');
+   assert(getComputedStyle(panel()).borderTopColor==='rgb(109, 40, 217)','Ranking acompanha a cor de destaque');
    assert(d().documentElement.scrollWidth<=frame.clientWidth,'Ranking sem overflow horizontal');
    assert(win().__uxWrites.length===0,'Ranking não grava dados');assert(win().__uxErrors.length===0,'Sem erros: '+win().__uxErrors.join(';'));
    document.getElementById('testResult').textContent='PASS: ranking privado do admin, motivos por mês, ordenação, direcionamento da anotação e ocultação para viewer; somente leitura';return;

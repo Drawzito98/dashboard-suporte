@@ -79,3 +79,7 @@ Barra global sem sobreposição entre busca e ação, com campo elástico e bot�
 ## Ajuste 1.43.0 — Ranking privado de destaques
 
 Visão da equipe ganha ranking administrativo de reconhecimentos com ordenação explícita e filtro por mês. Colaborador, finalizações, score e produtividade vêm do recorte atual; contagens e motivos vêm das Atividades do mês da própria conta admin, sem leitura de registros de outras contas. O botão Anotar abre o registro já direcionado à pessoa e ao mês. Para viewers o bloco não existe. Validar npm test, release:check e fixtures de workspace/atividades em desktop e celular.
+
+## Ajuste 1.43.1 — Destaque no ranking
+
+O painel de ranking privado agora acompanha explicitamente a cor de destaque escolhida no menu do usuário: faixa superior, selo privado e posições usam `--accent`, respeitando os temas claro/escuro. Fixture `workspace-ux.browser.html?ranking=1` verifica a troca no seletor, o token CSS, o `theme-color`, a preferência salva e a reapresentação no ranking.
