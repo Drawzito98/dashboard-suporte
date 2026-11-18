@@ -319,7 +319,8 @@ function initNotificacoesUI() {
         event.preventDefault();
         const forward = event.key === 'ArrowDown' || event.key === 'ArrowRight';
         const index = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (current + (forward ? 1 : -1) + buttons.length) % buttons.length;
-        buttons[index]?.focus();
+        buttons[index]?.focus({ preventScroll: true });
+        window.appShell?.reveal(buttons[index]);
       });
     }
 

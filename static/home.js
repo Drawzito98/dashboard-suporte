@@ -79,10 +79,9 @@ function renderHome() {
 
   html += `<div class="home-welcome">
     <h2>${greeting}, ${escapeHtml(userName)}</h2>
-    <p>Indicadores com contexto e caminhos para acompanhar a equipe</p>
+    <p>Indicadores de ${escapeHtml(cockpit.months.join(" · ") || "período sem dados")} · tarefas e agenda da sua conta</p>
   </div>`;
 
-  html += HomeCockpit.html(cockpit,'intro');
   html += `<div class="home-kpi-grid">
     <div class="home-kpi home-kpi-clickable" id="homeColabsKpi" role="button" tabindex="0" title="Clique para ver os colaboradores">
       <div class="home-kpi-icon" style="background:var(--accent-soft);color:var(--accent)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
@@ -110,6 +109,8 @@ function renderHome() {
     </div>
   </div>`;
   html += '<p class="score-legend">Score: excelente a partir de 4,70 · atenção de 4,50 a 4,69 · crítico abaixo de 4,50.</p>';
+
+  html += HomeCockpit.html(cockpit,'intro');
 
   // ── Section 2: Read-only decision cockpit and account agenda ──
   html += HomeCockpit.html(cockpit,'details');

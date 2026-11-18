@@ -112,7 +112,7 @@ window.APP_MODULES = {
       "/static/ponto.js?v=11"
     ],
     "styles": [
-      "/static/ponto.css?v=3"
+      "/static/ponto.css?v=1380"
     ],
     "exports": [
       "onPontoTabActivated",
@@ -127,7 +127,7 @@ window.APP_MODULES = {
       "/static/perfil-pdi.js?v=7"
     ],
     "styles": [
-      "/static/perfil-pdi.css?v=1"
+      "/static/perfil-pdi.css?v=1380"
     ],
     "exports": [
       "openPerfilPdi",
@@ -140,7 +140,7 @@ window.APP_MODULES = {
       "/static/equipe360.js?v=7"
     ],
     "styles": [
-      "/static/equipe360.css?v=2"
+      "/static/equipe360.css?v=1380"
     ],
     "exports": [
       "openEquipe360"
@@ -148,12 +148,12 @@ window.APP_MODULES = {
   },
   "looker-report": {
     "scripts": ["/static/looker-report.js?v=1374"],
-    "styles": ["/static/looker-report.css?v=1371"],
+    "styles": ["/static/looker-report.css?v=1380"],
     "exports": ["openLookerReport"]
   },
   "panorama": {
     "scripts": [
-      "/static/relatorio-setorial.js?v=1360"
+      "/static/relatorio-setorial.js?v=1380"
     ],
     "styles": [],
     "exports": [

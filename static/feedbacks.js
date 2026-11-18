@@ -306,9 +306,9 @@ function renderFeedbacks() {
       html += '<div style="border:1px solid var(--border);border-radius:var(--r-md);padding:var(--s-3)">';
       html += `<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:var(--s-1)">`;
       html += `<div style="font-size:13px"><strong>${escapeHtml(fb.colaborador)}</strong> <span style="color:var(--text-muted)">· ${escapeHtml(fb.mes)}</span></div>`;
-      html += `<span style="font-size:11px;color:var(--text-muted)">${dateStr}</span>`;
+      html += `<span style="font-size:var(--font-caption);color:var(--text-muted)">${dateStr}</span>`;
       html += '</div>';
-      html += `<pre style="font-size:11px;color:var(--text-secondary);white-space:pre-wrap;margin:var(--s-1) 0;max-height:60px;overflow-y:auto">${escapeHtml(preview)}</pre>`;
+      html += `<pre style="font-size:var(--font-caption);color:var(--text-secondary);white-space:pre-wrap;margin:var(--s-1) 0;max-height:60px;overflow-y:auto">${escapeHtml(preview)}</pre>`;
       html += '<div style="display:flex;gap:var(--s-1);margin-top:var(--s-1)">';
       html += `<button class="btn-small fb-ver-btn" data-id="${fb.id}" type="button">👁️</button>`;
       html += `<button class="btn-small fb-editar-btn" data-id="${fb.id}" type="button">✏️</button>`;

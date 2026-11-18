@@ -112,7 +112,7 @@ function renderColaboradores() {
     html += '<div style="flex:1;min-width:0">';
     html += `<div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:var(--s-2)">${escapeHtml(nome)}${feito ? '<span class="feito-badge" title="Possui feito relevante">🏆</span>' : ''}${conduta ? '<span class="conduta-badge" title="Possui ponto detrator">🚩</span>' : ''}</div>`;
     if (info.nivel) {
-      html += `<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-top:1px">${escapeHtml(info.nivel)}</div>`;
+      html += `<div style="font-size:var(--font-caption);font-weight:600;color:var(--text-muted);margin-top:1px">${escapeHtml(info.nivel)}</div>`;
     }
     if (info.salario != null && info.salario !== '') {
       html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Salário: ${escapeHtml(Number(info.salario).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))}</div>`;

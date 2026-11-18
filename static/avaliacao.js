@@ -143,7 +143,7 @@ function renderAvaliacao() {
         </div>
         <div style="margin:var(--s-3) var(--s-4) var(--s-3)">
           <label class="field">
-            <span>📝 Avaliação qualitativa <span style="font-size:11px;color:var(--text-muted)">(opcional — usado nas sugestões)</span></span>
+            <span>📝 Avaliação qualitativa <span style="font-size:var(--font-caption);color:var(--text-muted)">(opcional — usado nas sugestões)</span></span>
             <textarea id="avaliacaoQualitativa" rows="3" placeholder="Ex: Colaborador proativo, mas precisa melhorar organização e pontualidade..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-primary);font:inherit;font-size:13px;resize:vertical;font-family:inherit;line-height:1.5"></textarea>
           </label>
         </div>
@@ -415,9 +415,9 @@ function renderComentariosIa(comentariosIa, comentariosFinais) {
       <div class="avaliacao-comentario-tag">🤖 Sugestão IA</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
-        <button class="btn-small av-usar-btn" type="button" title="Usar como comentário final" style="font-size:11px;padding:3px 8px">➕ Usar</button>
-        <button class="btn-small av-regenerar-btn" type="button" title="Regenerar" style="font-size:11px;padding:3px 8px">🔄 Regenerar</button>
+        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:var(--font-caption);padding:3px 8px">📋 Copiar</button>
+        <button class="btn-small av-usar-btn" type="button" title="Usar como comentário final" style="font-size:var(--font-caption);padding:3px 8px">➕ Usar</button>
+        <button class="btn-small av-regenerar-btn" type="button" title="Regenerar" style="font-size:var(--font-caption);padding:3px 8px">🔄 Regenerar</button>
       </div>
     </div>
   `).join('');
@@ -430,9 +430,9 @@ function renderComentariosFinais(comentariosFinais) {
       <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:11px;padding:3px 8px">✏️ Editar</button>
-        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
-        <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:11px;padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
+        <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:var(--font-caption);padding:3px 8px">✏️ Editar</button>
+        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:var(--font-caption);padding:3px 8px">📋 Copiar</button>
+        <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:var(--font-caption);padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
       </div>
     </div>
   `).join('');
@@ -526,9 +526,9 @@ function bindAvaliacaoFormEvents(colaborador, ciclo, existing) {
       <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
       <div class="avaliacao-comentario-texto">${escapeHtml(texto)}</div>
       <div class="avaliacao-comentario-actions">
-        <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:11px;padding:3px 8px">✏️ Editar</button>
-        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
-        <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:11px;padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
+        <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:var(--font-caption);padding:3px 8px">✏️ Editar</button>
+        <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:var(--font-caption);padding:3px 8px">📋 Copiar</button>
+        <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:var(--font-caption);padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
       </div>
     `;
     list.appendChild(div);
@@ -579,9 +579,9 @@ function handleUsar(e) {
     <div class="avaliacao-comentario-tag final">📝 Comentário Final</div>
     <div class="avaliacao-comentario-texto">${escapeHtml(texto)}</div>
     <div class="avaliacao-comentario-actions">
-      <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:11px;padding:3px 8px">✏️ Editar</button>
-      <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
-      <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:11px;padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
+      <button class="btn-small av-editar-comentario-btn" type="button" title="Editar" style="font-size:var(--font-caption);padding:3px 8px">✏️ Editar</button>
+      <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:var(--font-caption);padding:3px 8px">📋 Copiar</button>
+      <button class="btn-small av-excluir-comentario-btn" type="button" title="Excluir" style="font-size:var(--font-caption);padding:3px 8px;color:var(--danger)">🗑️ Excluir</button>
     </div>
   `;
   list.appendChild(div);
@@ -616,7 +616,7 @@ function handleEditar(e) {
   const salvarBtn = document.createElement('button');
   salvarBtn.className = 'btn-small';
   salvarBtn.type = 'button';
-  salvarBtn.style.cssText = 'font-size:11px;padding:3px 8px';
+  salvarBtn.style.cssText = 'font-size:var(--font-caption);padding:3px 8px';
   salvarBtn.textContent = '💾 Salvar';
   salvarBtn.addEventListener('click', () => {
     const novoTexto = input.value.trim();
@@ -720,9 +720,9 @@ function gerarSugestoesIA(colaborador, ciclo, existing, replaceIndex) {
         <div class="avaliacao-comentario-tag">🤖 Sugestão IA</div>
         <div class="avaliacao-comentario-texto">${escapeHtml(c)}</div>
         <div class="avaliacao-comentario-actions">
-          <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:11px;padding:3px 8px">📋 Copiar</button>
-          <button class="btn-small av-usar-btn" type="button" title="Usar como comentário final" style="font-size:11px;padding:3px 8px">➕ Usar</button>
-          <button class="btn-small av-regenerar-btn" type="button" title="Regenerar" style="font-size:11px;padding:3px 8px">🔄 Regenerar</button>
+          <button class="btn-small av-copiar-btn" type="button" title="Copiar" style="font-size:var(--font-caption);padding:3px 8px">📋 Copiar</button>
+          <button class="btn-small av-usar-btn" type="button" title="Usar como comentário final" style="font-size:var(--font-caption);padding:3px 8px">➕ Usar</button>
+          <button class="btn-small av-regenerar-btn" type="button" title="Regenerar" style="font-size:var(--font-caption);padding:3px 8px">🔄 Regenerar</button>
         </div>
       </div>
     `).join('');
@@ -1269,7 +1269,7 @@ function renderHistoricoAvaliacoes() {
         <div class="avaliacao-historico-header">
           <strong>${escapeHtml(av.colaborador)}</strong>
           <span class="avaliacao-historico-ciclo">${escapeHtml(av.ciclo)}</span>
-          <button type="button" class="btn-small avaliacao-status-tag" data-id="${av.id}" style="margin-left:auto;font-size:10px;font-weight:600;padding:1px 6px;border-radius:var(--r-sm);cursor:pointer;background:${status === 'revisado' ? 'var(--success-soft)' : 'var(--warning-soft)'};color:${statusCor};border:1px solid ${statusCor};white-space:nowrap">${statusLabel}</button>
+          <button type="button" class="btn-small avaliacao-status-tag" data-id="${av.id}" style="margin-left:auto;font-size:var(--font-caption);font-weight:600;padding:1px 6px;border-radius:var(--r-sm);cursor:pointer;background:${status === 'revisado' ? 'var(--success-soft)' : 'var(--warning-soft)'};color:${statusCor};border:1px solid ${statusCor};white-space:nowrap">${statusLabel}</button>
         </div>
         <div class="avaliacao-historico-stats">
           <span>Notas: <strong>${scoresArray.length}/${comps.length}</strong></span>
@@ -1369,7 +1369,7 @@ function renderMiniRadars(avaliacoes) {
       return (v !== null && v !== undefined) ? v : null;
     });
     const hasData = scores.some(s => s !== null);
-    if (!hasData) { container.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">Sem dados</span>'; return; }
+    if (!hasData) { container.innerHTML = '<span style="font-size:var(--font-caption);color:var(--text-muted)">Sem dados</span>'; return; }
 
     const w = 110, h = 110, cx = w / 2, cy = h / 2, r = 42;
     const angleStep = (2 * Math.PI) / comps.length;

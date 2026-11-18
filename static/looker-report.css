@@ -1,9 +1,9 @@
 #lookerDialog {
   width: min(68rem, calc(100% - 1.5rem));
   max-height: 90dvh;
-  padding: 1rem;
+  padding: var(--s-5);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   background: var(--bg-surface);
   color: var(--text);
 }
@@ -38,3 +38,17 @@
 }
 #lookerDialog :is(select, .looker-table input) { min-width: 10rem; max-width: 17rem; }
 #lookerDialog tfoot { background: var(--bg-subtle); font-weight: 700; }
+
+
+#lookerDialog .looker-controls > .field { flex: 1 1 180px; }
+#lookerDialog .looker-controls :is(input, select) { width: 100%; }
+#lookerDialog .looker-table :is(th, td):nth-child(n+3) { text-align: right; }
+#lookerDialog .looker-table td:first-child { white-space: normal; min-width: 180px; }
+#lookerDialog th { font-size: var(--font-caption); color: var(--text-secondary); background: var(--bg-subtle); }
+#lookerDialog tbody tr:hover { background: var(--bg-inset); }
+#lookerDialog textarea { width: 100%; min-height: 120px; resize: vertical; }
+@media (max-width: 600px) {
+  #lookerDialog { padding: var(--s-4); }
+  #lookerDialog .tools-heading { flex-wrap: wrap; }
+  #lookerDialog .looker-controls > .field { flex-basis: 100%; }
+}

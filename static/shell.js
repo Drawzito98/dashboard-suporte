@@ -161,7 +161,7 @@
       looker.disabled = false;
     }
   });
-  window.appShell = { sync, refresh, openTools };
+  window.appShell = { sync, refresh, openTools, reveal };
   document.addEventListener('app-role-ready', () => { dialog?.close(); refresh(); });
   refresh();
 })();

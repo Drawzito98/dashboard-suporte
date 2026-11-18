@@ -21,7 +21,7 @@
 .ponto-table small { display:block; margin-top:6px; color:var(--text-muted, #637083); }
 .ponto-table details { margin-top:12px; max-width:480px; overflow-wrap:anywhere; }
 .ponto-table summary { cursor:pointer; }
-.ponto-status { display:inline-block; font-size:11px; font-weight:700; border-radius:6px; padding:6px 8px; white-space:nowrap; }
+.ponto-status { display:inline-block; font-size: var(--font-caption); font-weight:700; border-radius:6px; padding:6px 8px; white-space:nowrap; }
 .ponto-status.regular { color:var(--success); background:var(--success-soft); }
 .ponto-status.conferir { color:var(--warning); background:var(--warning-soft); }
 .ponto-status.inconsistencia { color:var(--danger); background:var(--danger-soft); }

@@ -580,7 +580,7 @@
   align-items: center;
   gap: 4px;
   padding: 3px 10px;
-  font-size: 11px;
+  font-size:var(--font-caption);
   font-weight: 700;
   border-radius: 20px;
   white-space: nowrap;
@@ -651,7 +651,7 @@
 .mt-card-acao strong {
   display: block;
   margin-bottom: 3px;
-  font-size: 11px;
+  font-size:var(--font-caption);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;

@@ -6,22 +6,22 @@
 /* ===== Tokens ===== */
 :root {
   color-scheme: light;
-  /* Surfaces — neutros suaves (warm tint) */
-  --bg-app:        #f6f2e8;
-  --bg-canvas:     #fffcf5;
-  --bg-surface:    #fffcf5;
-  --bg-subtle:     #eee9df;
-  --bg-inset:      #f8f5ed;
+  /* Superfícies neutras para leitura e análise */
+  --bg-app:        #f5f7f9;
+  --bg-canvas:     #ffffff;
+  --bg-surface:    #ffffff;
+  --bg-subtle:     #edf1f5;
+  --bg-inset:      #f8fafb;
 
   /* Texto */
-  --text-strong:   #202c30;
-  --text-primary:  #303d40;
-  --text-secondary:#505e60;
-  --text-muted:    #687472;
+  --text-strong:   #18272e;
+  --text-primary:  #2b3b44;
+  --text-secondary:#52616d;
+  --text-muted:    #62717d;
 
   /* Bordas */
-  --border:        #dedbd0;
-  --border-strong: #b9c0b9;
+  --border:        #dce3e8;
+  --border-strong: #9cabb6;
 
   /* Accent único */
   --accent:        #17626d;
@@ -124,10 +124,10 @@
   --overlay-table:   rgba(0, 0, 0, 0.08);
 
   /* Raios */
-  --r-sm: 10px;
-  --r-md: 12px;
-  --r-lg: 18px;
-  --r-xl: 22px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --r-xl: 16px;
 
   /* Spacing scale (8px base) */
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
@@ -145,7 +145,13 @@
   --control-radius: var(--r-sm);
   --dialog-radius: var(--r-xl);
   --dialog-gutter: 24px;
+  --font-page: 24px;
+  --font-section: 20px;
+  --font-card: 18px;
   --font-body: 14px;
+  --font-secondary: 13px;
+  --font-value: 28px;
+  --line-body: 1.6;
   --font-caption: 12px;
   --focus-color: var(--accent);
   --surface: var(--bg-surface);
@@ -165,8 +171,8 @@
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "ss01", "cv11";
 
-  --text:              #303d40;
-  --bg-card:           #fffcf5;
+  --text:              #2b3b44;
+  --bg-card:           #ffffff;
 }
 
 /* ===== Dark — Gotham corporativa ===== */

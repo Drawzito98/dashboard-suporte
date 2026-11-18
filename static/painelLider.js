@@ -277,7 +277,7 @@ function renderPainelLider() {
         <td>${(d.prod * 100).toFixed(0)}%</td>
         <td>${metaTxt}</td>
         <td>${status}</td>
-        <td><button class="btn-small colab-info-btn" data-nome="${name}" type="button" title="Ver dados do colaborador" style="font-size:11px">👤</button></td>
+        <td><button class="btn-small colab-info-btn" data-nome="${name}" type="button" title="Ver dados do colaborador" style="font-size:var(--font-caption)">👤</button></td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;

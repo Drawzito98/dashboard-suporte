@@ -35,7 +35,7 @@ function _deltaHtml(delta) {
   const abs = Math.abs(delta);
   const cls = delta > 0 ? 'trend-up' : (delta < 0 ? 'trend-down' : 'trend-neutral');
   const arrow = delta > 0 ? '\u25B2' : (delta < 0 ? '\u25BC' : '\u2192');
-  return ` <span class="${cls}" style="font-size:11px;white-space:nowrap" title="Variação vs mês anterior">${arrow} ${abs.toFixed(1)}%</span>`;
+  return ` <span class="${cls}" style="font-size:var(--font-caption);white-space:nowrap" title="Variação vs mês anterior">${arrow} ${abs.toFixed(1)}%</span>`;
 }
 
 function _avgDuration(rows, key) {
