@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Painel de Suporte"/>
   <link rel="manifest" href="manifest.json"/>
   <link href="static/css/tokens.css?v=1401" rel="stylesheet"/>
-  <link href="static/styles.css?v=1380" rel="stylesheet"/>
+  <link href="static/styles.css?v=1395" rel="stylesheet"/>
   <link href="static/projecao.css?v=1380" rel="stylesheet"/>
   <link href="static/home.css?v=1380" rel="stylesheet"/>
   <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
@@ -40,8 +40,8 @@
 <link rel="stylesheet" href="static/diagnostico.css?v=1380">
 <link rel="stylesheet" href="static/shell.css?v=1380">
 <link rel="stylesheet" href="static/module-loader.css?v=1">
-<link rel="stylesheet" href="static/css/components.css?v=1394">
-<link rel="stylesheet" href="static/css/people-workspace.css?v=1394">
+<link rel="stylesheet" href="static/css/components.css?v=1395">
+<link rel="stylesheet" href="static/css/people-workspace.css?v=1395">
 <link rel="stylesheet" href="static/css/analysis-workspace.css?v=1391">
 <link rel="stylesheet" href="static/css/administration.css?v=1392">
 <link rel="stylesheet" href="static/cockpit.css?v=1380">
@@ -174,19 +174,24 @@
       </div>
       <div class="topbar-right">
         <button class="sync-status" id="syncStatusBtn" type="button" title="Estado da sincronização"><span class="sync-status-dot"></span><span>Sincronizado</span></button>
+        <label class="accent-quick" title="Cor de destaque">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.5a2.5 2.5 0 0 0 0-5H13a2 2 0 0 1 0-4h5a3 3 0 0 0 3-3c0-3.3-4-6-9-6Z"/><circle cx="7.5" cy="11.5" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg>
+          <span>Cor</span>
+          <select class="accent-select" id="accentSelect" aria-label="Cor de destaque" title="Cor de destaque">
+            <option value="padrao">Padrão</option>
+            <option value="azul">Azul</option>
+            <option value="violeta">Violeta</option>
+            <option value="ambar">Âmbar</option>
+          </select>
+        </label>
         <div class="user-menu-wrapper" id="userMenuWrapper">
           <button id="currentUserDisplay" class="current-user user-menu-trigger" type="button" aria-haspopup="true" aria-expanded="false"></button>
           <div class="user-dropdown" id="userDropdown" style="display:none">
             <div class="user-dropdown-header" id="userDropdownEmail"></div>
-            <label class="user-dropdown-field" for="accentSelect">
-              <span>Cor de destaque</span>
-              <select id="accentSelect" aria-label="Cor de destaque">
-                <option value="padrao">Padrão</option>
-                <option value="azul">Azul</option>
-                <option value="violeta">Violeta</option>
-                <option value="ambar">Âmbar</option>
-              </select>
-            </label>
+            <button class="user-dropdown-item" id="accentMenuItem" type="button" title="Cor de destaque na barra superior">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.5a2.5 2.5 0 0 0 0-5H13a2 2 0 0 1 0-4h5a3 3 0 0 0 3-3c0-3.3-4-6-9-6Z"/><circle cx="7.5" cy="11.5" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg>
+              Cor de destaque
+            </button>
             <button class="user-dropdown-item" id="editNameBtn" type="button">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               Editar nome
@@ -871,10 +876,10 @@
 <script defer src="static/shell.js?v=1380"></script>
 <script defer src="static/dashboard-charts.js?v=1"></script>
 <script defer src="static/dashboard-report.js?v=2"></script>
-<script defer src="static/app.js?v=1394"></script>
+<script defer src="static/app.js?v=1395"></script>
 <script defer src="static/app-admin.js?v=135"></script>
 <script defer src="static/ui-accessibility.js?v=2"></script>
-<script defer src="static/app-interface.js?v=1380"></script>
+<script defer src="static/app-interface.js?v=1395"></script>
 <script defer src="static/manage-colabs-v2.js?v=131"></script>
 <script defer src="static/features.js?v=1390"></script>
 <script defer src="static/privacy-screen.js?v=85"></script>

@@ -105,7 +105,7 @@ Consulte `docs/migrations.md` para a sequência até v49. Não presumir aplicaç
 
 ## Comandos Úteis
 ```bash
-# Publicação somente com autorização explícita; nunca encadear push com deploy.
+# Preferência do usuário: ao concluir uma alteração solicitada, commitar e publicar; nunca encadear push com deploy.
 
 # Testes
 npm test
@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.43.1. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.44.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -210,3 +210,7 @@ Leia docs/historico-notificacoes-confirmados.md. Histórico usa UUID estável, c
 ## Continuação 1.36.0 — Exportadores sob demanda
 
 Leia docs/carregamento-inicial.md. export-tools.js tem catálogo fechado das mesmas CDNs e não baixa nada antes de exportar; não reintroduzir html2canvas/jsPDF/XLSX no HTML inicial. Cada exportação aguarda ready dos formatos necessários e cancela quando a sessão é invalidada. Não condicionar vínculo do botão PNG à biblioteca já existir. Rode npm test, export-tools.browser.html, workspace geral e ?exports=1 (desktop/320px), lazy-modules e data-lifecycle. Medições são bytes descompactados/inventário, não tempo nem tráfego comprimido. Cache novo inclui o catálogo; não prometer primeira exportação offline. Sem SQL ou escrita de testes em produção; merge exige autorização explícita.
+
+## Continuação 1.44.0 — Preferência de acesso
+
+A cor de destaque agora fica na barra superior (`.accent-quick`/`.accent-select`); o item `#accentMenuItem` do menu do usuário apenas foca/exibe o controle. Preserve seletor visível em desktop/mobile, chave `sistema_accent_v1`, `data-accent`, `theme-color` e tokens por tema. Rode npm test, release:check e fixtures workspace/shell/design-system em desktop/celular. Preferência registrada do usuário: ao finalizar alterações pedidas aqui, commitar e publicar sem pedir nova confirmação, mantendo proibições de migrations/testes de escrita em produção e sem encadear push com deploy.
