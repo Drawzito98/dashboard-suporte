@@ -35,7 +35,7 @@ function _deltaHtml(delta) {
   const abs = Math.abs(delta);
   const cls = delta > 0 ? 'trend-up' : (delta < 0 ? 'trend-down' : 'trend-neutral');
   const arrow = delta > 0 ? '\u25B2' : (delta < 0 ? '\u25BC' : '\u2192');
-  return ` <span class="${cls}" style="font-size:var(--font-caption);white-space:nowrap" title="Variação vs mês anterior">${arrow} ${abs.toFixed(1)}%</span>`;
+  return ` <span class="${cls} rs-delta-label" title="Variação vs mês anterior">${arrow} ${abs.toFixed(1)}%</span>`;
 }
 
 function _avgDuration(rows, key) {
@@ -94,7 +94,7 @@ function renderRelatorioSetorial() {
   }
 
   const meses = allMeses;
-  const contextHtml = `<div class="rs-context" role="status" style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--s-4)">
+  const contextHtml = `<div class="rs-context rs-context-description" role="status">
     <p>Este relatório usa os filtros do topo. As alterações são aplicadas automaticamente.</p>
     <p>${escapeHtml(_rsContextLabel())} · Meses com dados: ${escapeHtml(meses.join(', '))}</p>
   </div>`;
@@ -151,16 +151,16 @@ function renderRelatorioSetorial() {
   let html = contextHtml;
 
   // ── Header ──
-  html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-5);flex-wrap:wrap;gap:var(--s-3)">
+  html += `<div class="rs-page-heading">
     <div>
-      <h2 style="font-size:20px;font-weight:700;color:var(--text-strong);margin:0">\uD83D\uDCCA Relatório Setorial</h2>
-      <p style="font-size:14px;color:var(--text-secondary);margin-top:2px">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 Rankings, análise setorial, tendências e relatório executivo</p>
+      <h2 class="rs-page-title">\uD83D\uDCCA Relatório Setorial</h2>
+      <p class="rs-page-description">${meses.length} meses \u00B7 ${setores.length} setores \u00B7 ${totalAtendentes} atendentes \u00B7 ${meses[0]} a ${meses[meses.length - 1]} \u2014 Rankings, análise setorial, tendências e relatório executivo</p>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center;max-width:100%">
-      <span id="rsPresentationModeIndicator" style="font-size:12px;color:var(--text-muted);display:none">\uD83D\uDCF1 Modo apresentação</span>
-      <button id="rsPresentationToggle" style="white-space:nowrap;flex-shrink:0" class="btn-small" type="button" title="Ocultar botões de ação para captura de tela">\uD83D\uDCF1 Apresentação</button>
-      <button class="btn-primary" id="rsPrintBtn" style="width:auto;flex:0 0 auto" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
-      <button class="btn-primary" id="rsPdfBtn" style="width:auto;flex:0 0 auto" type="button">\uD83D\uDCC4 PDF (equipe)</button>
+    <div class="rs-page-actions">
+      <span id="rsPresentationModeIndicator" class="rs-presentation-indicator">\uD83D\uDCF1 Modo apresentação</span>
+      <button id="rsPresentationToggle" class="btn-small rs-presentation-action" type="button" title="Ocultar botões de ação para captura de tela">\uD83D\uDCF1 Apresentação</button>
+      <button class="btn-primary rs-export-action" id="rsPrintBtn" type="button">\uD83D\uDDA8\uFE0F Exportar PNG</button>
+      <button class="btn-primary rs-export-action" id="rsPdfBtn" type="button">\uD83D\uDCC4 PDF (equipe)</button>
     </div>
   </div>`;
 
@@ -215,7 +215,7 @@ function renderRelatorioSetorial() {
   ];
   if (hasTma) kpiCards.push({ label: 'TMA médio', value: _fmtDuration(tmaGeral), sub: '<span class="trend-neutral">Tempo médio de atendimento</span>' });
   if (hasTmr) kpiCards.push({ label: 'TMR médio', value: _fmtDuration(tmrGeral), sub: '<span class="trend-neutral">Tempo médio de resposta</span>' });
-  html += `<div class="kpi-grid" style="margin:0 0 var(--s-5)">
+  html += `<div class="kpi-grid rs-summary-kpis">
     ${kpiCards.map(c => `<div class="kpi"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub || '<span class="trend-neutral">' + _prevLabel + '</span>'}</div></div>`).join('')}
   </div>`;
 
@@ -245,37 +245,37 @@ function renderRelatorioSetorial() {
 
   html += `<div class="rs-section">
     <h2 class="rs-section-title">\uD83C\uDFC6 Top 3 Rankings</h2>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--s-4)">
-      <div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD1D Melhores Finaliza\u00E7\u00F5es</h3>
-        ${topFin.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
-          <span style="font-weight:700;color:var(--accent);min-width:18px">${i + 1}\u00BA</span>
-          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
-          <span style="font-weight:600;color:var(--text-strong)">${fmtNum(c.fin)}</span>
+    <div class="rs-rank-grid">
+      <div class="card rs-rank-card">
+        <h3 class="rs-rank-title">\uD83D\uDD1D Melhores Finaliza\u00E7\u00F5es</h3>
+        ${topFin.map((c, i) => `<div class="rs-rank-row">
+          <span class="rs-rank-position">${i + 1}\u00BA</span>
+          <span class="rs-rank-name">${escapeHtml(c.nome)}</span>
+          <span class="rs-rank-value">${fmtNum(c.fin)}</span>
         </div>`).join('')}
       </div>
-      <div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD1D Melhores Score</h3>
-        ${topScore.length ? topScore.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
-          <span style="font-weight:700;color:var(--accent);min-width:18px">${i + 1}\u00BA</span>
-          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
-          <span style="font-weight:600;color:var(--text-strong);font-family:monospace">${fmtScore(c.score)}</span>
-        </div>`).join('') : '<div style="font-size:12px;color:var(--text-muted)">Nenhum dado de score</div>'}
+      <div class="card rs-rank-card">
+        <h3 class="rs-rank-title">\uD83D\uDD1D Melhores Score</h3>
+        ${topScore.length ? topScore.map((c, i) => `<div class="rs-rank-row">
+          <span class="rs-rank-position">${i + 1}\u00BA</span>
+          <span class="rs-rank-name">${escapeHtml(c.nome)}</span>
+          <span class="rs-rank-number">${fmtScore(c.score)}</span>
+        </div>`).join('') : '<div class="rs-caption">Nenhum dado de score</div>'}
       </div>
-      <div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD3B Menores Scores</h3>
-        ${bottomScore.length ? bottomScore.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
-          <span style="font-weight:700;color:var(--danger);min-width:18px">${i + 1}\u00BA</span>
-          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
-          <span style="font-weight:600;color:var(--danger);font-family:monospace">${fmtScore(c.score)}</span>
-        </div>`).join('') : '<div style="font-size:12px;color:var(--text-muted)">Nenhum dado de score</div>'}
+      <div class="card rs-rank-card">
+        <h3 class="rs-rank-title">\uD83D\uDD3B Menores Scores</h3>
+        ${bottomScore.length ? bottomScore.map((c, i) => `<div class="rs-rank-row">
+          <span class="rs-attention-position">${i + 1}\u00BA</span>
+          <span class="rs-rank-name">${escapeHtml(c.nome)}</span>
+          <span class="rs-attention-number">${fmtScore(c.score)}</span>
+        </div>`).join('') : '<div class="rs-caption">Nenhum dado de score</div>'}
       </div>
-      <div class="card" style="padding:var(--s-4)">
-        <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-3)">\uD83D\uDD3B Menores Finaliza\u00E7\u00F5es</h3>
-        ${bottomFin.map((c, i) => `<div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;font-size:13px">
-          <span style="font-weight:700;color:var(--danger);min-width:18px">${i + 1}\u00BA</span>
-          <span style="flex:1;color:var(--text-primary)">${escapeHtml(c.nome)}</span>
-          <span style="font-weight:600;color:var(--danger)">${fmtNum(c.fin)}</span>
+      <div class="card rs-rank-card">
+        <h3 class="rs-rank-title">\uD83D\uDD3B Menores Finaliza\u00E7\u00F5es</h3>
+        ${bottomFin.map((c, i) => `<div class="rs-rank-row">
+          <span class="rs-attention-position">${i + 1}\u00BA</span>
+          <span class="rs-rank-name">${escapeHtml(c.nome)}</span>
+          <span class="rs-attention-value">${fmtNum(c.fin)}</span>
         </div>`).join('')}
       </div>
     </div>
@@ -408,26 +408,26 @@ function renderRelatorioSetorial() {
     ${actionItems.length > visibleActions.length ? `<p class="rs-action-overflow">Exibindo as 6 maiores prioridades entre ${actionItems.length} setores para manter a leitura executiva.</p>` : ''}
   </div>`;
   // ── Gráfico de pizza — distribuição de finalizados por setor ──
-  html += `<div style="display:flex;gap:var(--s-5);align-items:stretch;margin-bottom:var(--s-5);flex-wrap:wrap">
-    <div class="card" style="flex:1;min-width:280px;padding:var(--s-4)">
-      <h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83D\uDCCA Distribuição por Setor</h3>
-      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:var(--s-3)">Participação de cada setor no total de finalizados</p>
-      <div style="height:280px;position:relative"><canvas id="rsPieChart"></canvas></div>
+  html += `<div class="rs-charts-grid">
+    <div class="card rs-evolution-card">
+      <h3 class="rs-chart-title">\uD83D\uDCCA Distribuição por Setor</h3>
+      <p class="rs-chart-description">Participação de cada setor no total de finalizados</p>
+      <div class="rs-evolution-chart"><canvas id="rsPieChart"></canvas></div>
     </div>
-    <div class="card" style="flex:1;min-width:220px;padding:var(--s-4);display:flex;flex-direction:column;gap:var(--s-2)">
-      <h3 style="font-size:13px;font-weight:600;color:var(--text-strong);margin:0 0 var(--s-1)">${setorMetrics.length} setor(es)</h3>
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:var(--s-2)">
+    <div class="card rs-distribution-card">
+      <h3 class="rs-distribution-title">${setorMetrics.length} setor(es)</h3>
+      <div class="rs-distribution-list">
       ${setorMetrics.slice().sort((a, b) => b.fin - a.fin).map((s, i) => {
         const pct = totalFin > 0 ? ((s.fin / totalFin) * 100).toFixed(1) : 0;
         const sorted = [...setorMetrics].sort((a, b) => b.fin - a.fin);
         const idx = sorted.indexOf(s);
         const neutralColors = typeof ChartTheme !== 'undefined' ? ChartTheme.neutralPalette(setorMetrics.length) : ['#2563eb','#059669','#d97706','#7c3aed','#ea580c','#0891b2','#e11d48','#8b5cf6','#16a34a','#f97316'];
         const cor = totalFin > 0 ? (neutralColors[idx] || '#94a3b8') : '#94a3b8';
-        return `<div style="display:flex;align-items:center;gap:var(--s-3);font-size:13px">
-          <span style="width:12px;height:12px;border-radius:3px;background:${cor};flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.2)"></span>
-          <span style="flex:1;font-weight:500;color:var(--text-primary)">${escapeHtml(s.nome)}</span>
-          <span style="color:var(--text-secondary);font-size:12px">${fmtNum(s.fin)}</span>
-          <span style="font-weight:700;color:var(--text-strong);min-width:48px;text-align:right;font-size:13px">${pct}%</span>
+        return `<div class="rs-distribution-row">
+          <span class="rs-distribution-swatch" style="--sector-color:${cor}"></span>
+          <span class="rs-distribution-name">${escapeHtml(s.nome)}</span>
+          <span class="rs-distribution-meta">${fmtNum(s.fin)}</span>
+          <span class="rs-distribution-value">${pct}%</span>
         </div>`;
       }).join('')}
       </div>
@@ -435,8 +435,8 @@ function renderRelatorioSetorial() {
   </div>`;
 
   // ── Tabela comparativa entre setores ──
-  html += `<h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83D\uDD01 Comparativo entre Setores</h3>`;
-  html += `<div style="overflow-x:auto;margin-bottom:var(--s-5)"><table class="ranking-table">
+  html += `<h3 class="rs-table-title">\uD83D\uDD01 Comparativo entre Setores</h3>`;
+  html += `<div class="rs-table-region table-wrap"><table class="ranking-table">
     <thead><tr><th>Setor</th><th>Finalizados</th><th>Assumidos</th><th>Transferidos</th><th>Score</th><th>Prod.</th>${hasTma ? '<th>TMA</th>' : ''}${hasTmr ? '<th>TMR</th>' : ''}<th>Colabs</th></tr></thead>
     <tbody>${setorMetrics.map(s => {
       const classeSc = s.scAvg > 0 ? getClasseScore(s.scAvg) : '';
@@ -455,7 +455,7 @@ function renderRelatorioSetorial() {
   </table></div>`;
 
   // ── Detalhamento por setor — mês a mês ──
-  html += `<h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">\uD83D\uDCCB Detalhamento por Setor</h3>`;
+  html += `<h3 class="rs-table-title">\uD83D\uDCCB Detalhamento por Setor</h3>`;
 
   setores.forEach((s, setorIdx) => {
     const recs = bySetor[s];
@@ -478,27 +478,27 @@ function renderRelatorioSetorial() {
       return { mes: m, fin: mFin, ass: mAss, tra: mTra, scAvg: mScAvg, prod: mProd, cols: mCols, hasData: mRecs.length > 0, tma: _avgDuration(mRecs, 'TMA'), tmr: _avgDuration(mRecs, 'TMR') };
     });
 
-    html += `<div class="card" style="margin-bottom:var(--s-4);padding:var(--s-5)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-4);flex-wrap:wrap;gap:var(--s-2)">
+    html += `<div class="card rs-sector-section">
+      <div class="rs-sector-heading">
         <div>
-          <h3 style="font-size:16px;font-weight:700;color:var(--text-strong);margin:0">${escapeHtml(s)}</h3>
-          <span style="font-size:12px;color:var(--text-secondary)">Total: ${fmtNum(fin)} fin \u00B7 Score ${fmtScore(scAvg)} \u00B7 Prod ${fmtPct(prod)}</span>
+          <h3 class="rs-sector-title">${escapeHtml(s)}</h3>
+          <span class="rs-sector-meta">Total: ${fmtNum(fin)} fin \u00B7 Score ${fmtScore(scAvg)} \u00B7 Prod ${fmtPct(prod)}</span>
         </div>
       </div>
-      <div style="overflow-x:auto"><table class="ranking-table" style="min-width:680px">
+      <div class="rs-sector-table-region table-wrap"><table class="ranking-table rs-sector-table">
         <thead><tr>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Mês</th>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Assumidos</th>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Transferidos</th>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Finalizados</th>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Score</th>
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Prod.</th>
-          ${hasTma ? '<th style="position:sticky;top:0;background:var(--bg-elevated)">TMA</th>' : ''}
-          ${hasTmr ? '<th style="position:sticky;top:0;background:var(--bg-elevated)">TMR</th>' : ''}
-          <th style="position:sticky;top:0;background:var(--bg-elevated)">Colabs</th>
+          <th class="rs-sector-table-head">Mês</th>
+          <th class="rs-sector-table-head">Assumidos</th>
+          <th class="rs-sector-table-head">Transferidos</th>
+          <th class="rs-sector-table-head">Finalizados</th>
+          <th class="rs-sector-table-head">Score</th>
+          <th class="rs-sector-table-head">Prod.</th>
+          ${hasTma ? '<th class="rs-sector-table-head">TMA</th>' : ''}
+          ${hasTmr ? '<th class="rs-sector-table-head">TMR</th>' : ''}
+          <th class="rs-sector-table-head">Colabs</th>
         </tr></thead>
         <tbody>${monthData.map((md, mi) => {
-          if (!md.hasData) return `<tr><td><strong>${md.mes}</strong></td><td colspan="${6 + (hasTma ? 1 : 0) + (hasTmr ? 1 : 0)}" style="color:var(--text-muted);font-size:12px">Sem dados</td></tr>`;
+          if (!md.hasData) return `<tr><td><strong>${md.mes}</strong></td><td colspan="${6 + (hasTma ? 1 : 0) + (hasTmr ? 1 : 0)}" class="rs-missing-value">Sem dados</td></tr>`;
           const cls = md.scAvg > 0 ? getClasseScore(md.scAvg) : '';
           const prev = mi > 0 ? monthData[mi - 1] : null;
           const dFin = prev && prev.hasData ? _deltaHtml(_calcDeltaPct(prev.fin, md.fin)) : '';
@@ -519,7 +519,7 @@ function renderRelatorioSetorial() {
           </tr>`;
         }).join('')}</tbody>
       </table></div>
-      <div style="margin-top:var(--s-4);height:220px">
+      <div class="rs-sector-chart">
         <canvas id="rsChart_${setorIdx}"></canvas>
       </div>
     </div>`;
@@ -529,10 +529,10 @@ function renderRelatorioSetorial() {
 
 
   // ── Relatório Executivo ──
-  html += `<div class="reportBox" style="margin-top:var(--s-6)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-3);flex-wrap:wrap;gap:var(--s-2)">
-      <h3 style="font-size:14px;font-weight:600;color:var(--text-strong);margin:0"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-note"></use></svg> Relatório Executivo</h3>
-      <div style="display:flex;gap:var(--s-2);flex-wrap:wrap">
+  html += `<div class="reportBox rs-executive-section">
+    <div class="rs-executive-heading">
+      <h3 class="rs-executive-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-note"></use></svg> Relatório Executivo</h3>
+      <div class="rs-executive-actions">
         <button id="copyReportBtn" type="button" class="btn-small">Copiar relatório</button>
         <button id="exportPdfBtn" type="button" class="btn-small">Exportar PDF</button>
         <button id="refreshReportBtn" type="button" class="btn-small">Atualizar</button>

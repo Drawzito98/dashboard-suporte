@@ -4,7 +4,7 @@ function formatVar(val, suffix = '') {
   if (val === null || val === undefined) return '<span class="text-muted">—</span>';
   const cls = val >= 0 ? 'variation-pos' : 'variation-neg';
   const arrow = val >= 0 ? '↑' : '↓';
-  return `<span class="${cls}" style="font-weight:600">${arrow} ${Math.abs(val).toFixed(1)}${suffix}</span>`;
+  return `<span class="${cls} insights-delta">${arrow} ${Math.abs(val).toFixed(1)}${suffix}</span>`;
 }
 
 function renderInsights() {
@@ -180,8 +180,8 @@ function renderInsights() {
   let html = '';
 
   // ── Mini tabela de evolução do time ──
-  html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Evolução do Time</h3>`;
-  html += `<div style="overflow-x:auto;margin-bottom:var(--s-5)"><table class="ranking-table" style="min-width:auto">
+  html += `<h3 class="insights-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-chart"></use></svg> Evolução do Time</h3>`;
+  html += `<div class="insights-table-region table-wrap"><table class="ranking-table insights-evolution-table">
     <thead><tr><th>Mês</th><th>Finalizados</th><th>Δ</th><th>Score</th><th>Δ</th><th>Transferências</th><th>Δ</th><th>Prod.</th><th>Colabs</th></tr></thead>
     <tbody>${meses.map((m, i) => {
       const c = coletivo[m];
@@ -206,8 +206,8 @@ function renderInsights() {
   </table></div>`;
 
   // ── Cards de desempenho (melhores do mês) ──
-  html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)">🏅 Destaques do Período (${formatMesLabel(ultimo)})</h3>`;
-  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--s-3);margin-bottom:var(--s-5)">`;
+  html += `<h3 class="insights-section-title">🏅 Destaques do Período (${formatMesLabel(ultimo)})</h3>`;
+  html += `<div class="insights-highlights">`;
 
   const cardDefs = [
     { key: 'fin', label: 'Mais finalizações', icon: '📦' },
@@ -218,31 +218,31 @@ function renderInsights() {
     const d = destaques[def.key];
     const nome = d.melhor ? escapeHtml(getDisplayName(d.melhor, aliasMap)) : '—';
     const valor = d.valor > 0 ? (def.key === 'prod' ? (d.valor * 100).toFixed(0) + '%' : def.key === 'score' ? d.valor.toFixed(2) : d.valor.toLocaleString('pt-BR')) : '—';
-    html += `<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--accent-soft);text-align:center">
-      <div style="font-size:18px;margin-bottom:4px">${def.icon}</div>
-      <div style="font-size:13px;color:var(--text-secondary)">${def.label}</div>
-      <div style="font-size:18px;font-weight:700;color:var(--text-strong);margin-top:4px">${nome}</div>
-      <div style="font-size:13px;color:var(--accent);font-weight:600">${valor}</div>
+    html += `<div class="insights-highlight">
+      <div class="insights-highlight-icon">${def.icon}</div>
+      <div class="insights-highlight-label">${def.label}</div>
+      <div class="insights-highlight-name">${nome}</div>
+      <div class="insights-highlight-value">${valor}</div>
     </div>`;
   });
   html += `</div>`;
 
   // ── Lista de insights ──
-  html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:var(--s-3);color:var(--text-strong)"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-insight"></use></svg> Insights</h3>`;
+  html += `<h3 class="insights-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#ui-icon-insight"></use></svg> Insights</h3>`;
 
   if (!insights.length) {
-    html += '<div style="padding:var(--s-4);border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-surface);color:var(--text-muted);font-size:13px">Nenhum insight significativo — os dados estão estáveis.</div>';
+    html += '<div class="insights-empty">Nenhum insight significativo — os dados estão estáveis.</div>';
   } else {
     html += insights.map(ins => {
       let bg, border;
       if (ins.tipo === 'positivo') { bg = 'var(--success-soft)'; border = 'var(--success)'; }
       else if (ins.tipo === 'negativo') { bg = 'var(--danger-soft)'; border = 'var(--danger)'; }
       else { bg = 'var(--bg-surface)'; border = 'var(--border)'; }
-      return `<div style="display:flex;align-items:flex-start;gap:var(--s-3);padding:var(--s-4);border:1px solid ${border};border-radius:var(--r-md);background:${bg};margin-bottom:var(--s-2)">
-        <span style="font-size:18px;line-height:1">${ins.icone}</span>
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:13px;color:var(--text-strong);margin-bottom:2px">${ins.label}</div>
-          <div style="font-size:13px;color:var(--text-secondary);line-height:1.5">${escapeHtml(ins.texto)}</div>
+      return `<div class="insights-finding" style="--insight-border:${border};--insight-background:${bg}">
+        <span class="insights-result-icon">${ins.icone}</span>
+        <div class="insights-result-content">
+          <div class="insights-result-title">${ins.label}</div>
+          <div class="insights-result-description">${escapeHtml(ins.texto)}</div>
         </div>
       </div>`;
     }).join('');

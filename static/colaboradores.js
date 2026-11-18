@@ -94,7 +94,7 @@ function renderColaboradores() {
 
   if (!colabs.length) {
     const filtroAtivo = typeof globalFilters !== 'undefined' && (globalFilters.nivel !== 'all' || globalFilters.setor !== 'all' || globalFilters.colaborador !== 'all' || globalFilters.pesquisa);
-    html += `<div class="empty-state" style="padding:var(--s-5)"><div class="empty-title">${filtroAtivo ? 'Nenhum colaborador encontrado' : 'Nenhum colaborador'}</div><div class="empty-sub">${filtroAtivo ? 'Altere a busca ou limpe os filtros para ver a equipe.' : 'Cadastre um colaborador ou importe um CSV para começar.'}</div></div>`;
+    html += `<div class="empty-state colab-content-padding"><div class="empty-title">${filtroAtivo ? 'Nenhum colaborador encontrado' : 'Nenhum colaborador'}</div><div class="empty-sub">${filtroAtivo ? 'Altere a busca ou limpe os filtros para ver a equipe.' : 'Cadastre um colaborador ou importe um CSV para começar.'}</div></div>`;
     container.innerHTML = html;
     document.getElementById("novoColaboradorBtn")?.addEventListener("click", openNovoColaboradorModal);
     return;
@@ -106,42 +106,42 @@ function renderColaboradores() {
     const hasData = info.salario != null || info.setor_atual || info.data_aniversario || info.data_admissao || info.email || info.nivel || info.tarefas_desempenhadas || info.objetivos_futuros || info.observacoes || info.conduta_negativa || info.feito_relevante;
     const conduta = info.conduta_negativa === 'true' || info.conduta_negativa === true;
     const feito = info.feito_relevante === 'true' || info.feito_relevante === true;
-    html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''}" data-nome="${escapeHtml(nome)}" style="cursor:pointer;padding:var(--s-4);transition:box-shadow .15s" title="Abrir perfil 360º">`;
-    html += '<div style="display:flex;align-items:center;gap:var(--s-4)">';
-    html += `<div style="font-size:28px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 64) : '👤'}</div>`;
-    html += '<div style="flex:1;min-width:0">';
-    html += `<div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:var(--s-2)">${escapeHtml(nome)}${feito ? '<span class="feito-badge" title="Possui feito relevante">🏆</span>' : ''}${conduta ? '<span class="conduta-badge" title="Possui ponto detrator">🚩</span>' : ''}</div>`;
+    html += `<div class="card colab-card ${conduta ? 'colab-card-conduta' : ''} ${feito ? 'colab-card-feito' : ''} colab-profile-card" data-nome="${escapeHtml(nome)}" title="Abrir perfil 360º">`;
+    html += '<div class="colab-card-heading">';
+    html += `<div class="colab-card-avatar">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 64) : '👤'}</div>`;
+    html += '<div class="colab-card-identity">';
+    html += `<div class="colab-card-name">${escapeHtml(nome)}${feito ? '<span class="feito-badge" title="Possui feito relevante">🏆</span>' : ''}${conduta ? '<span class="conduta-badge" title="Possui ponto detrator">🚩</span>' : ''}</div>`;
     if (info.nivel) {
-      html += `<div style="font-size:var(--font-caption);font-weight:600;color:var(--text-muted);margin-top:1px">${escapeHtml(info.nivel)}</div>`;
+      html += `<div class="colab-card-level">${escapeHtml(info.nivel)}</div>`;
     }
     if (info.salario != null && info.salario !== '') {
-      html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Salário: ${escapeHtml(Number(info.salario).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))}</div>`;
+      html += `<div class="colab-card-detail">Salário: ${escapeHtml(Number(info.salario).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))}</div>`;
     }
     const setores = setorMap[nome];
     const setorExibido = info.setor_atual || (setores && setores.size ? [...setores].join(', ') : '');
     if (setorExibido) {
-      html += `<div style="font-size:12px;color:var(--text-muted);margin-top:1px">🏢 ${escapeHtml(setorExibido)}</div>`;
+      html += `<div class="colab-card-sector">🏢 ${escapeHtml(setorExibido)}</div>`;
     }
     if (info.data_aniversario) {
       const [a,m,d] = info.data_aniversario.split('-');
-      html += `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">🎂 ${d}/${m}</div>`;
+      html += `<div class="colab-card-detail">🎂 ${d}/${m}</div>`;
     }
     if (info.data_admissao) {
       const [a,m,d] = info.data_admissao.split('-');
-      html += `<div style="font-size:12px;color:var(--text-secondary)">📅 Admissão: ${d}/${m}/${a}</div>`;
+      html += `<div class="colab-card-meta">📅 Admissão: ${d}/${m}/${a}</div>`;
     }
-    html += `<div style="font-size:12px;color:var(--text-secondary)">Tempo de empresa: ${escapeHtml(getTempoEmpresa(info.data_admissao))}</div>`;
+    html += `<div class="colab-card-meta">Tempo de empresa: ${escapeHtml(getTempoEmpresa(info.data_admissao))}</div>`;
     if (info.email) {
-      html += `<div style="font-size:12px;color:var(--text-secondary)">✉️ ${escapeHtml(info.email)}</div>`;
+      html += `<div class="colab-card-meta">✉️ ${escapeHtml(info.email)}</div>`;
     }
     if (info.observacoes) {
-      html += `<div style="font-size:12px;color:var(--danger);margin-top:2px;padding:2px 6px;background:var(--danger-soft);border-radius:var(--r-sm)">📝 ${escapeHtml(info.observacoes)}</div>`;
+      html += `<div class="colab-card-observation">📝 ${escapeHtml(info.observacoes)}</div>`;
     }
     if (!hasData) {
-      html += `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">Abra o perfil para consultar ou completar o cadastro</div>`;
+      html += `<div class="colab-card-hint">Abra o perfil para consultar ou completar o cadastro</div>`;
     }
     html += '</div>';
-    html += `<div style="font-size:18px;color:var(--text-muted)">${hasData ? '✅' : '➕'}</div>`;
+    html += `<div class="colab-card-completeness">${hasData ? '✅' : '➕'}</div>`;
     html += '</div>';
     html += `<div class="colab-card-actions"><button type="button" class="btn-primary colab-360-btn">Perfil 360º</button><button type="button" class="btn-small colab-edit-btn" aria-label="Editar cadastro de ${escapeHtml(nome)}">Editar cadastro</button></div>`;
     html += '</div>';
@@ -304,7 +304,7 @@ function openColabReport(nome) {
   // Build report
   let html = '';
   html += '<div class="report-header">';
-  html += `<div style="display:flex;align-items:center;gap:var(--s-3)"><div style="font-size:40px">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 48) : '👤'}</div><div><h2 style="font-size:22px;font-weight:700;margin:0">${escapeHtml(nome)}</h2><p style="font-size:14px;color:var(--text-secondary);margin:2px 0 0">📅 ${escapeHtml(periodLabel)}</p></div></div>`;
+  html += `<div class="colab-report-heading"><div class="colab-report-avatar">${typeof colabAvatarHtml === 'function' ? colabAvatarHtml(nome, 48) : '👤'}</div><div><h2 class="colab-report-title">${escapeHtml(nome)}</h2><p class="colab-report-period">📅 ${escapeHtml(periodLabel)}</p></div></div>`;
   html += '</div>';
 
   // ── Metric cards ──
@@ -321,8 +321,8 @@ function openColabReport(nome) {
   ];
   for (const m of metrics) {
     const borderColor = m.good ? 'var(--success)' : 'var(--danger)';
-    html += `<div class="report-metric-card" style="border-top:3px solid ${borderColor}">`;
-    html += `<div class="report-metric-value" style="color:${m.good ? 'var(--success)' : 'var(--danger)'}">${m.value}</div>`;
+    html += `<div class="report-metric-card colab-report-metric" style="--metric-border:${borderColor}">`;
+    html += `<div class="report-metric-value colab-report-metric-value" style="--metric-color:${m.good ? 'var(--success)' : 'var(--danger)'}">${m.value}</div>`;
     html += `<div class="report-metric-label">${m.label}</div>`;
     if (m.var !== null) {
       const varCls = m.var >= 0 ? 'variation-pos' : 'variation-neg';
@@ -365,7 +365,7 @@ function openColabReport(nome) {
     for (const h of highlights) html += `<div class="report-item report-item-good">${h}</div>`;
     html += '</div>';
   } else {
-    html += '<div style="font-size:13px;color:var(--text-muted);padding:var(--s-2) 0">Nenhum destaque neste período.</div>';
+    html += '<div class="colab-report-empty">Nenhum destaque neste período.</div>';
   }
   html += '</div>';
 
@@ -375,7 +375,7 @@ function openColabReport(nome) {
     for (const l of lowlights) html += `<div class="report-item report-item-bad">${l}</div>`;
     html += '</div>';
   } else {
-    html += '<div style="font-size:13px;color:var(--text-muted);padding:var(--s-2) 0">Nenhum ponto de atenção neste período. 🎉</div>';
+    html += '<div class="colab-report-empty">Nenhum ponto de atenção neste período. 🎉</div>';
   }
   html += '</div>';
 
@@ -668,6 +668,6 @@ document.getElementById('colabReportPrint')?.addEventListener('click', async () 
 function onColaboradoresTabActivated() {
   const container = document.getElementById('colaboradoresContent');
   if (!container) return;
-  container.innerHTML = '<div class="colab-cards-grid colab-cards-skeleton"><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card" style="padding:var(--s-5)"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div></div>';
+  container.innerHTML = '<div class="colab-cards-grid colab-cards-skeleton"><div class="card colab-content-padding"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card colab-content-padding"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div><div class="card colab-content-padding"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-line"></div></div></div>';
   setTimeout(() => renderColaboradores(), 50);
 }

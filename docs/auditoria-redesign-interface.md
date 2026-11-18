@@ -151,3 +151,24 @@ Um PDF real do relatório executivo, com registros simulados, foi gerado por imp
 A revisão implementa a padronização dos componentes prioritários e os ajustes verificáveis neste ambiente. Ainda existem estilos inline em módulos históricos e valores dinâmicos que não foram removidos indiscriminadamente. A extração adicional pode continuar por componente, sem ser necessária para utilizar esta versão.
 
 Acessibilidade foi verificada automaticamente e por teclado, com amostragem de contraste. Não se declara certificação WCAG nem teste humano com leitor de tela. Safari e impressão física não estão disponíveis neste ambiente. Esses ensaios e a revisão assistida com a equipe em dados reais permanecem validações externas. Não houve alteração de banco, RLS, autenticação, regras de cálculo ou metas, nem testes de escrita em produção.
+
+## Continuação 1.39.1 — Estilos de equipe e análises
+
+Base ffc75f4, branch refactor/estilos-equipe-analises, árvore inicialmente limpa. Escopo desta rodada: Colaboradores, Tendências/Insights e Relatório por setor.
+
+Foram retirados 116 atributos style fixos dos três renderizadores. Colaboradores passou de 27 para 2, Insights de 18 para 1 e Relatório Setorial de 75 para 1. Os quatro pontos restantes fornecem somente cores calculadas por custom properties. Estrutura, espaçamento, fontes, superfície e dimensões ficam no CSS dos componentes.
+
+people-workspace.css reúne a apresentação dos cartões da equipe e do relatório individual. analysis-workspace.css reúne cabeçalhos, rankings, gráficos, distribuição, tabelas e relatório executivo. Os estilos específicos são carregados depois dos contratos compartilhados, com nomes próprios e sem !important adicional.
+
+Nomes extensos e observações podem quebrar linha. Grades respeitam a largura disponível e os gráficos mantêm as alturas existentes. As regiões de tabela usam table-wrap para a rolagem por teclado. O indicador de apresentação mantém display:none como estado inicial e continua respondendo ao mesmo controlador. Cor e variações preservam os mesmos valores e critérios.
+
+Validação da rodada
+
+- npm test, sintaxe dos três scripts, release:check e git diff --check.
+- Workspace com os quatorze destinos, gráficos reais, PNG, PDF, CSV e impressão, cadastro e editores, em 360/768/1024/1440px nos dois temas.
+- Verificação adicional das três telas, overflow global e console em todas as combinações. Apresentação do relatório setorial foi ligada e desligada pelo botão original, conferindo o indicador.
+- Capturas específicas da equipe, tendências e relatório setorial em 360/1440px, claro/escuro. Amostras móveis inspecionadas.
+- Compatibilidade no Firefox com janela reduzida e desktop nos dois temas, respeitando a largura mínima do modo headless.
+- Catálogo de design system para foco, modais, contraste amostral e redução de movimento.
+
+Persistência, autenticação, contratos, filtros e cálculos não foram alterados. A consolidação continua por módulo: relatório de feedback, reportes e usuários ainda concentram estilos inline próprios. Não se declara remoção integral de estilos legados de toda a aplicação. Safari, leitor de tela e impressão física permanecem os limites externos já registrados.

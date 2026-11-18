@@ -632,3 +632,100 @@
   color: var(--warning);
   border-color: var(--warning);
 }
+.colab-content-padding {
+  padding: var(--s-5);
+}
+.colab-profile-card {
+  cursor: pointer;
+  padding: var(--s-4);
+  transition: border-color var(--t-fast);
+}
+.colab-card-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+.colab-card-avatar {
+  font-size: 28px;
+}
+.colab-card-identity {
+  flex: 1;
+  min-width: 0;
+}
+.colab-card-name {
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.colab-card-level {
+  font-size: var(--font-caption);
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.colab-card-detail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.colab-card-sector {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.colab-card-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.colab-card-observation {
+  font-size: 12px;
+  color: var(--danger);
+  margin-top: 2px;
+  padding: 2px 6px;
+  background: var(--danger-soft);
+  border-radius: var(--r-sm);
+}
+.colab-card-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.colab-card-completeness {
+  font-size: 18px;
+  color: var(--text-muted);
+}
+.colab-report-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.colab-report-avatar {
+  font-size: 40px;
+}
+.colab-report-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+.colab-report-period {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 2px 0 0;
+}
+.colab-report-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: var(--s-2) 0;
+}
+
+
+.colab-card-heading, .colab-report-heading { min-width: 0; }
+.colab-card-avatar, .colab-report-avatar { flex-shrink: 0; }
+.colab-card-meta, .colab-card-detail, .colab-card-sector, .colab-card-observation { overflow-wrap: anywhere; }
+
+.colab-report-metric { border-top: 3px solid var(--metric-border, var(--border)); }
+.colab-report-metric-value { color: var(--metric-color, var(--text-strong)); }
