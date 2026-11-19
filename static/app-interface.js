@@ -90,22 +90,13 @@
   function init(){
     const saved = appStorage.getItem('theme');
     if(saved === 'dark' || saved === 'light') setTheme(saved);
-    else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
-    else setTheme('light');
+    else setTheme('dark');
     document.querySelectorAll('.theme-toggle').forEach(function(btn){
       btn.addEventListener('click', function(){
         // Manual toggle — save preference
         setTheme(getTheme() === 'dark' ? 'light' : 'dark');
       });
     });
-    // Auto-switch: follow system when no manual preference saved
-    if (window.matchMedia) {
-      const mq = window.matchMedia('(prefers-color-scheme: dark)');
-      mq.addEventListener('change', function(ev) {
-        const savedNow = appStorage.getItem('theme');
-        if (!savedNow) setTheme(ev.matches ? 'dark' : 'light');
-      });
-    }
     initAccent();
     setTimeout(updateTarefasBadge, 100);
   }

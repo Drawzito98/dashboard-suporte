@@ -95,3 +95,7 @@ Largura do seletor ampliada para acomodar "Padrão", "Violeta", "Azul" e "Âmbar
 ## Ajuste 1.44.2 — Chrome mais enxuto
 
 Controles do topbar alinhados em 34px no desktop, com ícones de 14px, cantos em `--control-radius` e respiro menor. `.btn-small`/`.btn-secondary` ficam em 36px somente acima de 900px; menus de usuário e notificações perdem padding, animação elástica e sombra pesada. Alvos de toque de 44px e layout mobile permanecem intactos. Assets versionados em `?v=1402`; fixture `shell.browser.html` verifica altura uniforme, compacidade e ausência de overflow.
+
+## Ajuste 1.45.0 — Cockpit escuro moderno
+
+O tema padrão passa a ser escuro, mantendo a escolha salva em `appStorage` e o seletor de cor no topbar. `static/css/cockpit-dark.css` carrega depois de `visual-system.css` e define tokens violeta, topbar de 56px, trilho de áreas de 72px, navegação vertical de 236px e superfícies planas no desktop; abaixo de 900px o shell móvel continua no fluxo existente. O filtro de período deixa o `<select>` nativo visível e usa botão/menu acessíveis, com seleção imediata de mês e menu aberto para meses específicos e intervalo. O seletor de cor permanece em 92×28 no desktop e os KPIs setoriais quebram em colunas responsivas para evitar overflow em 901–1180px. Assets versionados em `?v=1450`; validar `release:check`, `shell.browser.html`, `workspace-ux.browser.html` e `design-system.browser.html` em desktop/celular e 320px.

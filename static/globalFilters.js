@@ -170,10 +170,30 @@ const globalFilters = {
       <div class="global-filter-inner">
         <div class="filter-disclosure"><p id="gfFilterHint" class="filter-hint">Os filtros são aplicados automaticamente.</p><button id="gfToggleBtn" class="btn-small" type="button" aria-expanded="true" aria-controls="gfFields">Recolher filtros</button></div>
         <div class="global-filter-row" id="gfFields">
-          <label class="global-filter-field gf-performance-filter">
-            <span>Período mensal</span>
-            <select id="gfPeriodo"><option value="all">Todos</option></select>
-          </label>
+          <div class="global-filter-field gf-performance-filter gf-period-field">
+            <span id="gfPeriodoLabel">Período mensal</span>
+            <div class="gf-period-control" id="gfPeriodoControl">
+              <button id="gfPeriodoBtn" class="gf-period-btn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="gfPeriodoLabel gfPeriodoValue"><span id="gfPeriodoValue">Todos</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
+              <select id="gfPeriodo" class="gf-period-native" tabindex="-1" aria-label="Período mensal"><option value="all">Todos</option></select>
+              <div id="gfPeriodoMenu" class="gf-period-menu" role="listbox" aria-labelledby="gfPeriodoLabel" hidden>
+                <div id="gfPeriodoOptions" class="gf-period-options"></div>
+                <div id="gfMonthRange" class="global-filter-multi global-filter-range gf-performance-filter" style="display:none">
+                  <div class="multi-label">Intervalo mensal:</div>
+                  <label class="global-filter-field"><span>De</span><select id="gfMonthStart"></select></label>
+                  <label class="global-filter-field"><span>Até</span><select id="gfMonthEnd"></select></label>
+                  <div class="multi-actions"><button type="button" class="btn-small gf-range-shortcut" data-months="3">Últimos 3 meses</button><button type="button" class="btn-small gf-range-shortcut" data-months="6">Últimos 6 meses</button><button type="button" class="btn-small gf-range-shortcut" data-months="12">Últimos 12 meses</button></div>
+                </div>
+                <div id="gfMonthMulti" class="global-filter-multi gf-performance-filter" style="display:none">
+                  <div class="multi-label">Selecione os meses desejados:</div>
+                  <div class="multi-actions">
+                    <button type="button" class="btn-small" id="gfSelectAllMonths">Selecionar tudo</button>
+                    <button type="button" class="btn-small" id="gfClearMonths">Limpar</button>
+                  </div>
+                  <div id="gfMonthChecklist" class="month-checklist"></div>
+                </div>
+              </div>
+            </div>
+          </div>
           <label class="global-filter-field">
             <span>Setor</span>
             <select id="gfSetor"><option value="all">Todos</option></select>
@@ -192,23 +212,79 @@ const globalFilters = {
             <button class="btn-small" id="gfClearBtn" type="button">Limpar filtros</button>
           </div>
         </div>
-        <div id="gfMonthRange" class="global-filter-multi global-filter-range gf-performance-filter" style="display:none">
-          <div class="multi-label">Intervalo mensal:</div>
-          <label class="global-filter-field"><span>De</span><select id="gfMonthStart"></select></label>
-          <label class="global-filter-field"><span>Até</span><select id="gfMonthEnd"></select></label>
-          <div class="multi-actions"><button type="button" class="btn-small gf-range-shortcut" data-months="3">Últimos 3 meses</button><button type="button" class="btn-small gf-range-shortcut" data-months="6">Últimos 6 meses</button><button type="button" class="btn-small gf-range-shortcut" data-months="12">Últimos 12 meses</button></div>
-        </div>
-        <div id="gfMonthMulti" class="global-filter-multi gf-performance-filter" style="display:none">
-          <div class="multi-label">Selecione os meses desejados:</div>
-          <div class="multi-actions">
-            <button type="button" class="btn-small" id="gfSelectAllMonths">Selecionar tudo</button>
-            <button type="button" class="btn-small" id="gfClearMonths">Limpar</button>
-          </div>
-          <div id="gfMonthChecklist" class="month-checklist"></div>
-        </div>
         <div id="globalFilterChips" class="global-filter-chips"></div>
       </div>
     `;
+  },
+
+  _syncPeriodoUI() {
+    const select = document.getElementById('gfPeriodo');
+    const label = document.getElementById('gfPeriodoValue');
+    const button = document.getElementById('gfPeriodoBtn');
+    if (!select || !label) return;
+    let text = 'Todos';
+    if (select.value === '__range__') text = 'Intervalo de meses';
+    else if (select.value === '__multi__') text = 'Meses específicos';
+    else if (select.value && select.value !== 'all') text = formatFilterMonth(select.value);
+    label.textContent = text;
+    if (button) button.title = `Período mensal: ${text}`;
+    document.querySelectorAll('#gfPeriodoOptions .gf-period-option').forEach(item => {
+      item.setAttribute('aria-selected', String(item.dataset.value === select.value));
+    });
+  },
+
+  _renderPeriodoMenu() {
+    const select = document.getElementById('gfPeriodo');
+    const options = document.getElementById('gfPeriodoOptions');
+    if (!select || !options) return;
+    const fragment = document.createDocumentFragment();
+    [...select.options].forEach(option => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'gf-period-option';
+      item.dataset.value = option.value;
+      item.setAttribute('role', 'option');
+      item.setAttribute('aria-selected', String(option.value === select.value));
+      item.textContent = option.textContent;
+      item.addEventListener('click', () => this._selectPeriod(option.value));
+      fragment.appendChild(item);
+    });
+    options.replaceChildren(fragment);
+  },
+
+  _openPeriodoMenu(focusFirst) {
+    const menu = document.getElementById('gfPeriodoMenu');
+    const button = document.getElementById('gfPeriodoBtn');
+    if (!menu || !button) return;
+    const options = document.getElementById('gfPeriodoOptions');
+    if (options && !options.childElementCount) this._renderPeriodoMenu();
+    menu.hidden = false;
+    const rect = button.getBoundingClientRect();
+    const menuWidth = menu.offsetWidth;
+    const padding = 16;
+    let left = 0;
+    if (rect.left + menuWidth > window.innerWidth - padding) left = window.innerWidth - padding - menuWidth - rect.left;
+    if (rect.left + left < padding) left = padding - rect.left;
+    menu.style.left = `${Math.round(left)}px`;
+    button.setAttribute('aria-expanded', 'true');
+    if (focusFirst) menu.querySelector('.gf-period-option')?.focus();
+  },
+
+  _closePeriodoMenu(returnFocus) {
+    const menu = document.getElementById('gfPeriodoMenu');
+    const button = document.getElementById('gfPeriodoBtn');
+    if (!menu || !button) return;
+    menu.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+    if (returnFocus) button.focus();
+  },
+
+  _selectPeriod(value) {
+    const select = document.getElementById('gfPeriodo');
+    if (!select) return;
+    select.value = value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    if (value !== '__multi__' && value !== '__range__') this._closePeriodoMenu(true);
   },
 
   _bindEvents() {
@@ -244,9 +320,53 @@ const globalFilters = {
         if (multiPanel) multiPanel.style.display = periodo.value === '__multi__' ? '' : 'none';
         if (rangePanel) rangePanel.style.display = periodo.value === '__range__' ? '' : 'none';
         if (periodo.value !== '__multi__') this.mesesSelecionados = [];
+        this._syncPeriodoUI();
+        if (periodo.value === '__multi__' || periodo.value === '__range__') this._openPeriodoMenu(false);
+        else this._closePeriodoMenu(false);
         this._collectAndNotify();
       });
     }
+
+    const periodBtn = document.getElementById('gfPeriodoBtn');
+    const periodMenu = document.getElementById('gfPeriodoMenu');
+    if (periodBtn) {
+      periodBtn.addEventListener('click', () => {
+        const menu = document.getElementById('gfPeriodoMenu');
+        if (!menu) return;
+        if (menu.hidden) this._openPeriodoMenu(false);
+        else this._closePeriodoMenu(false);
+      });
+      periodBtn.addEventListener('keydown', event => {
+        if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) {
+          event.preventDefault();
+          this._openPeriodoMenu(true);
+        } else if (event.key === 'Escape') {
+          this._closePeriodoMenu(false);
+        }
+      });
+    }
+    if (periodMenu) {
+      periodMenu.addEventListener('keydown', event => {
+        const options = [...periodMenu.querySelectorAll('.gf-period-option')];
+        const current = options.indexOf(document.activeElement);
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          this._closePeriodoMenu(true);
+        } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault();
+          const direction = event.key === 'ArrowDown' ? 1 : -1;
+          const next = options[Math.max(0, Math.min(options.length - 1, (current < 0 ? 0 : current) + direction))];
+          next?.focus();
+        } else if (event.key === 'Home' || event.key === 'End') {
+          event.preventDefault();
+          options[event.key === 'Home' ? 0 : options.length - 1]?.focus();
+        }
+      });
+    }
+    document.addEventListener('click', event => {
+      const menu = document.getElementById('gfPeriodoMenu');
+      if (menu && !menu.hidden && !event.target.closest('#gfPeriodoControl')) this._closePeriodoMenu(false);
+    });
 
     document.querySelectorAll('.gf-range-shortcut').forEach(button => button.addEventListener('click', () => {
       const options = [...(document.getElementById('gfMonthEnd')?.options || [])].map(o => o.value).filter(Boolean);
@@ -257,6 +377,7 @@ const globalFilters = {
       document.getElementById('gfPeriodo').value = '__range__';
       document.getElementById('gfMonthStart').value = start;
       document.getElementById('gfMonthEnd').value = end;
+      this._syncPeriodoUI();
       this._collectAndNotify();
     }));
 
@@ -354,6 +475,7 @@ const globalFilters = {
     setVal('gfNivel', this.nivel);
     setVal('gfMonthStart', this.mesInicio);
     setVal('gfMonthEnd', this.mesFim);
+    this._syncPeriodoUI();
 
     const pesq = document.getElementById('gfPesquisa');
     if (pesq) {
@@ -476,6 +598,8 @@ const globalFilters = {
     };
 
     fill('gfPeriodo', meses, { includeRange: true, includeMulti: true, format: formatFilterMonth });
+    this._syncPeriodoUI();
+    this._renderPeriodoMenu();
     const monthOptions = meses.map(m => `<option value="${String(m).replace(/"/g, '&quot;')}">${formatFilterMonth(m).replace(/"/g, '&quot;')}</option>`).join('');
     const rangeStart = document.getElementById('gfMonthStart');
     const rangeEnd = document.getElementById('gfMonthEnd');

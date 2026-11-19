@@ -65,7 +65,8 @@ body.shell-v2 #toolsDialog .panel-header { cursor: pointer; }
 body.shell-v2 .filter-disclosure { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 body.shell-v2 .filter-disclosure .filter-hint { margin: 0; min-width: 0; }
 body.shell-v2 .filter-disclosure #gfToggleBtn { flex-shrink: 0; white-space: nowrap; overflow-wrap: normal; }
-body.shell-v2 .global-filter-inner.is-compact > :is(.global-filter-row, .global-filter-multi) { display: none !important; }
+body.shell-v2 .global-filter-inner.is-compact > :is(.global-filter-row, .global-filter-multi),
+body.shell-v2 .global-filter-inner.is-compact .gf-period-menu { display: none !important; }
 body.shell-v2[data-role="colaborador"] :is(.domain-nav, .shell-navigation, .menu-btn),
 body.shell-v2.presentation-mode :is(.domain-nav, .shell-navigation, .menu-btn) { display: none !important; }
 body.shell-v2[data-role="colaborador"] #toolsDialog .sidebar { display: none !important; }

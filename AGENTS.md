@@ -117,7 +117,7 @@ git log --oneline -5
 
 ## Baseline e continuidade (28/10/2026)
 
-Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.44.2. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
+Leia `docs/architecture.md`, `docs/feature-inventory.md`, `docs/roadmap.md`, `docs/testing-release.md` e `docs/migrations.md` antes de mudanças estruturais. As listas acima são históricas e parciais. APP_VERSION atual: 1.45.0. Preserve modificações locais, confira origin e trabalhe em branch dedicada. `npm test` agrega a suíte síncrona, checks assíncronos e validação de cache; após mudanças em assets, execute `npm run release:cache`. Merge/deploy exigem autorização explícita. Não aplicar migrations como parte de testes locais.
 
 ## Fase 2 — Navegação
 
@@ -222,3 +222,7 @@ Mantenha `.accent-quick select` com largura mínima suficiente para o nome da co
 ## Continuação 1.44.2 — Chrome enxuto
 
 O polimento visual de botões/menus vive no bloco `@media (min-width: 901px)` de `static/css/visual-system.css`: topbar em 34px, ícones em 14px, `.btn-small`/`.btn-secondary` em 36px e dropdowns sem animação elástica. Não aplicar essas alturas abaixo de 900px: alvos móveis continuam em 44px. Preserve a largura do seletor de cor e a ausência de overflow. Rode release:check, shell, workspace-ux e design-system em desktop/celular.
+
+## Continuação 1.45.0 — Cockpit escuro e período explícito
+
+O tema inicial é escuro, salvo escolha explícita em `appStorage`; `static/css/cockpit-dark.css` carrega depois de `visual-system.css` e concentra tokens violeta, topbar de 56px, trilho de áreas e navegação vertical no desktop. Abaixo de 900px o shell móvel permanece intacto. O filtro de período usa botão e menu próprios (`#gfPeriodoBtn`/`#gfPeriodoMenu`) com `#gfPeriodo` nativo oculto para compatibilidade; não re-renderizar o menu durante o clique e manter aberto para meses específicos/intervalo. Preserve `#gfMonthChecklist`, `#gfMonthMulti`, `#gfMonthRange`, `sistema_accent_v1`, `data-accent` e `theme-color`. Assets em `?v=1450`; rode release:cache, shell, workspace-ux e design-system em desktop/celular e 320px.
